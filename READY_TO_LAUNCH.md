@@ -65,11 +65,9 @@ If anything fails, run `npx tsc --noEmit` to catch errors first.
 - [ ] Profile pic: the SVG icon at `app/icon.svg` (re-saved as 400×400 PNG)
 - [ ] No posting cadence required — handle exists for branding only
 
-### 6. Loops (waitlist + newsletter)
-- [ ] Free account at https://loops.so
-- [ ] Create one form for waitlist; copy the form ID
-- [ ] Create one transactional template for the weekly newsletter
-- [ ] Drop API key + form ID + template ID into Vercel env vars (see §Env vars below)
+### 6. Email service — deliberately skipped
+- The newsletter / email-broadcast layer was scoped out. The `/changelog` page and `/changelog.rss` feed are the canonical "subscribe to weekly updates" surface. Skipping email saves ~30 min of setup, ~$0/mo on free tier we don't need, and one more thing to maintain or explain at acquisition.
+- Waitlist signups from the homepage form log to Vercel logs (filter for `[waitlist]`). Manually export at sale time if the buyer wants the email list as part of the asset.
 
 ### 7. (Optional) OpenAI key
 - [ ] Only needed if/when you upgrade `/api/v1/search` to embeddings — the current keyword search works fine for v0
@@ -96,10 +94,6 @@ Settings → Environment Variables → Production:
 | Key | Value | Purpose |
 | --- | --- | --- |
 | `CRON_SECRET` | random 32-char string | Auth for `/api/cron/*` endpoints |
-| `LOOPS_API_KEY` | from Loops dashboard | Newsletter delivery |
-| `LOOPS_NEWSLETTER_ID` | template ID | Which template to send |
-| `LOOPS_BROADCAST_LIST` | list email | Who receives newsletter |
-| `LOOPS_WAITLIST_FORM_ID` | form ID | Waitlist storage |
 | `OPENAI_API_KEY` | (later, for v1) | Semantic search |
 
 ### Push the code
@@ -131,7 +125,7 @@ npm publish --access public
 ```
 
 ### Verify cron is wired
-- [ ] Vercel dashboard → Settings → Cron Jobs — confirm two entries (sync-registry daily, send-newsletter Mondays)
+- [ ] Vercel dashboard → Settings → Cron Jobs — confirm one entry (sync-registry daily). The actual cron is a connectivity check; the source-of-truth daily refresh is the GitHub Actions workflow at `.github/workflows/sync-registry.yml` which commits + pushes the new snapshot, triggering Vercel auto-deploy.
 - [ ] Manual trigger once: `curl -H "Authorization: Bearer $CRON_SECRET" https://mcpindex.ai/api/cron/sync-registry` (should return JSON with counts)
 
 ---

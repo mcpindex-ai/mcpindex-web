@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// v0 stub. Day-0 task wires this to Loops. For now we log + redirect-back so the
-// form works without external accounts.
+// Stores waitlist signups in Vercel logs only — no third-party email service
+// is wired up. Email newsletter was deliberately scoped out (the /changelog +
+// /changelog.rss surface is the canonical subscribe path). Inspect signups in
+// Vercel dashboard → Project → Logs, filter for [waitlist].
 export async function POST(req: NextRequest) {
   let email = '';
   const ct = req.headers.get('content-type') ?? '';
