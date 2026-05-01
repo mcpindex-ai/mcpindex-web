@@ -79,11 +79,12 @@ If anything fails, run `npx tsc --noEmit` to catch errors first.
 - [ ] Only needed for production-grade rate-limiting. Current middleware uses in-memory (per-instance) — fine for launch traffic
 - [ ] Add `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` later
 
-### 9. LLC formation (parallel — do this Day 0 so it clears by Day 7)
-- [ ] Northwest Registered Agent — Wyoming single-member LLC, ~$300, ~3 days to clear
-- [ ] Use it as the legal owner of the domain + npm package + Vercel account from Day 1
-- [ ] EIN issued automatically; add to your records
-- [ ] Acquirers will pay 20-40% more for clean LLC ownership vs. individual
+### 9. Asset ownership — use existing Bhartis LLC
+- [x] LLC already exists (Bhartis LLC, no other active business — clean personal-projects shell)
+- [ ] Porkbun → Account → Domain → Edit Whois → set Registrant Organization to **Bhartis LLC** (registrant name can stay personal). Privacy on.
+- [ ] When publishing to npm, set `author` field in `mcp-server-mcpindex/package.json` to `"Bhartis LLC <hello@mcpindex.ai>"` before `npm publish`
+- [ ] At asset-sale close: APA signed by Bhartis LLC as seller; no SPV carve-out needed because it's a clean entity
+- [ ] Skip: forming new Wyoming LLC ($300 saved, 3 days saved)
 
 ---
 
