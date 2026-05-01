@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+
+  --color-ink: #0a0a0a;
+  --color-paper: #ffffff;
+  --color-rule: #e7e5e4;
+  --color-mute: #78716c;
+  --color-accent: #ea580c;
+  --color-accent-soft: #fff7ed;
+  --color-cite: #0f172a;
+}
+
+html, body { background: #ffffff; }
+
+body {
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11", "cv09";
+}
+
+::selection { background: #fde68a; color: #0a0a0a; }
+
+/* Subtle dotted bg for hero sections */
+.bg-dots {
+  background-image: radial-gradient(circle at 1px 1px, #e5e5e5 1px, transparent 0);
+  background-size: 20px 20px;
+}
+
+/* Inline code chrome for prose */
+.inline-code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: #fafaf9;
+  border: 1px solid #e7e5e4;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+/* Disable any browser-injected dark mode override; site is light-only by design */
+@media (prefers-color-scheme: dark) {
+  html, body { background: #ffffff !important; color: #0a0a0a !important; }
+}
+
+/* Hairline rules — 0.5px on retina, 1px on others, always crisp */
+.rule-t { border-top: 1px solid var(--color-rule); }
+.rule-b { border-bottom: 1px solid var(--color-rule); }
+.rule-r { border-right: 1px solid var(--color-rule); }
+.rule-l { border-left: 1px solid var(--color-rule); }
+@media (-webkit-min-device-pixel-ratio: 2) {
+  .rule-t { border-top-width: 0.5px; }
+  .rule-b { border-bottom-width: 0.5px; }
+  .rule-r { border-right-width: 0.5px; }
+  .rule-l { border-left-width: 0.5px; }
+}
+
+/* Caret blink for demo input prompt */
+@keyframes caret-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.caret-blink { animation: caret-blink 1.1s steps(1) infinite; }
+
+/* Live indicator pulse */
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.85); }
+}
+.live-dot { animation: live-pulse 1.8s ease-in-out infinite; }
+
+/* Hero entrance — staggered fade-up, no blur, restrained */
+@keyframes hero-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.hero-rise { animation: hero-rise 600ms cubic-bezier(.2,.7,.2,1) both; }
+.hero-rise-1 { animation-delay: 50ms; }
+.hero-rise-2 { animation-delay: 180ms; }
+.hero-rise-3 { animation-delay: 320ms; }
+.hero-rise-4 { animation-delay: 460ms; }
+@media (prefers-reduced-motion: reduce) {
+  .hero-rise, .hero-rise-1, .hero-rise-2, .hero-rise-3, .hero-rise-4,
+  .live-dot, .caret-blink { animation: none; }
+}
+
+/* Sticky header hairline — appears only when scrolled (no JS, pure CSS) */
+.scroll-shadow {
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  z-index: 40;
+  border-bottom: 1px solid transparent;
+  transition: border-color 200ms ease;
+}
+@supports (animation-timeline: scroll()) {
+  .scroll-shadow {
+    animation: shadow-on-scroll linear both;
+    animation-timeline: scroll();
+    animation-range: 0 80px;
+  }
+  @keyframes shadow-on-scroll {
+    to { border-bottom-color: var(--color-rule); }
+  }
+}
+@supports not (animation-timeline: scroll()) {
+  .scroll-shadow { border-bottom-color: var(--color-rule); }
+}
+
+/* Dotted top ticker rule */
+.ticker-rule {
+  background-image: linear-gradient(90deg, var(--color-rule) 50%, transparent 50%);
+  background-size: 6px 1px;
+  background-repeat: repeat-x;
+  background-position: 0 100%;
+  height: 1px;
+}

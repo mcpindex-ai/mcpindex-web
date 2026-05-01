@@ -1,0 +1,39 @@
+{
+  "name": "mcp-server-mcpindex",
+  "version": "0.1.0",
+  "description": "An MCP server for finding MCP servers. Drop-in for Claude Desktop, Cursor, Cline, Zed.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "cursor",
+    "agent",
+    "discovery"
+  ],
+  "homepage": "https://mcpindex.ai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mcpindex/mcp-server-mcpindex"
+  },
+  "bugs": {
+    "url": "https://github.com/mcpindex/mcp-server-mcpindex/issues"
+  },
+  "author": "Gautam Bharti <hello@mcpindex.ai>",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.mjs",
+  "bin": {
+    "mcp-server-mcpindex": "src/index.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}
