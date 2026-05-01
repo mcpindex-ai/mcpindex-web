@@ -18,6 +18,7 @@ export async function GET() {
       llmsTxt: 'https://mcpindex.ai/llms.txt',
       llmsFullTxt: 'https://mcpindex.ai/llms-full.txt',
     },
+    docs: 'https://mcpindex.ai/docs',
     mcpServer: {
       package: 'mcp-server-mcpindex',
       registry: 'npm',

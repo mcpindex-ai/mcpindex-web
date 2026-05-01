@@ -38,6 +38,7 @@ Add to Claude Desktop / Cursor / Cline / Zed and call \`recommend_mcp_for_task("
 
 ## Project pages
 
+- /docs                     How it works, how to wire it into Claude/Cursor/Cline/Zed, response anatomy.
 - /server/<slug>            Per-server detail (3,000+ pages, JSON-LD typed).
 - /best/<category>          Curated picks per category.
 - /leaderboard              Top 50 by MCP Quality Score.

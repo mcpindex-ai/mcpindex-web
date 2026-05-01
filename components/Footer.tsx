@@ -25,10 +25,10 @@ export function Footer() {
 
           <div>
             <div className={COLUMN_LABEL}>Product</div>
+            <Link href="/docs" className={LINK}>Docs</Link>
             <Link href="/best" className={LINK}>Best of</Link>
             <Link href="/leaderboard" className={LINK}>Leaderboard</Link>
             <Link href="/changelog" className={LINK}>Changelog</Link>
-            <Link href="/api/v1/search?q=postgres" className={LINK}>Search API</Link>
             <Link href="/api/v1/recommend?task=read+pdfs" className={LINK}>Recommend API</Link>
           </div>
 
