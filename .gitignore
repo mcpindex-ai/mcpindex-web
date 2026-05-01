@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Daily archive of registry snapshots — written locally by sync-registry.mjs but not committed
+data/snapshots/
