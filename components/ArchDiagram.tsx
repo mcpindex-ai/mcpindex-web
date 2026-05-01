@@ -15,11 +15,11 @@ type Layer = {
 };
 
 const REQUEST_FLOW: Layer[] = [
-  { num: '01', title: 'Your IDE', sub: 'Claude Desktop · Cursor · Cline · Zed', arrowOutLabel: 'stdio' },
-  { num: '02', title: 'mcp-server-mcpindex', titleMono: true, sub: 'npm package · MIT · 4 tools', arrowOutLabel: 'HTTPS' },
-  { num: '03', title: '/api/v1/recommend', titleMono: true, sub: 'edge-cached · 60 req/min/IP · no key', arrowOutLabel: 'reads' },
-  { num: '04', title: 'Recommendation engine', sub: 'search score × MCP Quality Score composite', arrowOutLabel: 'reads' },
-  { num: '05', title: 'data/snapshot.json', titleMono: true, sub: '3,500+ servers, refreshed daily' },
+  { num: '01', title: 'Agent client', sub: 'Where your agent runs', arrowOutLabel: 'calls' },
+  { num: '02', title: 'Discovery adapter', sub: 'Client-side bridge to the API', arrowOutLabel: 'calls' },
+  { num: '03', title: 'Recommendation API', sub: 'Natural-language task → ranked picks', arrowOutLabel: 'reads' },
+  { num: '04', title: 'Ranking engine', sub: 'Composite scoring across signals', arrowOutLabel: 'reads' },
+  { num: '05', title: 'Indexed catalog', sub: 'Thousands of MCP servers · refreshed daily' },
 ];
 
 // Geometry — picked to balance scannability and density
@@ -39,7 +39,7 @@ export function ArchDiagram() {
       <svg
         viewBox={`0 0 ${VB_W} ${VB_H}`}
         role="img"
-        aria-label="mcpindex.ai architecture: request flow from IDE through MCP server to API to recommendation engine to snapshot, with daily refresh from registry.modelcontextprotocol.io via GitHub Actions"
+        aria-label="mcpindex.ai architecture: request flows from agent client through a discovery adapter into the recommendation API, which ranks against an indexed catalog. A daily refresh worker keeps the catalog current from an upstream source."
         className="block w-full max-w-[860px] mx-auto"
         style={{ height: 'auto' }}
       >
@@ -77,14 +77,14 @@ export function ArchDiagram() {
           );
         })}
 
-        {/* Refresh box — sits on same row as Snapshot (last box, index 4) */}
+        {/* Refresh box — sits on same row as Indexed catalog (last box, index 4) */}
         <Box
           x={REFRESH_X}
           y={(REQUEST_FLOW.length - 1) * STRIDE}
           w={REFRESH_W}
           num="06"
-          title="GitHub Actions @ 06:00 UTC"
-          sub="pulls registry.modelcontextprotocol.io · healthcheck-gated · auto-commit"
+          title="Refresh worker"
+          sub="Daily catalog rebuild · integrity-gated"
         />
 
         {/* Horizontal "writes" arrow from box 06 (left edge) to box 05 (right edge) */}
@@ -95,7 +95,7 @@ export function ArchDiagram() {
           label="writes"
         />
 
-        {/* Annotation under refresh box: registry source */}
+        {/* Annotation under refresh box: upstream source */}
         <text
           x={REFRESH_X + REFRESH_W / 2}
           y={(REQUEST_FLOW.length - 1) * STRIDE + BOX_H + 22}
@@ -105,7 +105,7 @@ export function ArchDiagram() {
           letterSpacing="0.16em"
           fill="#78716c"
         >
-          ← ANTHROPIC + COMMUNITY
+          ← UPSTREAM SOURCE
         </text>
 
         {/* Side-of-stack zone label */}

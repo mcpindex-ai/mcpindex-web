@@ -25,26 +25,28 @@ export default function DocsPage() {
           How agents call mcpindex.ai.
         </h1>
         <p className="mt-5 max-w-[640px] text-[16px] leading-[1.6] text-[--color-cite]">
-          An MCP-native API. Free, no key required, edge-cached. Three integration shapes:
+          An MCP-native API. Free, no key required, low-latency. Three integration shapes:
           direct HTTP, drop-in MCP server (recommended), or embedded into your platform.
           The whole surface fits on this page.
         </p>
       </header>
 
-      {/* §01 — The stack */}
-      <Section number="01" title="The stack">
+      {/* §01 — The shape */}
+      <Section number="01" title="The shape">
         <p>
-          Five layers in the request path; one async layer keeps the data fresh. Every
-          layer is a real component you can poke at.
+          Five components in the request path; a refresh job keeps the catalog current.
         </p>
         <ArchDiagram />
         <p>
-          Top-down: a request originates in your IDE, traverses the npm-distributed MCP
-          server over stdio, hits the recommendation API over HTTPS, ranks against an
-          enriched local snapshot of the official MCP registry, and returns three picks
-          with reasoning + install commands. The snapshot is rebuilt nightly via
-          GitHub Actions, sourced from{' '}
-          <Mono>registry.modelcontextprotocol.io</Mono> (Anthropic-maintained).
+          Top-down: a request originates in your agent client, passes through a
+          discovery adapter into the recommendation API, ranks against an indexed
+          catalog of MCP servers, and returns three ranked picks with reasoning and
+          install commands. The catalog is rebuilt daily from an upstream source.
+        </p>
+        <p>
+          What you don&rsquo;t need to care about as a caller: which storage layer
+          backs the catalog, where the refresh worker runs, what compute hosts the API.
+          The contract is the recommendation endpoint; everything else is internal.
         </p>
       </Section>
 
@@ -198,7 +200,7 @@ Args:     -y mcp-server-mcpindex`}
           />
           <Limit
             label="Cache"
-            body="Recommend responses cached at the edge for 5 min; registry-count for 1 hour; per-server pages for 1 hour, regenerated nightly. Stale-while-revalidate up to 24 hours."
+            body="Responses are cached at the edge with stale-while-revalidate fallback. Repeat queries within minutes are essentially free; the first call after a cache miss adds modest latency."
           />
           <Limit
             label="Fallback"
@@ -213,7 +215,7 @@ Args:     -y mcp-server-mcpindex`}
           />
           <Limit
             label="Data freshness"
-            body="Snapshot rebuilt nightly via GitHub Actions at 06:00 UTC. Healthcheck refuses to deploy a snapshot under 1,000 servers (guards against partial fetches). Worst-case staleness: 24 hours."
+            body="Catalog rebuilt nightly. Integrity checks reject obviously partial refreshes before they go live. Worst-case staleness: 24 hours."
           />
           <Limit
             label="Authentication"
