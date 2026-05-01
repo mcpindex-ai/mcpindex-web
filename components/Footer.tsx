@@ -67,7 +67,7 @@ export function Footer() {
         <div className="rule-t mt-12 pt-6 flex flex-col sm:flex-row justify-between gap-3 text-[11.5px] text-[--color-mute]">
           <div className="font-mono">© 2026 GB</div>
           <div>
-            Built by{' '}
+            Written by{' '}
             <a
               href="https://www.linkedin.com/in/gautambharti"
               target="_blank"
@@ -76,7 +76,7 @@ export function Footer() {
             >
               Gautam Bharti
             </a>
-            . Also runs{' '}
+            . More analysis at{' '}
             <a
               href="https://seekgb.com"
               target="_blank"

@@ -45,7 +45,7 @@ Add to Claude Desktop / Cursor / Cline / Zed and call \`recommend_mcp_for_task("
 - /changelog                Weekly diff of registry changes.
 - /changelog.rss            RSS 2.0 feed of the above.
 - /methodology              Open quality-score methodology.
-- /about                    Project + founder.
+- /about                    Project description + author.
 
 Unofficial. Not affiliated with Anthropic.
 `;
