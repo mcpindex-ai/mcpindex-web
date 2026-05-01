@@ -11,7 +11,7 @@ const MAX_PER_WINDOW = 60;
 type Bucket = { count: number; windowStart: number };
 const buckets = new Map<string, Bucket>();
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   if (!req.nextUrl.pathname.startsWith('/api/v1/')) {
     return NextResponse.next();
   }
