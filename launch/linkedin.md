@@ -18,6 +18,6 @@ The MCP ecosystem is in a strange spot. Anthropic shipped the canonical registry
 
 Live demo: https://mcpindex.ai
 
-Source: https://github.com/mcpindex (MIT for the npm package)
+Source: https://github.com/mcpindex-ai (MIT for the npm package)
 
 Built solo. Open to comments and PRs.

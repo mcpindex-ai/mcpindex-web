@@ -38,7 +38,7 @@ export function Footer() {
             <Link href="/methodology" className={LINK}>Methodology</Link>
             <Link href="/stats" className={LINK}>Stats</Link>
             <a
-              href="https://github.com/mcpindex"
+              href="https://github.com/mcpindex-ai"
               target="_blank"
               rel="noreferrer"
               className={LINK}

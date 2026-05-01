@@ -77,6 +77,6 @@ MIT.
 
 - Website: [mcpindex.ai](https://mcpindex.ai)
 - Methodology: [mcpindex.ai/methodology](https://mcpindex.ai/methodology)
-- Source: [github.com/mcpindex](https://github.com/mcpindex)
+- Source: [github.com/mcpindex-ai](https://github.com/mcpindex-ai)
 
 Unofficial. Not affiliated with Anthropic.

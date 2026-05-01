@@ -6,7 +6,7 @@ All forms accept submissions without account creation. Should take under 30 minu
 - URL: https://www.pulsemcp.com/submit
 - Server name: `mcp-server-mcpindex`
 - Description: An MCP server for finding MCP servers. Recommendation API on top of the official registry. Daily-refreshed quality score across 3,500+ servers.
-- Repo: https://github.com/mcpindex/mcp-server-mcpindex
+- Repo: https://github.com/mcpindex-ai/mcp-server-mcpindex
 - Install: `npm install -g mcp-server-mcpindex`
 
 ## Smithery
@@ -27,7 +27,7 @@ All forms accept submissions without account creation. Should take under 30 minu
 - Fields:
   - name: `app.mcpindex/mcp-server-mcpindex`
   - description: An MCP server for finding MCP servers. Recommendation API + quality scoring on top of the official registry.
-  - repository: github.com/mcpindex/mcp-server-mcpindex
+  - repository: github.com/mcpindex-ai/mcp-server-mcpindex
   - packages: npm `mcp-server-mcpindex`
 
 ## Apify Store (optional)

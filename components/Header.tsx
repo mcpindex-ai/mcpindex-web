@@ -48,7 +48,7 @@ export function Header() {
               /llms.txt
             </Link>
             <a
-              href="https://github.com/mcpindex"
+              href="https://github.com/mcpindex-ai"
               target="_blank"
               rel="noreferrer"
               aria-label="GitHub"

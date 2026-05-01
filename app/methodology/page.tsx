@@ -20,7 +20,7 @@ export default function MethodologyPage() {
         A 0–100 composite computed from public registry data only. No private telemetry, no
         opaque inputs. Source:{' '}
         <a
-          href="https://github.com/mcpindex/mcpindex-web/blob/main/lib/quality.ts"
+          href="https://github.com/mcpindex-ai/mcpindex-web/blob/main/lib/quality.ts"
           target="_blank"
           rel="noreferrer"
           className="underline decoration-[--color-rule] underline-offset-4 hover:text-[--color-accent]"

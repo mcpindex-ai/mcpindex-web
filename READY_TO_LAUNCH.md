@@ -32,7 +32,7 @@ If anything fails, run `npx tsc --noEmit` to catch errors first.
 ## DAY 1 — accounts (~90 min)
 
 ### 1. GitHub org
-- [ ] Create org `mcpindex` at https://github.com/organizations/new (free)
+- [ ] Create org `mcpindex-ai` at https://github.com/organizations/new (free)
 - [ ] Create two repos under it:
   - `mcpindex-web` (private initially; flip to public on launch day) — for the Next.js site
   - `mcp-server-mcpindex` — public from the start
@@ -40,7 +40,7 @@ If anything fails, run `npx tsc --noEmit` to catch errors first.
 
 ### 2. Vercel project
 - [ ] Go to https://vercel.com/new
-- [ ] Import the (still-empty) `mcpindex/mcpindex-web` repo, OR drag-and-drop the local `/Volumes/GB990Pro/GBCode/mcpindex` directory
+- [ ] Import the (still-empty) `mcpindex-ai/mcpindex-web` repo, OR drag-and-drop the local `/Volumes/GB990Pro/GBCode/mcpindex` directory
 - [ ] Framework Preset: **Next.js** (do NOT leave on Other — it 404s; see `feedback_vercel_nextjs_supabase_deploy_gotchas.md`)
 - [ ] Deployment Protection: **OFF** for production (otherwise the site requires login)
 - [ ] **Spending limit: $0 hard cap** — Settings → Usage → set spend limit. Site degrades gracefully on overage instead of charging.
@@ -108,7 +108,7 @@ git init
 git add .
 git commit -m "init: mcpindex.ai v0"
 git branch -M main
-git remote add origin git@github.com:mcpindex/mcpindex-web.git
+git remote add origin git@github.com:mcpindex-ai/mcpindex-web.git
 git push -u origin main
 ```
 
@@ -121,7 +121,7 @@ git init
 git add .
 git commit -m "init: mcp-server-mcpindex 0.1.0"
 git branch -M main
-git remote add origin git@github.com:mcpindex/mcp-server-mcpindex.git
+git remote add origin git@github.com:mcpindex-ai/mcp-server-mcpindex.git
 git push -u origin main
 
 # Then publish to npm:

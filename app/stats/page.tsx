@@ -46,12 +46,12 @@ export default async function StatsPage() {
           All metrics are derived from public registry data. No analytics tracking is sold or shared.
           Source code:{' '}
           <a
-            href="https://github.com/mcpindex"
+            href="https://github.com/mcpindex-ai"
             target="_blank"
             rel="noreferrer"
             className="underline decoration-[--color-rule] underline-offset-4 hover:text-[--color-accent]"
           >
-            github.com/mcpindex
+            github.com/mcpindex-ai
           </a>
           .
         </p>

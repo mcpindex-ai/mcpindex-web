@@ -19,7 +19,7 @@ What's actually different:
 Build details:
 - Next.js 16 on Vercel.
 - Local snapshot of the registry, refreshed daily via cron.
-- Source: github.com/mcpindex.
+- Source: github.com/mcpindex-ai.
 - ~7 days of work solo.
 
 The full strategy memo (it's a domain-flip play, not a long-term build) is at /about. Honest about that part.
