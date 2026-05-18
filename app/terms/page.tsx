@@ -11,7 +11,7 @@ export default function TermsPage() {
       <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute]">
         §01&nbsp;&nbsp;Terms of use
       </div>
-      <h1 className="mt-3 text-[36px] sm:text-[44px] tracking-[-0.02em] leading-[1.05] font-medium text-[--color-ink]">
+      <h1 className="mt-3 t-page-h1 font-medium text-[--color-ink]">
         Terms.
       </h1>
       <p className="mt-2 font-mono text-[11.5px] text-[--color-mute]">

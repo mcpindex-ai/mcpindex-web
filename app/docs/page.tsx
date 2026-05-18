@@ -21,7 +21,7 @@ export default function DocsPage() {
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute]">
           §00&nbsp;&nbsp;Documentation
         </div>
-        <h1 className="mt-3 text-[40px] sm:text-[52px] tracking-[-0.02em] leading-[1.05] font-medium text-[--color-ink]">
+        <h1 className="mt-3 t-page-h1 font-medium text-[--color-ink]">
           How agents call mcpindex.ai.
         </h1>
         <p className="mt-5 max-w-[640px] text-[16px] leading-[1.6] text-[--color-cite]">

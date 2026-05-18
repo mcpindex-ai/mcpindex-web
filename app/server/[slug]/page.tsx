@@ -83,7 +83,7 @@ export default async function ServerPage(
 
         <header className="mt-6 grid sm:grid-cols-[1fr_auto] gap-6 items-start">
           <div>
-            <h1 className="text-[34px] sm:text-[44px] tracking-[-0.02em] leading-[1.05] font-medium text-[--color-ink]">
+            <h1 className="t-page-h1 font-medium text-[--color-ink]">
               {server.title}
             </h1>
             <div className="mt-3 font-mono text-[12px] text-[--color-mute] flex flex-wrap items-center gap-x-4 gap-y-1">

@@ -39,7 +39,7 @@ export default async function StatsPage() {
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute]">
           §01&nbsp;&nbsp;Public stats · auto-generated daily
         </div>
-        <h1 className="mt-3 text-[40px] sm:text-[52px] tracking-[-0.02em] leading-[1.05] font-medium text-[--color-ink]">
+        <h1 className="mt-3 t-page-h1 font-medium text-[--color-ink]">
           Numbers, on the page.
         </h1>
         <p className="mt-4 max-w-[640px] text-[15.5px] leading-[1.55] text-[--color-cite]">

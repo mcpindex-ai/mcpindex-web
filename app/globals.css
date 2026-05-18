@@ -25,14 +25,19 @@ body {
 /* Fluid editorial type scale — smooth viewport scaling, no breakpoint jumps.
    Replaces fixed text-[44px] sm:text-[68px] lg:text-[84px] step ladders that
    were oversized on narrow screens. min clamps at ~360px, max at ~1180px. */
+/* One canonical header size — teaser h2 and hero h1 share it so the two
+   stacked headers read as the same level and wrap to the same measure. */
 .t-display {
-  font-size: clamp(2.125rem, 1.05rem + 4.8vw, 4.75rem);
-  line-height: 1.02;
-  letter-spacing: -0.025em;
+  font-size: clamp(2rem, 1.05rem + 3.4vw, 3.5rem);
+  line-height: 1.06;
+  letter-spacing: -0.022em;
 }
-.t-h2 {
-  font-size: clamp(1.625rem, 1.05rem + 2.7vw, 3.25rem);
-  line-height: 1.08;
+/* Canonical interior-page title — every sub-page <h1> shares this so
+   /docs, /about, /leaderboard, /server/* etc. are mutually consistent
+   and scale fluidly instead of the old 34-52px breakpoint mix. */
+.t-page-h1 {
+  font-size: clamp(1.875rem, 1.15rem + 2.5vw, 2.875rem);
+  line-height: 1.07;
   letter-spacing: -0.02em;
 }
 .t-h3 {

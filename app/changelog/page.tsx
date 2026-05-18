@@ -48,7 +48,7 @@ export default async function Changelog() {
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute]">
           §01&nbsp;&nbsp;Changelog
         </div>
-        <h1 className="mt-3 text-[40px] sm:text-[52px] tracking-[-0.02em] leading-[1.05] font-medium text-[--color-ink]">
+        <h1 className="mt-3 t-page-h1 font-medium text-[--color-ink]">
           Registry diff · last 30 days.
         </h1>
         <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 font-mono text-[12.5px] text-[--color-mute]">
