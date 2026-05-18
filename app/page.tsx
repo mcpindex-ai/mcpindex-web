@@ -20,11 +20,11 @@ export default async function Home() {
       {/* Teaser — sits at the very TOP, above the fold, above ticker + header */}
       <section className="rule-b bg-[--color-accent-soft]">
         <div className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-12 pb-14 sm:pt-16 sm:pb-20">
-          <div className="max-w-[860px]">
+          <div className="max-w-[940px]">
             <div className="hero-rise hero-rise-1 font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-accent] mb-6">
               §00&nbsp;&nbsp;Trust layer
             </div>
-            <h2 className="hero-rise hero-rise-2 text-[30px] sm:text-[44px] lg:text-[52px] leading-[1.05] tracking-[-0.02em] font-medium text-[--color-ink]">
+            <h2 className="hero-rise hero-rise-2 t-h2 font-medium text-[--color-ink]">
               Your agent is about to call a tool it found 200ms ago. Did anyone read what it actually does?
             </h2>
             <div className="hero-rise hero-rise-3 mt-7 space-y-4 max-w-[680px] text-[15px] sm:text-[16.5px] leading-[1.55] text-[--color-cite]">
@@ -65,14 +65,14 @@ export default async function Home() {
       {/* Hero */}
       <section className="relative">
         <div className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-20 pb-24 sm:pt-28 sm:pb-32">
-          <div className="max-w-[860px]">
+          <div className="max-w-[940px]">
             <div className="hero-rise hero-rise-1 font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute] mb-8">
               §01&nbsp;&nbsp;The trust layer
             </div>
-            <h1 className="hero-rise hero-rise-2 text-[44px] sm:text-[68px] lg:text-[84px] leading-[0.96] tracking-[-0.025em] font-medium text-[--color-ink]">
+            <h1 className="hero-rise hero-rise-2 t-display font-medium text-[--color-ink]">
               Where agents find MCP tools, and the verdict on whether to act through them.
             </h1>
-            <p className="hero-rise hero-rise-3 mt-8 max-w-[640px] text-[17px] sm:text-[19px] leading-[1.45] text-[--color-cite]">
+            <p className="hero-rise hero-rise-3 mt-8 max-w-[680px] text-[17px] sm:text-[19px] leading-[1.45] text-[--color-cite]">
               Finding a tool is table stakes. Before your agent acts through one, you get a
               verdict on whether it does what it claims. Discovery is how you arrive; the verdict
               is why you&apos;d trust the call.
@@ -99,7 +99,7 @@ export default async function Home() {
           </div>
 
           {/* Demo */}
-          <div className="hero-rise hero-rise-4 mt-16 max-w-[860px]">
+          <div className="hero-rise hero-rise-4 mt-16 max-w-[940px]">
             <AgentDemo />
           </div>
         </div>
@@ -141,7 +141,7 @@ export default async function Home() {
               <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute]">
                 §03&nbsp;&nbsp;MCP Quality Score
               </div>
-              <h2 className="mt-3 text-[28px] sm:text-[34px] tracking-tight font-medium text-[--color-ink]">
+              <h2 className="mt-3 t-h3 font-medium text-[--color-ink]">
                 Top servers, ranked by composite signal.
               </h2>
               <p className="mt-3 max-w-[560px] text-[14.5px] leading-[1.55] text-[--color-cite]">
@@ -202,7 +202,7 @@ export default async function Home() {
               <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute]">
                 §04&nbsp;&nbsp;Mailing list
               </div>
-              <h2 className="mt-3 text-[28px] sm:text-[34px] tracking-tight font-medium text-[--color-ink]">
+              <h2 className="mt-3 t-h3 font-medium text-[--color-ink]">
                 Get the API key when v1 ships.
               </h2>
               <p className="mt-3 text-[14.5px] leading-[1.55] text-[--color-cite] max-w-[480px]">
@@ -240,7 +240,7 @@ function PillarRow({
         {num}
       </div>
       <div>
-        <h3 className="text-[20px] sm:text-[22px] tracking-tight font-medium text-[--color-ink]">
+        <h3 className="t-h4 font-medium text-[--color-ink]">
           {title}
         </h3>
         <p className="mt-2 text-[14.5px] leading-[1.55] text-[--color-cite] max-w-[480px]">

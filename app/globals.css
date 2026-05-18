@@ -22,6 +22,30 @@ body {
 
 ::selection { background: #fde68a; color: #0a0a0a; }
 
+/* Fluid editorial type scale — smooth viewport scaling, no breakpoint jumps.
+   Replaces fixed text-[44px] sm:text-[68px] lg:text-[84px] step ladders that
+   were oversized on narrow screens. min clamps at ~360px, max at ~1180px. */
+.t-display {
+  font-size: clamp(2.125rem, 1.05rem + 4.8vw, 4.75rem);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+}
+.t-h2 {
+  font-size: clamp(1.625rem, 1.05rem + 2.7vw, 3.25rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+.t-h3 {
+  font-size: clamp(1.5rem, 1.15rem + 1.6vw, 2.125rem);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+.t-h4 {
+  font-size: clamp(1.125rem, 1rem + 0.55vw, 1.375rem);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
 /* Subtle dotted bg for hero sections */
 .bg-dots {
   background-image: radial-gradient(circle at 1px 1px, #e5e5e5 1px, transparent 0);
