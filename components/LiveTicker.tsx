@@ -29,7 +29,7 @@ export async function LiveTicker() {
             Snapshot <span className="text-[--color-cite]">{timeAgo(snap.fetchedAt)}</span>
           </span>
           <span>
-            Indexed <span className="text-[--color-cite] tabular-nums">{servers.length.toLocaleString()}</span>
+            Tracking <span className="text-[--color-cite] tabular-nums">{servers.length.toLocaleString()}</span>
           </span>
           <span>
             7-day delta <span className="text-[--color-accent] tabular-nums">+{fresh}</span>

@@ -3,7 +3,7 @@ import Link from 'next/link';
 const NAV = [
   { href: '/docs', label: 'Docs' },
   { href: '/best', label: 'Best of' },
-  { href: '/leaderboard', label: 'Leaderboard' },
+  { href: '/leaderboard', label: 'Two axes' },
   { href: '/changelog', label: 'Changelog' },
   { href: '/methodology', label: 'Methodology' },
   { href: '/about', label: 'About' },

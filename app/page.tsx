@@ -159,7 +159,7 @@ export default async function Home() {
               href="/leaderboard"
               className="hidden sm:inline-block font-mono text-[12px] uppercase tracking-[0.16em] text-[--color-cite] hover:text-[--color-accent] whitespace-nowrap"
             >
-              full leaderboard →
+              see both axes →
             </Link>
           </div>
 

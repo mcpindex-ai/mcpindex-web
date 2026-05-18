@@ -12,13 +12,13 @@ const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin']
 export const metadata: Metadata = {
   metadataBase: new URL('https://mcpindex.ai'),
   title: {
-    default: 'mcpindex.ai — the agent-native index of MCP servers',
+    default: 'mcpindex - the verification layer for MCP tools',
     template: '%s · mcpindex.ai',
   },
   description:
     'Built for IDEs and agents that find the right MCP server at inference time, not the developer browsing a sidebar.',
   openGraph: {
-    title: 'mcpindex.ai — the agent-native index of MCP servers',
+    title: 'mcpindex - the verification layer for MCP tools',
     description:
       'Recommendation engine and drop-in MCP server for finding the right MCP at inference time.',
     url: 'https://mcpindex.ai',
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'mcpindex.ai',
-    description: 'The agent-native index of MCP servers.',
+    description: 'A verdict on whether an MCP tool does what it claims, before your agent acts.',
   },
   alternates: {
     types: {
