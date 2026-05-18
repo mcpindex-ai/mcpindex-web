@@ -12,7 +12,7 @@ export async function GET() {
   }
 
   const sections: string[] = [
-    '# mcpindex.ai — Full Index',
+    '# mcpindex.ai - Full Index',
     '',
     `Total servers: ${servers.length}. Categories: ${byCategory.size}.`,
     'Format: one server per block, grouped by category.',
