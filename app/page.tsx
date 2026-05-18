@@ -139,14 +139,16 @@ export default async function Home() {
           <div className="flex items-baseline justify-between gap-6 mb-10">
             <div>
               <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute]">
-                §03&nbsp;&nbsp;MCP Quality Score
+                §03&nbsp;&nbsp;Two axes
               </div>
               <h2 className="mt-3 t-h3 font-medium text-[--color-ink]">
-                Top servers, ranked by composite signal.
+                Popular is not the same as honest. We show both axes.
               </h2>
               <p className="mt-3 max-w-[560px] text-[14.5px] leading-[1.55] text-[--color-cite]">
-                Five-dimension score from public data only — freshness, completeness,
-                installability, documentation, semver stability.{' '}
+                One axis is maturity from public signal: freshness, completeness,
+                installability, documentation, semver stability. The other is the verdict:
+                does the tool do what it claims. The product is the gap between them.
+                Verdict axis in evaluation, adversarial cases first.{' '}
                 <Link href="/methodology" className="underline decoration-[--color-rule] underline-offset-4 hover:text-[--color-accent] hover:decoration-[--color-accent]">
                   Read methodology
                 </Link>
@@ -203,15 +205,10 @@ export default async function Home() {
                 §04&nbsp;&nbsp;Mailing list
               </div>
               <h2 className="mt-3 t-h3 font-medium text-[--color-ink]">
-                Get the API key when v1 ships.
+                Get the verdict API when v1 ships.
               </h2>
               <p className="mt-3 text-[14.5px] leading-[1.55] text-[--color-cite] max-w-[480px]">
-                One email when the keyed tier opens. Optional weekly changelog of new MCP
-                servers — opt in separately at{' '}
-                <Link href="/changelog" className="underline decoration-[--color-rule] underline-offset-4 hover:text-[--color-accent]">
-                  /changelog
-                </Link>
-                .
+                One email when the verdict API opens. No catalog spam.
               </p>
             </div>
 

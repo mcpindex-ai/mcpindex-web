@@ -15,8 +15,8 @@ export function Footer() {
               mcpindex<span className="text-[--color-mute]">.ai</span>
             </div>
             <p className="mt-3 text-[12.5px] leading-[1.55] text-[--color-mute]">
-              The agent-native index of MCP servers. Built so an IDE or agent can find the
-              right server at inference time.
+              The verification layer for MCP tools. A verdict on whether a tool does what
+              it claims, before your agent acts.
             </p>
             <p className="mt-4 font-mono text-[10.5px] uppercase tracking-[0.16em] text-[--color-mute]">
               Unofficial. Not affiliated with Anthropic.
@@ -27,9 +27,9 @@ export function Footer() {
             <div className={COLUMN_LABEL}>Product</div>
             <Link href="/docs" className={LINK}>Docs</Link>
             <Link href="/best" className={LINK}>Best of</Link>
-            <Link href="/leaderboard" className={LINK}>Leaderboard</Link>
+            <Link href="/leaderboard" className={LINK}>Two axes</Link>
             <Link href="/changelog" className={LINK}>Changelog</Link>
-            <Link href="/api/v1/recommend?task=read+pdfs" className={LINK}>Recommend API</Link>
+            <Link href="/api/v1/recommend?task=read+pdfs" className={LINK}>Verdict API</Link>
           </div>
 
           <div>
