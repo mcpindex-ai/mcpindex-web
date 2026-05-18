@@ -67,22 +67,21 @@ export default async function Home() {
         <div className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-20 pb-24 sm:pt-28 sm:pb-32">
           <div className="max-w-[860px]">
             <div className="hero-rise hero-rise-1 font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute] mb-8">
-              §01&nbsp;&nbsp;Discovery layer · 2026/04
+              §01&nbsp;&nbsp;The trust layer
             </div>
             <h1 className="hero-rise hero-rise-2 text-[44px] sm:text-[68px] lg:text-[84px] leading-[0.96] tracking-[-0.025em] font-medium text-[--color-ink]">
-              The agent-native index of MCP servers.
+              Where agents find MCP tools, and the verdict on whether to act through them.
             </h1>
             <p className="hero-rise hero-rise-3 mt-8 max-w-[640px] text-[17px] sm:text-[19px] leading-[1.45] text-[--color-cite]">
-              Built for the IDEs and agents that find the right MCP server at inference time —
-              not the developer browsing a sidebar.
+              Finding a tool is table stakes. Before your agent acts through one, you get a
+              verdict on whether it does what it claims. Discovery is how you arrive; the verdict
+              is why you&apos;d trust the call.
             </p>
 
             <div className="hero-rise hero-rise-3 mt-7 flex flex-wrap items-baseline gap-x-6 gap-y-2 font-mono text-[12.5px] text-[--color-mute]">
               <span>
-                Indexing{' '}
                 <span className="text-[--color-ink] tabular-nums">{count.toLocaleString()}</span>{' '}
-                MCP servers across{' '}
-                <span className="text-[--color-ink] tabular-nums">{categories}</span> categories.
+                MCP servers indexed. Verdicts rolling out, adversarial cases first.
               </span>
               <span className="text-[--color-rule]">·</span>
               <span>
@@ -121,14 +120,14 @@ export default async function Home() {
           />
           <PillarRow
             num="02"
-            title="Recommendation engine, not search"
-            body="Pass a natural-language task. Get three ranked picks, each with a one-line reason and the install command for the client you use."
+            title="A verdict, not a ranking"
+            body="Ask about a tool. Get whether its behavior matches its declared contract and whether its intent reads honest, with the evidence behind the call, not a popularity score."
             code='curl -s "mcpindex.ai/api/v1/recommend?task=read+pdf+to+s3"'
           />
           <PillarRow
             num="03"
-            title="Drop-in MCP server"
-            body="Skip the API. Install the server in Claude Desktop, Cursor, Cline, or Zed and call recommend_mcp_for_task from inside your agent."
+            title="Query it from your agent"
+            body="Install the server in Claude Desktop, Cursor, Cline, or Zed and ask for the verdict on a tool before your agent calls it."
             code="npm install -g mcp-server-mcpindex"
           />
         </div>
