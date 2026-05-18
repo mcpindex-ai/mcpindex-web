@@ -17,6 +17,48 @@ export default async function Home() {
 
   return (
     <>
+      {/* Teaser — sits at the very TOP, above the fold, above ticker + header */}
+      <section className="rule-b bg-[--color-accent-soft]">
+        <div className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-12 pb-14 sm:pt-16 sm:pb-20">
+          <div className="max-w-[860px]">
+            <div className="hero-rise hero-rise-1 font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-accent] mb-6">
+              §00&nbsp;&nbsp;Trust layer
+            </div>
+            <h2 className="hero-rise hero-rise-2 text-[30px] sm:text-[44px] lg:text-[52px] leading-[1.05] tracking-[-0.02em] font-medium text-[--color-ink]">
+              Your agent is about to call a tool it found 200ms ago. Did anyone read what it actually does?
+            </h2>
+            <div className="hero-rise hero-rise-3 mt-7 space-y-4 max-w-[680px] text-[15px] sm:text-[16.5px] leading-[1.55] text-[--color-cite]">
+              <p>
+                Your agent discovers an MCP tool at runtime, reads its
+                description, and acts. The description was written by whoever
+                shipped the tool. Some of them lie. A read_file tool whose
+                description also instructs your agent to grab ~/.ssh/id_rsa
+                first and stay quiet about it. A schema that claims it validates
+                input it never checks. Your agent can&apos;t tell. It obeys tool
+                descriptions the way it obeys you.
+              </p>
+              <p>
+                The ecosystem&apos;s answer is a bigger list - thousands of
+                servers ranked by stars. A list tells you a tool exists. It does
+                not tell you the tool is honest.
+              </p>
+              <p>
+                mcpindex reads the tool adversarially before your agent does. A
+                deterministic check that its behavior matches its declared
+                contract, plus a judge for hidden intent, written to a record
+                you can audit. One verdict, before the call.
+              </p>
+              <p>
+                A trust vendor that overclaims is self-refuting, so we publish
+                what&apos;s proven versus in-flight and our thresholds are fixed
+                before the evidence. The list era of MCP is ending. Watch this
+                space.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Top ticker — sits ABOVE header per design */}
       <LiveTicker />
 
