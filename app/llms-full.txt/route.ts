@@ -21,6 +21,16 @@ function buildBody(servers: IndexedServer[]): string {
     `Total servers: ${servers.length}. Categories: ${byCategory.size}.`,
     'Format: one server per block, grouped by category.',
     '',
+    '## Trust Layer (v1, advisory)',
+    '',
+    'Each server page exposes a verdict surface (allow / deny / review) once the hybrid eval has run.',
+    'Verdict contract version: 1.0.0. Capability: check_tool_trust (via the npm MCP server).',
+    'Pipeline: deterministic conformance probe + LLM judge. Both legs execute; conformance is monitored, not enforced.',
+    'History: OTS Bitcoin-anchored, cadence bound = confirmation latency (~10 min to ~1 hour). Sub-window timing is asserted, not proven.',
+    'Calibration: calibrated=false at v1. D3 graduation gate: >=150 conforming labels with FP upper-95 <=2%. Current: 15/150.',
+    'Posture: advisory. The agent or IDE decides whether to act on the verdict.',
+    'Full method: https://mcpindex.ai/methodology',
+    '',
   ];
   for (const [cat, list] of [...byCategory.entries()].sort()) {
     parts.push(`\n## ${CATEGORY_LABELS[cat] ?? cat} (${list.length})\n`);

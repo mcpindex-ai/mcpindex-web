@@ -6,6 +6,45 @@ import { computeQuality } from '@/lib/quality';
 import { buildInstalls } from '@/lib/installs';
 import { CATEGORY_LABELS } from '@/lib/categorize';
 
+// Trust verdict shape (free-tier projection of the v1.0.0 verdict contract).
+// History and Provenance are deliberately omitted: anonymous surfaces never
+// return back-history (AD-B exposure tier; history is the un-backfillable
+// moat). This is what /api/v1/verdict returns to an anonymous caller and what
+// we render on the public detail page.
+type Decision = 'allow' | 'deny' | 'review';
+type Status = 'evaluated' | 'partial' | 'unevaluated' | 'stale' | 'error';
+type DimensionVerdict = 'pass' | 'fail' | 'unverified' | 'error';
+type Severity = 'info' | 'low' | 'medium' | 'high' | 'critical';
+
+type FreeTierVerdict = {
+  schema_version: '1.0';
+  directive: {
+    decision: Decision;
+    rationale: string;
+    expires_at: string; // ISO-8601
+  };
+  status: Status;
+  dimensions: ReadonlyArray<{
+    id: string; // e.g. "mcpindex.integrity.description"
+    verdict: DimensionVerdict;
+    severity: Severity;
+  }>;
+};
+
+// V1 advisory: per-tool verdicts are written by mcpindex-trust and surfaced
+// here. The wiring (loader -> /api/v1/verdict -> mcpindex-trust store) is
+// scheduled with the D3 corpus ramp. Today the page renders the empty state
+// honestly. The shape below is what the loader will return when wired.
+// TODO(v1-advisory): replace the static null with a call to the verdict
+// loader once /api/v1/verdict?server={slug} ships. Source of truth:
+// mcpindex-trust contract.py (Verdict.free_tier projection).
+async function loadVerdictForServer(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  slug: string,
+): Promise<FreeTierVerdict | null> {
+  return null;
+}
+
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
@@ -42,6 +81,7 @@ export default async function ServerPage(
   const all = await loadServers();
   const { score, breakdown } = computeQuality(server);
   const installs = buildInstalls(server);
+  const verdict = await loadVerdictForServer(server.slug);
   const alternatives = all
     .filter((s) => s.category === server.category && s.slug !== server.slug)
     .slice(0, 3);
@@ -166,6 +206,19 @@ export default async function ServerPage(
           )}
         </div>
 
+        {/* Trust verdict (v1 advisory). Free-tier projection only:
+            directive + status + dimension verdicts + severity + expires_at.
+            History is paid-tier and is NOT rendered here. */}
+        <section className="mt-12">
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute] mb-4">
+            §00&nbsp;&nbsp;Trust verdict&nbsp;·&nbsp;v1 advisory&nbsp;·&nbsp;{' '}
+            <Link href="/methodology" className="hover:text-[--color-accent]">
+              method
+            </Link>
+          </div>
+          <TrustVerdictPanel verdict={verdict} />
+        </section>
+
         {/* Install commands */}
         <section className="mt-16">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute] mb-4">
@@ -280,6 +333,124 @@ export default async function ServerPage(
         )}
       </article>
     </>
+  );
+}
+
+// Decision -> visible chip styling. Light-palette only (per site palette).
+// Color encodes severity of the operational signal, not a brand mood.
+const DECISION_STYLE: Record<Decision, { label: string; chip: string; ring: string }> = {
+  allow: {
+    label: 'ALLOW',
+    chip: 'bg-emerald-50 text-emerald-900',
+    ring: 'border-emerald-300',
+  },
+  deny: {
+    label: 'DENY',
+    chip: 'bg-rose-50 text-rose-900',
+    ring: 'border-rose-300',
+  },
+  review: {
+    label: 'REVIEW',
+    chip: 'bg-amber-50 text-amber-900',
+    ring: 'border-amber-300',
+  },
+};
+
+const SEVERITY_STYLE: Record<Severity, string> = {
+  info: 'text-[--color-mute]',
+  low: 'text-[--color-cite]',
+  medium: 'text-amber-800',
+  high: 'text-orange-800',
+  critical: 'text-rose-800',
+};
+
+const DIMENSION_VERDICT_GLYPH: Record<DimensionVerdict, string> = {
+  pass: 'pass',
+  fail: 'fail',
+  unverified: 'unverified',
+  error: 'error',
+};
+
+function TrustVerdictPanel({ verdict }: { verdict: FreeTierVerdict | null }) {
+  // Empty state: render honestly. No fake "ALLOW" defaults, no fake "REVIEW".
+  // An un-evaluated tool is un-evaluated; the agent should not infer trust.
+  if (!verdict) {
+    return (
+      <div className="rule-t rule-b rule-l rule-r p-5 bg-white">
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+          <span className="font-mono text-[11px] uppercase tracking-[0.16em] px-2 py-1 bg-[--color-accent-soft] text-[--color-cite] border border-[--color-rule]">
+            UNEVALUATED
+          </span>
+          <span className="font-mono text-[11px] text-[--color-mute]">
+            no verdict on file
+          </span>
+        </div>
+        <p className="mt-3 text-[14px] leading-[1.6] text-[--color-cite] max-w-[640px]">
+          Verdict not yet evaluated for this tool. The hybrid eval runs adversarial
+          cases first; coverage rolls out as the corpus expands. Until a verdict
+          is recorded, an agent should treat this tool as not-yet-cleared and
+          fall back to its own checks. Method:{' '}
+          <Link href="/methodology" className="underline decoration-[--color-rule] underline-offset-4 hover:text-[--color-accent]">
+            hybrid eval, four-state verdict, honest limits
+          </Link>
+          .
+        </p>
+      </div>
+    );
+  }
+
+  const style = DECISION_STYLE[verdict.directive.decision];
+  const expires = new Date(verdict.directive.expires_at);
+  const expiresLabel = Number.isNaN(expires.getTime())
+    ? verdict.directive.expires_at
+    : expires.toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
+
+  return (
+    <div className={`rule-t rule-b rule-l rule-r p-5 bg-white border ${style.ring}`}>
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <span className={`font-mono text-[12px] uppercase tracking-[0.18em] px-2.5 py-1 ${style.chip} border ${style.ring}`}>
+          {style.label}
+        </span>
+        <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-[--color-mute]">
+          status: {verdict.status}
+        </span>
+        <span className="font-mono text-[11px] text-[--color-mute]">
+          fresh until {expiresLabel}
+        </span>
+      </div>
+
+      <p className="mt-3 text-[14.5px] leading-[1.55] text-[--color-ink] max-w-[640px]">
+        {verdict.directive.rationale}
+      </p>
+
+      {verdict.dimensions.length > 0 && (
+        <div className="mt-4 rule-t">
+          {verdict.dimensions.map((d) => (
+            <div
+              key={d.id}
+              className="rule-b grid grid-cols-[1fr_90px_90px] gap-3 py-2.5 px-1 items-baseline"
+            >
+              <code className="font-mono text-[12px] text-[--color-cite] truncate">
+                {d.id}
+              </code>
+              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-[--color-ink]">
+                {DIMENSION_VERDICT_GLYPH[d.verdict]}
+              </span>
+              <span className={`font-mono text-[11px] uppercase tracking-[0.14em] ${SEVERITY_STYLE[d.severity]}`}>
+                {d.severity}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <p className="mt-4 font-mono text-[10.5px] leading-[1.55] text-[--color-mute] max-w-[640px]">
+        Hybrid eval: deterministic conformance probe + LLM judge. Both legs
+        execute and are recorded; conformance is monitored, not enforced.
+        Posture: advisory. Confidences are reported but not yet calibrated
+        (calibrated=false at v1). History is paid-tier and not shown here.
+      </p>
+    </div>
   );
 }
 
