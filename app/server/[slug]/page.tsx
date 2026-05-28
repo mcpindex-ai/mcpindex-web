@@ -20,7 +20,7 @@ export async function generateMetadata(
   const server = await getServer(slug);
   if (!server) return { title: 'Server not found' };
   return {
-    title: `${server.title} — ${server.name}`,
+    title: `${server.title} - ${server.name}`,
     description: server.description,
     alternates: { canonical: `https://mcpindex.ai/server/${server.slug}` },
     openGraph: {
@@ -57,15 +57,41 @@ export default async function ServerPage(
     applicationCategory: 'DeveloperApplication',
     operatingSystem: 'Cross-platform',
     url: `https://mcpindex.ai/server/${server.slug}`,
-    sameAs: [server.repositoryUrl, server.websiteUrl].filter(Boolean),
+    sameAs: [server.repositoryUrl, server.websiteUrl].filter(
+      (u): u is string => {
+        if (!u) return false;
+        try {
+          const p = new URL(u).protocol;
+          return p === 'http:' || p === 'https:';
+        } catch {
+          return false;
+        }
+      },
+    ),
     aggregateRating: {
       '@type': 'AggregateRating',
-      ratingValue: (score / 20).toFixed(1),
+      ratingValue: score,
       ratingCount: 1,
-      bestRating: 5,
+      bestRating: 100,
       worstRating: 0,
     },
   };
+
+  // Belt-and-suspenders URL scheme check. normalize() already strips
+  // non-http(s) URLs at registry load; this guards against future code paths
+  // that bypass normalize.
+  const isSafeHref = (u: string | undefined): u is string => {
+    if (!u) return false;
+    try {
+      const p = new URL(u).protocol;
+      return p === 'http:' || p === 'https:';
+    } catch {
+      return false;
+    }
+  };
+  const repoHref = isSafeHref(server.repositoryUrl) ? server.repositoryUrl : undefined;
+  const siteHref = isSafeHref(server.websiteUrl) ? server.websiteUrl : undefined;
+  const remoteHref = isSafeHref(server.remoteUrl) ? server.remoteUrl : undefined;
 
   return (
     <>
@@ -108,9 +134,9 @@ export default async function ServerPage(
 
         {/* Links */}
         <div className="mt-8 flex flex-wrap gap-3 font-mono text-[11px] uppercase tracking-[0.16em]">
-          {server.repositoryUrl && (
+          {repoHref && (
             <a
-              href={server.repositoryUrl}
+              href={repoHref}
               target="_blank"
               rel="noreferrer"
               className="border border-[--color-rule] px-3 py-1.5 text-[--color-cite] hover:border-[--color-accent] hover:text-[--color-accent]"
@@ -118,9 +144,9 @@ export default async function ServerPage(
               Repository →
             </a>
           )}
-          {server.websiteUrl && (
+          {siteHref && (
             <a
-              href={server.websiteUrl}
+              href={siteHref}
               target="_blank"
               rel="noreferrer"
               className="border border-[--color-rule] px-3 py-1.5 text-[--color-cite] hover:border-[--color-accent] hover:text-[--color-accent]"
@@ -128,9 +154,9 @@ export default async function ServerPage(
               Website →
             </a>
           )}
-          {server.remoteUrl && (
+          {remoteHref && (
             <a
-              href={server.remoteUrl}
+              href={remoteHref}
               target="_blank"
               rel="noreferrer"
               className="border border-[--color-rule] px-3 py-1.5 text-[--color-cite] hover:border-[--color-accent] hover:text-[--color-accent]"

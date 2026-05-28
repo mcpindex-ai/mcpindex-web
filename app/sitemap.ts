@@ -1,10 +1,17 @@
 import type { MetadataRoute } from 'next';
-import { loadServers } from '@/lib/registry';
+import { loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { ALL_CATEGORIES } from '@/lib/categorize';
 
 export const revalidate = 86400;
 
+let sitemapCache: { version: string; entries: MetadataRoute.Sitemap } | null = null;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const meta = await loadSnapshotMeta();
+  if (sitemapCache && sitemapCache.version === meta.version) {
+    return sitemapCache.entries;
+  }
+
   const base = 'https://mcpindex.ai';
   const servers = await loadServers();
 
@@ -32,5 +39,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: 'weekly',
   }));
 
-  return [...staticRoutes, ...categoryRoutes, ...serverRoutes];
+  const entries = [...staticRoutes, ...categoryRoutes, ...serverRoutes];
+  sitemapCache = { version: meta.version, entries };
+  return entries;
 }

@@ -1,33 +1,36 @@
-import { loadServers } from '@/lib/registry';
+import { loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { CATEGORY_LABELS } from '@/lib/categorize';
+import type { IndexedServer } from '@/lib/types';
 
 export const revalidate = 3600;
 
-export async function GET() {
-  const servers = await loadServers();
-  const byCategory = new Map<string, typeof servers>();
-  for (const s of servers) {
-    if (!byCategory.has(s.category)) byCategory.set(s.category, []);
-    byCategory.get(s.category)!.push(s);
-  }
+// Process-lifetime body cache keyed by snapshot_version. Snapshot turns over
+// daily via cron, so serializing once per version is sufficient.
+let bodyCache: { version: string; body: string } | null = null;
 
-  const sections: string[] = [
+function buildBody(servers: IndexedServer[]): string {
+  const byCategory = new Map<string, IndexedServer[]>();
+  for (const s of servers) {
+    const bucket = byCategory.get(s.category);
+    if (bucket) bucket.push(s);
+    else byCategory.set(s.category, [s]);
+  }
+  const parts: string[] = [
     '# mcpindex.ai - Full Index',
     '',
     `Total servers: ${servers.length}. Categories: ${byCategory.size}.`,
     'Format: one server per block, grouped by category.',
     '',
   ];
-
   for (const [cat, list] of [...byCategory.entries()].sort()) {
-    sections.push(`\n## ${CATEGORY_LABELS[cat] ?? cat} (${list.length})\n`);
+    parts.push(`\n## ${CATEGORY_LABELS[cat] ?? cat} (${list.length})\n`);
     for (const s of list) {
       const installs: string[] = [];
       if (s.npmPackage) installs.push(`npm:${s.npmPackage}`);
       if (s.pypiPackage) installs.push(`pypi:${s.pypiPackage}`);
       if (s.dockerImage) installs.push(`docker:${s.dockerImage}`);
       if (s.remoteUrl) installs.push(`remote:${s.remoteUrl}`);
-      sections.push(
+      parts.push(
         `- ${s.title} (${s.name}@${s.version})`,
         `  ${s.description}`,
         `  installs: ${installs.join(' | ') || 'manual'}`,
@@ -36,11 +39,20 @@ export async function GET() {
       );
     }
   }
+  return parts.join('\n');
+}
 
-  return new Response(sections.join('\n'), {
+export async function GET() {
+  const meta = await loadSnapshotMeta();
+  if (!bodyCache || bodyCache.version !== meta.version) {
+    const servers = await loadServers();
+    bodyCache = { version: meta.version, body: buildBody(servers) };
+  }
+  return new Response(bodyCache.body, {
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
       'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+      'X-Snapshot-Version': meta.version,
     },
   });
 }

@@ -29,7 +29,12 @@ export async function GET(req: NextRequest) {
       const composite = h.score * 0.7 + q * 0.3;
       return { hit: h, composite, quality: q };
     })
-    .sort((a, b) => b.composite - a.composite)
+    .sort((a, b) => {
+      if (b.composite !== a.composite) return b.composite - a.composite;
+      // Deterministic tiebreaker so repeated identical queries return
+      // byte-identical responses (search order independent of map iteration).
+      return a.hit.server.slug.localeCompare(b.hit.server.slug);
+    })
     .slice(0, 3);
 
   return Response.json(
@@ -53,7 +58,7 @@ export async function GET(req: NextRequest) {
         url: `https://mcpindex.ai/server/${hit.server.slug}`,
       })),
       note:
-        'v0 ranker — heuristic score blends keyword match (70%) with MCP Quality Score (30%). ' +
+        'v0 ranker - heuristic score blends keyword match (70%) with MCP Quality Score (30%). ' +
         'See /methodology for scoring details.',
     },
     {

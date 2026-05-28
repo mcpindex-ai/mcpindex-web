@@ -11,7 +11,16 @@ export async function GET(
 ) {
   const { slug } = await ctx.params;
   const s = await getServer(slug);
-  if (!s) return Response.json({ error: 'not_found' }, { status: 404 });
+  if (!s) {
+    // Cache 404s briefly so typo-storms don't bypass rate limits.
+    return Response.json(
+      { error: 'not_found' },
+      {
+        status: 404,
+        headers: { 'Cache-Control': 'public, max-age=300' },
+      },
+    );
+  }
 
   const { score, breakdown } = computeQuality(s);
   return Response.json(

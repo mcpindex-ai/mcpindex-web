@@ -14,8 +14,8 @@ export type EnvVar = {
 export type Package = {
   registryType: 'npm' | 'pypi' | 'docker' | 'oci' | 'github' | string;
   identifier: string;
-  version: string;
-  transport: Transport;
+  version?: string;
+  transport?: Transport;
   environmentVariables?: EnvVar[];
   runtimeArguments?: Array<{ name?: string; value?: string; description?: string }>;
 };
@@ -25,10 +25,10 @@ export type Remote = { type: 'streamable-http' | 'sse'; url: string };
 export type RegistryServer = {
   $schema?: string;
   name: string;
-  description: string;
+  description?: string;
   title?: string;
   version: string;
-  repository?: { url: string; source: string };
+  repository?: { url?: string; source?: string };
   websiteUrl?: string;
   icons?: Array<{ src: string; sizes?: string[] }>;
   packages?: Package[];
