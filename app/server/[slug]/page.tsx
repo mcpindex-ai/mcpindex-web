@@ -31,18 +31,57 @@ type FreeTierVerdict = {
   }>;
 };
 
-// V1 advisory: per-tool verdicts are written by mcpindex-trust and surfaced
-// here. The wiring (loader -> /api/v1/verdict -> mcpindex-trust store) is
-// scheduled with the D3 corpus ramp. Today the page renders the empty state
-// honestly. The shape below is what the loader will return when wired.
-// TODO(v1-advisory): replace the static null with a call to the verdict
-// loader once /api/v1/verdict?server={slug} ships. Source of truth:
-// mcpindex-trust contract.py (Verdict.free_tier projection).
-async function loadVerdictForServer(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  slug: string,
-): Promise<FreeTierVerdict | null> {
-  return null;
+// API verdict shape (server-level). Matches /api/v1/trust/server/[server_id]
+// route. In v1 advisory the API always returns directive=UNVERIFIED; once the
+// trust layer starts populating verdicts the API will return ALLOW / DENY /
+// REVIEW directives and the loader will project them onto FreeTierVerdict.
+type ApiVerdict = {
+  subject: { server_id: string; tool_name: string | null };
+  status: 'ERROR' | 'OK';
+  directive: 'UNVERIFIED' | 'ALLOW' | 'DENY' | 'REVIEW';
+  dimensions: ReadonlyArray<unknown>;
+  expires_at: string | null;
+  honest_limits: ReadonlyArray<string>;
+  verdict_contract_version: string;
+};
+
+// Three rendering states for the trust panel:
+// - { kind: 'verdict', verdict }  -> render the populated FreeTierVerdict.
+// - { kind: 'unverified' }        -> API reachable, no verdict yet (v1 default).
+// - { kind: 'unavailable' }       -> verdict service unreachable / non-2xx.
+//
+// Both 'unverified' and 'unavailable' fail CLOSED: no ALLOW state, no green.
+type VerdictState =
+  | { kind: 'verdict'; verdict: FreeTierVerdict }
+  | { kind: 'unverified' }
+  | { kind: 'unavailable' };
+
+// V1 advisory loader. Calls the server-level trust endpoint and projects the
+// response into a VerdictState. The endpoint always returns 200 + UNVERIFIED
+// today, so the panel renders the honest "UNEVALUATED" state. When the trust
+// layer starts populating real verdicts the API will return ALLOW / DENY /
+// REVIEW and this loader will project them onto FreeTierVerdict - no page
+// change needed.
+async function loadVerdictForServer(slug: string): Promise<VerdictState> {
+  const base =
+    process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/+$/, '') ??
+    'https://mcpindex.ai';
+  const url = `${base}/api/v1/trust/server/${encodeURIComponent(slug)}`;
+  try {
+    // Trust verdict revalidates with the rest of the server page (1h via
+    // export const revalidate above). The endpoint itself caches at 5m so
+    // anonymous direct hits refresh faster than the SSG page.
+    const res = await fetch(url, { next: { revalidate: 3600 } });
+    if (!res.ok) return { kind: 'unavailable' };
+    const data = (await res.json()) as ApiVerdict;
+    if (data.directive === 'UNVERIFIED') return { kind: 'unverified' };
+    // Future: project ALLOW / DENY / REVIEW onto FreeTierVerdict. Until the
+    // trust layer ships those directives, the projection path is unreachable
+    // and we render the unverified state to stay fail-CLOSED.
+    return { kind: 'unverified' };
+  } catch {
+    return { kind: 'unavailable' };
+  }
 }
 
 export const revalidate = 3600;
@@ -81,7 +120,7 @@ export default async function ServerPage(
   const all = await loadServers();
   const { score, breakdown } = computeQuality(server);
   const installs = buildInstalls(server);
-  const verdict = await loadVerdictForServer(server.slug);
+  const verdictState = await loadVerdictForServer(server.slug);
   const alternatives = all
     .filter((s) => s.category === server.category && s.slug !== server.slug)
     .slice(0, 3);
@@ -216,7 +255,7 @@ export default async function ServerPage(
               method
             </Link>
           </div>
-          <TrustVerdictPanel verdict={verdict} />
+          <TrustVerdictPanel state={verdictState} />
         </section>
 
         {/* Install commands */}
@@ -371,15 +410,16 @@ const DIMENSION_VERDICT_GLYPH: Record<DimensionVerdict, string> = {
   error: 'error',
 };
 
-function TrustVerdictPanel({ verdict }: { verdict: FreeTierVerdict | null }) {
-  // Empty state: render honestly. No fake "ALLOW" defaults, no fake "REVIEW".
-  // An un-evaluated tool is un-evaluated; the agent should not infer trust.
-  if (!verdict) {
+function TrustVerdictPanel({ state }: { state: VerdictState }) {
+  // Fail-CLOSED rendering. Neither 'unverified' nor 'unavailable' may show
+  // ALLOW or green. An un-evaluated tool is un-evaluated; the agent should
+  // not infer trust.
+  if (state.kind === 'unverified') {
     return (
       <div className="rule-t rule-b rule-l rule-r p-5 bg-white">
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
           <span className="font-mono text-[11px] uppercase tracking-[0.16em] px-2 py-1 bg-[--color-accent-soft] text-[--color-cite] border border-[--color-rule]">
-            UNEVALUATED
+            UNVERIFIED
           </span>
           <span className="font-mono text-[11px] text-[--color-mute]">
             no verdict on file
@@ -399,6 +439,27 @@ function TrustVerdictPanel({ verdict }: { verdict: FreeTierVerdict | null }) {
     );
   }
 
+  if (state.kind === 'unavailable') {
+    return (
+      <div className="rule-t rule-b rule-l rule-r p-5 bg-white">
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+          <span className="font-mono text-[11px] uppercase tracking-[0.16em] px-2 py-1 bg-amber-50 text-amber-900 border border-amber-300">
+            VERDICT SERVICE UNAVAILABLE
+          </span>
+          <span className="font-mono text-[11px] text-[--color-mute]">
+            verdict API unreachable
+          </span>
+        </div>
+        <p className="mt-3 text-[14px] leading-[1.6] text-[--color-cite] max-w-[640px]">
+          The trust verdict API did not respond. Treat this tool as not-cleared
+          and fall back to your own checks until the verdict surface is reachable
+          again. This is a transient failure, not a verdict.
+        </p>
+      </div>
+    );
+  }
+
+  const verdict = state.verdict;
   const style = DECISION_STYLE[verdict.directive.decision];
   const expires = new Date(verdict.directive.expires_at);
   const expiresLabel = Number.isNaN(expires.getTime())

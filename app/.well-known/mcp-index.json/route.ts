@@ -27,6 +27,10 @@ export async function GET() {
         'definition_not_runtime',
         'advisory_not_blocking',
       ],
+      endpoints: [
+        'https://mcpindex.ai/api/v1/trust/tool/{server_id}/{tool_name}',
+        'https://mcpindex.ai/api/v1/trust/server/{server_id}',
+      ],
       d3_graduation: {
         criterion: 'conforming_labels >= 150 AND fp_upper_95 <= 0.02',
         current_conforming_labels: 15,
@@ -42,9 +46,11 @@ export async function GET() {
       detail: 'https://mcpindex.ai/server/{slug}',
       llmsTxt: 'https://mcpindex.ai/llms.txt',
       llmsFullTxt: 'https://mcpindex.ai/llms-full.txt',
-      // Trust verdict endpoint is reserved; v1 advisory ships the contract
-      // surface (this descriptor + the npm tool) before the public HTTP API.
-      verdict: 'https://mcpindex.ai/api/v1/verdict?server={slug}&tool={tool_name}',
+      // Trust verdict endpoints. V1 advisory returns directive=UNVERIFIED for
+      // every request; the API surface is plumbed so verdicts can flow once
+      // the trust layer starts populating them.
+      verdictTool: 'https://mcpindex.ai/api/v1/trust/tool/{server_id}/{tool_name}',
+      verdictServer: 'https://mcpindex.ai/api/v1/trust/server/{server_id}',
     },
 
     docs: 'https://mcpindex.ai/docs',

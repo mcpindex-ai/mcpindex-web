@@ -29,6 +29,9 @@ function buildBody(servers: IndexedServer[]): string {
     'History: OTS Bitcoin-anchored, cadence bound = confirmation latency (~10 min to ~1 hour). Sub-window timing is asserted, not proven.',
     'Calibration: calibrated=false at v1. D3 graduation gate: >=150 conforming labels with FP upper-95 <=2%. Current: 15/150.',
     'Posture: advisory. The agent or IDE decides whether to act on the verdict.',
+    'Endpoints:',
+    '  - GET /api/v1/trust/tool/{server_id}/{tool_name}  per-tool verdict (v1 advisory returns UNVERIFIED).',
+    '  - GET /api/v1/trust/server/{server_id}            server-level verdict (v1 advisory returns UNVERIFIED).',
     'Full method: https://mcpindex.ai/methodology',
     '',
   ];

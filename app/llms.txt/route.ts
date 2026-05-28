@@ -33,12 +33,14 @@ Built so an agent (or the IDE driving one) can ask "should I invoke this tool" b
 
 ## Endpoints an agent can call
 
-- GET /api/v1/search?q=<query>           Keyword + semantic search across servers.
-- GET /api/v1/recommend?task=<text>      Natural language task -> top 3 servers with reasoning.
-- GET /api/v1/diff?since=<YYYY-MM-DD>    What changed in the registry since a date.
-- GET /api/registry-count                Live server + category count.
-- GET /llms-full.txt                     Full per-server index in one document.
-- GET /.well-known/mcp-index.json        Machine-readable site + trust-layer capability descriptor.
+- GET /api/v1/search?q=<query>                                   Keyword + semantic search across servers.
+- GET /api/v1/recommend?task=<text>                              Natural language task -> top 3 servers with reasoning.
+- GET /api/v1/diff?since=<YYYY-MM-DD>                            What changed in the registry since a date.
+- GET /api/v1/trust/tool/<server_id>/<tool_name>                 Per-tool trust verdict (v1 advisory returns UNVERIFIED).
+- GET /api/v1/trust/server/<server_id>                           Server-level trust verdict (v1 advisory returns UNVERIFIED).
+- GET /api/registry-count                                        Live server + category count.
+- GET /llms-full.txt                                             Full per-server index in one document.
+- GET /.well-known/mcp-index.json                                Machine-readable site + trust-layer capability descriptor.
 
 ## MCP server (drop-in)
 
