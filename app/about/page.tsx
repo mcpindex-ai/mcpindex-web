@@ -57,9 +57,9 @@ export default function AboutPage() {
         </p>
         <p>
           v1 is honest about its edges. Conformance is monitored, not enforced.
-          Cadence is bound by Bitcoin confirmation latency (~10 minutes to ~1
-          hour for one to six confirmations); sub-window timing is asserted,
-          not proven. Confidences are reported but not yet calibrated
+          OTS Bitcoin-anchored history with cadence bound = confirmation latency
+          (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized);
+          sub-window precision asserted, not proven. Confidences are reported but not yet calibrated
           (calibrated=false). Deployment posture is advisory: we publish the
           verdict; the agent or IDE decides whether to act on it. The
           graduation gate to D3 is &gt;=150 conforming labels with FP upper-95

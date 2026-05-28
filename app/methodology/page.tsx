@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Methodology',
   description:
-    'How mcpindex evaluates MCP tools. Hybrid eval (deterministic conformance probe + LLM judge), four-state verdict, OTS Bitcoin-anchored history (cadence bound = Bitcoin confirmation latency, ~10 min to ~1 hour; sub-window asserted, not proven), and the honest limits at v1 advisory.',
+    'How mcpindex evaluates MCP tools. Hybrid eval (deterministic conformance probe + LLM judge), four-state verdict, OTS Bitcoin-anchored history; Bitcoin-finalized at N=6 confirmations (~1 hr); pending in ~10 min. Honest limits at v1 advisory.',
 };
 
 export default function MethodologyPage() {
@@ -42,7 +42,7 @@ export default function MethodologyPage() {
           <Dim
             label="History"
             kind="OTS"
-            body="The verdict stream for a tool is hash-chained and timestamped via OpenTimestamps (Bitcoin-anchored). Cadence is bound by Bitcoin confirmation latency: roughly 10 minutes to 1 hour for 1 to 6 confirmations. Sub-window timing inside that bound is asserted, not proven."
+            body="OTS Bitcoin-anchored history with cadence bound = confirmation latency (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized); sub-window precision asserted, not proven. The verdict stream for a tool is hash-chained and timestamped via OpenTimestamps; the chain is auditable end-to-end once a block confirms."
           />
         </ul>
       </section>

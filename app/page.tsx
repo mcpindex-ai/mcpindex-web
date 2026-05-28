@@ -50,9 +50,10 @@ export default async function Home() {
               </p>
               <p>
                 v1 is honest about its edges. Conformance is monitored, not
-                enforced. History is OTS Bitcoin-anchored with a cadence bound
-                equal to confirmation latency (~10 minutes to ~1 hour for 1 to
-                6 confirmations); sub-window timing is asserted, not proven.
+                enforced. OTS Bitcoin-anchored history with cadence bound =
+                confirmation latency (~10 min for pending; ~1 hour at N=6
+                confirmations for Bitcoin-finalized); sub-window precision
+                asserted, not proven.
                 Confidences are not yet calibrated. Posture is advisory: we
                 publish the verdict; the agent or IDE decides whether to act
                 on it.

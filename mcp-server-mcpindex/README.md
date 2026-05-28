@@ -102,6 +102,8 @@ Every v1 verdict ships with these three caveats, and your gate SHOULD surface th
 2. `calibrated_false_v1` - dimension severities are not yet calibrated against real-world incident data.
 3. `advisory_deployment` - the verdict is advisory; the agent (or human reviewing the agent) is the decision-maker.
 
+History anchoring: OTS Bitcoin-anchored history; Bitcoin-finalized at N=6 confirmations (~1 hr); pending in ~10 min. Sub-window precision asserted, not proven.
+
 ### Integration pattern (LangChain-style, direct LLM-tool-call convention)
 
 ```js
