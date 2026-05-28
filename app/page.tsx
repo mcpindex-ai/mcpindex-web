@@ -130,7 +130,7 @@ export default async function Home() {
             num="02"
             title="A verdict, not a ranking"
             body="Per-tool ALLOW / DENY / REVIEW with dimension verdicts and severity. Hybrid eval: deterministic conformance probe plus LLM judge for hidden intent. Conformance is monitored, not enforced; posture is advisory."
-            code='curl -s "mcpindex.ai/api/v1/verdict?server=<slug>&tool=<name>"'
+            code="curl -s mcpindex.ai/api/v1/trust/tool/<server_id>/<tool_name>"
           />
           <PillarRow
             num="03"
