@@ -7,14 +7,15 @@ import { buildInstalls } from '@/lib/installs';
 import { CATEGORY_LABELS } from '@/lib/categorize';
 
 // Trust verdict shape (free-tier projection of the v1.0.0 verdict contract).
-// History and Provenance are deliberately omitted: anonymous surfaces never
-// return back-history (AD-B exposure tier; history is the un-backfillable
-// moat). This is what /api/v1/verdict returns to an anonymous caller and what
-// we render on the public detail page.
-type Decision = 'allow' | 'deny' | 'review';
-type Status = 'evaluated' | 'partial' | 'unevaluated' | 'stale' | 'error';
-type DimensionVerdict = 'pass' | 'fail' | 'unverified' | 'error';
-type Severity = 'info' | 'low' | 'medium' | 'high' | 'critical';
+// UPPERCASE values match the canonical AD-B contract (docs/contract-schema.md
+// in mcpindex-trust) and the wire shape returned by
+// /api/v1/trust/{tool,server}/... in this repo. History and Provenance are
+// deliberately omitted: anonymous surfaces never return back-history (AD-B
+// exposure tier; history is the un-backfillable moat).
+type Decision = 'ALLOW' | 'DENY' | 'REVIEW';
+type Status = 'EVALUATED' | 'STALE' | 'ERROR';
+type DimensionVerdict = 'PASS' | 'FAIL' | 'UNVERIFIED' | 'ERROR';
+type Severity = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
 type FreeTierVerdict = {
   schema_version: '1.0';
@@ -29,20 +30,6 @@ type FreeTierVerdict = {
     verdict: DimensionVerdict;
     severity: Severity;
   }>;
-};
-
-// API verdict shape (server-level). Matches /api/v1/trust/server/[server_id]
-// route. In v1 advisory the API always returns directive=UNVERIFIED; once the
-// trust layer starts populating verdicts the API will return ALLOW / DENY /
-// REVIEW directives and the loader will project them onto FreeTierVerdict.
-type ApiVerdict = {
-  subject: { server_id: string; tool_name: string | null };
-  status: 'ERROR' | 'OK';
-  directive: 'UNVERIFIED' | 'ALLOW' | 'DENY' | 'REVIEW';
-  dimensions: ReadonlyArray<unknown>;
-  expires_at: string | null;
-  honest_limits: ReadonlyArray<string>;
-  verdict_contract_version: string;
 };
 
 // Three rendering states for the trust panel:
@@ -366,18 +353,19 @@ export default async function ServerPage(
 
 // Decision -> visible chip styling. Light-palette only (per site palette).
 // Color encodes severity of the operational signal, not a brand mood.
+// Keys match the AD-B contract directive values (UPPERCASE).
 const DECISION_STYLE: Record<Decision, { label: string; chip: string; ring: string }> = {
-  allow: {
+  ALLOW: {
     label: 'ALLOW',
     chip: 'bg-emerald-50 text-emerald-900',
     ring: 'border-emerald-300',
   },
-  deny: {
+  DENY: {
     label: 'DENY',
     chip: 'bg-rose-50 text-rose-900',
     ring: 'border-rose-300',
   },
-  review: {
+  REVIEW: {
     label: 'REVIEW',
     chip: 'bg-amber-50 text-amber-900',
     ring: 'border-amber-300',
@@ -385,18 +373,18 @@ const DECISION_STYLE: Record<Decision, { label: string; chip: string; ring: stri
 };
 
 const SEVERITY_STYLE: Record<Severity, string> = {
-  info: 'text-[--color-mute]',
-  low: 'text-[--color-cite]',
-  medium: 'text-amber-800',
-  high: 'text-orange-800',
-  critical: 'text-rose-800',
+  INFO: 'text-[--color-mute]',
+  LOW: 'text-[--color-cite]',
+  MEDIUM: 'text-amber-800',
+  HIGH: 'text-orange-800',
+  CRITICAL: 'text-rose-800',
 };
 
-const DIMENSION_VERDICT_GLYPH: Record<DimensionVerdict, string> = {
-  pass: 'pass',
-  fail: 'fail',
-  unverified: 'unverified',
-  error: 'error',
+const DIMENSION_VERDICT_LABEL: Record<DimensionVerdict, string> = {
+  PASS: 'pass',
+  FAIL: 'fail',
+  UNVERIFIED: 'unverified',
+  ERROR: 'error',
 };
 
 function TrustVerdictPanel({ state }: { state: VerdictState }) {
@@ -484,7 +472,7 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
                 {d.id}
               </code>
               <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-[--color-ink]">
-                {DIMENSION_VERDICT_GLYPH[d.verdict]}
+                {DIMENSION_VERDICT_LABEL[d.verdict]}
               </span>
               <span className={`font-mono text-[11px] uppercase tracking-[0.14em] ${SEVERITY_STYLE[d.severity]}`}>
                 {d.severity}

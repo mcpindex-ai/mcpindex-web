@@ -16,16 +16,21 @@ export async function GET() {
       capability: 'check_tool_trust',
       version: 'v1-advisory',
       verdict_contract_version: '1.0.0',
-      verdict_states: ['allow', 'deny', 'review'],
-      severity_scale: ['info', 'low', 'medium', 'high', 'critical'],
+      // UPPERCASE per the AD-B contract (contract-schema.md S3); UNVERIFIED
+      // is the v1 default since the corpus is pre-graduation (15 of 150).
+      verdict_states: ['ALLOW', 'DENY', 'REVIEW', 'UNVERIFIED'],
+      severity_scale: ['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
       exposure_tier: 'free_tier_is_definition_only_history_is_paid',
       methodology: 'https://mcpindex.ai/methodology',
+      // v1 honest_limits floor. Endpoint adds `no_verdict_data_in_v1_advisory`
+      // per-response while the corpus is empty; npm package may add an
+      // `unverified_reason:<reason>` per-response when upstream is unreachable.
+      // The floor here is the always-present set; per-response additions are
+      // documented in contract-schema.md and integration-guide.md.
       honest_limits: [
         'conformance_monitored_not_enforced',
-        'ots_bitcoin_anchored_cadence_bound',
         'calibrated_false_v1',
-        'definition_not_runtime',
-        'advisory_not_blocking',
+        'advisory_deployment',
       ],
       endpoints: [
         'https://mcpindex.ai/api/v1/trust/tool/{server_id}/{tool_name}',
@@ -36,6 +41,7 @@ export async function GET() {
         current_conforming_labels: 15,
         current_fp_upper_95: null,
         status: 'pre_graduation',
+        terminal_v1_trigger_date: '2026-09-01',
       },
     },
 
@@ -57,6 +63,7 @@ export async function GET() {
 
     mcpServer: {
       package: 'mcp-server-mcpindex',
+      version: '0.2.0',
       registry: 'npm',
       tools: [
         'recommend_mcp_for_task',
@@ -64,6 +71,7 @@ export async function GET() {
         'get_install_command',
         'compare_servers',
         'check_tool_trust',
+        'assess_server',
       ],
     },
 
