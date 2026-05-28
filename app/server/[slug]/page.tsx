@@ -56,32 +56,21 @@ type VerdictState =
   | { kind: 'unverified' }
   | { kind: 'unavailable' };
 
-// V1 advisory loader. Calls the server-level trust endpoint and projects the
-// response into a VerdictState. The endpoint always returns 200 + UNVERIFIED
-// today, so the panel renders the honest "UNEVALUATED" state. When the trust
-// layer starts populating real verdicts the API will return ALLOW / DENY /
-// REVIEW and this loader will project them onto FreeTierVerdict - no page
-// change needed.
-async function loadVerdictForServer(slug: string): Promise<VerdictState> {
-  const base =
-    process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/+$/, '') ??
-    'https://mcpindex.ai';
-  const url = `${base}/api/v1/trust/server/${encodeURIComponent(slug)}`;
-  try {
-    // Trust verdict revalidates with the rest of the server page (1h via
-    // export const revalidate above). The endpoint itself caches at 5m so
-    // anonymous direct hits refresh faster than the SSG page.
-    const res = await fetch(url, { next: { revalidate: 3600 } });
-    if (!res.ok) return { kind: 'unavailable' };
-    const data = (await res.json()) as ApiVerdict;
-    if (data.directive === 'UNVERIFIED') return { kind: 'unverified' };
-    // Future: project ALLOW / DENY / REVIEW onto FreeTierVerdict. Until the
-    // trust layer ships those directives, the projection path is unreachable
-    // and we render the unverified state to stay fail-CLOSED.
-    return { kind: 'unverified' };
-  } catch {
-    return { kind: 'unavailable' };
-  }
+// V1 advisory loader. Today this is a STATIC return - no HTTP call.
+// Rationale: every page is statically generated via generateStaticParams
+// (8955+ slugs). An SSG-time fetch into /api/v1/trust/server/[slug] has a
+// chicken-and-egg with the deployment hostname (production vs preview),
+// and the endpoint itself always returns UNVERIFIED in v1 advisory anyway
+// - no information would be added by the round trip. When the trust layer
+// starts populating real verdicts, swap this for a build-time read of the
+// verdict store (or move to ISR with request-time fetch via headers() to
+// derive the same-deployment host).
+//
+// The /api/v1/trust/server/[slug] endpoint stays live for direct API
+// consumers (npm mcp-server-mcpindex check_tool_trust + agent integrations).
+// Server pages bypass HTTP entirely.
+async function loadVerdictForServer(_slug: string): Promise<VerdictState> {
+  return { kind: 'unverified' };
 }
 
 export const revalidate = 3600;
