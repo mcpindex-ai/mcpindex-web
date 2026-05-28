@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// mcp-server-mcpindex — an MCP server for finding MCP servers.
-// Backend: api.mcpindex.ai (versioned, free tier — no key needed for v0).
+// mcp-server-mcpindex - an MCP server for finding MCP servers.
+// Backend: api.mcpindex.ai (versioned, free tier - no key needed for v0).
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -8,11 +8,13 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+export { checkToolTrust, assessServer, VERDICT_CONTRACT_VERSION, V1_HONEST_LIMITS } from './trust.mjs';
 
 const API_BASE = process.env.MCPINDEX_API_BASE ?? 'https://mcpindex.ai';
+const PKG_VERSION = '0.2.0';
 
 const server = new Server(
-  { name: 'mcp-server-mcpindex', version: '0.1.0' },
+  { name: 'mcp-server-mcpindex', version: PKG_VERSION },
   { capabilities: { tools: {} } },
 );
 
@@ -79,7 +81,7 @@ const TOOLS = [
   {
     name: 'compare_servers',
     description:
-      'Side-by-side comparison of 2-5 MCP servers — quality scores, install paths, transport types, env vars.',
+      'Side-by-side comparison of 2-5 MCP servers - quality scores, install paths, transport types, env vars.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -92,6 +94,40 @@ const TOOLS = [
         },
       },
       required: ['slugs'],
+    },
+  },
+  {
+    name: 'check_tool_trust',
+    description:
+      'Pre-invocation trust check for a specific tool on an MCP server. Returns an advisory verdict object (directive ALLOW | DENY | REVIEW | UNVERIFIED, dimensions, freshness). v1 advisory; conformance monitored not enforced; verdicts may be UNVERIFIED if not yet probed. Agents SHOULD treat UNVERIFIED as "human review required", never as ALLOW.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        server_id: {
+          type: 'string',
+          description: 'Server slug (e.g. "github", "filesystem"). Same id used by search_mcp_servers.',
+        },
+        tool_name: {
+          type: 'string',
+          description: 'Tool name as exposed by the server (e.g. "create_pull_request").',
+        },
+      },
+      required: ['server_id', 'tool_name'],
+    },
+  },
+  {
+    name: 'assess_server',
+    description:
+      'Aggregated pre-flight trust assessment across all tools on an MCP server. Same verdict shape as check_tool_trust. Use for "is THIS server worth integrating?" decisions. v1 advisory; conformance monitored not enforced; verdicts may be UNVERIFIED if not yet probed.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        server_id: {
+          type: 'string',
+          description: 'Server slug to assess.',
+        },
+      },
+      required: ['server_id'],
     },
   },
 ];
@@ -142,6 +178,27 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         result = formatCompare(rows);
         break;
       }
+      case 'check_tool_trust': {
+        const { checkToolTrust } = await import('./trust.mjs');
+        const verdict = await checkToolTrust({
+          serverId: args.server_id,
+          toolName: args.tool_name,
+          apiBase: API_BASE,
+          userAgent: `mcp-server-mcpindex/${PKG_VERSION}`,
+        });
+        result = JSON.stringify(verdict, null, 2);
+        break;
+      }
+      case 'assess_server': {
+        const { assessServer } = await import('./trust.mjs');
+        const verdict = await assessServer({
+          serverId: args.server_id,
+          apiBase: API_BASE,
+          userAgent: `mcp-server-mcpindex/${PKG_VERSION}`,
+        });
+        result = JSON.stringify(verdict, null, 2);
+        break;
+      }
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
@@ -173,7 +230,7 @@ function formatRecommend(data) {
           ? `docker run --rm -i ${r.installs.docker}`
           : r.installs.remote
             ? `Remote: ${r.installs.remote}`
-            : 'manual install — see detail page';
+            : 'manual install - see detail page';
     lines.push(`    $ ${install}`);
     lines.push(`    ${r.url}`);
     lines.push('');
@@ -198,7 +255,7 @@ function formatInstall(server, client) {
   const target = (server.installs ?? []).find((i) => i.client === client) ?? server.installs?.[0];
   if (!target) return `No install path available for ${server.name}`;
   return [
-    `${server.title} (${server.name}) — ${client}`,
+    `${server.title} (${server.name}) - ${client}`,
     '',
     target.json
       ? '```json\n' + target.json + '\n```'
