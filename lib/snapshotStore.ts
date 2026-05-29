@@ -20,6 +20,18 @@ function clientOrNull(): Redis | null {
   return new Redis({ url, token });
 }
 
+// True when both Upstash env vars are present (a write is EXPECTED to land
+// in KV). False when either is missing (bundled-snapshot-only mode). Lets
+// the cron handler distinguish "wrote successfully" from "skipped write
+// because no KV configured" - both currently look identical (persisted=false)
+// without this signal. Pre-fix the cron always returned ok:true which made
+// healthchecks blind to silent KV write failures.
+export function kvConfigured(): boolean {
+  return Boolean(
+    process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN,
+  );
+}
+
 export function snapshotVersion(servers: RegistryEntry[]): string {
   // Stable identity: sha256 of (name@version) tuples sorted.
   const tuples = servers

@@ -4,6 +4,12 @@ All notable changes to `mcp-server-mcpindex` are recorded here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-05-29
+
+### Fixed
+
+- **HTTP `User-Agent` header was pinned to a stale literal `"mcp-server-mcpindex/0.1.0"`** in one code path (`src/index.mjs` `api()` helper), while every other call site interpolated `PKG_VERSION`. Result: outbound discovery requests reported `0.1.0` and trust-verdict calls reported `0.2.0` from the same package version. Now uses `` `mcp-server-mcpindex/${PKG_VERSION}` `` consistently. Affects upstream analytics + rate-limit bucketing if mcpindex.ai ever keys on UA.
+
 ## [0.2.0] - 2026-05-28
 
 ### Added

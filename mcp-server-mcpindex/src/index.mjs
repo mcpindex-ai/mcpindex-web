@@ -11,7 +11,7 @@ import {
 export { checkToolTrust, assessServer, VERDICT_CONTRACT_VERSION, V1_HONEST_LIMITS } from './trust.mjs';
 
 const API_BASE = process.env.MCPINDEX_API_BASE ?? 'https://mcpindex.ai';
-const PKG_VERSION = '0.2.0';
+const PKG_VERSION = '0.2.1';
 
 const server = new Server(
   { name: 'mcp-server-mcpindex', version: PKG_VERSION },
@@ -136,7 +136,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }))
 
 async function api(path) {
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'User-Agent': 'mcp-server-mcpindex/0.1.0' },
+    headers: { 'User-Agent': `mcp-server-mcpindex/${PKG_VERSION}` },
   });
   if (!res.ok) {
     throw new Error(`mcpindex API ${res.status}: ${await res.text()}`);

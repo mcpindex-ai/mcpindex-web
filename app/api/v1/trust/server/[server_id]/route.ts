@@ -30,11 +30,20 @@ const HONEST_LIMITS = [
   'no_verdict_data_in_v1_advisory',
 ] as const;
 
+// Hard cap on subject identifiers. Defends against cache-poison via long
+// arbitrary strings (Cache-Control max-age=300 means a hostile crawler could
+// chew through Vercel edge cache slots with 1000-char server_ids that all
+// 200-OK back the same UNVERIFIED stub). 256 chars is generous for real
+// server_ids (longest in the registry today is ~80 chars) and tight enough
+// to bound the reflection surface.
+const MAX_PARAM_LEN = 256;
+
 function decodeParam(raw: string | undefined): string | null {
   if (typeof raw !== 'string' || raw.length === 0) return null;
   try {
-    const decoded = decodeURIComponent(raw);
+    const decoded = decodeURIComponent(raw).trim();
     if (decoded.length === 0) return null;
+    if (decoded.length > MAX_PARAM_LEN) return null;
     return decoded;
   } catch {
     return null;

@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { timingSafeEqual } from 'node:crypto';
 import { fetchAllPages } from '@/lib/registry';
-import { snapshotVersion, writeKVSnapshot } from '@/lib/snapshotStore';
+import { kvConfigured, snapshotVersion, writeKVSnapshot } from '@/lib/snapshotStore';
 
 // Vercel cron hits this once per day (see vercel.json). Successful fetch
 // writes through to Upstash KV; readers prefer KV, fall back to bundled
@@ -44,12 +44,36 @@ export async function GET(req: NextRequest) {
       snapshot_written_at: writtenAt,
     });
     const elapsed = Date.now() - start;
+    // KV write was EXPECTED if both Upstash env vars are present. If it
+    // was expected and failed, return 503 with ok:false so upstream
+    // healthchecks (keyed on status code or `ok`) actually fire. Without
+    // this branch the cron silently returned ok:true even when KV write
+    // failed, making healthcheck-driven alerting blind to silent storage
+    // outages. When KV is NOT configured (bundled-snapshot mode), persisted
+    // being false is by design and ok:true is correct.
+    const kvExpected = kvConfigured();
+    if (kvExpected && !persisted) {
+      return Response.json(
+        {
+          ok: false,
+          error: 'kv_write_failed',
+          totalEntries: all.length,
+          latestServers: latest.length,
+          elapsedMs: elapsed,
+          persisted: false,
+          snapshot_version: version,
+          snapshot_written_at: writtenAt,
+        },
+        { status: 503 },
+      );
+    }
     return Response.json({
       ok: true,
       totalEntries: all.length,
       latestServers: latest.length,
       elapsedMs: elapsed,
       persisted,
+      kv_configured: kvExpected,
       snapshot_version: version,
       snapshot_written_at: writtenAt,
     });
