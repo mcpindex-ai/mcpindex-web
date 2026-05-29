@@ -43,6 +43,12 @@ function sweepBuckets(now: number) {
 }
 
 export function proxy(req: NextRequest) {
+  // Defense-in-depth, NOT dead code: Next 16 invokes proxy for every route,
+  // gated only by `config.matcher`, and the docs warn that a matcher change or
+  // refactor can silently broaden coverage (node_modules/next/dist/docs/.../
+  // proxy.md, "Execution order"). This in-function path check guarantees we
+  // only rate-limit /api/v1/* even if the matcher is later widened - per Next's
+  // "verify inside, don't rely on the matcher alone" guidance. Keep it.
   if (!req.nextUrl.pathname.startsWith('/api/v1/')) {
     return NextResponse.next();
   }
