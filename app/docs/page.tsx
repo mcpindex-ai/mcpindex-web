@@ -138,9 +138,10 @@ Args:     -y mcp-server-mcpindex`}
         />
 
         <p>
-          Once installed, the four tools are available in any agent loop:{' '}
+          Once installed, the six tools are available in any agent loop:{' '}
           <Mono>recommend_mcp_for_task</Mono>, <Mono>search_mcp_servers</Mono>,{' '}
-          <Mono>get_install_command</Mono>, <Mono>compare_servers</Mono>. Ask your agent
+          <Mono>get_install_command</Mono>, <Mono>compare_servers</Mono>,{' '}
+          <Mono>check_tool_trust</Mono>, <Mono>assess_server</Mono>. Ask your agent
           something like &ldquo;find me an MCP server that can read PDFs and write to
           S3&rdquo; and watch it call <Mono>recommend_mcp_for_task</Mono> automatically.
         </p>
