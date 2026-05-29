@@ -10,13 +10,13 @@ export const metadata: Metadata = {
 export default function MethodologyPage() {
   return (
     <article className="mx-auto max-w-[820px] px-6 sm:px-10 pt-16 pb-24">
-      <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute]">
+      <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
         §01&nbsp;&nbsp;Methodology · v1 advisory
       </div>
-      <h1 className="mt-3 t-page-h1 font-medium text-[--color-ink]">
+      <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
         How a verdict is produced.
       </h1>
-      <p className="mt-5 text-[16px] leading-[1.6] text-[--color-cite] max-w-[680px]">
+      <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)] max-w-[680px]">
         mcpindex evaluates MCP tools and publishes a verdict per tool. The
         eval is hybrid: a deterministic conformance probe plus an LLM judge
         for hidden intent. Both legs execute and are recorded against the
@@ -25,7 +25,7 @@ export default function MethodologyPage() {
       </p>
 
       <section className="mt-12">
-        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute] mb-4">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
           §02&nbsp;&nbsp;Hybrid eval
         </div>
         <ul className="rule-t">
@@ -48,10 +48,10 @@ export default function MethodologyPage() {
       </section>
 
       <section className="mt-12 rule-t pt-10">
-        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute] mb-4">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
           §03&nbsp;&nbsp;Four-state verdict
         </div>
-        <p className="text-[14.5px] leading-[1.6] text-[--color-cite] max-w-[680px]">
+        <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)] max-w-[680px]">
           The directive an agent reads is one of three decisions, on top of a
           status that says how the eval went. Together they are four states an
           agent must distinguish.
@@ -81,18 +81,18 @@ export default function MethodologyPage() {
       </section>
 
       <section className="mt-12 rule-t pt-10">
-        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute] mb-4">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
           §04&nbsp;&nbsp;Honest limits (v1)
         </div>
-        <ul className="space-y-3 text-[14.5px] leading-[1.6] text-[--color-cite]">
-          <li><span className="text-[--color-accent] font-mono">·</span> <strong className="text-[--color-ink] font-medium">Definition, not runtime.</strong> The eval is bound to the tool definition (description + schema) at evaluation time. Runtime behavior on a specific call is not covered.</li>
-          <li><span className="text-[--color-accent] font-mono">·</span> <strong className="text-[--color-ink] font-medium">Conformance monitored, not enforced.</strong> A conformance fail is reported in the verdict and the public surface. It is not enforced on the wire.</li>
-          <li><span className="text-[--color-accent] font-mono">·</span> <strong className="text-[--color-ink] font-medium">OTS cadence bound = confirmation latency.</strong> The OTS anchor proves the verdict existed by some Bitcoin block; it does not prove minute-level ordering inside the confirmation window.</li>
-          <li><span className="text-[--color-accent] font-mono">·</span> <strong className="text-[--color-ink] font-medium">calibrated = false at v1.</strong> Confidence scores are reported but not calibrated against a held-out adversarial corpus yet.</li>
-          <li><span className="text-[--color-accent] font-mono">·</span> <strong className="text-[--color-ink] font-medium">Advisory, not blocking.</strong> mcpindex publishes the verdict. The agent or IDE decides whether to act.</li>
-          <li><span className="text-[--color-accent] font-mono">·</span> <strong className="text-[--color-ink] font-medium">D3 graduation gate.</strong> &gt;=150 conforming labels with FP upper-95 &lt;=2%. Current: 15/150.</li>
+        <ul className="space-y-3 text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Definition, not runtime.</strong> The eval is bound to the tool definition (description + schema) at evaluation time. Runtime behavior on a specific call is not covered.</li>
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Conformance monitored, not enforced.</strong> A conformance fail is reported in the verdict and the public surface. It is not enforced on the wire.</li>
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">OTS cadence bound = confirmation latency.</strong> The OTS anchor proves the verdict existed by some Bitcoin block; it does not prove minute-level ordering inside the confirmation window.</li>
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">calibrated = false at v1.</strong> Confidence scores are reported but not calibrated against a held-out adversarial corpus yet.</li>
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Advisory, not blocking.</strong> mcpindex publishes the verdict. The agent or IDE decides whether to act.</li>
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">D3 graduation gate.</strong> &gt;=150 conforming labels with FP upper-95 &lt;=2%. Current: 15/150.</li>
         </ul>
-        <p className="mt-6 text-[14px] text-[--color-cite] leading-[1.6] max-w-[680px]">
+        <p className="mt-6 text-[14px] text-[var(--color-cite)] leading-[1.6] max-w-[680px]">
           The honest-limits list is a contract. If any of these stops being
           true, the methodology page changes first, the verdict surface
           changes second, and the network only sees the upgrade after both.
@@ -100,10 +100,10 @@ export default function MethodologyPage() {
       </section>
 
       <section className="mt-12 rule-t pt-10">
-        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute] mb-4">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
           §05&nbsp;&nbsp;Quality score (directory axis)
         </div>
-        <p className="text-[14.5px] leading-[1.6] text-[--color-cite] max-w-[680px]">
+        <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)] max-w-[680px]">
           The trust verdict answers &ldquo;does this tool behave as it
           claims.&rdquo; The directory still answers a simpler question:
           which servers look mature from public registry signal. The 0-100
@@ -114,7 +114,7 @@ export default function MethodologyPage() {
             href="https://github.com/mcpindex-ai/mcpindex-web/blob/main/lib/quality.ts"
             target="_blank"
             rel="noreferrer"
-            className="underline decoration-[--color-rule] underline-offset-4 hover:text-[--color-accent]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
           >
             lib/quality.ts
           </a>
@@ -123,16 +123,16 @@ export default function MethodologyPage() {
       </section>
 
       <section className="mt-12 rule-t pt-10">
-        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute] mb-4">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
           §06&nbsp;&nbsp;Cite this
         </div>
-        <pre className="bg-[--color-ink] text-zinc-100 px-4 py-3 font-mono text-[12px] overflow-x-auto leading-snug">
+        <pre className="bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] overflow-x-auto leading-snug">
           <code>{`Bharti, G. "mcpindex: the trust-to-act layer for agent tool use." mcpindex.ai/methodology, 2026.
 https://mcpindex.ai/methodology`}</code>
         </pre>
-        <p className="mt-4 text-[13.5px] text-[--color-cite]">
+        <p className="mt-4 text-[13.5px] text-[var(--color-cite)]">
           Or just{' '}
-          <Link href="/leaderboard" className="underline decoration-[--color-rule] underline-offset-4 hover:text-[--color-accent]">
+          <Link href="/leaderboard" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
             link to a server&apos;s detail page
           </Link>
           . The verdict surface and the score breakdown both render there.
@@ -153,13 +153,13 @@ function Dim({
 }) {
   return (
     <li className="rule-b grid grid-cols-[160px_90px_1fr] gap-4 py-5 px-2 items-baseline">
-      <div className="font-mono text-[12.5px] uppercase tracking-[0.12em] text-[--color-ink]">
+      <div className="font-mono text-[12.5px] uppercase tracking-[0.12em] text-[var(--color-ink)]">
         {label}
       </div>
-      <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-[--color-mute]">
+      <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-[var(--color-mute)]">
         {kind}
       </div>
-      <p className="text-[14px] leading-[1.55] text-[--color-cite]">{body}</p>
+      <p className="text-[14px] leading-[1.55] text-[var(--color-cite)]">{body}</p>
     </li>
   );
 }

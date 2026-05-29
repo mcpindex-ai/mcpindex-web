@@ -157,24 +157,24 @@ export default async function ServerPage(
       <article className="mx-auto max-w-[920px] px-6 sm:px-10 pt-16 pb-24">
         <Link
           href="/leaderboard"
-          className="font-mono text-[11px] uppercase tracking-[0.18em] text-[--color-mute] hover:text-[--color-accent]"
+          className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-mute)] hover:text-[var(--color-accent)]"
         >
           ← Index
         </Link>
 
         <header className="mt-6 grid sm:grid-cols-[1fr_auto] gap-6 items-start">
           <div>
-            <h1 className="t-page-h1 font-medium text-[--color-ink]">
+            <h1 className="t-page-h1 font-medium text-[var(--color-ink)]">
               {server.title}
             </h1>
-            <div className="mt-3 font-mono text-[12px] text-[--color-mute] flex flex-wrap items-center gap-x-4 gap-y-1">
+            <div className="mt-3 font-mono text-[12px] text-[var(--color-mute)] flex flex-wrap items-center gap-x-4 gap-y-1">
               <span>{server.name}</span>
-              <span className="text-[--color-rule]">·</span>
+              <span className="text-[var(--color-rule)]">·</span>
               <span>v{server.version}</span>
-              <span className="text-[--color-rule]">·</span>
+              <span className="text-[var(--color-rule)]">·</span>
               <Link
                 href={`/best/${server.category}`}
-                className="text-[--color-cite] hover:text-[--color-accent]"
+                className="text-[var(--color-cite)] hover:text-[var(--color-accent)]"
               >
                 {CATEGORY_LABELS[server.category] ?? server.category}
               </Link>
@@ -183,7 +183,7 @@ export default async function ServerPage(
           <QualityBadge score={score} />
         </header>
 
-        <p className="mt-6 text-[17px] leading-[1.55] text-[--color-cite] max-w-[640px]">
+        <p className="mt-6 text-[17px] leading-[1.55] text-[var(--color-cite)] max-w-[640px]">
           {server.description}
         </p>
 
@@ -194,7 +194,7 @@ export default async function ServerPage(
               href={repoHref}
               target="_blank"
               rel="noreferrer"
-              className="border border-[--color-rule] px-3 py-1.5 text-[--color-cite] hover:border-[--color-accent] hover:text-[--color-accent]"
+              className="border border-[var(--color-rule)] px-3 py-1.5 text-[var(--color-cite)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
             >
               Repository →
             </a>
@@ -204,7 +204,7 @@ export default async function ServerPage(
               href={siteHref}
               target="_blank"
               rel="noreferrer"
-              className="border border-[--color-rule] px-3 py-1.5 text-[--color-cite] hover:border-[--color-accent] hover:text-[--color-accent]"
+              className="border border-[var(--color-rule)] px-3 py-1.5 text-[var(--color-cite)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
             >
               Website →
             </a>
@@ -214,7 +214,7 @@ export default async function ServerPage(
               href={remoteHref}
               target="_blank"
               rel="noreferrer"
-              className="border border-[--color-rule] px-3 py-1.5 text-[--color-cite] hover:border-[--color-accent] hover:text-[--color-accent]"
+              className="border border-[var(--color-rule)] px-3 py-1.5 text-[var(--color-cite)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
             >
               Remote endpoint →
             </a>
@@ -225,9 +225,9 @@ export default async function ServerPage(
             directive + status + dimension verdicts + severity + expires_at.
             History is paid-tier and is NOT rendered here. */}
         <section className="mt-12">
-          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute] mb-4">
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
             §00&nbsp;&nbsp;Trust verdict&nbsp;·&nbsp;v1 advisory&nbsp;·&nbsp;{' '}
-            <Link href="/methodology" className="hover:text-[--color-accent]">
+            <Link href="/methodology" className="hover:text-[var(--color-accent)]">
               method
             </Link>
           </div>
@@ -236,11 +236,11 @@ export default async function ServerPage(
 
         {/* Install commands */}
         <section className="mt-16">
-          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute] mb-4">
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
             §01&nbsp;&nbsp;Install
           </div>
           {installs.length === 0 ? (
-            <p className="text-[14px] text-[--color-mute]">
+            <p className="text-[14px] text-[var(--color-mute)]">
               No runnable package or remote endpoint listed in the registry. Check the repo for
               manual install instructions.
             </p>
@@ -248,19 +248,19 @@ export default async function ServerPage(
             <div className="space-y-6">
               {installs.map((inst, i) => (
                 <div key={i} className="rule-t pt-5">
-                  <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-[--color-cite] mb-2">
+                  <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-cite)] mb-2">
                     {inst.label}
                   </div>
                   {inst.notes && (
-                    <p className="text-[13px] text-[--color-mute] mb-3">{inst.notes}</p>
+                    <p className="text-[13px] text-[var(--color-mute)] mb-3">{inst.notes}</p>
                   )}
                   {inst.command && (
-                    <pre className="bg-[--color-ink] text-zinc-100 px-4 py-3 font-mono text-[12px] overflow-x-auto leading-snug">
+                    <pre className="bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] overflow-x-auto leading-snug">
                       <code>{inst.command}</code>
                     </pre>
                   )}
                   {inst.json && (
-                    <pre className="bg-[--color-ink] text-zinc-100 px-4 py-3 font-mono text-[12px] overflow-x-auto leading-snug">
+                    <pre className="bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] overflow-x-auto leading-snug">
                       <code>{inst.json}</code>
                     </pre>
                   )}
@@ -273,7 +273,7 @@ export default async function ServerPage(
         {/* Env vars */}
         {server.envVars.length > 0 && (
           <section className="mt-16">
-            <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute] mb-4">
+            <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
               §02&nbsp;&nbsp;Environment variables
             </div>
             <div className="rule-t">
@@ -282,13 +282,13 @@ export default async function ServerPage(
                   key={v.name}
                   className="rule-b grid sm:grid-cols-[200px_auto_1fr] gap-4 py-4 px-2"
                 >
-                  <code className="font-mono text-[13px] text-[--color-ink]">{v.name}</code>
-                  <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[--color-mute] flex gap-2">
-                    {v.isRequired && <span className="text-[--color-accent]">required</span>}
+                  <code className="font-mono text-[13px] text-[var(--color-ink)]">{v.name}</code>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-mute)] flex gap-2">
+                    {v.isRequired && <span className="text-[var(--color-accent)]">required</span>}
                     {v.isSecret && <span>secret</span>}
                   </div>
-                  <p className="text-[13px] text-[--color-cite]">
-                    {v.description ?? <span className="text-[--color-mute]">no description</span>}
+                  <p className="text-[13px] text-[var(--color-cite)]">
+                    {v.description ?? <span className="text-[var(--color-mute)]">no description</span>}
                   </p>
                 </div>
               ))}
@@ -298,9 +298,9 @@ export default async function ServerPage(
 
         {/* Quality breakdown */}
         <section className="mt-16">
-          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute] mb-4">
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
             §03&nbsp;&nbsp;MCP Quality Score &nbsp;·&nbsp;{' '}
-            <Link href="/methodology" className="hover:text-[--color-accent]">
+            <Link href="/methodology" className="hover:text-[var(--color-accent)]">
               methodology
             </Link>
           </div>
@@ -310,8 +310,8 @@ export default async function ServerPage(
                 key={k}
                 className="rule-b grid grid-cols-[1fr_60px] gap-4 py-3 px-2 items-center"
               >
-                <div className="font-mono text-[12px] text-[--color-cite] capitalize">{k}</div>
-                <div className="text-right font-mono tabular-nums text-[14px] text-[--color-ink]">
+                <div className="font-mono text-[12px] text-[var(--color-cite)] capitalize">{k}</div>
+                <div className="text-right font-mono tabular-nums text-[14px] text-[var(--color-ink)]">
                   {v}
                 </div>
               </div>
@@ -322,7 +322,7 @@ export default async function ServerPage(
         {/* Alternatives */}
         {alternatives.length > 0 && (
           <section className="mt-16">
-            <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute] mb-4">
+            <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
               §04&nbsp;&nbsp;Alternatives in {CATEGORY_LABELS[server.category] ?? server.category}
             </div>
             <div className="rule-t">
@@ -330,15 +330,15 @@ export default async function ServerPage(
                 <Link
                   key={a.slug}
                   href={`/server/${a.slug}`}
-                  className="block rule-b py-4 px-2 hover:bg-[--color-accent-soft]/40 transition-colors group"
+                  className="block rule-b py-4 px-2 hover:bg-[var(--color-accent-soft)]/40 transition-colors group"
                 >
-                  <div className="font-medium text-[15px] text-[--color-ink] group-hover:text-[--color-accent]">
+                  <div className="font-medium text-[15px] text-[var(--color-ink)] group-hover:text-[var(--color-accent)]">
                     {a.title}
                   </div>
-                  <div className="mt-0.5 font-mono text-[11px] text-[--color-mute]">
+                  <div className="mt-0.5 font-mono text-[11px] text-[var(--color-mute)]">
                     {a.name}
                   </div>
-                  <p className="mt-1.5 text-[13px] text-[--color-cite] line-clamp-2">
+                  <p className="mt-1.5 text-[13px] text-[var(--color-cite)] line-clamp-2">
                     {a.description}
                   </p>
                 </Link>
@@ -373,8 +373,8 @@ const DECISION_STYLE: Record<Decision, { label: string; chip: string; ring: stri
 };
 
 const SEVERITY_STYLE: Record<Severity, string> = {
-  INFO: 'text-[--color-mute]',
-  LOW: 'text-[--color-cite]',
+  INFO: 'text-[var(--color-mute)]',
+  LOW: 'text-[var(--color-cite)]',
   MEDIUM: 'text-amber-800',
   HIGH: 'text-orange-800',
   CRITICAL: 'text-rose-800',
@@ -395,19 +395,19 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
     return (
       <div className="rule-t rule-b rule-l rule-r p-5 bg-white">
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-          <span className="font-mono text-[11px] uppercase tracking-[0.16em] px-2 py-1 bg-[--color-accent-soft] text-[--color-cite] border border-[--color-rule]">
+          <span className="font-mono text-[11px] uppercase tracking-[0.16em] px-2 py-1 bg-[var(--color-accent-soft)] text-[var(--color-cite)] border border-[var(--color-rule)]">
             UNVERIFIED
           </span>
-          <span className="font-mono text-[11px] text-[--color-mute]">
+          <span className="font-mono text-[11px] text-[var(--color-mute)]">
             no verdict on file
           </span>
         </div>
-        <p className="mt-3 text-[14px] leading-[1.6] text-[--color-cite] max-w-[640px]">
+        <p className="mt-3 text-[14px] leading-[1.6] text-[var(--color-cite)] max-w-[640px]">
           Verdict not yet evaluated for this tool. The hybrid eval runs adversarial
           cases first; coverage rolls out as the corpus expands. Until a verdict
           is recorded, an agent should treat this tool as not-yet-cleared and
           fall back to its own checks. Method:{' '}
-          <Link href="/methodology" className="underline decoration-[--color-rule] underline-offset-4 hover:text-[--color-accent]">
+          <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
             hybrid eval, four-state verdict, honest limits
           </Link>
           .
@@ -423,11 +423,11 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
           <span className="font-mono text-[11px] uppercase tracking-[0.16em] px-2 py-1 bg-amber-50 text-amber-900 border border-amber-300">
             VERDICT SERVICE UNAVAILABLE
           </span>
-          <span className="font-mono text-[11px] text-[--color-mute]">
+          <span className="font-mono text-[11px] text-[var(--color-mute)]">
             verdict API unreachable
           </span>
         </div>
-        <p className="mt-3 text-[14px] leading-[1.6] text-[--color-cite] max-w-[640px]">
+        <p className="mt-3 text-[14px] leading-[1.6] text-[var(--color-cite)] max-w-[640px]">
           The trust verdict API did not respond. Treat this tool as not-cleared
           and fall back to your own checks until the verdict surface is reachable
           again. This is a transient failure, not a verdict.
@@ -449,15 +449,15 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
         <span className={`font-mono text-[12px] uppercase tracking-[0.18em] px-2.5 py-1 ${style.chip} border ${style.ring}`}>
           {style.label}
         </span>
-        <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-[--color-mute]">
+        <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
           status: {verdict.status}
         </span>
-        <span className="font-mono text-[11px] text-[--color-mute]">
+        <span className="font-mono text-[11px] text-[var(--color-mute)]">
           fresh until {expiresLabel}
         </span>
       </div>
 
-      <p className="mt-3 text-[14.5px] leading-[1.55] text-[--color-ink] max-w-[640px]">
+      <p className="mt-3 text-[14.5px] leading-[1.55] text-[var(--color-ink)] max-w-[640px]">
         {verdict.directive.rationale}
       </p>
 
@@ -468,10 +468,10 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
               key={d.id}
               className="rule-b grid grid-cols-[1fr_90px_90px] gap-3 py-2.5 px-1 items-baseline"
             >
-              <code className="font-mono text-[12px] text-[--color-cite] truncate">
+              <code className="font-mono text-[12px] text-[var(--color-cite)] truncate">
                 {d.id}
               </code>
-              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-[--color-ink]">
+              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-ink)]">
                 {DIMENSION_VERDICT_LABEL[d.verdict]}
               </span>
               <span className={`font-mono text-[11px] uppercase tracking-[0.14em] ${SEVERITY_STYLE[d.severity]}`}>
@@ -482,7 +482,7 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
         </div>
       )}
 
-      <p className="mt-4 font-mono text-[10.5px] leading-[1.55] text-[--color-mute] max-w-[640px]">
+      <p className="mt-4 font-mono text-[10.5px] leading-[1.55] text-[var(--color-mute)] max-w-[640px]">
         Hybrid eval: deterministic conformance probe + LLM judge. Both legs
         execute and are recorded; conformance is monitored, not enforced.
         Posture: advisory. Confidences are reported but not yet calibrated
@@ -494,14 +494,14 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
 
 function QualityBadge({ score }: { score: number }) {
   return (
-    <div className="rule-t rule-b rule-l rule-r p-4 bg-[--color-accent-soft] text-center w-[120px]">
-      <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[--color-mute]">
+    <div className="rule-t rule-b rule-l rule-r p-4 bg-[var(--color-accent-soft)] text-center w-[120px]">
+      <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
         Quality Score
       </div>
-      <div className="mt-2 font-mono tabular-nums text-[36px] text-[--color-ink] leading-none">
+      <div className="mt-2 font-mono tabular-nums text-[36px] text-[var(--color-ink)] leading-none">
         {score}
       </div>
-      <div className="font-mono text-[10px] text-[--color-mute] mt-1">/100</div>
+      <div className="font-mono text-[10px] text-[var(--color-mute)] mt-1">/100</div>
     </div>
   );
 }

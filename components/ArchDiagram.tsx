@@ -128,7 +128,7 @@ export function ArchDiagram() {
           strokeWidth={1}
         />
       </svg>
-      <figcaption className="mt-3 text-center text-[11px] text-[--color-mute] font-mono uppercase tracking-[0.16em]">
+      <figcaption className="mt-3 text-center text-[11px] text-[var(--color-mute)] font-mono uppercase tracking-[0.16em]">
         Fig. 01 · Architecture, top-down. Request flow synchronous; refresh async, daily.
       </figcaption>
     </figure>

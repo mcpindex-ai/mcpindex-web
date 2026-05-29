@@ -19,25 +19,25 @@ export async function LiveTicker() {
 
   return (
     <div className="rule-b">
-      <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-2 flex items-center justify-between gap-4 font-mono text-[10.5px] uppercase tracking-[0.18em] text-[--color-mute] overflow-hidden">
+      <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-2 flex items-center justify-between gap-4 font-mono text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-mute)] overflow-hidden">
         <div className="flex items-center gap-2 shrink-0">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-[--color-accent] live-dot" aria-hidden />
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] live-dot" aria-hidden />
           <span>Live</span>
         </div>
         <div className="hidden md:flex items-center gap-6 truncate">
           <span>
-            Snapshot <span className="text-[--color-cite]">{timeAgo(snap.fetchedAt)}</span>
+            Snapshot <span className="text-[var(--color-cite)]">{timeAgo(snap.fetchedAt)}</span>
           </span>
           <span>
-            Tracking <span className="text-[--color-cite] tabular-nums">{servers.length.toLocaleString()}</span>
+            Tracking <span className="text-[var(--color-cite)] tabular-nums">{servers.length.toLocaleString()}</span>
           </span>
           <span>
-            7-day delta <span className="text-[--color-accent] tabular-nums">+{fresh}</span>
+            7-day delta <span className="text-[var(--color-accent)] tabular-nums">+{fresh}</span>
           </span>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <a href="/changelog" className="hover:text-[--color-accent]">/changelog</a>
-          <a href="/api/registry-count" className="hidden sm:inline hover:text-[--color-accent]">
+          <a href="/changelog" className="hover:text-[var(--color-accent)]">/changelog</a>
+          <a href="/api/registry-count" className="hidden sm:inline hover:text-[var(--color-accent)]">
             /api/registry-count
           </a>
         </div>

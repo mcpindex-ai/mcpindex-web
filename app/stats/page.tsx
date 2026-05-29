@@ -36,20 +36,20 @@ export default async function StatsPage() {
   return (
     <article className="mx-auto max-w-[920px] px-6 sm:px-10 pt-16 pb-24">
       <header>
-        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute]">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
           §01&nbsp;&nbsp;Public stats · auto-generated daily
         </div>
-        <h1 className="mt-3 t-page-h1 font-medium text-[--color-ink]">
+        <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
           Numbers, on the page.
         </h1>
-        <p className="mt-4 max-w-[640px] text-[15.5px] leading-[1.55] text-[--color-cite]">
+        <p className="mt-4 max-w-[640px] text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
           All metrics are derived from public registry data. No analytics tracking is sold or shared.
           Source code:{' '}
           <a
             href="https://github.com/mcpindex-ai"
             target="_blank"
             rel="noreferrer"
-            className="underline decoration-[--color-rule] underline-offset-4 hover:text-[--color-accent]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
           >
             github.com/mcpindex-ai
           </a>
@@ -63,24 +63,24 @@ export default async function StatsPage() {
             key={s.label}
             className="rule-b grid grid-cols-[1fr_auto] gap-6 py-5 px-2 items-baseline"
           >
-            <dt className="font-mono text-[12.5px] text-[--color-cite]">
+            <dt className="font-mono text-[12.5px] text-[var(--color-cite)]">
               {s.label}
               {s.note && (
-                <span className="block mt-1 font-mono text-[11px] text-[--color-mute] normal-case">
+                <span className="block mt-1 font-mono text-[11px] text-[var(--color-mute)] normal-case">
                   {s.note}
                 </span>
               )}
             </dt>
-            <dd className="font-mono text-[16px] text-[--color-ink] tabular-nums text-right">
+            <dd className="font-mono text-[16px] text-[var(--color-ink)] tabular-nums text-right">
               {s.value}
             </dd>
           </div>
         ))}
       </dl>
 
-      <p className="mt-10 font-mono text-[11px] uppercase tracking-[0.16em] text-[--color-mute]">
+      <p className="mt-10 font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
         Page revalidates every hour ·{' '}
-        <Link href="/api/registry-count" className="hover:text-[--color-accent]">
+        <Link href="/api/registry-count" className="hover:text-[var(--color-accent)]">
           /api/registry-count
         </Link>
       </p>

@@ -55,13 +55,13 @@ export default function PricingPage() {
   return (
     <article className="mx-auto max-w-[1080px] px-6 sm:px-10 pt-16 pb-24">
       <header>
-        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute]">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
           §01&nbsp;&nbsp;Pricing
         </div>
-        <h1 className="mt-3 t-page-h1 font-medium text-[--color-ink]">
+        <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
           Free for the open web. Paid for the bandwidth.
         </h1>
-        <p className="mt-4 max-w-[640px] text-[15.5px] leading-[1.55] text-[--color-cite]">
+        <p className="mt-4 max-w-[640px] text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
           The public API and the npm package are free. Paid tiers exist for teams that need
           guaranteed throughput.
         </p>
@@ -73,27 +73,27 @@ export default function PricingPage() {
             key={t.name}
             className={`p-6 sm:p-8 ${i > 0 ? 'rule-l' : ''} flex flex-col`}
           >
-            <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute]">
+            <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
               {t.name}
             </div>
-            <div className="mt-3 font-mono text-[28px] tabular-nums text-[--color-ink]">
+            <div className="mt-3 font-mono text-[28px] tabular-nums text-[var(--color-ink)]">
               {t.price}
             </div>
-            <div className="mt-1 font-mono text-[11.5px] text-[--color-mute] tabular-nums">
+            <div className="mt-1 font-mono text-[11.5px] text-[var(--color-mute)] tabular-nums">
               {t.rate}
             </div>
-            <p className="mt-5 text-[14px] leading-[1.5] text-[--color-cite]">{t.blurb}</p>
-            <ul className="mt-5 space-y-2 text-[13px] text-[--color-cite] flex-1">
+            <p className="mt-5 text-[14px] leading-[1.5] text-[var(--color-cite)]">{t.blurb}</p>
+            <ul className="mt-5 space-y-2 text-[13px] text-[var(--color-cite)] flex-1">
               {t.bullets.map((b) => (
                 <li key={b} className="flex gap-2">
-                  <span className="text-[--color-accent] font-mono">·</span>
+                  <span className="text-[var(--color-accent)] font-mono">·</span>
                   <span>{b}</span>
                 </li>
               ))}
             </ul>
             <Link
               href={t.cta.href}
-              className="mt-8 inline-block w-fit font-mono text-[12px] uppercase tracking-[0.16em] text-[--color-ink] border border-[--color-rule] px-3 py-1.5 hover:border-[--color-accent] hover:text-[--color-accent]"
+              className="mt-8 inline-block w-fit font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-ink)] border border-[var(--color-rule)] px-3 py-1.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
             >
               {t.cta.label} →
             </Link>
@@ -101,7 +101,7 @@ export default function PricingPage() {
         ))}
       </div>
 
-      <p className="mt-10 font-mono text-[11.5px] text-[--color-mute]">
+      <p className="mt-10 font-mono text-[11.5px] text-[var(--color-mute)]">
         v0 — paid tiers ship when waitlist clears 200. Until then, free tier covers everything
         you can call.
       </p>

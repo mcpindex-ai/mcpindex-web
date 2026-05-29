@@ -8,28 +8,28 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <article className="mx-auto max-w-[720px] px-6 sm:px-10 pt-16 pb-24">
-      <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute]">
+      <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
         §01&nbsp;&nbsp;Terms of use
       </div>
-      <h1 className="mt-3 t-page-h1 font-medium text-[--color-ink]">
+      <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
         Terms.
       </h1>
-      <p className="mt-2 font-mono text-[11.5px] text-[--color-mute]">
+      <p className="mt-2 font-mono text-[11.5px] text-[var(--color-mute)]">
         Last updated: 2026-04-30
       </p>
 
-      <div className="mt-10 space-y-6 text-[14.5px] leading-[1.65] text-[--color-cite]">
+      <div className="mt-10 space-y-6 text-[14.5px] leading-[1.65] text-[var(--color-cite)]">
         <p>
           mcpindex.ai (&quot;the site&quot;) provides an index of public Model Context
           Protocol (MCP) servers and a recommendation API on top of that index. Use is
           free for the public tier subject to the rate limit published at{' '}
-          <a href="/pricing" className="underline decoration-[--color-rule] underline-offset-4 hover:text-[--color-accent]">/pricing</a>.
+          <a href="/pricing" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">/pricing</a>.
         </p>
         <p>
           Server metadata is sourced from{' '}
           <a
             href="https://registry.modelcontextprotocol.io"
-            className="underline decoration-[--color-rule] underline-offset-4 hover:text-[--color-accent]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
           >
             registry.modelcontextprotocol.io
           </a>{' '}
@@ -45,7 +45,7 @@ export default function TermsPage() {
         <p>
           Excessive use that disrupts service for others may be rate-limited, blocked, or
           throttled without notice. Email{' '}
-          <a href="mailto:hello@mcpindex.ai" className="underline decoration-[--color-rule] underline-offset-4 hover:text-[--color-accent]">
+          <a href="mailto:hello@mcpindex.ai" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
             hello@mcpindex.ai
           </a>{' '}
           if you need higher limits.

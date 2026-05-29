@@ -45,20 +45,20 @@ export default async function Changelog() {
   return (
     <article className="mx-auto max-w-[920px] px-6 sm:px-10 pt-16 pb-24">
       <header>
-        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute]">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
           §01&nbsp;&nbsp;Changelog
         </div>
-        <h1 className="mt-3 t-page-h1 font-medium text-[--color-ink]">
+        <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
           Registry diff · last 30 days.
         </h1>
-        <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 font-mono text-[12.5px] text-[--color-mute]">
+        <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 font-mono text-[12.5px] text-[var(--color-mute)]">
           <span>
             Snapshot:{' '}
-            <span className="text-[--color-cite]">{new Date(snap.fetchedAt).toUTCString()}</span>
+            <span className="text-[var(--color-cite)]">{new Date(snap.fetchedAt).toUTCString()}</span>
           </span>
           <span>
             Subscribe:{' '}
-            <Link href="/changelog.rss" className="text-[--color-accent] hover:underline">
+            <Link href="/changelog.rss" className="text-[var(--color-accent)] hover:underline">
               RSS
             </Link>
           </span>
@@ -69,9 +69,9 @@ export default async function Changelog() {
         {[...byDay.entries()].map(([day, list]) => (
           <div key={day} className="rule-t py-6">
             <div className="grid sm:grid-cols-[140px_1fr] gap-4">
-              <div className="font-mono text-[12px] text-[--color-cite] tabular-nums">
+              <div className="font-mono text-[12px] text-[var(--color-cite)] tabular-nums">
                 {day}
-                <div className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[--color-mute] mt-1">
+                <div className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-mute)] mt-1">
                   +{list.length} added
                 </div>
               </div>
@@ -80,20 +80,20 @@ export default async function Changelog() {
                   <li key={s.slug} className="text-[14px]">
                     <Link
                       href={`/server/${s.slug}`}
-                      className="font-medium text-[--color-ink] hover:text-[--color-accent]"
+                      className="font-medium text-[var(--color-ink)] hover:text-[var(--color-accent)]"
                     >
                       {s.title}
                     </Link>
-                    <span className="font-mono text-[11px] text-[--color-mute] ml-2">
+                    <span className="font-mono text-[11px] text-[var(--color-mute)] ml-2">
                       {s.name}
                     </span>
-                    <span className="font-mono text-[11px] text-[--color-mute] ml-2">
+                    <span className="font-mono text-[11px] text-[var(--color-mute)] ml-2">
                       · {CATEGORY_LABELS[s.category] ?? s.category}
                     </span>
                   </li>
                 ))}
                 {list.length > 12 && (
-                  <li className="font-mono text-[11px] text-[--color-mute]">
+                  <li className="font-mono text-[11px] text-[var(--color-mute)]">
                     + {list.length - 12} more
                   </li>
                 )}
@@ -104,14 +104,14 @@ export default async function Changelog() {
       </section>
 
       <section className="mt-16 rule-t pt-10">
-        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute] mb-4">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
           §02&nbsp;&nbsp;Daily counts (all-time)
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-1 font-mono text-[12px]">
           {buckets.slice(0, 28).map(([day, count]) => (
-            <div key={day} className="flex justify-between text-[--color-cite]">
+            <div key={day} className="flex justify-between text-[var(--color-cite)]">
               <span>{day}</span>
-              <span className="tabular-nums text-[--color-mute]">{count}</span>
+              <span className="tabular-nums text-[var(--color-mute)]">{count}</span>
             </div>
           ))}
         </div>
