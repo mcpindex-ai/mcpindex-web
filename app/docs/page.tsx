@@ -18,13 +18,13 @@ export default function DocsPage() {
     <article className="mx-auto max-w-[820px] px-6 sm:px-10 pt-16 pb-24">
       {/* §00 — Hero */}
       <header>
-        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute]">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
           §00&nbsp;&nbsp;Documentation
         </div>
-        <h1 className="mt-3 t-page-h1 font-medium text-[--color-ink]">
+        <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
           How agents call mcpindex.ai.
         </h1>
-        <p className="mt-5 max-w-[640px] text-[16px] leading-[1.6] text-[--color-cite]">
+        <p className="mt-5 max-w-[640px] text-[16px] leading-[1.6] text-[var(--color-cite)]">
           An MCP-native API. Free, no key required, low-latency. Three integration shapes:
           direct HTTP, drop-in MCP server (recommended), or embedded into your platform.
           The whole surface fits on this page.
@@ -153,7 +153,7 @@ Args:     -y mcp-server-mcpindex`}
           by composite score, each with reasoning, install commands per registry type,
           and the live MCP Quality Score.
         </p>
-        <pre className="overflow-x-auto bg-[--color-ink] text-zinc-100 px-4 py-3 font-mono text-[11.5px] leading-snug">
+        <pre className="overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[11.5px] leading-snug">
           <code>{`{
   "task": "read pdf and save to s3",
   "recommendations": [
@@ -448,7 +448,7 @@ function UseCase({
       >
         {who}
       </p>
-      <pre className="mt-3 overflow-x-auto bg-[--color-ink] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
+      <pre className="mt-3 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
         <code>{codeLines.join('\n')}</code>
       </pre>
       {notes && (
@@ -489,7 +489,7 @@ function ClientConfig({
       >
         {path}
       </p>
-      <pre className="mt-3 overflow-x-auto bg-[--color-ink] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
+      <pre className="mt-3 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
         <code>{json}</code>
       </pre>
     </div>
@@ -630,7 +630,7 @@ function Ext({
       href={href}
       target={isExternal ? '_blank' : undefined}
       rel={isExternal ? 'noreferrer' : undefined}
-      className="underline decoration-[--color-rule] underline-offset-4 hover:text-[--color-accent] hover:decoration-[--color-accent]"
+      className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] hover:decoration-[var(--color-accent)]"
       style={{ color: 'var(--color-cite)' }}
     >
       {children}

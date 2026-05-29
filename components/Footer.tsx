@@ -1,9 +1,9 @@
 import Link from 'next/link';
 
 const COLUMN_LABEL =
-  'font-mono text-[10.5px] uppercase tracking-[0.18em] text-[--color-mute] mb-4';
+  'font-mono text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-mute)] mb-4';
 const LINK =
-  'block py-1 text-[13.5px] text-[--color-cite] hover:text-[--color-accent] transition-colors';
+  'block py-1 text-[13.5px] text-[var(--color-cite)] hover:text-[var(--color-accent)] transition-colors';
 
 export function Footer() {
   return (
@@ -12,13 +12,13 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
           <div className="col-span-2 md:col-span-1 max-w-[260px]">
             <div className="font-mono text-[14px] tracking-tight">
-              mcpindex<span className="text-[--color-mute]">.ai</span>
+              mcpindex<span className="text-[var(--color-mute)]">.ai</span>
             </div>
-            <p className="mt-3 text-[12.5px] leading-[1.55] text-[--color-mute]">
+            <p className="mt-3 text-[12.5px] leading-[1.55] text-[var(--color-mute)]">
               The verification layer for MCP tools. A verdict on whether a tool does what
               it claims, before your agent acts.
             </p>
-            <p className="mt-4 font-mono text-[10.5px] uppercase tracking-[0.16em] text-[--color-mute]">
+            <p className="mt-4 font-mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
               Unofficial. Not affiliated with Anthropic.
             </p>
           </div>
@@ -64,7 +64,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="rule-t mt-12 pt-6 flex flex-col sm:flex-row justify-between gap-3 text-[11.5px] text-[--color-mute]">
+        <div className="rule-t mt-12 pt-6 flex flex-col sm:flex-row justify-between gap-3 text-[11.5px] text-[var(--color-mute)]">
           <div className="font-mono">© 2026 GB</div>
           <div>
             Written by{' '}
@@ -72,7 +72,7 @@ export function Footer() {
               href="https://www.linkedin.com/in/gautambharti"
               target="_blank"
               rel="noreferrer"
-              className="text-[--color-cite] hover:text-[--color-accent]"
+              className="text-[var(--color-cite)] hover:text-[var(--color-accent)]"
             >
               Gautam Bharti
             </a>
@@ -81,7 +81,7 @@ export function Footer() {
               href="https://seekgb.com"
               target="_blank"
               rel="noreferrer"
-              className="text-[--color-cite] hover:text-[--color-accent]"
+              className="text-[var(--color-cite)] hover:text-[var(--color-accent)]"
             >
               seekgb.com
             </a>

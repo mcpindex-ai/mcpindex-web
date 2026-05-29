@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import type {
   IndexedServer,
   RegistryEntry,
@@ -7,13 +8,19 @@ import type {
   Snapshot,
 } from './types';
 import { categorize } from './categorize';
+import { SnapshotZ } from './snapshotSchema';
+import {
+  readKVSnapshot,
+  snapshotVersion,
+  type StoredSnapshot,
+} from './snapshotStore';
 
 const REGISTRY_BASE = 'https://registry.modelcontextprotocol.io/v0/servers';
 const SNAPSHOT_PATH = path.join(process.cwd(), 'data', 'snapshot.json');
 
 // Slug: name "vendor.domain/sub" -> "vendor-domain--sub", reversible-ish.
 export function slugify(name: string): string {
-  return name
+  const slug = name
     .toLowerCase()
     .replaceAll('/', '--')
     .replaceAll('.', '-')
@@ -21,6 +28,22 @@ export function slugify(name: string): string {
     .replace(/[^a-z0-9-]/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
+  if (slug) return slug;
+  // Names that contain only non-slug characters would collapse to ''.
+  // Fall back to a deterministic hash so the index never carries an empty slug.
+  return 'srv-' + createHash('sha256').update(name).digest('hex').slice(0, 12);
+}
+
+function safeUrl(u: string | undefined): string | undefined {
+  if (!u) return undefined;
+  try {
+    const parsed = new URL(u);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+      ? u
+      : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function normalize(entry: RegistryEntry): IndexedServer {
@@ -48,39 +71,110 @@ export function normalize(entry: RegistryEntry): IndexedServer {
     primaryTransport: primary
       ? 'type' in primary
         ? primary.type
-        : primary.transport.type
+        : (primary.transport?.type ?? null)
       : null,
     npmPackage: npmPkg?.identifier,
     pypiPackage: pypiPkg?.identifier,
     dockerImage: dockerPkg?.identifier,
-    remoteUrl: remote?.url,
-    repositoryUrl: s.repository?.url,
-    websiteUrl: s.websiteUrl,
-    iconUrl: s.icons?.[0]?.src,
+    remoteUrl: safeUrl(remote?.url),
+    repositoryUrl: safeUrl(s.repository?.url),
+    websiteUrl: safeUrl(s.websiteUrl),
+    iconUrl: safeUrl(s.icons?.[0]?.src),
     envVars:
       s.packages?.flatMap((p) => p.environmentVariables ?? []) ?? [],
   };
 }
 
-let _cache: { servers: IndexedServer[]; raw: Snapshot } | null = null;
+type LoadedSnapshot = {
+  snapshot: Snapshot;
+  version: string;
+  writtenAt: string;
+};
+
+let _cache: { servers: IndexedServer[]; loaded: LoadedSnapshot } | null = null;
+
+async function readBundledSnapshot(): Promise<StoredSnapshot> {
+  const raw = await fs.readFile(SNAPSHOT_PATH, 'utf8');
+  const json: unknown = JSON.parse(raw);
+  const parsed = SnapshotZ.safeParse(json);
+  if (!parsed.success) {
+    // Fail loud: never serve a stale _cache against a corrupted snapshot.
+    console.error('registry: bundled snapshot schema failure', parsed.error.message);
+    throw new Error('snapshot schema invalid');
+  }
+  const data = parsed.data as StoredSnapshot;
+  return {
+    fetchedAt: data.fetchedAt,
+    totalEntries: data.totalEntries,
+    servers: data.servers as RegistryEntry[],
+    snapshot_version: data.snapshot_version ?? snapshotVersion(data.servers as RegistryEntry[]),
+    snapshot_written_at: data.snapshot_written_at ?? data.fetchedAt,
+  };
+}
+
+async function resolveSnapshot(): Promise<LoadedSnapshot> {
+  const kv = await readKVSnapshot();
+  if (kv) {
+    const parsed = SnapshotZ.safeParse(kv);
+    if (!parsed.success) {
+      console.error('registry: KV snapshot schema failure, falling back', parsed.error.message);
+    } else {
+      return {
+        snapshot: {
+          fetchedAt: kv.fetchedAt,
+          totalEntries: kv.totalEntries,
+          servers: kv.servers,
+        },
+        version: kv.snapshot_version,
+        writtenAt: kv.snapshot_written_at,
+      };
+    }
+  }
+  const bundled = await readBundledSnapshot();
+  return {
+    snapshot: {
+      fetchedAt: bundled.fetchedAt,
+      totalEntries: bundled.totalEntries,
+      servers: bundled.servers,
+    },
+    version: bundled.snapshot_version,
+    writtenAt: bundled.snapshot_written_at,
+  };
+}
 
 export async function loadSnapshot(): Promise<Snapshot> {
-  const raw = await fs.readFile(SNAPSHOT_PATH, 'utf8');
-  return JSON.parse(raw) as Snapshot;
+  const loaded = await resolveSnapshot();
+  return loaded.snapshot;
+}
+
+export async function loadSnapshotMeta(): Promise<{ version: string; writtenAt: string; fetchedAt: string }> {
+  if (_cache) {
+    return {
+      version: _cache.loaded.version,
+      writtenAt: _cache.loaded.writtenAt,
+      fetchedAt: _cache.loaded.snapshot.fetchedAt,
+    };
+  }
+  const loaded = await resolveSnapshot();
+  return {
+    version: loaded.version,
+    writtenAt: loaded.writtenAt,
+    fetchedAt: loaded.snapshot.fetchedAt,
+  };
 }
 
 export async function loadServers(): Promise<IndexedServer[]> {
   if (_cache) return _cache.servers;
-  const raw = await loadSnapshot();
-  const servers = raw.servers
+  const loaded = await resolveSnapshot();
+  const servers = loaded.snapshot.servers
     .filter(
       (e) =>
         e._meta['io.modelcontextprotocol.registry/official'].status ===
         'active',
     )
     .map(normalize)
-    .filter((s) => s.description && s.name);
-  _cache = { servers, raw };
+    .filter((s) => s.description && s.name && s.slug);
+  _cache = { servers, loaded };
   return servers;
 }
 

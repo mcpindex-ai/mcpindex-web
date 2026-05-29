@@ -77,21 +77,21 @@ export default async function BestCategory(
       <article className="mx-auto max-w-[920px] px-6 sm:px-10 pt-16 pb-24">
         <Link
           href="/leaderboard"
-          className="font-mono text-[11px] uppercase tracking-[0.18em] text-[--color-mute] hover:text-[--color-accent]"
+          className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-mute)] hover:text-[var(--color-accent)]"
         >
           ← Index
         </Link>
         <header className="mt-6">
-          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute]">
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
             §01&nbsp;&nbsp;Curated · {category}
           </div>
-          <h1 className="mt-3 t-page-h1 font-medium text-[--color-ink]">
+          <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
             Best {label} MCP servers.
           </h1>
-          <p className="mt-4 max-w-[680px] text-[15.5px] leading-[1.55] text-[--color-cite]">
+          <p className="mt-4 max-w-[680px] text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
             {inCategory.length} active servers indexed in this category.
             Ranked by{' '}
-            <Link href="/methodology" className="underline decoration-[--color-rule] underline-offset-4 hover:text-[--color-accent]">
+            <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
               MCP Quality Score
             </Link>
             . Updates daily.
@@ -99,13 +99,13 @@ export default async function BestCategory(
         </header>
 
         {ranked.length === 0 ? (
-          <p className="mt-12 text-[14px] text-[--color-mute]">
+          <p className="mt-12 text-[14px] text-[var(--color-mute)]">
             No active servers indexed in this category yet.{' '}
-            <Link href="/" className="underline hover:text-[--color-accent]">
+            <Link href="/" className="underline hover:text-[var(--color-accent)]">
               Search all servers
             </Link>{' '}
             or browse the{' '}
-            <Link href="/leaderboard" className="underline hover:text-[--color-accent]">
+            <Link href="/leaderboard" className="underline hover:text-[var(--color-accent)]">
               full leaderboard
             </Link>
             .
@@ -115,25 +115,25 @@ export default async function BestCategory(
             {ranked.map((row, i) => (
               <li
                 key={row.server.slug}
-                className="rule-b grid grid-cols-[40px_1fr_auto] gap-4 px-2 py-5 items-baseline group hover:bg-[--color-accent-soft]/40 transition-colors"
+                className="rule-b grid grid-cols-[40px_1fr_auto] gap-4 px-2 py-5 items-baseline group hover:bg-[var(--color-accent-soft)]/40 transition-colors"
               >
-                <span className="font-mono text-[12px] text-[--color-mute] tabular-nums">
+                <span className="font-mono text-[12px] text-[var(--color-mute)] tabular-nums">
                   #{String(i + 1).padStart(2, '0')}
                 </span>
                 <div className="min-w-0">
                   <Link
                     href={`/server/${row.server.slug}`}
-                    className="block font-medium text-[15.5px] text-[--color-ink] group-hover:text-[--color-accent] truncate transition-colors"
+                    className="block font-medium text-[15.5px] text-[var(--color-ink)] group-hover:text-[var(--color-accent)] truncate transition-colors"
                   >
                     {row.server.title}
                   </Link>
-                  <p className="mt-1 text-[13px] text-[--color-cite] line-clamp-2">
+                  <p className="mt-1 text-[13px] text-[var(--color-cite)] line-clamp-2">
                     {row.server.description}
                   </p>
                 </div>
                 <div className="text-right font-mono tabular-nums">
-                  <span className="text-[20px] text-[--color-ink]">{row.score}</span>
-                  <span className="text-[11px] text-[--color-mute] ml-1">/100</span>
+                  <span className="text-[20px] text-[var(--color-ink)]">{row.score}</span>
+                  <span className="text-[11px] text-[var(--color-mute)] ml-1">/100</span>
                 </div>
               </li>
             ))}
@@ -141,7 +141,7 @@ export default async function BestCategory(
         )}
 
         <section className="mt-16 rule-t pt-10">
-          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--color-mute] mb-6">
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-6">
             §02&nbsp;&nbsp;Other categories
           </div>
           <div className="flex flex-wrap gap-2">
@@ -149,7 +149,7 @@ export default async function BestCategory(
               <Link
                 key={c}
                 href={`/best/${c}`}
-                className="font-mono text-[11px] text-[--color-cite] border border-[--color-rule] px-2 py-1 hover:border-[--color-accent] hover:text-[--color-accent] transition-colors"
+                className="font-mono text-[11px] text-[var(--color-cite)] border border-[var(--color-rule)] px-2 py-1 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
               >
                 {CATEGORY_LABELS[c] ?? c}
               </Link>

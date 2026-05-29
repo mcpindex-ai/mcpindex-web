@@ -1,14 +1,17 @@
 {
   "name": "mcp-server-mcpindex",
-  "version": "0.1.0",
-  "description": "An MCP server for finding MCP servers. Drop-in for Claude Desktop, Cursor, Cline, Zed.",
+  "version": "0.2.0",
+  "description": "An MCP server for finding MCP servers, plus advisory trust verdicts (check_tool_trust, assess_server) for agent frameworks. Drop-in for Claude Desktop, Cursor, Cline, Zed.",
   "keywords": [
     "mcp",
     "model-context-protocol",
     "claude",
     "cursor",
     "agent",
-    "discovery"
+    "discovery",
+    "trust",
+    "tool-safety",
+    "governance"
   ],
   "homepage": "https://mcpindex.ai",
   "repository": {
@@ -31,8 +34,13 @@
   "files": [
     "src/",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
+  "scripts": {
+    "build": "node --check src/index.mjs && node --check src/trust.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
   }
