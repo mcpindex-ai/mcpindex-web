@@ -58,6 +58,8 @@ Add to Claude Desktop / Cursor / Cline / Zed. Three primary calls:
 
 - /docs                     How it works, how to wire it into Claude/Cursor/Cline/Zed, response anatomy.
 - /server/<slug>            Per-server detail (${servers} pages, JSON-LD typed, verdict surfaced when available).
+- /guides                   Practical guides: trust/security reviews, comparisons, integration how-tos.
+- /guides/<slug>            Individual guide (intent pages grounded in registry + trust data).
 - /best/<category>          Curated picks per category.
 - /leaderboard              Top 50 by MCP Quality Score.
 - /changelog                Weekly diff of registry changes.
