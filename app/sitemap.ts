@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { ALL_CATEGORIES } from '@/lib/categorize';
+import { loadSeoSlugs } from '@/lib/seo-content';
 
 export const revalidate = 86400;
 
@@ -39,7 +40,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: 'weekly',
   }));
 
-  const entries = [...staticRoutes, ...categoryRoutes, ...serverRoutes];
+  const seoSlugs = await loadSeoSlugs();
+  const seoRoutes: MetadataRoute.Sitemap = [
+    ...(seoSlugs.length
+      ? [{ url: `${base}/seo`, priority: 0.5, changeFrequency: 'weekly' as const }]
+      : []),
+    ...seoSlugs.map((slug) => ({
+      url: `${base}/seo/${slug}`,
+      priority: 0.5,
+      changeFrequency: 'monthly' as const,
+    })),
+  ];
+
+  const entries = [
+    ...staticRoutes,
+    ...categoryRoutes,
+    ...serverRoutes,
+    ...seoRoutes,
+  ];
   sitemapCache = { version: meta.version, entries };
   return entries;
 }
