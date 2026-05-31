@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { screenDescription, MAX_DESCRIPTION } from '@/lib/screen';
+import { checkScreenLimit } from '@/lib/ratelimit';
 
 // Live screen of a single pasted tool description. POST only. Rate-limiting on
 // /api/v1/* is enforced by proxy.ts (per-IP); this route adds a hard length cap
@@ -22,6 +23,22 @@ export async function POST(req: NextRequest) {
     return Response.json(
       { error: 'description_too_long', max: MAX_DESCRIPTION },
       { status: 413 },
+    );
+  }
+
+  // Cost guard before the paid Groq call: shared per-IP limit + global daily
+  // ceiling (Upstash). Vercel sets x-vercel-forwarded-for at the edge (client
+  // cannot forge it); raw x-forwarded-for is the off-Vercel fallback only.
+  const ip =
+    req.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    'unknown';
+  const limit = await checkScreenLimit(ip, new Date());
+  if (!limit.ok) {
+    return Response.json(
+      { error: 'rate_limited', scope: limit.reason },
+      { status: 429, headers: { 'retry-after': limit.reason === 'global' ? '3600' : '60' } },
     );
   }
 

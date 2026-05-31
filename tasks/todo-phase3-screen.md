@@ -64,10 +64,17 @@ secret can't transit the agent). Route is **fail-closed**: no key → 503 "scree
       poisoned -> FAIL+verbatim quote, benign -> PASS, missing -> 400, too-long -> 413.
 - [x] Post-verification review: SHIP, 0 HIGH/MEDIUM. 3 LOW FIXED (textarea label assoc,
       aria-live on results, response type-guard) + added "avoid pasting secrets" hint.
-- [ ] DEFERRED (pre-real-volume, not blocking): move rate-limit to Upstash + add a daily Groq
-      spend cap / circuit-breaker (cost-DoS bound regardless of IP distribution).
-- [ ] USER ACTION before live: add MCPINDEX_GROQ_API_KEY to Vercel prod env (route is
-      fail-closed 503 until then). Then push.
+- [x] CLOSED: lib/ratelimit.ts — Upstash-backed shared per-IP limit (10/min) + global daily
+      Groq ceiling (5000/day circuit-breaker), fail-open if Upstash unconfigured/errors
+      (proxy.ts per-IP is the backstop). Wired into the route before the Groq call -> 429.
+- [x] CLOSED: x-forwarded-for spoofing — Vercel docs confirm Vercel OVERWRITES the header and
+      does not forward external IPs (no spoofing on Vercel, non-Enterprise). IP-trust holds.
+- [x] DONE: MCPINDEX_GROQ_API_KEY set in Vercel Production; Phase 3 merged to main (014cdff) +
+      pushed; deploy verifying live.
+- [ ] USER TO CONFIRM: Groq key is scoped Production-only (NOT Preview/All) so preview deploys
+      fail-closed (no preview backdoor to Groq spend). Optional: enable preview Deployment Protection.
+- [ ] NOTE: Upstash rate-limit only enforces if UPSTASH_REDIS_REST_URL/TOKEN are set in Vercel;
+      otherwise it fails open to proxy.ts. Confirm those env vars exist for the global cap to bite.
 
 ## Out of scope
 Auth, paid tiers, Upstash rate-limit wiring (unless abused), multi-language judge, the
