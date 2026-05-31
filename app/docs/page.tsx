@@ -63,13 +63,18 @@ export default function DocsPage() {
           title="Direct HTTP API"
           who="For server-side agents, custom orchestrators, anything outside an MCP client."
           codeLines={[
-            `# trust: does this tool do what it claims?`,
+            `# trust: does this tool do what it claims? (per-server or per-tool)`,
             `curl "https://mcpindex.ai/api/v1/trust/server/<slug>"`,
+            ``,
+            `# screen: paste a description, get a live verdict (POST)`,
+            `curl -X POST "https://mcpindex.ai/api/v1/screen" \\`,
+            `  -H "content-type: application/json" \\`,
+            `  -d '{"description":"Reads a file and returns its contents."}'`,
             ``,
             `# discovery: find a tool for a task`,
             `curl "https://mcpindex.ai/api/v1/recommend?task=read+pdf+to+s3"`,
           ]}
-          notes="The trust endpoint returns the verdict (ALLOW / DENY / REVIEW); recommend returns ranked picks. Both JSON, same shape an MCP client gets."
+          notes="trust returns a stored verdict (ALLOW / DENY / REVIEW, or UNVERIFIED if not screened); screen runs the live LLM judge on a pasted description and returns a fresh PARTIAL verdict; recommend returns ranked picks. All JSON, same shapes an MCP client gets."
         />
         <UseCase
           letter="B"
@@ -161,17 +166,19 @@ Args:     -y mcp-server-mcpindex`}
           The trust endpoints (<Mono>/api/v1/trust/server/…</Mono> and{' '}
           <Mono>/api/v1/trust/tool/…</Mono>) return the free-tier verdict: a decision
           (ALLOW / DENY / REVIEW, or UNVERIFIED when a tool has not been screened), the
-          dimensions behind it with severity, a freshness window, and the honest limits
-          shipped on every verdict. See one rendered on any{' '}
-          <Ext href="/leaderboard">server page</Ext> or in the{' '}
+          dimensions behind it with severity, the screen granularity (description-level
+          today, tool-level for a few), a freshness window, and the honest limits shipped
+          on every verdict. See one rendered on a{' '}
+          <Ext href="/server/ai-moxt-mcp-workspace">server page</Ext> or in the{' '}
           <Ext href="/methodology">methodology</Ext>.
         </p>
         <pre className="overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[11.5px] leading-snug">
           <code>{`{
   "verdict_contract_version": "1.0.0",
   "subject": { "server_id": "community/quickpay-mcp", "tool_name": null },
-  "status": "EVALUATED",            // EVALUATED | PARTIAL | STALE | ERROR
-  "directive": "REVIEW",            // ALLOW | DENY | REVIEW | UNVERIFIED
+  "status": "PARTIAL",              // EVALUATED | PARTIAL | STALE | ERROR
+  "directive": "REVIEW",            // ALLOW | DENY | REVIEW
+  "granularity": "description-level",   // what was screened: "description-level" | "tool-level"
   "dimensions": [
     { "id": "mcpindex.integrity.description", "verdict": "PASS", "severity": "INFO" }
   ],
@@ -183,6 +190,13 @@ Args:     -y mcp-server-mcpindex`}
   ]
 }`}</code>
         </pre>
+        <p>
+          A server that has not been screened returns the same shape, fail-closed:{' '}
+          <Mono>status: &quot;ERROR&quot;</Mono>, <Mono>directive: &quot;UNVERIFIED&quot;</Mono>,
+          empty <Mono>dimensions</Mono>, and an added{' '}
+          <Mono>no_verdict_data_in_v1_advisory</Mono> honest limit. An agent must treat
+          UNVERIFIED as fail-closed - never as permission to proceed.
+        </p>
         <p>
           The recommendation endpoint (discovery) returns a tight JSON envelope. Three
           picks ranked by composite score, each with reasoning, install commands per
@@ -221,7 +235,7 @@ Args:     -y mcp-server-mcpindex`}
         <ul className="space-y-3">
           <Limit
             label="Rate"
-            body="60 requests / minute / IP on the free tier. No key required. 429 with Retry-After when exceeded. Email hello@mcpindex.ai for higher limits or for a Pro key."
+            body="60 requests / minute / IP across /api/v1/* on the free tier. The live screen endpoint (/api/v1/screen) is tighter - 10 / minute / IP plus a global daily ceiling, since each call runs an LLM. No key required. 429 with Retry-After when exceeded. Email hello@mcpindex.ai for higher limits or for a Pro key."
           />
           <Limit
             label="Schema stability"
@@ -365,6 +379,10 @@ Args:     -y mcp-server-mcpindex`}
               /api/v1/recommend
             </Ext>{' '}
             - try the API live with any natural-language task
+          </li>
+          <li>
+            <Ext href="/screen">/screen</Ext> - paste a tool description and watch the
+            live LLM judge return a verdict
           </li>
           <li>
             <Ext href="/methodology">/methodology</Ext> - open MCP Quality Score
