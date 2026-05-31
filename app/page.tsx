@@ -11,6 +11,12 @@ import { CATEGORY_LABELS } from '@/lib/categorize';
 
 export const revalidate = 3600;
 
+const VERDICT_CHIP: Record<string, string> = {
+  ALLOW: 'border-emerald-300 text-emerald-700 bg-emerald-50',
+  DENY: 'border-red-300 text-red-700 bg-red-50',
+  REVIEW: 'border-amber-300 text-amber-700 bg-amber-50',
+};
+
 export default async function Home() {
   const [servers, count, categories, screened] = await Promise.all([
     loadServers(),
@@ -19,6 +25,12 @@ export default async function Home() {
     listScreened(),
   ]);
   const top5 = rankByQuality(servers).slice(0, 5);
+  // The trust axis for the §04 leaderboard: each leader's verdict if we have
+  // screened it. Most maturity-leaders are not screened yet - showing that next
+  // to a 100/100 is "popular is not the same as honest", concretely.
+  const verdictBySlug = new Map(
+    screened.map((s) => [s.slug, s.verdict.directive.decision]),
+  );
 
   // Real verdicts (never fabricated) for the cycling reveal. Varied set: a DENY,
   // an ALLOW, a REVIEW where present, then fill to four.
@@ -258,6 +270,19 @@ export default async function Home() {
                   <div className="mt-0.5 font-mono text-[11px] text-[var(--color-mute)] truncate">
                     {row.server.name}
                   </div>
+                  <div className="mt-1.5">
+                    {verdictBySlug.has(row.server.slug) ? (
+                      <span
+                        className={`font-mono text-[10px] uppercase tracking-[0.12em] border px-1.5 py-0.5 ${VERDICT_CHIP[verdictBySlug.get(row.server.slug)!] ?? ''}`}
+                      >
+                        {verdictBySlug.get(row.server.slug)!.toLowerCase()}
+                      </span>
+                    ) : (
+                      <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-mute)]">
+                        not screened yet
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="hidden sm:block font-mono text-[11px] text-[var(--color-mute)] truncate">
                   {CATEGORY_LABELS[row.server.category] ?? row.server.category}
@@ -269,6 +294,16 @@ export default async function Home() {
               </li>
             ))}
           </ol>
+          <p className="mt-6 font-mono text-[12px] text-[var(--color-mute)]">
+            Screened so far:{' '}
+            <span className="text-[var(--color-ink)] tabular-nums">{screened.length}</span> tools.{' '}
+            <Link
+              href="/best"
+              className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            >
+              browse the evidence →
+            </Link>
+          </p>
         </div>
       </section>
 
