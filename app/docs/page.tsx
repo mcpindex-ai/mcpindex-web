@@ -15,7 +15,7 @@ const FONT_MONO = '"Geist Mono", ui-monospace, monospace';
 
 export default function DocsPage() {
   return (
-    <article className="mx-auto max-w-[820px] px-6 sm:px-10 pt-16 pb-24">
+    <article className="mx-auto max-w-[760px] px-6 sm:px-10 pt-16 pb-24">
       {/* §00 - Hero */}
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
