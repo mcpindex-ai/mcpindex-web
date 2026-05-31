@@ -44,7 +44,7 @@ export default async function Leaderboard() {
     <article className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-16 pb-24">
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
-          §01&nbsp;&nbsp;Two axes · top 50 by quality
+          Two axes · top 50 by quality
         </div>
         <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
           Quality, and the verdict.

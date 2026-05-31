@@ -143,7 +143,7 @@ export default async function Home() {
       <section id="watch" className="rule-t scroll-mt-20">
         <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-14 sm:py-16">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
-            §01&nbsp;&nbsp;Watch
+            Watch
           </div>
           <h2 className="t-h3 font-medium text-[var(--color-ink)] max-w-[680px]">
             The trust-to-act layer, in 90 seconds.
@@ -179,7 +179,7 @@ export default async function Home() {
         <section className="rule-t">
           <div className="reveal mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
             <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
-              §02&nbsp;&nbsp;The verdict object
+              The verdict object
             </div>
             <h2 className="t-h3 font-medium text-[var(--color-ink)] max-w-[680px]">
               A verdict, not a vibe.
@@ -205,7 +205,7 @@ export default async function Home() {
       <section className="rule-t">
         <div className="reveal mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-10">
-            §03&nbsp;&nbsp;Three primitives
+            Three primitives
           </div>
           <PillarRow
             num="01"
@@ -234,7 +234,7 @@ export default async function Home() {
           <div className="flex items-baseline justify-between gap-6 mb-10">
             <div>
               <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
-                §04&nbsp;&nbsp;Two axes
+                Two axes
               </div>
               <h2 className="mt-3 t-h3 font-medium text-[var(--color-ink)]">
                 Popular is not the same as honest.
@@ -317,7 +317,7 @@ export default async function Home() {
       <section className="rule-t">
         <div className="reveal mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
-            §05&nbsp;&nbsp;Also a directory
+            Also a directory
           </div>
           <h2 className="t-h3 font-medium text-[var(--color-ink)] max-w-[680px]">
             Find the tool, then check the verdict.
@@ -336,7 +336,7 @@ export default async function Home() {
       <section className="rule-t">
         <div className="reveal mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
-            §06&nbsp;&nbsp;Honest about the edges
+            Honest about the edges
           </div>
           <h2 className="t-h3 font-medium text-[var(--color-ink)] max-w-[680px]">
             What we don&apos;t claim.
@@ -369,7 +369,7 @@ export default async function Home() {
       <section id="install" className="rule-t scroll-mt-20">
         <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-24">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
-            §07&nbsp;&nbsp;Use it now
+            Use it now
           </div>
           <h2 className="t-h3 font-medium text-[var(--color-ink)] max-w-[680px]">
             Free, and live now.

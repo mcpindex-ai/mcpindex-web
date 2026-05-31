@@ -46,7 +46,7 @@ export default async function Changelog() {
     <article className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-16 pb-24">
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
-          §01&nbsp;&nbsp;Changelog
+          Changelog
         </div>
         <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
           Registry diff · last 30 days.
@@ -105,7 +105,7 @@ export default async function Changelog() {
 
       <section className="mt-16 rule-t pt-10">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
-          §02&nbsp;&nbsp;Daily counts (all-time)
+          Daily counts (all-time)
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-1 font-mono text-[12px]">
           {buckets.slice(0, 28).map(([day, count]) => (

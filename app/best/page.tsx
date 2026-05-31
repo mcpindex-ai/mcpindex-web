@@ -19,7 +19,7 @@ export default async function BestIndex() {
     <article className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-16 pb-24">
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
-          §01&nbsp;&nbsp;Best of · index
+          Best of · index
         </div>
         <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
           Curated picks by category.

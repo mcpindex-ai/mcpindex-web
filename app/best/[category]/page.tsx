@@ -98,7 +98,7 @@ export default async function BestCategory(
         </Link>
         <header className="mt-6">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
-            §01&nbsp;&nbsp;Ranked · {category}
+            Ranked · {category}
           </div>
           <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
             Best {label} MCP servers.
@@ -157,7 +157,7 @@ export default async function BestCategory(
 
         <section className="mt-16 rule-t pt-10">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-6">
-            §02&nbsp;&nbsp;Other categories
+            Other categories
           </div>
           <div className="flex flex-wrap gap-2">
             {ALL_CATEGORIES.filter((c) => c !== category).map((c) => (
@@ -228,7 +228,7 @@ async function FilesystemEvidence() {
         </Link>
         <header className="mt-6">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
-            §01&nbsp;&nbsp;Screened · filesystem
+            Screened · filesystem
           </div>
           <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
             Filesystem MCP servers, screened for description honesty.
@@ -300,7 +300,7 @@ async function FilesystemEvidence() {
         {fixtures.length > 0 && (
           <section className="mt-16 rule-t pt-10">
             <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
-              §02&nbsp;&nbsp;Adversarial test fixtures
+              Adversarial test fixtures
             </div>
             <p className="mb-6 max-w-[680px] text-[14px] leading-[1.55] text-[var(--color-cite)]">
               These are <strong>synthetic, hand-authored</strong> poisoned tool
@@ -339,7 +339,7 @@ async function FilesystemEvidence() {
 
         <section className="mt-16 rule-t pt-10">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-6">
-            §03&nbsp;&nbsp;Other categories
+            Other categories
           </div>
           <div className="flex flex-wrap gap-2">
             {ALL_CATEGORIES.filter((c) => c !== 'filesystem').map((c) => (

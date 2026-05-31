@@ -9,7 +9,7 @@ export default function TermsPage() {
   return (
     <article className="mx-auto max-w-[760px] px-6 sm:px-10 pt-16 pb-24">
       <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
-        §01&nbsp;&nbsp;Terms of use
+        Terms of use
       </div>
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
         Terms.

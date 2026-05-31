@@ -11,7 +11,7 @@ export default function MethodologyPage() {
   return (
     <article className="mx-auto max-w-[760px] px-6 sm:px-10 pt-16 pb-24">
       <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
-        §01&nbsp;&nbsp;Methodology · v1 advisory
+        Methodology · v1 advisory
       </div>
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
         How a verdict is produced.
@@ -27,7 +27,7 @@ export default function MethodologyPage() {
 
       <section className="mt-12">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
-          §02&nbsp;&nbsp;Hybrid eval
+          Hybrid eval
         </div>
         <ul className="rule-t">
           <Dim
@@ -50,7 +50,7 @@ export default function MethodologyPage() {
 
       <section className="mt-12 rule-t pt-10">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
-          §03&nbsp;&nbsp;Four-state verdict
+          Four-state verdict
         </div>
         <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)] max-w-[680px]">
           The directive an agent reads is one of three decisions, on top of a
@@ -83,7 +83,7 @@ export default function MethodologyPage() {
 
       <section className="mt-12 rule-t pt-10">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
-          §04&nbsp;&nbsp;Honest limits (v1)
+          Honest limits (v1)
         </div>
         <ul className="space-y-3 text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
           <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Definition, not runtime.</strong> The eval is bound to the tool definition (description + schema) at evaluation time. Runtime behavior on a specific call is not covered.</li>
@@ -102,7 +102,7 @@ export default function MethodologyPage() {
 
       <section className="mt-12 rule-t pt-10">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
-          §05&nbsp;&nbsp;Quality score (directory axis)
+          Quality score (directory axis)
         </div>
         <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)] max-w-[680px]">
           The trust verdict answers &ldquo;does this tool behave as it
@@ -125,7 +125,7 @@ export default function MethodologyPage() {
 
       <section className="mt-12 rule-t pt-10">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
-          §06&nbsp;&nbsp;Cite this
+          Cite this
         </div>
         <pre className="bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] overflow-x-auto leading-snug">
           <code>{`Bharti, G. "mcpindex: the trust-to-act layer for agent tool use." mcpindex.ai/methodology, 2026.

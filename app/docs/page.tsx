@@ -19,7 +19,7 @@ export default function DocsPage() {
       {/* §00 - Hero */}
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
-          §00&nbsp;&nbsp;Documentation
+          Documentation
         </div>
         <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
           Wire trust into your agent.
@@ -76,7 +76,7 @@ export default function DocsPage() {
           title="Drop-in MCP server"
           who="For Claude Desktop, Cursor, Cline, Zed. Install once, the agent finds the rest from inside the loop."
           codeLines={[`npm install -g mcp-server-mcpindex`]}
-          notes="The package is a thin client to the same API. Zero config in most clients - see §03."
+          notes="The package is a thin client to the same API. Zero config in most clients - see the wiring step below."
         />
         <UseCase
           letter="C"
@@ -160,11 +160,29 @@ Args:     -y mcp-server-mcpindex`}
         <p>
           The trust endpoints (<Mono>/api/v1/trust/server/…</Mono> and{' '}
           <Mono>/api/v1/trust/tool/…</Mono>) return the free-tier verdict: a decision
-          (ALLOW / DENY / REVIEW), the dimensions behind it with severity, and the honest
-          limits shipped on every verdict. See one rendered on any{' '}
+          (ALLOW / DENY / REVIEW, or UNVERIFIED when a tool has not been screened), the
+          dimensions behind it with severity, a freshness window, and the honest limits
+          shipped on every verdict. See one rendered on any{' '}
           <Ext href="/leaderboard">server page</Ext> or in the{' '}
           <Ext href="/methodology">methodology</Ext>.
         </p>
+        <pre className="overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[11.5px] leading-snug">
+          <code>{`{
+  "verdict_contract_version": "1.0.0",
+  "subject": { "server_id": "community/quickpay-mcp", "tool_name": null },
+  "status": "EVALUATED",            // EVALUATED | PARTIAL | STALE | ERROR
+  "directive": "REVIEW",            // ALLOW | DENY | REVIEW | UNVERIFIED
+  "dimensions": [
+    { "id": "mcpindex.integrity.description", "verdict": "PASS", "severity": "INFO" }
+  ],
+  "expires_at": "2026-06-07T00:00:00Z",   // re-screen after this; trust decays
+  "honest_limits": [
+    "conformance_monitored_not_enforced",
+    "calibrated_false_v1",
+    "advisory_deployment"
+  ]
+}`}</code>
+        </pre>
         <p>
           The recommendation endpoint (discovery) returns a tight JSON envelope. Three
           picks ranked by composite score, each with reasoning, install commands per
@@ -389,26 +407,16 @@ Args:     -y mcp-server-mcpindex`}
 /* ─── Layout primitives ───────────────────────────────────────── */
 
 function Section({
-  number,
   title,
   children,
 }: {
-  number: string;
+  number?: string;
   title: string;
   children: React.ReactNode;
 }) {
   return (
     <section className="mt-14">
-      <div
-        className="flex items-baseline gap-3 border-t pt-6"
-        style={{ borderColor: 'var(--color-rule)' }}
-      >
-        <span
-          className="text-[11px] font-semibold uppercase tracking-[0.22em]"
-          style={{ fontFamily: FONT_MONO, color: 'var(--color-mute)' }}
-        >
-          §{number}
-        </span>
+      <div className="border-t pt-6" style={{ borderColor: 'var(--color-rule)' }}>
         <h2
           className="text-[22px] tracking-tight font-medium"
           style={{ color: 'var(--color-ink)' }}

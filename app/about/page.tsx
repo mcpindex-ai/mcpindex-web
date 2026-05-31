@@ -11,7 +11,7 @@ export default function AboutPage() {
   return (
     <article className="mx-auto max-w-[760px] px-6 sm:px-10 pt-16 pb-24">
       <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
-        §01&nbsp;&nbsp;About
+        About
       </div>
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
         The trust-to-act layer for agent tool use.
@@ -94,7 +94,7 @@ export default function AboutPage() {
 
       <section className="mt-16 rule-t pt-10">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
-          §02&nbsp;&nbsp;Author
+          Author
         </div>
         <h2 className="text-[22px] tracking-tight font-medium text-[var(--color-ink)]">
           Gautam Bharti
@@ -128,7 +128,7 @@ export default function AboutPage() {
 
       <section className="mt-12 rule-t pt-10">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
-          §03&nbsp;&nbsp;Affiliation
+          Affiliation
         </div>
         <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
           mcpindex.ai is an independent research and engineering artifact. It
