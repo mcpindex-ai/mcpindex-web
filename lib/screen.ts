@@ -1,8 +1,8 @@
-// Live "screen a tool description" judge call. The canonical judge is Python
-// (mcpindex-trust/src/trust/providers.py); a serverless route can't import it,
-// so this MIRRORS the frozen system prompt + model and calls Groq directly.
+// Live "screen a tool description" judge call. The canonical judge is the
+// internal Python harness; a serverless route can't import it, so this MIRRORS
+// the frozen system prompt + model and calls Groq directly.
 //
-// IMPORTANT: keep SYSTEM_PROMPT in sync with providers.py `_SYSTEM_PROMPT`. It is
+// IMPORTANT: keep SYSTEM_PROMPT in sync with the canonical judge prompt. It is
 // extended here with a `quote` field (the verbatim offending line) so the UI can
 // highlight it; that superset means this path does NOT share the canonical
 // policy_hash and is advisory-only by design.

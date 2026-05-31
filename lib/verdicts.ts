@@ -1,7 +1,7 @@
 // Canonical reader for the seeded verdict store (data/verdicts.json), written
-// by the seed pipeline (mcpindex-trust/scripts/seed_filesystem.py). One source
-// of truth for both the per-server trust panel and the /best evidence
-// directory. Enum case is normalized to the UPPERCASE wire convention so the
+// by the internal seed pipeline. One source of truth for both the per-server
+// trust panel and the /best evidence directory. Enum case is normalized to the
+// UPPERCASE wire convention so the
 // store tolerates the contract's lowercase enum values and any future
 // live-service output. No HTTP: read once at build/SSG time.
 

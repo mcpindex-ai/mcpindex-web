@@ -49,7 +49,10 @@ export function proxy(req: NextRequest) {
   // proxy.md, "Execution order"). This in-function path check guarantees we
   // only rate-limit /api/v1/* even if the matcher is later widened - per Next's
   // "verify inside, don't rely on the matcher alone" guidance. Keep it.
-  if (!req.nextUrl.pathname.startsWith('/api/v1/')) {
+  // Rate-limited surfaces: the public /api/v1/* API and /api/waitlist (which
+  // writes a log line per submit and is otherwise unthrottled - floodable).
+  const p = req.nextUrl.pathname;
+  if (!p.startsWith('/api/v1/') && p !== '/api/waitlist') {
     return NextResponse.next();
   }
   // Vercel signs x-vercel-forwarded-for; raw x-forwarded-for is attacker-
@@ -88,5 +91,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/v1/:path*'],
+  matcher: ['/api/v1/:path*', '/api/waitlist'],
 };
