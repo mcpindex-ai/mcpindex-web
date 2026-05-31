@@ -150,6 +150,18 @@ code execution), deepen to tool-level later (remote via HTTP, local via containe
 
 ---
 
+### SHIPPED 2026-05-30
+- Branched + committed both repos, post-verification review (SHIP, 0 HIGH, 3 LOW fixed),
+  then merged to main + pushed:
+  - mcpindex-web main @ 5f7cd73 (Phase 0 + Phase 1 seed + Phase 2 UI + hierarchy). Vercel prod
+    deploy dpl_7vwmWmr building; prior good deploy d09e767 is the rollback candidate (zero-downtime).
+  - mcpindex-trust main @ 8a496d8 (seeder + .env gitignore protection; .env confirmed ignored on main).
+- LIVE CONFIRMED on mcpindex.ai (deploy READY ~330s): /best/filesystem serves the evidence
+  directory + fixtures showcase; seeded server pages show Trust badge + PARTIAL/REVIEW;
+  homepage + /llms.txt no longer say "Both legs execute". Zero downtime.
+- Follow-ups (not blocking): Phase 3 live /api/v1/screen demo (needs Groq key in Vercel then);
+  tool-level probing increment (remote via HTTP, local via container); server-page §03 polish.
+
 ## Out of scope (explicit — wrong-stage work for MVP)
 - Cron/automated re-eval pipeline (manual run for the seed is fine).
 - Other 28 categories (stay quality-list).
