@@ -36,20 +36,20 @@ const EMBED_SNIPPET = `<iframe src="${EMBED_URL}" width="720" height="405"
 
 export default function DemoPage() {
   return (
-    <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-12 sm:py-16">
-      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+    <div className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-16 pb-24">
+      <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
         Demo
-      </p>
-      <h1 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-900">
+      </div>
+      <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
         The trust-to-act layer, in 90 seconds.
       </h1>
-      <p className="mt-4 max-w-2xl text-zinc-600 leading-relaxed">
-        Agents don&apos;t just answer anymore - they act. Before your agent calls an MCP tool,
-        mcpindex returns a verdict on whether the tool does what it claims. Here is the whole
-        loop, end to end.
+      <p className="mt-5 max-w-[640px] text-[16px] leading-[1.6] text-[var(--color-cite)]">
+        Agents don&apos;t just answer anymore - they act. Before your agent calls an MCP
+        tool, mcpindex returns a verdict on whether the tool does what it claims. Here is the
+        whole loop, end to end.
       </p>
 
-      <div className="mt-8 overflow-hidden rounded-2xl border border-zinc-200 shadow-sm bg-black">
+      <div className="mt-8 max-w-[900px] rule-t rule-b rule-l rule-r bg-black">
         <video
           className="w-full aspect-video"
           controls
@@ -62,31 +62,31 @@ export default function DemoPage() {
         </video>
       </div>
 
-      <section className="mt-14">
-        <h2 className="text-lg font-semibold tracking-tight text-zinc-900">
+      <section className="mt-16 max-w-[900px]">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
           Embed it anywhere
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm text-zinc-600 leading-relaxed">
-          Drop this into any page or share the link on social - it unfurls to a playable card on
-          X and LinkedIn.
+        </div>
+        <p className="max-w-[620px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+          Drop this into any page, or share the link on social - it unfurls to a playable
+          card on X and LinkedIn.
         </p>
-        <pre className="mt-4 overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-[12.5px] leading-relaxed text-zinc-800 font-mono">
+        <pre className="mt-4 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
           <code>{EMBED_SNIPPET}</code>
         </pre>
-        <div className="mt-4 flex flex-wrap gap-x-8 gap-y-2 font-mono text-[12.5px]">
-          <a className="text-amber-700 hover:text-amber-800" href="/promo/mcpindex-promo.mp4">
-            Direct video (.mp4)
+        <div className="mt-5 flex flex-wrap gap-x-8 gap-y-2 font-mono text-[12.5px]">
+          <a className="text-[var(--color-cite)] hover:text-[var(--color-accent)]" href="/promo/mcpindex-promo.mp4">
+            Direct video (.mp4) →
           </a>
-          <a className="text-amber-700 hover:text-amber-800" href={EMBED_URL}>
-            Embed page
+          <a className="text-[var(--color-cite)] hover:text-[var(--color-accent)]" href={EMBED_URL}>
+            Embed page →
           </a>
           <a
-            className="text-amber-700 hover:text-amber-800"
+            className="text-[var(--color-cite)] hover:text-[var(--color-accent)]"
             href="https://twitter.com/intent/tweet?text=The%20trust-to-act%20layer%20for%20agents.&url=https%3A%2F%2Fmcpindex.ai%2Fdemo"
             target="_blank"
             rel="noreferrer"
           >
-            Share on X
+            Share on X →
           </a>
         </div>
       </section>

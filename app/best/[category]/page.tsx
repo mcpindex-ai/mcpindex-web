@@ -89,7 +89,7 @@ export default async function BestCategory(
           __html: JSON.stringify(faqLd).replace(/</g, '\\u003c').replace(/>/g, '\\u003e'),
         }}
       />
-      <article className="mx-auto max-w-[920px] px-6 sm:px-10 pt-16 pb-24">
+      <article className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-16 pb-24">
         <Link
           href="/leaderboard"
           className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-mute)] hover:text-[var(--color-accent)]"
@@ -219,7 +219,7 @@ async function FilesystemEvidence() {
           __html: JSON.stringify(faqLd).replace(/</g, '\\u003c').replace(/>/g, '\\u003e'),
         }}
       />
-      <article className="mx-auto max-w-[920px] px-6 sm:px-10 pt-16 pb-24">
+      <article className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-16 pb-24">
         <Link
           href="/best"
           className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-mute)] hover:text-[var(--color-accent)]"
