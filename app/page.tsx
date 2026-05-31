@@ -4,6 +4,7 @@ import { AgentDemo } from '@/components/AgentDemo';
 import { ScreenDemo } from '@/components/ScreenDemo';
 import { VerdictReveal } from '@/components/VerdictReveal';
 import { CopyField } from '@/components/CopyField';
+import { CopyIconButton } from '@/components/CopyIconButton';
 import { loadServers, getServerCount, getCategoryCount } from '@/lib/registry';
 import { rankByQuality } from '@/lib/quality';
 import { listScreened } from '@/lib/verdicts';
@@ -16,6 +17,9 @@ const VERDICT_CHIP: Record<string, string> = {
   DENY: 'border-red-300 text-red-700 bg-red-50',
   REVIEW: 'border-amber-300 text-amber-700 bg-amber-50',
 };
+
+const EMBED_IFRAME =
+  '<iframe src="https://mcpindex.ai/embed.html" width="720" height="405" style="border:0;border-radius:12px;max-width:100%" allowfullscreen allow="fullscreen; encrypted-media; picture-in-picture" title="mcpindex - 90-second demo"></iframe>';
 
 export default async function Home() {
   const [servers, count, categories, screened] = await Promise.all([
@@ -160,10 +164,12 @@ export default async function Home() {
               Your browser does not support the video tag.
             </video>
           </div>
-          <div className="mt-4 font-mono text-[12px]">
-            <Link href="/demo" className="text-[var(--color-cite)] hover:text-[var(--color-accent)]">
-              full demo + embed code →
-            </Link>
+          <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
+            <CopyIconButton value={EMBED_IFRAME} label="embed code" />
+            <CopyIconButton
+              value="https://mcpindex.ai/promo/mcpindex-promo.mp4"
+              label="video link"
+            />
           </div>
         </div>
       </section>
