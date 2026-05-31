@@ -159,7 +159,7 @@ export default async function Home() {
       {/* §02 The verdict object - a real, cycling reveal */}
       {reveals.length > 0 && (
         <section className="rule-t">
-          <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
+          <div className="reveal mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
             <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
               §02&nbsp;&nbsp;The verdict object
             </div>
@@ -185,7 +185,7 @@ export default async function Home() {
 
       {/* §03 Three primitives */}
       <section className="rule-t">
-        <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
+        <div className="reveal mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-10">
             §03&nbsp;&nbsp;Three primitives
           </div>
@@ -212,7 +212,7 @@ export default async function Home() {
 
       {/* §04 Two axes - quality leaderboard (secondary) */}
       <section className="rule-t">
-        <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
+        <div className="reveal mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
           <div className="flex items-baseline justify-between gap-6 mb-10">
             <div>
               <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
@@ -274,7 +274,7 @@ export default async function Home() {
 
       {/* §05 Also a directory - discovery, demoted below the trust story */}
       <section className="rule-t">
-        <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
+        <div className="reveal mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
             §05&nbsp;&nbsp;Also a directory
           </div>
@@ -293,7 +293,7 @@ export default async function Home() {
 
       {/* §06 Honest about the edges */}
       <section className="rule-t">
-        <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
+        <div className="reveal mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
             §06&nbsp;&nbsp;Honest about the edges
           </div>
