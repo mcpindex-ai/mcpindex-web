@@ -5,7 +5,7 @@ import { ArchDiagram } from '@/components/ArchDiagram';
 export const metadata: Metadata = {
   title: 'How it works',
   description:
-    'How agents call mcpindex.ai. The architecture, the three integration shapes, the wiring config for Claude Desktop, Cursor, Cline, and Zed, and the response anatomy.',
+    'Wire trust verdicts into your agent. The verdict API and drop-in MCP server, client wiring for Claude Desktop / Cursor / Cline / Zed, and the response anatomy. A recommendation endpoint also covers discovery.',
   alternates: { canonical: 'https://mcpindex.ai/docs' },
 };
 
@@ -16,41 +16,45 @@ const FONT_MONO = '"Geist Mono", ui-monospace, monospace';
 export default function DocsPage() {
   return (
     <article className="mx-auto max-w-[820px] px-6 sm:px-10 pt-16 pb-24">
-      {/* §00 — Hero */}
+      {/* §00 - Hero */}
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
           §00&nbsp;&nbsp;Documentation
         </div>
         <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
-          How agents call mcpindex.ai.
+          Wire trust into your agent.
         </h1>
         <p className="mt-5 max-w-[640px] text-[16px] leading-[1.6] text-[var(--color-cite)]">
-          An MCP-native API. Free, no key required, low-latency. Three integration shapes:
-          direct HTTP, drop-in MCP server (recommended), or embedded into your platform.
-          The whole surface fits on this page.
+          An MCP-native API. Free, no key required, low-latency. Ask for a verdict
+          (ALLOW / DENY / REVIEW) on a tool before your agent calls it; a recommendation
+          endpoint also covers discovery. Three integration shapes: direct HTTP, drop-in
+          MCP server (recommended), or embedded into your platform. The whole surface fits
+          on this page.
         </p>
       </header>
 
-      {/* §01 — The shape */}
+      {/* §01 - The shape */}
       <Section number="01" title="The shape">
         <p>
           Five components in the request path; a refresh job keeps the catalog current.
         </p>
         <ArchDiagram />
         <p>
-          Top-down: a request originates in your agent client, passes through a
-          discovery adapter into the recommendation API, ranks against an indexed
-          catalog of MCP servers, and returns three ranked picks with reasoning and
-          install commands. The catalog is rebuilt daily from an upstream source.
+          Top-down: a request originates in your agent client and passes through an
+          adapter into the API. The trust path returns a verdict for a given tool (does
+          it do what its description claims); the discovery path ranks an indexed catalog
+          of MCP servers and returns picks with install commands. The catalog is rebuilt
+          daily from an upstream source.
         </p>
         <p>
           What you don&rsquo;t need to care about as a caller: which storage layer
           backs the catalog, where the refresh worker runs, what compute hosts the API.
-          The contract is the recommendation endpoint; everything else is internal.
+          The contracts are the verdict endpoint (trust) and the recommendation endpoint
+          (discovery); everything else is internal.
         </p>
       </Section>
 
-      {/* §02 — Three ways to use it */}
+      {/* §02 - Three ways to use it */}
       <Section number="02" title="Three ways to use it">
         <p>Pick the shape that matches where the agent lives.</p>
 
@@ -68,7 +72,7 @@ export default function DocsPage() {
           title="Drop-in MCP server"
           who="For Claude Desktop, Cursor, Cline, Zed. Install once, the agent finds the rest from inside the loop."
           codeLines={[`npm install -g mcp-server-mcpindex`]}
-          notes="The package is a thin client to the same API. Zero config in most clients — see §03."
+          notes="The package is a thin client to the same API. Zero config in most clients - see §03."
         />
         <UseCase
           letter="C"
@@ -84,7 +88,7 @@ export default function DocsPage() {
         />
       </Section>
 
-      {/* §03 — Wire it to your client */}
+      {/* §03 - Wire it to your client */}
       <Section number="03" title="Wire it to your client">
         <p>
           The server is identical across clients. Only the config-file location and
@@ -147,12 +151,20 @@ Args:     -y mcp-server-mcpindex`}
         </p>
       </Section>
 
-      {/* §04 — Anatomy of a response */}
+      {/* §04 - Anatomy of a response */}
       <Section number="04" title="Anatomy of a response">
         <p>
-          The recommendation endpoint returns a tight JSON envelope. Three picks ranked
-          by composite score, each with reasoning, install commands per registry type,
-          and the live MCP Quality Score.
+          The trust endpoints (<Mono>/api/v1/trust/server/…</Mono> and{' '}
+          <Mono>/api/v1/trust/tool/…</Mono>) return the free-tier verdict: a decision
+          (ALLOW / DENY / REVIEW), the dimensions behind it with severity, and the honest
+          limits shipped on every verdict. See one rendered on any{' '}
+          <Ext href="/leaderboard">server page</Ext> or in the{' '}
+          <Ext href="/methodology">methodology</Ext>.
+        </p>
+        <p>
+          The recommendation endpoint (discovery) returns a tight JSON envelope. Three
+          picks ranked by composite score, each with reasoning, install commands per
+          registry type, and the live MCP Quality Score.
         </p>
         <pre className="overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[11.5px] leading-snug">
           <code>{`{
@@ -177,12 +189,12 @@ Args:     -y mcp-server-mcpindex`}
     },
     /* … 2 more ranked picks … */
   ],
-  "note": "v0 ranker — heuristic score blends keyword match (70%) with MCP Quality Score (30%). See /methodology."
+  "note": "v0 ranker - heuristic score blends keyword match (70%) with MCP Quality Score (30%). See /methodology."
 }`}</code>
         </pre>
       </Section>
 
-      {/* §05 — Limits + guarantees */}
+      {/* §05 - Limits + guarantees */}
       <Section number="05" title="Limits + guarantees">
         <ul className="space-y-3">
           <Limit
@@ -220,12 +232,12 @@ Args:     -y mcp-server-mcpindex`}
           />
           <Limit
             label="Authentication"
-            body="None on free tier — public endpoints. CORS open. Pro tier (when ramped) uses bearer tokens; existing free endpoints stay open."
+            body="None on free tier - public endpoints. CORS open. Pro tier (when ramped) uses bearer tokens; existing free endpoints stay open."
           />
         </ul>
       </Section>
 
-      {/* §06 — How this compares */}
+      {/* §06 - How this compares */}
       <Section number="06" title="How this compares">
         <p>
           Five common ways an agent (or developer) finds an MCP server today. mcpindex.ai
@@ -307,49 +319,48 @@ Args:     -y mcp-server-mcpindex`}
         </div>
 
         <p className="mt-6">
-          The honest framing: mcpindex.ai is a recommendation surface on top of the
-          Anthropic registry &mdash; not a replacement for it. The registry is the
-          canonical source of truth. Existing human directories serve a real purpose for
-          developers browsing on a laptop. mcpindex.ai sits in the agent-callable slot
-          between them and is designed for the moment your IDE or autonomous agent needs
-          to pick a server in &lt;500ms with no human in the loop.
+          The honest framing: the table above is the discovery axis. mcpindex.ai sits on
+          top of the Anthropic registry for discovery, not as a replacement; the registry
+          is the canonical source of truth. The reason mcpindex exists is the second axis
+          these tools don&rsquo;t have at all: a trust verdict on whether a tool does what
+          it claims, before your agent acts on it.
         </p>
 
         <p className="text-[13.5px]" style={{ color: 'var(--color-mute)' }}>
           Footnote on &ldquo;ranked picks&rdquo;: the registry returns servers in
           publication order; PulseMCP and Smithery offer hand-curated featured
           collections but no programmatic per-task ranking. mcpindex.ai computes a
-          composite score (search match × MCP Quality Score) per request &mdash; see{' '}
+          composite score (search match × MCP Quality Score) per request - see{' '}
           <Ext href="/methodology">/methodology</Ext> for the algorithm.
         </p>
       </Section>
 
-      {/* §07 — Where to next */}
+      {/* §07 - Where to next */}
       <Section number="07" title="Where to next">
         <ul className="space-y-1.5 text-sm">
           <li>
             <Ext href="/api/v1/recommend?task=postgres+with+read+only+mode">
               /api/v1/recommend
             </Ext>{' '}
-            — try the API live with any natural-language task
+            - try the API live with any natural-language task
           </li>
           <li>
-            <Ext href="/methodology">/methodology</Ext> — open MCP Quality Score
+            <Ext href="/methodology">/methodology</Ext> - open MCP Quality Score
             methodology, source on GitHub
           </li>
           <li>
-            <Ext href="/leaderboard">/leaderboard</Ext> — top 50 servers ranked by
+            <Ext href="/leaderboard">/leaderboard</Ext> - top 50 servers ranked by
             Quality Score
           </li>
           <li>
-            <Ext href="/changelog.rss">/changelog.rss</Ext> — RSS feed of new servers
+            <Ext href="/changelog.rss">/changelog.rss</Ext> - RSS feed of new servers
             indexed each day
           </li>
           <li>
             <Ext href="https://github.com/mcpindex-ai/mcp-server-mcpindex">
               github.com/mcpindex-ai/mcp-server-mcpindex
             </Ext>{' '}
-            — npm package source, MIT
+            - npm package source, MIT
           </li>
         </ul>
         <p
