@@ -2,11 +2,11 @@ import Link from 'next/link';
 import { LiveTicker } from '@/components/LiveTicker';
 import { AgentDemo } from '@/components/AgentDemo';
 import { ScreenDemo } from '@/components/ScreenDemo';
-import { VerdictCard } from '@/components/VerdictCard';
+import { VerdictReveal } from '@/components/VerdictReveal';
 import { CopyField } from '@/components/CopyField';
 import { loadServers, getServerCount, getCategoryCount } from '@/lib/registry';
 import { rankByQuality } from '@/lib/quality';
-import { listScreened, isFlagged } from '@/lib/verdicts';
+import { listScreened } from '@/lib/verdicts';
 import { CATEGORY_LABELS } from '@/lib/categorize';
 
 export const revalidate = 3600;
@@ -19,14 +19,34 @@ export default async function Home() {
     listScreened(),
   ]);
   const top5 = rankByQuality(servers).slice(0, 5);
-  // A real verdict to show once, for real. Prefer a flagged one (the product is
-  // the catch); fall back gracefully. Never fabricate.
-  const example =
-    screened.find((s) => s.verdict.directive.decision === 'DENY') ??
-    screened.find((s) => isFlagged(s.verdict)) ??
-    screened.find((s) => s.verdict.directive.decision === 'REVIEW') ??
-    screened[0] ??
-    null;
+
+  // Real verdicts (never fabricated) for the cycling reveal. Varied set: a DENY,
+  // an ALLOW, a REVIEW where present, then fill to four.
+  const DIM_LABEL: Record<string, string> = {
+    'mcpindex.integrity.description': 'integrity',
+    'mcpindex.conformance.schema': 'conformance',
+  };
+  const withRationale = screened.filter((s) => s.verdict.directive.rationale);
+  const picks: typeof withRationale = [];
+  for (const dec of ['DENY', 'ALLOW', 'REVIEW'] as const) {
+    const m = withRationale.find(
+      (s) => s.verdict.directive.decision === dec && !picks.includes(s),
+    );
+    if (m) picks.push(m);
+  }
+  for (const s of withRationale) {
+    if (picks.length >= 4) break;
+    if (!picks.includes(s)) picks.push(s);
+  }
+  const reveals = picks.map((s) => ({
+    slug: s.slug,
+    name: s.verdict.title ?? s.slug,
+    decision: s.verdict.directive.decision,
+    rationale: s.verdict.directive.rationale,
+    dims: s.verdict.dimensions
+      .slice(0, 2)
+      .map((dm) => ({ label: DIM_LABEL[dm.id] ?? dm.id, verdict: dm.verdict })),
+  }));
 
   return (
     <>
@@ -130,8 +150,8 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* §02 The verdict object - shown once, for real */}
-      {example && (
+      {/* §02 The verdict object - a real, cycling reveal */}
+      {reveals.length > 0 && (
         <section className="rule-t">
           <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
             <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
@@ -140,18 +160,18 @@ export default async function Home() {
             <h2 className="t-h3 font-medium text-[var(--color-ink)] max-w-[680px]">
               A verdict, not a vibe.
             </h2>
-            <p className="mt-3 mb-8 max-w-[620px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-              Per tool: a decision, the dimensions behind it, severity, and the honest limits
-              shipped on every verdict. A real one, from the index.{' '}
+            <p className="mt-3 mb-8 max-w-[640px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+              Per tool: a decision, the dimensions behind it, and the honest limits shipped on
+              every verdict. Real ones from the index, below.{' '}
               <Link
-                href={`/server/${example.slug}`}
+                href="/best"
                 className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] hover:decoration-[var(--color-accent)]"
               >
-                see the full page →
+                browse the evidence →
               </Link>
             </p>
             <div className="max-w-[760px]">
-              <VerdictCard verdict={example.verdict} />
+              <VerdictReveal items={reveals} />
             </div>
           </div>
         </section>
