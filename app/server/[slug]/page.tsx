@@ -160,9 +160,11 @@ export default async function ServerPage(
               >
                 {CATEGORY_LABELS[server.category] ?? server.category}
               </Link>
+              <span className="text-[var(--color-rule)]">·</span>
+              <span>Quality {score}/100</span>
             </div>
           </div>
-          <QualityBadge score={score} />
+          <HeaderVerdictBadge state={verdictState} />
         </header>
 
         <p className="mt-6 text-[17px] leading-[1.55] text-[var(--color-cite)] max-w-[640px]">
@@ -484,16 +486,37 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
   );
 }
 
-function QualityBadge({ score }: { score: number }) {
+// Header hero: the TRUST signal leads (site thesis = trust over quality/
+// popularity). Quality is demoted to a small inline stat in the meta row; the
+// full quality breakdown remains in section §03.
+function HeaderVerdictBadge({ state }: { state: VerdictState }) {
+  if (state.kind === 'verdict') {
+    const style = DECISION_STYLE[state.verdict.directive.decision];
+    const flagged = state.verdict.dimensions.some((d) => d.verdict === 'FAIL');
+    return (
+      <div className={`rule-t rule-b rule-l rule-r p-4 text-center w-[120px] border ${style.ring}`}>
+        <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
+          Trust
+        </div>
+        <div className={`mt-2 inline-block font-mono text-[14px] uppercase tracking-[0.14em] px-2 py-1 border ${style.chip} ${style.ring}`}>
+          {style.label}
+        </div>
+        <div className="mt-2 font-mono text-[10px] text-[var(--color-mute)]">
+          {state.verdict.status}
+          {flagged ? ' · flagged' : ''}
+        </div>
+      </div>
+    );
+  }
+  const label = state.kind === 'unavailable' ? 'unavailable' : 'unverified';
   return (
-    <div className="rule-t rule-b rule-l rule-r p-4 bg-[var(--color-accent-soft)] text-center w-[120px]">
+    <div className="rule-t rule-b rule-l rule-r p-4 text-center w-[120px]">
       <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
-        Quality Score
+        Trust
       </div>
-      <div className="mt-2 font-mono tabular-nums text-[36px] text-[var(--color-ink)] leading-none">
-        {score}
+      <div className="mt-2 inline-block font-mono text-[12px] uppercase tracking-[0.14em] px-2 py-1 bg-[var(--color-accent-soft)] text-[var(--color-cite)] border border-[var(--color-rule)]">
+        {label}
       </div>
-      <div className="font-mono text-[10px] text-[var(--color-mute)] mt-1">/100</div>
     </div>
   );
 }

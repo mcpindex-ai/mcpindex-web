@@ -123,8 +123,9 @@ code execution), deepen to tool-level later (remote via HTTP, local via containe
   FAQ JSON-LD reflects evidence + integrity!=safety; back-link → /best (was /leaderboard).
   Other 27 categories unchanged. VERIFIED: tsc clean, build ok, rendered HTML confirmed
   (34 screened links, 3 fixtures w/ evidence, database still /100).
-- [ ] DEFERRED (polish, non-blocking): invert verdict-vs-QualityBadge visual hierarchy on
-  server page.
+- [x] Visual hierarchy inverted: header leads with a compact Trust verdict badge (replaces the
+  36px QualityBadge); quality demoted to a small meta stat (full breakdown stays in §03).
+  Applies to all server pages (on-thesis: trust over quality). tsc + build + render verified.
 - [x] post-verification code review (fresh read-only subagent): verdict SHIP, 0 HIGH, all 4
   honesty invariants verified in code + data. 3 LOW hardening items all FIXED:
   (1) fail-closed enum coercion in normalize (garbage -> REVIEW/ERROR/UNVERIFIED, never ALLOW);
