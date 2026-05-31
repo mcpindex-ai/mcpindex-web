@@ -3,10 +3,10 @@ import Link from 'next/link';
 const NAV = [
   { href: '/demo', label: 'Demo' },
   { href: '/docs', label: 'Docs' },
+  { href: '/methodology', label: 'Methodology' },
   { href: '/best', label: 'Best of' },
   { href: '/leaderboard', label: 'Two axes' },
   { href: '/changelog', label: 'Changelog' },
-  { href: '/methodology', label: 'Methodology' },
   { href: '/about', label: 'About' },
 ];
 

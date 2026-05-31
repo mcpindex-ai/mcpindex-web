@@ -15,7 +15,7 @@ export function Footer() {
               mcpindex<span className="text-[var(--color-mute)]">.ai</span>
             </div>
             <p className="mt-3 text-[12.5px] leading-[1.55] text-[var(--color-mute)]">
-              The verification layer for MCP tools. A verdict on whether a tool does what
+              The trust layer for MCP tools. A verdict on whether a tool does what
               it claims, before your agent acts.
             </p>
             <p className="mt-4 font-mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
