@@ -110,6 +110,12 @@ export default async function Home() {
                 Try it now · paste a tool description
               </div>
               <ScreenDemo />
+              <p className="mt-3 font-mono text-[11px] text-[var(--color-mute)]">
+                Own an MCP server?{' '}
+                <Link href="/screen" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+                  Screen yours →
+                </Link>
+              </p>
             </div>
           </div>
         </div>

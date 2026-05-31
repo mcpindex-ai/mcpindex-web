@@ -183,6 +183,12 @@ export default async function ServerPage(
                 </Link>
               </div>
               <TrustVerdictPanel state={verdictState} />
+              <p className="mt-3 font-mono text-[11px] text-[var(--color-mute)]">
+                Own this server?{' '}
+                <Link href="/screen" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+                  Screen its description →
+                </Link>
+              </p>
             </section>
 
             {/* Env vars */}

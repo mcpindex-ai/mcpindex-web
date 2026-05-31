@@ -237,12 +237,18 @@ async function FilesystemEvidence() {
             {screened.length} servers screened · {flaggedCount} flagged for a
             manipulation pattern. An LLM judge reads each tool description for
             hidden instructions (semantic screen, advisory, status PARTIAL). A
-            clean result means the description is not lying — <em>not</em> that
+            clean result means the description is not lying - <em>not</em> that
             the tool is safe to grant filesystem access. Method:{' '}
             <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
               how a finding is produced
             </Link>
             .
+          </p>
+          <p className="mt-3 text-[14px] text-[var(--color-cite)]">
+            Own a filesystem MCP server?{' '}
+            <Link href="/screen" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+              Screen its description →
+            </Link>
           </p>
         </header>
 
@@ -298,7 +304,7 @@ async function FilesystemEvidence() {
             </div>
             <p className="mb-6 max-w-[680px] text-[14px] leading-[1.55] text-[var(--color-cite)]">
               These are <strong>synthetic, hand-authored</strong> poisoned tool
-              descriptions — <strong>not real registry servers</strong> — run
+              descriptions - <strong>not real registry servers</strong> - run
               through the same screen to show what it catches. They are excluded
               from the directory above and from search.
             </p>

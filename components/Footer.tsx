@@ -25,6 +25,7 @@ export function Footer() {
 
           <div>
             <div className={COLUMN_LABEL}>Product</div>
+            <Link href="/screen" className={LINK}>Screen a tool</Link>
             <Link href="/docs" className={LINK}>Docs</Link>
             <Link href="/best" className={LINK}>Best of</Link>
             <Link href="/leaderboard" className={LINK}>Two axes</Link>
