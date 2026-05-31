@@ -116,11 +116,20 @@ code execution), deepen to tool-level later (remote via HTTP, local via containe
 - [x] `TrustVerdictPanel` renders the evidence quote per dimension + the integrity!=safety note.
 - [x] VERIFIED: tsc clean; `next build` ok (10,228 SSG pages); built HTML for a seeded fs
   server contains REVIEW/PARTIAL/evidence; non-seeded server still UNVERIFIED (no regression).
-- [ ] REMAINING: invert visual hierarchy (verdict hero vs QualityBadge) on server page.
-- [ ] REMAINING: `/best/filesystem` evidence view (branch on category) + fix "Curated" copy
-  + FAQ JSON-LD reflects evidence not quality #1.
-- [ ] REMAINING: a clearly-labeled fixtures showcase (the 3 FLAGs) for the demo/methodology.
-- [ ] REMAINING: post-verification code review (fresh subagent) once Phase 2 UI is complete.
+- [x] Shared `lib/verdicts.ts` (canonical reader/types; getVerdict/listScreened/listFixtures/
+  isFlagged). Server page refactored to use it (removed inline duplicate).
+- [x] `/best/filesystem` reframed as evidence directory (sourced from the verdict store, NOT
+  the keyword categorizer) + labeled adversarial-fixtures showcase. "Curated" copy fixed;
+  FAQ JSON-LD reflects evidence + integrity!=safety; back-link → /best (was /leaderboard).
+  Other 27 categories unchanged. VERIFIED: tsc clean, build ok, rendered HTML confirmed
+  (34 screened links, 3 fixtures w/ evidence, database still /100).
+- [ ] DEFERRED (polish, non-blocking): invert verdict-vs-QualityBadge visual hierarchy on
+  server page.
+- [x] post-verification code review (fresh read-only subagent): verdict SHIP, 0 HIGH, all 4
+  honesty invariants verified in code + data. 3 LOW hardening items all FIXED:
+  (1) fail-closed enum coercion in normalize (garbage -> REVIEW/ERROR/UNVERIFIED, never ALLOW);
+  (2) build-time warn on corrupt (non-ENOENT) store; (3) JSON-LD `<`/`>` escaped. Re-verified
+  tsc + build green.
 
 ### Phase 3 — Demo reframe
 - [ ] `components/AgentDemo.tsx` (filesystem mode): pick-or-paste a tool description; render the

@@ -5,8 +5,13 @@ import { getServer, loadServers } from '@/lib/registry';
 import { computeQuality } from '@/lib/quality';
 import { buildInstalls } from '@/lib/installs';
 import { CATEGORY_LABELS } from '@/lib/categorize';
-import path from 'node:path';
-import { promises as fsp } from 'node:fs';
+import {
+  getVerdict,
+  type Verdict as FreeTierVerdict,
+  type Decision,
+  type Severity,
+  type DimensionVerdict,
+} from '@/lib/verdicts';
 
 // Trust verdict shape (free-tier projection of the v1.0.0 verdict contract).
 // UPPERCASE values match the canonical AD-B contract (docs/contract-schema.md
@@ -14,28 +19,8 @@ import { promises as fsp } from 'node:fs';
 // /api/v1/trust/{tool,server}/... in this repo. History and Provenance are
 // deliberately omitted: anonymous surfaces never return back-history (AD-B
 // exposure tier; history is the un-backfillable moat).
-type Decision = 'ALLOW' | 'DENY' | 'REVIEW';
-type Status = 'EVALUATED' | 'PARTIAL' | 'STALE' | 'ERROR';
-type DimensionVerdict = 'PASS' | 'FAIL' | 'UNVERIFIED' | 'ERROR';
-type Severity = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-
-type FreeTierVerdict = {
-  schema_version: '1.0';
-  directive: {
-    decision: Decision;
-    rationale: string;
-    expires_at: string; // ISO-8601
-  };
-  status: Status;
-  dimensions: ReadonlyArray<{
-    id: string; // e.g. "mcpindex.integrity.description"
-    verdict: DimensionVerdict;
-    severity: Severity;
-    evidence?: ReadonlyArray<{ quote: string; method?: string }>;
-  }>;
-  granularity?: string;
-  honest_limits?: ReadonlyArray<string>;
-};
+// Verdict shape + enum types (Decision/Severity/DimensionVerdict) are imported
+// from '@/lib/verdicts' — one source of truth, shared with the /best directory.
 
 // Three rendering states for the trust panel:
 // - { kind: 'verdict', verdict }  -> render the populated FreeTierVerdict.
@@ -48,67 +33,13 @@ type VerdictState =
   | { kind: 'unverified' }
   | { kind: 'unavailable' };
 
-// Build-time verdict store reader. The seed pipeline
-// (mcpindex-trust/scripts/seed_filesystem.py) writes data/verdicts.json keyed
-// by slug. Read once at SSG time (no HTTP, no deployment-host chicken-and-egg).
-// We normalize enum case to the UPPERCASE wire convention so the store tolerates
-// the contract's lowercase enum values AND any future live-service output.
-//
-// The /api/v1/trust/server/[slug] endpoint stays live for direct API consumers
-// (npm mcp-server-mcpindex + agent integrations); server pages bypass HTTP.
-type RawVerdict = {
-  status?: string;
-  directive?: { decision?: string; rationale?: string; expires_at?: string };
-  dimensions?: Array<{
-    id: string;
-    verdict?: string;
-    severity?: string;
-    evidence?: Array<{ quote: string; method?: string }>;
-  }>;
-  granularity?: string;
-  honest_limits?: string[];
-  fixture?: boolean;
-};
-
-const VERDICT_STORE = path.join(process.cwd(), 'data', 'verdicts.json');
-let _verdictStore: Record<string, RawVerdict> | null = null;
-
-async function readVerdictStore(): Promise<Record<string, RawVerdict>> {
-  if (_verdictStore) return _verdictStore;
-  try {
-    _verdictStore = JSON.parse(await fsp.readFile(VERDICT_STORE, 'utf8'));
-  } catch {
-    _verdictStore = {}; // no store yet -> every page falls back to unverified
-  }
-  return _verdictStore as Record<string, RawVerdict>;
-}
-
-const UP = (s: string | undefined): string => (s ?? '').toUpperCase();
-
+// Server pages bypass HTTP: read the seeded verdict store directly via the
+// shared lib (cached, case-normalized, fixtures excluded). The
+// /api/v1/trust/server/[slug] endpoint stays live for direct API consumers
+// (npm mcp-server-mcpindex + agent integrations).
 async function loadVerdictForServer(slug: string): Promise<VerdictState> {
-  const store = await readVerdictStore();
-  const v = store[slug];
-  // Fixtures are hand-authored adversarial examples, never real registry
-  // servers; they must never render on a /server/[slug] page.
-  if (!v || v.fixture) return { kind: 'unverified' };
-  const verdict: FreeTierVerdict = {
-    schema_version: '1.0',
-    status: UP(v.status) as Status,
-    directive: {
-      decision: UP(v.directive?.decision) as Decision,
-      rationale: v.directive?.rationale ?? '',
-      expires_at: v.directive?.expires_at ?? '',
-    },
-    dimensions: (v.dimensions ?? []).map((d) => ({
-      id: d.id,
-      verdict: UP(d.verdict) as DimensionVerdict,
-      severity: UP(d.severity) as Severity,
-      evidence: d.evidence,
-    })),
-    granularity: v.granularity,
-    honest_limits: v.honest_limits,
-  };
-  return { kind: 'verdict', verdict };
+  const verdict = await getVerdict(slug);
+  return verdict ? { kind: 'verdict', verdict } : { kind: 'unverified' };
 }
 
 export const revalidate = 3600;

@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { loadServers } from '@/lib/registry';
 import { rankByQuality } from '@/lib/quality';
 import { ALL_CATEGORIES, CATEGORY_LABELS } from '@/lib/categorize';
+import { listScreened, listFixtures, isFlagged } from '@/lib/verdicts';
 
 export const revalidate = 3600;
 
@@ -16,9 +17,17 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { category } = await ctx.params;
   const label = CATEGORY_LABELS[category] ?? category;
+  if (category === 'filesystem') {
+    return {
+      title: 'Filesystem MCP servers, screened for description honesty',
+      description:
+        'Filesystem MCP server descriptions screened for hidden instructions (semantic, advisory). A clean screen means the description is not lying, not that the tool is safe.',
+      alternates: { canonical: 'https://mcpindex.ai/best/filesystem' },
+    };
+  }
   return {
     title: `Best ${label} MCP servers`,
-    description: `Curated picks for ${label} MCP servers, ranked by MCP Quality Score across freshness, completeness, installability, documentation, and stability.`,
+    description: `${label} MCP servers ranked by MCP Quality Score across freshness, completeness, installability, documentation, and stability.`,
     alternates: { canonical: `https://mcpindex.ai/best/${category}` },
   };
 }
@@ -28,8 +37,12 @@ export default async function BestCategory(
 ) {
   const { category } = await ctx.params;
   if (!ALL_CATEGORIES.includes(category)) notFound();
-  const label = CATEGORY_LABELS[category] ?? category;
 
+  // Filesystem is the seed evidence category: its directory is defined by what
+  // we actually screened (the verdict store), not the keyword categorizer.
+  if (category === 'filesystem') return <FilesystemEvidence />;
+
+  const label = CATEGORY_LABELS[category] ?? category;
   const all = await loadServers();
   const inCategory = all.filter((s) => s.category === category);
   const ranked = rankByQuality(inCategory).slice(0, 20);
@@ -72,7 +85,9 @@ export default async function BestCategory(
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(faqLd).replace(/</g, '\\u003c').replace(/>/g, '\\u003e'),
+        }}
       />
       <article className="mx-auto max-w-[920px] px-6 sm:px-10 pt-16 pb-24">
         <Link
@@ -83,7 +98,7 @@ export default async function BestCategory(
         </Link>
         <header className="mt-6">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
-            §01&nbsp;&nbsp;Curated · {category}
+            §01&nbsp;&nbsp;Ranked · {category}
           </div>
           <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
             Best {label} MCP servers.
@@ -146,6 +161,182 @@ export default async function BestCategory(
           </div>
           <div className="flex flex-wrap gap-2">
             {ALL_CATEGORIES.filter((c) => c !== category).map((c) => (
+              <Link
+                key={c}
+                href={`/best/${c}`}
+                className="font-mono text-[11px] text-[var(--color-cite)] border border-[var(--color-rule)] px-2 py-1 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
+              >
+                {CATEGORY_LABELS[c] ?? c}
+              </Link>
+            ))}
+          </div>
+        </section>
+      </article>
+    </>
+  );
+}
+
+// The filesystem evidence directory: the seed category. Defined by the verdict
+// store (what we screened), not the keyword categorizer. Includes a clearly
+// labeled adversarial-fixtures showcase so the FLAG state is visible.
+async function FilesystemEvidence() {
+  const [screened, fixtures, servers] = await Promise.all([
+    listScreened(),
+    listFixtures(),
+    loadServers(),
+  ]);
+  const bySlug = new Map(servers.map((s) => [s.slug, s]));
+  const flaggedCount = screened.filter(({ verdict }) => isFlagged(verdict)).length;
+
+  const faqLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: 'Which filesystem MCP servers are safe to use?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `mcpindex screens filesystem MCP server descriptions for hidden instructions. ${screened.length} are screened; ${flaggedCount} were flagged for a manipulation pattern. This is a semantic, advisory screen of the description: a clean result means the description is not lying, not that the tool is safe to grant filesystem access.`,
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'What does the screen check?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'An LLM judge reads each tool description for instructions that would make the agent act outside the user request: read secret files, exfiltrate data, follow hidden instructions, or conceal actions. The deterministic conformance probe is in build; findings today are semantic-only and labeled PARTIAL.',
+        },
+      },
+    ],
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(faqLd).replace(/</g, '\\u003c').replace(/>/g, '\\u003e'),
+        }}
+      />
+      <article className="mx-auto max-w-[920px] px-6 sm:px-10 pt-16 pb-24">
+        <Link
+          href="/best"
+          className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-mute)] hover:text-[var(--color-accent)]"
+        >
+          ← All categories
+        </Link>
+        <header className="mt-6">
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
+            §01&nbsp;&nbsp;Screened · filesystem
+          </div>
+          <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
+            Filesystem MCP servers, screened for description honesty.
+          </h1>
+          <p className="mt-4 max-w-[680px] text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
+            {screened.length} servers screened · {flaggedCount} flagged for a
+            manipulation pattern. An LLM judge reads each tool description for
+            hidden instructions (semantic screen, advisory, status PARTIAL). A
+            clean result means the description is not lying — <em>not</em> that
+            the tool is safe to grant filesystem access. Method:{' '}
+            <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+              how a finding is produced
+            </Link>
+            .
+          </p>
+        </header>
+
+        <ol className="mt-10 rule-t">
+          {screened.map(({ slug, verdict }) => {
+            const srv = bySlug.get(slug);
+            const flagged = isFlagged(verdict);
+            const evidence = verdict.dimensions[0]?.evidence?.[0]?.quote;
+            return (
+              <li
+                key={slug}
+                className="rule-b px-2 py-5 group hover:bg-[var(--color-accent-soft)]/40 transition-colors"
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                  <Link
+                    href={`/server/${slug}`}
+                    className="font-medium text-[15.5px] text-[var(--color-ink)] group-hover:text-[var(--color-accent)] transition-colors"
+                  >
+                    {srv?.title ?? verdict.title ?? slug}
+                  </Link>
+                  <span
+                    className={`font-mono text-[10.5px] uppercase tracking-[0.16em] px-2 py-1 border ${
+                      flagged
+                        ? 'bg-rose-50 text-rose-900 border-rose-300'
+                        : 'bg-[var(--color-accent-soft)] text-[var(--color-cite)] border-[var(--color-rule)]'
+                    }`}
+                  >
+                    {flagged ? 'review · flagged' : 'screened · no manipulation'}
+                  </span>
+                </div>
+                {srv?.description && (
+                  <p className="mt-1.5 text-[13px] text-[var(--color-cite)] line-clamp-2 max-w-[680px]">
+                    {srv.description}
+                  </p>
+                )}
+                {evidence && (
+                  <p className="mt-1.5 text-[12.5px] leading-[1.5] text-[var(--color-mute)]">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] mr-2">
+                      evidence
+                    </span>
+                    &ldquo;{evidence}&rdquo;
+                  </p>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+
+        {fixtures.length > 0 && (
+          <section className="mt-16 rule-t pt-10">
+            <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
+              §02&nbsp;&nbsp;Adversarial test fixtures
+            </div>
+            <p className="mb-6 max-w-[680px] text-[14px] leading-[1.55] text-[var(--color-cite)]">
+              These are <strong>synthetic, hand-authored</strong> poisoned tool
+              descriptions — <strong>not real registry servers</strong> — run
+              through the same screen to show what it catches. They are excluded
+              from the directory above and from search.
+            </p>
+            <div className="rule-t">
+              {fixtures.map(({ slug, verdict }) => {
+                const d = verdict.dimensions[0];
+                const evidence = d?.evidence?.[0]?.quote;
+                return (
+                  <div key={slug} className="rule-b px-2 py-4">
+                    <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                      <span className="font-mono text-[10.5px] uppercase tracking-[0.16em] px-2 py-1 bg-rose-50 text-rose-900 border border-rose-300">
+                        fail · {d?.severity?.toLowerCase() ?? 'critical'}
+                      </span>
+                      <span className="text-[14.5px] text-[var(--color-ink)]">
+                        {verdict.title ?? slug}
+                      </span>
+                    </div>
+                    {evidence && (
+                      <p className="mt-2 text-[13px] leading-[1.5] text-[var(--color-cite)]">
+                        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-mute)] mr-2">
+                          evidence
+                        </span>
+                        &ldquo;{evidence}&rdquo;
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        <section className="mt-16 rule-t pt-10">
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-6">
+            §03&nbsp;&nbsp;Other categories
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {ALL_CATEGORIES.filter((c) => c !== 'filesystem').map((c) => (
               <Link
                 key={c}
                 href={`/best/${c}`}
