@@ -12,15 +12,15 @@ const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin']
 export const metadata: Metadata = {
   metadataBase: new URL('https://mcpindex.ai'),
   title: {
-    default: 'mcpindex - the verification layer for MCP tools',
+    default: 'mcpindex - the trust layer for MCP tools',
     template: '%s · mcpindex.ai',
   },
   description:
-    'Built for IDEs and agents that find the right MCP server at inference time, not the developer browsing a sidebar.',
+    'A verdict (ALLOW, DENY, or REVIEW) on whether an MCP tool does what it claims, before your agent acts.',
   openGraph: {
-    title: 'mcpindex - the verification layer for MCP tools',
+    title: 'mcpindex - the trust layer for MCP tools',
     description:
-      'Recommendation engine and drop-in MCP server for finding the right MCP at inference time.',
+      'A verdict (ALLOW, DENY, or REVIEW) on whether an MCP tool does what it claims, before your agent acts.',
     url: 'https://mcpindex.ai',
     siteName: 'mcpindex.ai',
     type: 'website',

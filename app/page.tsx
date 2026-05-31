@@ -65,6 +65,42 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* 90-second demo - the whole loop, near the top (claim -> show). */}
+      <section className="rule-t">
+        <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-14 sm:py-16">
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
+            §00b&nbsp;&nbsp;Watch
+          </div>
+          <h2 className="t-h3 font-medium text-[var(--color-ink)] max-w-[680px]">
+            The trust-to-act layer, in 90 seconds.
+          </h2>
+          <p className="mt-3 mb-8 max-w-[620px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+            Before your agent calls an MCP tool, mcpindex returns a verdict. Here
+            is the whole loop, end to end.
+          </p>
+          <div className="max-w-[900px] rule-t rule-b rule-l rule-r bg-black">
+            <video
+              className="w-full aspect-video"
+              controls
+              playsInline
+              preload="metadata"
+              poster="/promo/poster.jpg"
+            >
+              <source src="/promo/mcpindex-promo.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
+          <div className="mt-4 font-mono text-[12px]">
+            <Link
+              href="/demo"
+              className="text-[var(--color-cite)] hover:text-[var(--color-accent)]"
+            >
+              full demo + embed code →
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Top ticker - sits ABOVE header per design */}
       <LiveTicker />
 

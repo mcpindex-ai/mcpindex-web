@@ -52,8 +52,8 @@ export default function AboutPage() {
           judge reads the description for hidden instructions; findings are
           semantic-only and labeled PARTIAL. A deterministic conformance probe
           (does observed behavior match the declared schema?) is in build.
-          History is OTS Bitcoin-anchored, so the trust record for a tool today
-          cannot be quietly rewritten tomorrow.
+          History is OTS Bitcoin-anchored, so once a block confirms, the trust
+          record for a tool cannot be quietly rewritten.
         </p>
         <p>
           v1 is honest about its edges. Conformance is monitored, not enforced.
