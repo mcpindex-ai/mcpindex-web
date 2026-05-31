@@ -13,8 +13,11 @@ import { Redis } from '@upstash/redis';
 let _redis: Redis | null | undefined;
 function redis(): Redis | null {
   if (_redis !== undefined) return _redis;
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  // Accept both naming conventions: Upstash-native (UPSTASH_REDIS_REST_*) and
+  // Vercel Marketplace / KV (KV_REST_API_*). The integration injects one or the
+  // other depending on how it's added; tolerate both so provisioning "just works".
+  const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
   _redis = url && token ? new Redis({ url, token }) : null;
   return _redis;
 }
