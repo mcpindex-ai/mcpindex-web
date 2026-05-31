@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { LiveTicker } from '@/components/LiveTicker';
 import { AgentDemo } from '@/components/AgentDemo';
+import { ScreenDemo } from '@/components/ScreenDemo';
 import { loadServers, getServerCount, getCategoryCount } from '@/lib/registry';
 import { rankByQuality } from '@/lib/quality';
 import { CATEGORY_LABELS } from '@/lib/categorize';
@@ -114,11 +115,33 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Screen a tool - the belief moment */}
+      <section className="rule-t">
+        <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
+            §02&nbsp;&nbsp;Screen a tool
+          </div>
+          <h2 className="t-h3 font-medium text-[var(--color-ink)] max-w-[680px]">
+            Is this tool trying to trick your agent?
+          </h2>
+          <p className="mt-3 mb-10 max-w-[620px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+            Paste any MCP tool description. An LLM judge reads it for hidden
+            instructions - the kind that tell your agent to exfiltrate a
+            file or follow a buried command - and flags the exact line.
+            Advisory and semantic-only: a pass means the description isn&apos;t
+            lying, not that the tool is safe.
+          </p>
+          <div className="max-w-[800px]">
+            <ScreenDemo />
+          </div>
+        </div>
+      </section>
+
       {/* Three primitives */}
       <section className="rule-t">
         <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-10">
-            §02&nbsp;&nbsp;Three primitives
+            §03&nbsp;&nbsp;Three primitives
           </div>
 
           <PillarRow
@@ -148,7 +171,7 @@ export default async function Home() {
           <div className="flex items-baseline justify-between gap-6 mb-10">
             <div>
               <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
-                §03&nbsp;&nbsp;Two axes
+                §04&nbsp;&nbsp;Two axes
               </div>
               <h2 className="mt-3 t-h3 font-medium text-[var(--color-ink)]">
                 Popular is not the same as honest. Both axes show up on every page.
@@ -212,7 +235,7 @@ export default async function Home() {
           <div className="grid md:grid-cols-2 gap-10 items-end">
             <div>
               <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
-                §04&nbsp;&nbsp;Mailing list
+                §05&nbsp;&nbsp;Mailing list
               </div>
               <h2 className="mt-3 t-h3 font-medium text-[var(--color-ink)]">
                 Get the verdict API when v1 opens.
