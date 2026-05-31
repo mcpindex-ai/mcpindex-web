@@ -1,50 +1,34 @@
 // V1 advisory trust verdict endpoint - per-tool.
 //
-// Returns the canonical free-tier verdict shape with directive=UNVERIFIED for
-// every request in v1 advisory. The aggregator returns UNVERIFIED for every
-// (server, tool) pair until per-tool verdicts are populated by the trust layer.
+// Reads the seeded verdict store (data/verdicts.json) via the SAME getVerdict()
+// the site pages use, keyed by server slug. Today's verdicts are description-
+// level (granularity surfaced in the response), so a server with a verdict
+// returns that screen for any of its tools, honestly labeled by `granularity`
+// and `honest_limits`. Returns UNVERIFIED (fail-closed) when no verdict exists.
 //
-// Contract: returns HTTP 200 with status=ERROR + directive=UNVERIFIED. This is
-// deliberately NOT a 404. A 404 would imply "we don't know this server"; we
-// instead say "we know the server, we have no verdict yet." Agents must treat
-// UNVERIFIED as fail-CLOSED and fall back to their own checks.
-//
-// Cache: 5 minutes. Short enough to refresh quickly once real verdicts start
-// flowing from mcpindex-trust.
+// Contract: HTTP 200, NOT 404 - a 404 would imply "unknown server"; we instead
+// say "we know the server, here is the verdict (or none yet)." Agents must treat
+// UNVERIFIED as fail-CLOSED. Cache: 5 minutes.
 
 import type { NextRequest } from 'next/server';
+import { getVerdict } from '@/lib/verdicts';
 
-type VerdictResponse = {
-  subject: { server_id: string; tool_name: string };
-  status: 'ERROR';
-  directive: 'UNVERIFIED';
-  dimensions: readonly never[];
-  expires_at: null;
-  honest_limits: readonly string[];
-  verdict_contract_version: '1.0.0';
-};
+export const revalidate = 300;
 
-const HONEST_LIMITS = [
+const FLOOR = [
   'conformance_monitored_not_enforced',
   'calibrated_false_v1',
   'advisory_deployment',
-  'no_verdict_data_in_v1_advisory',
 ] as const;
+const NO_VERDICT_LIMITS = [...FLOOR, 'no_verdict_data_in_v1_advisory'];
 
-// Hard cap on subject identifiers (server_id + tool_name). Defends against
-// cache-poison via long arbitrary strings (Cache-Control max-age=300 means
-// a hostile crawler could chew through Vercel edge cache slots with 1000-char
-// identifiers that all 200-OK back the same UNVERIFIED stub). 256 chars is
-// generous for real server_id + tool_name pairs and tight enough to bound
-// the reflection surface.
 const MAX_PARAM_LEN = 256;
 
 function decodeParam(raw: string | undefined): string | null {
   if (typeof raw !== 'string' || raw.length === 0) return null;
   try {
     const decoded = decodeURIComponent(raw).trim();
-    if (decoded.length === 0) return null;
-    if (decoded.length > MAX_PARAM_LEN) return null;
+    if (decoded.length === 0 || decoded.length > MAX_PARAM_LEN) return null;
     return decoded;
   } catch {
     return null;
@@ -60,25 +44,37 @@ export async function GET(
   const tool_name = decodeParam(rawTool);
 
   if (!server_id || !tool_name) {
-    return Response.json(
-      { error: 'invalid path parameters' },
-      { status: 400 },
-    );
+    return Response.json({ error: 'invalid path parameters' }, { status: 400 });
   }
 
-  const body: VerdictResponse = {
-    subject: { server_id, tool_name },
-    status: 'ERROR',
-    directive: 'UNVERIFIED',
-    dimensions: [],
-    expires_at: null,
-    honest_limits: HONEST_LIMITS,
-    verdict_contract_version: '1.0.0',
-  };
+  const v = await getVerdict(server_id);
+  const body = v
+    ? {
+        subject: { server_id, tool_name },
+        status: v.status,
+        directive: v.directive.decision,
+        granularity: v.granularity ?? null,
+        dimensions: v.dimensions.map((d) => ({
+          id: d.id,
+          verdict: d.verdict,
+          severity: d.severity,
+        })),
+        expires_at: v.directive.expires_at || null,
+        honest_limits: v.honest_limits ?? [...FLOOR],
+        verdict_contract_version: '1.0.0',
+      }
+    : {
+        subject: { server_id, tool_name },
+        status: 'ERROR',
+        directive: 'UNVERIFIED',
+        granularity: null,
+        dimensions: [],
+        expires_at: null,
+        honest_limits: NO_VERDICT_LIMITS,
+        verdict_contract_version: '1.0.0',
+      };
 
   return Response.json(body, {
-    headers: {
-      'Cache-Control': 'public, max-age=300',
-    },
+    headers: { 'Cache-Control': 'public, max-age=300' },
   });
 }

@@ -115,7 +115,9 @@ async function loadAll(): Promise<Record<string, Verdict>> {
 // must not render on /server/[slug]).
 export async function getVerdict(slug: string): Promise<Verdict | null> {
   const all = await loadAll();
-  const v = all[slug];
+  // Object.hasOwn guards against prototype keys (e.g. "__proto__") resolving to
+  // the prototype object rather than a real verdict.
+  const v = Object.hasOwn(all, slug) ? all[slug] : undefined;
   if (!v || v.fixture) return null;
   return v;
 }
