@@ -17,11 +17,12 @@ export default function MethodologyPage() {
         How a verdict is produced.
       </h1>
       <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)] max-w-[680px]">
-        mcpindex evaluates MCP tools and publishes a verdict per tool. The
-        eval is hybrid: a deterministic conformance probe plus an LLM judge
-        for hidden intent. Both legs execute and are recorded against the
-        exact tool definition that was seen (tool_definition_hash). The
-        verdict is what an agent reads before it calls.
+        mcpindex evaluates MCP tools and publishes a finding per tool. Today
+        an LLM judge reads the tool description for hidden instructions, bound
+        to the exact tool definition that was seen (tool_definition_hash). A
+        deterministic conformance probe is in build; until it ships, findings
+        are semantic-only and labeled PARTIAL. The finding is what an agent
+        reads before it calls.
       </p>
 
       <section className="mt-12">

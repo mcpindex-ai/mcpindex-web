@@ -30,7 +30,7 @@ const HINTS = [
   'browse a webpage and summarize',
 ];
 
-export function AgentDemo() {
+export function AgentDemo({ serverCount }: { serverCount?: number }) {
   const [hintIndex, setHintIndex] = useState(0);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Recommendation[] | null>(null);
@@ -138,7 +138,7 @@ export function AgentDemo() {
         <div className="rule-t bg-white">
           {loading && (
             <div className="px-5 py-8 font-mono text-[12px] text-[var(--color-mute)]">
-              <span className="text-[var(--color-accent)]">▸</span> ranking 3,510 servers…
+              <span className="text-[var(--color-accent)]">▸</span> ranking {serverCount ? serverCount.toLocaleString() : 'all'} servers…
             </div>
           )}
           {error && (

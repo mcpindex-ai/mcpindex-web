@@ -5,6 +5,8 @@ import { getServer, loadServers } from '@/lib/registry';
 import { computeQuality } from '@/lib/quality';
 import { buildInstalls } from '@/lib/installs';
 import { CATEGORY_LABELS } from '@/lib/categorize';
+import path from 'node:path';
+import { promises as fsp } from 'node:fs';
 
 // Trust verdict shape (free-tier projection of the v1.0.0 verdict contract).
 // UPPERCASE values match the canonical AD-B contract (docs/contract-schema.md
@@ -13,7 +15,7 @@ import { CATEGORY_LABELS } from '@/lib/categorize';
 // deliberately omitted: anonymous surfaces never return back-history (AD-B
 // exposure tier; history is the un-backfillable moat).
 type Decision = 'ALLOW' | 'DENY' | 'REVIEW';
-type Status = 'EVALUATED' | 'STALE' | 'ERROR';
+type Status = 'EVALUATED' | 'PARTIAL' | 'STALE' | 'ERROR';
 type DimensionVerdict = 'PASS' | 'FAIL' | 'UNVERIFIED' | 'ERROR';
 type Severity = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
@@ -29,7 +31,10 @@ type FreeTierVerdict = {
     id: string; // e.g. "mcpindex.integrity.description"
     verdict: DimensionVerdict;
     severity: Severity;
+    evidence?: ReadonlyArray<{ quote: string; method?: string }>;
   }>;
+  granularity?: string;
+  honest_limits?: ReadonlyArray<string>;
 };
 
 // Three rendering states for the trust panel:
@@ -43,21 +48,67 @@ type VerdictState =
   | { kind: 'unverified' }
   | { kind: 'unavailable' };
 
-// V1 advisory loader. Today this is a STATIC return - no HTTP call.
-// Rationale: every page is statically generated via generateStaticParams
-// (8955+ slugs). An SSG-time fetch into /api/v1/trust/server/[slug] has a
-// chicken-and-egg with the deployment hostname (production vs preview),
-// and the endpoint itself always returns UNVERIFIED in v1 advisory anyway
-// - no information would be added by the round trip. When the trust layer
-// starts populating real verdicts, swap this for a build-time read of the
-// verdict store (or move to ISR with request-time fetch via headers() to
-// derive the same-deployment host).
+// Build-time verdict store reader. The seed pipeline
+// (mcpindex-trust/scripts/seed_filesystem.py) writes data/verdicts.json keyed
+// by slug. Read once at SSG time (no HTTP, no deployment-host chicken-and-egg).
+// We normalize enum case to the UPPERCASE wire convention so the store tolerates
+// the contract's lowercase enum values AND any future live-service output.
 //
-// The /api/v1/trust/server/[slug] endpoint stays live for direct API
-// consumers (npm mcp-server-mcpindex check_tool_trust + agent integrations).
-// Server pages bypass HTTP entirely.
-async function loadVerdictForServer(_slug: string): Promise<VerdictState> {
-  return { kind: 'unverified' };
+// The /api/v1/trust/server/[slug] endpoint stays live for direct API consumers
+// (npm mcp-server-mcpindex + agent integrations); server pages bypass HTTP.
+type RawVerdict = {
+  status?: string;
+  directive?: { decision?: string; rationale?: string; expires_at?: string };
+  dimensions?: Array<{
+    id: string;
+    verdict?: string;
+    severity?: string;
+    evidence?: Array<{ quote: string; method?: string }>;
+  }>;
+  granularity?: string;
+  honest_limits?: string[];
+  fixture?: boolean;
+};
+
+const VERDICT_STORE = path.join(process.cwd(), 'data', 'verdicts.json');
+let _verdictStore: Record<string, RawVerdict> | null = null;
+
+async function readVerdictStore(): Promise<Record<string, RawVerdict>> {
+  if (_verdictStore) return _verdictStore;
+  try {
+    _verdictStore = JSON.parse(await fsp.readFile(VERDICT_STORE, 'utf8'));
+  } catch {
+    _verdictStore = {}; // no store yet -> every page falls back to unverified
+  }
+  return _verdictStore as Record<string, RawVerdict>;
+}
+
+const UP = (s: string | undefined): string => (s ?? '').toUpperCase();
+
+async function loadVerdictForServer(slug: string): Promise<VerdictState> {
+  const store = await readVerdictStore();
+  const v = store[slug];
+  // Fixtures are hand-authored adversarial examples, never real registry
+  // servers; they must never render on a /server/[slug] page.
+  if (!v || v.fixture) return { kind: 'unverified' };
+  const verdict: FreeTierVerdict = {
+    schema_version: '1.0',
+    status: UP(v.status) as Status,
+    directive: {
+      decision: UP(v.directive?.decision) as Decision,
+      rationale: v.directive?.rationale ?? '',
+      expires_at: v.directive?.expires_at ?? '',
+    },
+    dimensions: (v.dimensions ?? []).map((d) => ({
+      id: d.id,
+      verdict: UP(d.verdict) as DimensionVerdict,
+      severity: UP(d.severity) as Severity,
+      evidence: d.evidence,
+    })),
+    granularity: v.granularity,
+    honest_limits: v.honest_limits,
+  };
+  return { kind: 'verdict', verdict };
 }
 
 export const revalidate = 3600;
@@ -464,29 +515,39 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
       {verdict.dimensions.length > 0 && (
         <div className="mt-4 rule-t">
           {verdict.dimensions.map((d) => (
-            <div
-              key={d.id}
-              className="rule-b grid grid-cols-[1fr_90px_90px] gap-3 py-2.5 px-1 items-baseline"
-            >
-              <code className="font-mono text-[12px] text-[var(--color-cite)] truncate">
-                {d.id}
-              </code>
-              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-ink)]">
-                {DIMENSION_VERDICT_LABEL[d.verdict]}
-              </span>
-              <span className={`font-mono text-[11px] uppercase tracking-[0.14em] ${SEVERITY_STYLE[d.severity]}`}>
-                {d.severity}
-              </span>
+            <div key={d.id} className="rule-b py-2.5 px-1">
+              <div className="grid grid-cols-[1fr_90px_90px] gap-3 items-baseline">
+                <code className="font-mono text-[12px] text-[var(--color-cite)] truncate">
+                  {d.id}
+                </code>
+                <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-ink)]">
+                  {DIMENSION_VERDICT_LABEL[d.verdict]}
+                </span>
+                <span className={`font-mono text-[11px] uppercase tracking-[0.14em] ${SEVERITY_STYLE[d.severity]}`}>
+                  {d.severity}
+                </span>
+              </div>
+              {d.evidence?.[0]?.quote && (
+                <p className="mt-1.5 text-[12.5px] leading-[1.5] text-[var(--color-cite)]">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-mute)] mr-2">
+                    evidence
+                  </span>
+                  &ldquo;{d.evidence[0].quote}&rdquo;
+                </p>
+              )}
             </div>
           ))}
         </div>
       )}
 
       <p className="mt-4 font-mono text-[10.5px] leading-[1.55] text-[var(--color-mute)] max-w-[640px]">
-        Hybrid eval: deterministic conformance probe + LLM judge. Both legs
-        execute and are recorded; conformance is monitored, not enforced.
-        Posture: advisory. Confidences are reported but not yet calibrated
-        (calibrated=false at v1). History is paid-tier and not shown here.
+        Semantic screen: an LLM judge reads the tool description for hidden
+        instructions (status PARTIAL). A pass means the description is not
+        lying, not that the tool is safe: a high-capability tool with an honest
+        description still warrants caution. The deterministic conformance probe
+        is in build, not yet run here. Posture: advisory. Confidences are
+        reported but not yet calibrated (calibrated=false at v1). History is
+        paid-tier and not shown here.
       </p>
     </div>
   );

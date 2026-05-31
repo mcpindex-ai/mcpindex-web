@@ -47,13 +47,13 @@ export default function AboutPage() {
           act. The user finds out after.
         </p>
         <p>
-          mcpindex publishes a per-tool verdict: ALLOW, DENY, or REVIEW, with
-          dimension verdicts (integrity, schema conformance, hidden intent,
-          and others) and severity. A deterministic conformance probe checks
-          whether observed behavior matches the declared schema. An LLM judge
-          reads the description for hidden intent. Both legs execute and are
-          recorded. History is OTS Bitcoin-anchored, so the trust record for a
-          tool today cannot be quietly rewritten tomorrow.
+          mcpindex publishes a per-tool finding with dimension verdicts
+          (integrity, hidden intent, and others) and severity. Today an LLM
+          judge reads the description for hidden instructions; findings are
+          semantic-only and labeled PARTIAL. A deterministic conformance probe
+          (does observed behavior match the declared schema?) is in build.
+          History is OTS Bitcoin-anchored, so the trust record for a tool today
+          cannot be quietly rewritten tomorrow.
         </p>
         <p>
           v1 is honest about its edges. Conformance is monitored, not enforced.
