@@ -8,7 +8,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: 'Changelog',
   description:
-    'Daily diff of the MCP server registry — what was added, what changed version, what was deprecated.',
+    'Daily diff of the MCP server registry - what was added, what changed version, what was deprecated.',
   alternates: {
     canonical: 'https://mcpindex.ai/changelog',
     types: { 'application/rss+xml': 'https://mcpindex.ai/changelog.rss' },

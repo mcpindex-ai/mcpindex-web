@@ -63,9 +63,13 @@ export default function DocsPage() {
           title="Direct HTTP API"
           who="For server-side agents, custom orchestrators, anything outside an MCP client."
           codeLines={[
+            `# trust: does this tool do what it claims?`,
+            `curl "https://mcpindex.ai/api/v1/trust/server/<slug>"`,
+            ``,
+            `# discovery: find a tool for a task`,
             `curl "https://mcpindex.ai/api/v1/recommend?task=read+pdf+to+s3"`,
           ]}
-          notes="Returns ranked picks as JSON. Same shape an MCP client gets back."
+          notes="The trust endpoint returns the verdict (ALLOW / DENY / REVIEW); recommend returns ranked picks. Both JSON, same shape an MCP client gets."
         />
         <UseCase
           letter="B"

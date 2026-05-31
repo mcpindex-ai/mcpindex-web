@@ -13,13 +13,13 @@ const TIERS = [
     rate: '60 req/min/IP',
     blurb: 'For agents, hobby projects, and the open web.',
     bullets: [
-      '60 req/min/IP across /api/v1/*',
-      'Full search, recommend, diff endpoints',
-      '/llms.txt + /.well-known/mcp-index.json',
+      'Trust verdict API: /api/v1/trust/tool & /server',
+      'Screen any tool description (live LLM judge)',
+      'Search, recommend, diff endpoints',
       'mcp-server-mcpindex (npm) included',
-      'Daily snapshot refresh',
+      '/llms.txt + /.well-known/mcp-index.json',
     ],
-    cta: { label: 'Use it now', href: '/api/v1/search?q=postgres' },
+    cta: { label: 'Screen a tool', href: '/screen' },
   },
   {
     name: 'Pro',

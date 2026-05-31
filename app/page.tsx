@@ -82,7 +82,7 @@ export default async function Home() {
               </h1>
               <p className="hero-rise hero-rise-3 mt-6 max-w-[520px] text-[16px] sm:text-[17.5px] leading-[1.5] text-[var(--color-cite)]">
                 A verdict on whether an MCP tool does what it claims, before your agent
-                calls it.
+                acts.
               </p>
               <div className="hero-rise hero-rise-3 mt-4 flex flex-wrap gap-2">
                 <span className="font-mono text-[11px] uppercase tracking-[0.12em] border border-emerald-300 text-emerald-700 bg-emerald-50 px-2.5 py-1">
@@ -385,7 +385,7 @@ export default async function Home() {
             </div>
             <div>
               <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)] mb-3">
-                Or get one email when v1 opens
+                Or get updates as coverage and the Pro tier ship
               </div>
               <WaitlistForm />
             </div>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Stores waitlist signups in Vercel logs only — no third-party email service
+// Stores waitlist signups in Vercel logs only - no third-party email service
 // is wired up. Email newsletter was deliberately scoped out (the /changelog +
 // /changelog.rss surface is the canonical subscribe path). Inspect signups in
 // Vercel dashboard → Project → Logs, filter for [waitlist].

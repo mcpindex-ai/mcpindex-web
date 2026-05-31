@@ -148,7 +148,7 @@ export function AgentDemo({ serverCount }: { serverCount?: number }) {
           )}
           {results && results.length === 0 && !loading && (
             <div className="px-5 py-8 font-mono text-[12px] text-[var(--color-mute)]">
-              no matches — try broader phrasing.
+              no matches - try broader phrasing.
             </div>
           )}
           {results && results.length > 0 && (
@@ -185,7 +185,7 @@ function ResultRow({ r }: { r: Recommendation }) {
           ? `docker run --rm -i ${r.installs.docker}`
           : r.installs.remote
             ? r.installs.remote
-            : 'manual install — see detail';
+            : 'manual install - see detail';
   return (
     <li className="rule-t first:border-t-0 px-5 py-5 hover:bg-[var(--color-accent-soft)]/30 transition-colors group">
       <div className="grid grid-cols-[28px_1fr_auto] gap-4 items-baseline">

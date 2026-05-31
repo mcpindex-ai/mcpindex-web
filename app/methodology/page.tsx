@@ -74,9 +74,9 @@ export default function MethodologyPage() {
             body="The eval ran but produced ambiguous or partial findings (e.g. medium-severity flag, partial conformance, provider disagreement). Surfaces the dimension findings; agent should defer to a human or fall back to its own checks."
           />
           <Dim
-            label="UNEVALUATED"
+            label="UNVERIFIED"
             kind="status"
-            body="No verdict on file for this tool yet. The agent should NOT infer trust; treat as not-yet-cleared. Coverage rolls out as the corpus expands (adversarial cases first)."
+            body="No verdict on file for this tool yet (the wire term the trust API returns when a tool has not been screened). The agent should NOT infer trust; treat as not-yet-cleared. Coverage rolls out as the corpus expands (adversarial cases first)."
           />
         </ul>
       </section>

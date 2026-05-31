@@ -30,7 +30,7 @@ export function Footer() {
             <Link href="/best" className={LINK}>Best of</Link>
             <Link href="/leaderboard" className={LINK}>Two axes</Link>
             <Link href="/changelog" className={LINK}>Changelog</Link>
-            <Link href="/api/v1/recommend?task=read+pdfs" className={LINK}>Verdict API</Link>
+            <Link href="/api/v1/recommend?task=read+pdfs" className={LINK}>Recommend API</Link>
           </div>
 
           <div>

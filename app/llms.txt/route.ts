@@ -62,7 +62,7 @@ Add to Claude Desktop / Cursor / Cline / Zed. Three primary calls:
 - /guides/<slug>            Individual guide (intent pages grounded in registry + trust data).
 - /best/<category>          Curated picks per category.
 - /leaderboard              Top 50 by MCP Quality Score.
-- /changelog                Weekly diff of registry changes.
+- /changelog                Daily diff of registry changes.
 - /changelog.rss            RSS 2.0 feed of the above.
 - /methodology              Hybrid eval, four-state verdict, honest limits.
 - /about                    Why this exists.

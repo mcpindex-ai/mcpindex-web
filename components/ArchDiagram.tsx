@@ -1,5 +1,5 @@
 // Inline SVG architecture diagram for /docs.
-// Server component — no JS, no external assets, scales responsively.
+// Server component - no JS, no external assets, scales responsively.
 // Editorial restraint: hairline borders, single accent color for arrows,
 // mono labels for technical strings, sans for prose.
 
@@ -22,7 +22,7 @@ const REQUEST_FLOW: Layer[] = [
   { num: '05', title: 'Indexed catalog', sub: 'Thousands of MCP servers · refreshed daily' },
 ];
 
-// Geometry — picked to balance scannability and density
+// Geometry - picked to balance scannability and density
 const VB_W = 1040;
 const BOX_W = 440;
 const BOX_H = 64;
@@ -77,7 +77,7 @@ export function ArchDiagram() {
           );
         })}
 
-        {/* Refresh box — sits on same row as Indexed catalog (last box, index 4) */}
+        {/* Refresh box - sits on same row as Indexed catalog (last box, index 4) */}
         <Box
           x={REFRESH_X}
           y={(REQUEST_FLOW.length - 1) * STRIDE}
@@ -163,7 +163,7 @@ function Box({
         stroke="#0a0a0a"
         strokeWidth={1}
       />
-      {/* Number marker — accent color, mono caps */}
+      {/* Number marker - accent color, mono caps */}
       <text
         x={x + 14}
         y={y + 22}

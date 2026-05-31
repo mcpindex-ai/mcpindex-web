@@ -20,9 +20,10 @@ export default function TermsPage() {
 
       <div className="mt-10 space-y-6 text-[14.5px] leading-[1.65] text-[var(--color-cite)]">
         <p>
-          mcpindex.ai (&quot;the site&quot;) provides an index of public Model Context
-          Protocol (MCP) servers and a recommendation API on top of that index. Use is
-          free for the public tier subject to the rate limit published at{' '}
+          mcpindex.ai (&quot;the site&quot;) provides a trust layer for Model Context
+          Protocol (MCP) tools (a verdict on whether a tool does what it claims), plus an
+          index of public MCP servers and a recommendation API on top of that index. Use
+          is free for the public tier subject to the rate limit published at{' '}
           <a href="/pricing" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">/pricing</a>.
         </p>
         <p>
