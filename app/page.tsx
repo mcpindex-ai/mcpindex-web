@@ -102,12 +102,12 @@ export default async function Home() {
                 >
                   Install the MCP server →
                 </a>
-                <Link
-                  href="/demo"
+                <a
+                  href="#watch"
                   className="font-mono text-[12.5px] uppercase tracking-[0.14em] text-[var(--color-ink)] border border-[var(--color-rule)] px-6 py-3.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
                 >
                   90-second demo →
-                </Link>
+                </a>
               </div>
               <div className="hero-rise hero-rise-4 mt-8 font-mono text-[12px] leading-[1.5] text-[var(--color-mute)]">
                 <span className="text-[var(--color-ink)] tabular-nums">{count.toLocaleString()}</span>{' '}
@@ -135,8 +135,8 @@ export default async function Home() {
 
       <LiveTicker />
 
-      {/* §01 WATCH - the 90-second demo */}
-      <section className="rule-t">
+      {/* §01 WATCH - the 90-second demo (anchor target for nav + hero CTA) */}
+      <section id="watch" className="rule-t scroll-mt-20">
         <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-14 sm:py-16">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
             §01&nbsp;&nbsp;Watch
