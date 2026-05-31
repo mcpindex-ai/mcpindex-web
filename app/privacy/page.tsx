@@ -38,6 +38,14 @@ export default function PrivacyPage() {
           persist task descriptions sent to the recommend endpoint.
         </p>
         <p>
+          One scoped exception: the tool screener
+          (<span className="inline-code">/api/v1/screen</span>). The description you paste is
+          screened in-flight and is <strong>not stored</strong> unless you explicitly check
+          &ldquo;Contribute this example to improve detection.&rdquo; If you check it, we store
+          only that description and its verdict - no IP address, no other identifiers - to
+          improve detection. Leave it unchecked and nothing is retained.
+        </p>
+        <p>
           Cookies: none are set by the site itself. Vercel may set a single platform cookie
           for routing.
         </p>
