@@ -43,10 +43,11 @@ export default async function Home() {
               </p>
               <p>
                 mcpindex publishes a verdict per tool: ALLOW, DENY, or REVIEW,
-                with the dimensions and severity behind the call. A deterministic
-                conformance probe checks whether behavior matches the declared
-                schema. An LLM judge reads the description for hidden intent.
-                Both legs execute and are recorded.
+                with the dimensions and severity behind the call. An LLM judge
+                reads every tool description for hidden instructions today. A
+                deterministic conformance probe (does behavior match the declared
+                schema?) is in build; until it ships, findings are semantic-only
+                and labeled PARTIAL.
               </p>
               <p>
                 v1 is honest about its edges. Conformance is monitored, not
@@ -108,7 +109,7 @@ export default async function Home() {
 
           {/* Demo */}
           <div className="hero-rise hero-rise-4 mt-16 max-w-[800px]">
-            <AgentDemo />
+            <AgentDemo serverCount={count} />
           </div>
         </div>
       </section>

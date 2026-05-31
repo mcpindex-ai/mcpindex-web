@@ -23,7 +23,7 @@ Built so an agent (or the IDE driving one) can ask "should I invoke this tool" b
 
 - Verdict contract: 1.0.0 (ALLOW / DENY / REVIEW / UNVERIFIED, severity INFO..CRITICAL).
 - Capability: check_tool_trust (exposed by the npm MCP server, see below).
-- Pipeline: hybrid eval - a deterministic conformance probe plus an LLM judge for hidden intent. Both legs execute and are recorded; conformance is monitored, not enforced, at v1.
+- Pipeline: an LLM judge reads each tool description for hidden instructions today (findings are semantic-only, status PARTIAL). A deterministic conformance probe is in build; until it ships, the second leg does not run.
 - History: OTS Bitcoin-anchored. Cadence bound = confirmation latency (~10 minutes for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized). Sub-window precision asserted, not proven. In-process verify proves the proof carries a Bitcoin BlockHeaderAttestation; confirmation-depth check is the relying party's job against their own Bitcoin node.
 - Calibration: calibrated=false at v1. Confidences are reported, not yet calibrated against a held-out adversarial corpus.
 - Exposure: anonymous calls return the current verdict (directive, status, dimension verdicts, severity, expires_at). History is paid-tier only.

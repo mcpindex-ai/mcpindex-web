@@ -25,7 +25,7 @@ function buildBody(servers: IndexedServer[]): string {
     '',
     'Each server page exposes a verdict surface (ALLOW / DENY / REVIEW / UNVERIFIED) once the hybrid eval has run.',
     'Verdict contract version: 1.0.0. Capability: check_tool_trust (via the npm MCP server).',
-    'Pipeline: deterministic conformance probe + LLM judge. Both legs execute; conformance is monitored, not enforced.',
+    'Pipeline: an LLM judge reads each tool description for hidden instructions today (findings semantic-only, status PARTIAL). A deterministic conformance probe is in build; the second leg does not yet run.',
     'History: OTS Bitcoin-anchored. Cadence bound = confirmation latency (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized). Sub-window precision asserted, not proven. In-process verify proves the proof carries a Bitcoin BlockHeaderAttestation; confirmation-depth check requires the relying party run their own Bitcoin node.',
     'Calibration: calibrated=false at v1. D3 graduation gate: >=150 conforming labels with FP upper-95 <=2%. Current: 15/150. Terminal-v1 trigger 2026-09-01: under 50 conforming = ships calibrated=false as terminal v1 (v2 graduation, not v1).',
     'Posture: advisory. The agent or IDE decides whether to act on the verdict.',

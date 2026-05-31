@@ -5,6 +5,13 @@ import { getServer, loadServers } from '@/lib/registry';
 import { computeQuality } from '@/lib/quality';
 import { buildInstalls } from '@/lib/installs';
 import { CATEGORY_LABELS } from '@/lib/categorize';
+import {
+  getVerdict,
+  type Verdict as FreeTierVerdict,
+  type Decision,
+  type Severity,
+  type DimensionVerdict,
+} from '@/lib/verdicts';
 
 // Trust verdict shape (free-tier projection of the v1.0.0 verdict contract).
 // UPPERCASE values match the canonical AD-B contract (docs/contract-schema.md
@@ -12,25 +19,8 @@ import { CATEGORY_LABELS } from '@/lib/categorize';
 // /api/v1/trust/{tool,server}/... in this repo. History and Provenance are
 // deliberately omitted: anonymous surfaces never return back-history (AD-B
 // exposure tier; history is the un-backfillable moat).
-type Decision = 'ALLOW' | 'DENY' | 'REVIEW';
-type Status = 'EVALUATED' | 'STALE' | 'ERROR';
-type DimensionVerdict = 'PASS' | 'FAIL' | 'UNVERIFIED' | 'ERROR';
-type Severity = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-
-type FreeTierVerdict = {
-  schema_version: '1.0';
-  directive: {
-    decision: Decision;
-    rationale: string;
-    expires_at: string; // ISO-8601
-  };
-  status: Status;
-  dimensions: ReadonlyArray<{
-    id: string; // e.g. "mcpindex.integrity.description"
-    verdict: DimensionVerdict;
-    severity: Severity;
-  }>;
-};
+// Verdict shape + enum types (Decision/Severity/DimensionVerdict) are imported
+// from '@/lib/verdicts' — one source of truth, shared with the /best directory.
 
 // Three rendering states for the trust panel:
 // - { kind: 'verdict', verdict }  -> render the populated FreeTierVerdict.
@@ -43,21 +33,13 @@ type VerdictState =
   | { kind: 'unverified' }
   | { kind: 'unavailable' };
 
-// V1 advisory loader. Today this is a STATIC return - no HTTP call.
-// Rationale: every page is statically generated via generateStaticParams
-// (8955+ slugs). An SSG-time fetch into /api/v1/trust/server/[slug] has a
-// chicken-and-egg with the deployment hostname (production vs preview),
-// and the endpoint itself always returns UNVERIFIED in v1 advisory anyway
-// - no information would be added by the round trip. When the trust layer
-// starts populating real verdicts, swap this for a build-time read of the
-// verdict store (or move to ISR with request-time fetch via headers() to
-// derive the same-deployment host).
-//
-// The /api/v1/trust/server/[slug] endpoint stays live for direct API
-// consumers (npm mcp-server-mcpindex check_tool_trust + agent integrations).
-// Server pages bypass HTTP entirely.
-async function loadVerdictForServer(_slug: string): Promise<VerdictState> {
-  return { kind: 'unverified' };
+// Server pages bypass HTTP: read the seeded verdict store directly via the
+// shared lib (cached, case-normalized, fixtures excluded). The
+// /api/v1/trust/server/[slug] endpoint stays live for direct API consumers
+// (npm mcp-server-mcpindex + agent integrations).
+async function loadVerdictForServer(slug: string): Promise<VerdictState> {
+  const verdict = await getVerdict(slug);
+  return verdict ? { kind: 'verdict', verdict } : { kind: 'unverified' };
 }
 
 export const revalidate = 3600;
@@ -178,9 +160,11 @@ export default async function ServerPage(
               >
                 {CATEGORY_LABELS[server.category] ?? server.category}
               </Link>
+              <span className="text-[var(--color-rule)]">·</span>
+              <span>Quality {score}/100</span>
             </div>
           </div>
-          <QualityBadge score={score} />
+          <HeaderVerdictBadge state={verdictState} />
         </header>
 
         <p className="mt-6 text-[17px] leading-[1.55] text-[var(--color-cite)] max-w-[640px]">
@@ -464,44 +448,75 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
       {verdict.dimensions.length > 0 && (
         <div className="mt-4 rule-t">
           {verdict.dimensions.map((d) => (
-            <div
-              key={d.id}
-              className="rule-b grid grid-cols-[1fr_90px_90px] gap-3 py-2.5 px-1 items-baseline"
-            >
-              <code className="font-mono text-[12px] text-[var(--color-cite)] truncate">
-                {d.id}
-              </code>
-              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-ink)]">
-                {DIMENSION_VERDICT_LABEL[d.verdict]}
-              </span>
-              <span className={`font-mono text-[11px] uppercase tracking-[0.14em] ${SEVERITY_STYLE[d.severity]}`}>
-                {d.severity}
-              </span>
+            <div key={d.id} className="rule-b py-2.5 px-1">
+              <div className="grid grid-cols-[1fr_90px_90px] gap-3 items-baseline">
+                <code className="font-mono text-[12px] text-[var(--color-cite)] truncate">
+                  {d.id}
+                </code>
+                <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-ink)]">
+                  {DIMENSION_VERDICT_LABEL[d.verdict]}
+                </span>
+                <span className={`font-mono text-[11px] uppercase tracking-[0.14em] ${SEVERITY_STYLE[d.severity]}`}>
+                  {d.severity}
+                </span>
+              </div>
+              {d.evidence?.[0]?.quote && (
+                <p className="mt-1.5 text-[12.5px] leading-[1.5] text-[var(--color-cite)]">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-mute)] mr-2">
+                    evidence
+                  </span>
+                  &ldquo;{d.evidence[0].quote}&rdquo;
+                </p>
+              )}
             </div>
           ))}
         </div>
       )}
 
       <p className="mt-4 font-mono text-[10.5px] leading-[1.55] text-[var(--color-mute)] max-w-[640px]">
-        Hybrid eval: deterministic conformance probe + LLM judge. Both legs
-        execute and are recorded; conformance is monitored, not enforced.
-        Posture: advisory. Confidences are reported but not yet calibrated
-        (calibrated=false at v1). History is paid-tier and not shown here.
+        Semantic screen: an LLM judge reads the tool description for hidden
+        instructions (status PARTIAL). A pass means the description is not
+        lying, not that the tool is safe: a high-capability tool with an honest
+        description still warrants caution. The deterministic conformance probe
+        is in build, not yet run here. Posture: advisory. Confidences are
+        reported but not yet calibrated (calibrated=false at v1). History is
+        paid-tier and not shown here.
       </p>
     </div>
   );
 }
 
-function QualityBadge({ score }: { score: number }) {
+// Header hero: the TRUST signal leads (site thesis = trust over quality/
+// popularity). Quality is demoted to a small inline stat in the meta row; the
+// full quality breakdown remains in section §03.
+function HeaderVerdictBadge({ state }: { state: VerdictState }) {
+  if (state.kind === 'verdict') {
+    const style = DECISION_STYLE[state.verdict.directive.decision];
+    const flagged = state.verdict.dimensions.some((d) => d.verdict === 'FAIL');
+    return (
+      <div className={`rule-t rule-b rule-l rule-r p-4 text-center w-[120px] border ${style.ring}`}>
+        <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
+          Trust
+        </div>
+        <div className={`mt-2 inline-block font-mono text-[14px] uppercase tracking-[0.14em] px-2 py-1 border ${style.chip} ${style.ring}`}>
+          {style.label}
+        </div>
+        <div className="mt-2 font-mono text-[10px] text-[var(--color-mute)]">
+          {state.verdict.status}
+          {flagged ? ' · flagged' : ''}
+        </div>
+      </div>
+    );
+  }
+  const label = state.kind === 'unavailable' ? 'unavailable' : 'unverified';
   return (
-    <div className="rule-t rule-b rule-l rule-r p-4 bg-[var(--color-accent-soft)] text-center w-[120px]">
+    <div className="rule-t rule-b rule-l rule-r p-4 text-center w-[120px]">
       <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
-        Quality Score
+        Trust
       </div>
-      <div className="mt-2 font-mono tabular-nums text-[36px] text-[var(--color-ink)] leading-none">
-        {score}
+      <div className="mt-2 inline-block font-mono text-[12px] uppercase tracking-[0.14em] px-2 py-1 bg-[var(--color-accent-soft)] text-[var(--color-cite)] border border-[var(--color-rule)]">
+        {label}
       </div>
-      <div className="font-mono text-[10px] text-[var(--color-mute)] mt-1">/100</div>
     </div>
   );
 }
