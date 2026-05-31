@@ -53,7 +53,7 @@ const TIERS = [
 
 export default function PricingPage() {
   return (
-    <article className="mx-auto max-w-[1080px] px-6 sm:px-10 pt-16 pb-24">
+    <article className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-16 pb-24">
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
           §01&nbsp;&nbsp;Pricing
@@ -102,7 +102,7 @@ export default function PricingPage() {
       </div>
 
       <p className="mt-10 font-mono text-[11.5px] text-[var(--color-mute)]">
-        v0 — paid tiers ship when waitlist clears 200. Until then, free tier covers everything
+        v0 - paid tiers ship when waitlist clears 200. Until then, free tier covers everything
         you can call.
       </p>
     </article>

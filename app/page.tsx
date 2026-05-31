@@ -30,47 +30,67 @@ export default async function Home() {
 
   return (
     <>
-      {/* §00 HERO - trust thesis + the live screener (the action) */}
+      {/* §00 HERO - two-column: typographic punch left, live screener right. */}
       <section className="rule-b bg-[var(--color-accent-soft)]">
-        <div className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-12 pb-14 sm:pt-16 sm:pb-20">
-          <div className="max-w-[820px]">
-            <div className="hero-rise hero-rise-1 font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-accent)] mb-6">
-              §00&nbsp;&nbsp;Trust-to-act layer
+        <div className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-14 pb-16 sm:pt-20 sm:pb-24">
+          <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-16 items-center">
+            {/* LEFT - the pitch */}
+            <div>
+              <div className="hero-rise hero-rise-1 font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-accent)] mb-6">
+                Trust-to-act layer for agents
+              </div>
+              <h1 className="hero-rise hero-rise-2 font-medium text-[var(--color-ink)] leading-[1.03] tracking-[-0.02em] text-[clamp(2.4rem,1.3rem+3.6vw,3.6rem)]">
+                Your agent trusts{' '}
+                <span className="italic font-normal pr-[0.12em]">every</span> tool
+                it&rsquo;s handed.
+                <br />
+                <span className="font-extrabold text-[var(--color-accent)]">
+                  mcpindex doesn&rsquo;t.
+                </span>
+              </h1>
+              <p className="hero-rise hero-rise-3 mt-6 max-w-[520px] text-[16px] sm:text-[17.5px] leading-[1.5] text-[var(--color-cite)]">
+                A verdict on whether an MCP tool does what it claims, before your agent
+                calls it.
+              </p>
+              <div className="hero-rise hero-rise-3 mt-4 flex flex-wrap gap-2">
+                <span className="font-mono text-[11px] uppercase tracking-[0.12em] border border-emerald-300 text-emerald-700 bg-emerald-50 px-2.5 py-1">
+                  allow
+                </span>
+                <span className="font-mono text-[11px] uppercase tracking-[0.12em] border border-red-300 text-red-700 bg-red-50 px-2.5 py-1">
+                  deny
+                </span>
+                <span className="font-mono text-[11px] uppercase tracking-[0.12em] border border-amber-300 text-amber-700 bg-amber-50 px-2.5 py-1">
+                  review
+                </span>
+              </div>
+              <div className="hero-rise hero-rise-4 mt-8 flex flex-wrap items-center gap-3">
+                <a
+                  href="#install"
+                  className="font-mono text-[12.5px] uppercase tracking-[0.14em] text-white bg-[var(--color-accent)] px-6 py-3.5 hover:opacity-90 transition-opacity"
+                >
+                  Install the MCP server →
+                </a>
+                <Link
+                  href="/demo"
+                  className="font-mono text-[12.5px] uppercase tracking-[0.14em] text-[var(--color-ink)] border border-[var(--color-rule)] px-6 py-3.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
+                >
+                  90-second demo →
+                </Link>
+              </div>
+              <div className="hero-rise hero-rise-4 mt-8 font-mono text-[12px] leading-[1.5] text-[var(--color-mute)]">
+                <span className="text-[var(--color-ink)] tabular-nums">{count.toLocaleString()}</span>{' '}
+                MCP servers across {categories} categories · works in Claude Desktop, Cursor,
+                Cline, Zed
+              </div>
             </div>
-            <h1 className="hero-rise hero-rise-2 t-display font-medium text-[var(--color-ink)]">
-              The trust layer for MCP tools.
-            </h1>
-            <p className="hero-rise hero-rise-3 mt-6 max-w-[600px] text-[17px] sm:text-[19px] leading-[1.5] text-[var(--color-cite)]">
-              Your agent reads a tool&rsquo;s description and acts on it. Some descriptions
-              lie. mcpindex returns a verdict on whether a tool does what it claims,
-              before your agent calls it.
-            </p>
-          </div>
 
-          {/* The action: live screener */}
-          <div className="hero-rise hero-rise-4 mt-10 max-w-[820px]">
-            <ScreenDemo />
-          </div>
-
-          {/* Primary CTA + stat line */}
-          <div className="hero-rise hero-rise-4 mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
-            <a
-              href="#install"
-              className="font-mono text-[12px] uppercase tracking-[0.16em] text-white bg-[var(--color-ink)] px-5 py-3 hover:bg-[var(--color-accent)] transition-colors"
-            >
-              Install the MCP server →
-            </a>
-            <Link
-              href="/docs"
-              className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-cite)] hover:text-[var(--color-accent)]"
-            >
-              Read the docs →
-            </Link>
-            <span className="font-mono text-[12px] text-[var(--color-mute)]">
-              <span className="text-[var(--color-ink)] tabular-nums">{count.toLocaleString()}</span>{' '}
-              servers indexed across {categories} categories · verdicts rolling out, adversarial
-              cases first
-            </span>
+            {/* RIGHT - the live screener, interactive proof */}
+            <div className="hero-rise hero-rise-4">
+              <div className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-mute)] mb-3">
+                Try it now · paste a tool description
+              </div>
+              <ScreenDemo />
+            </div>
           </div>
         </div>
       </section>

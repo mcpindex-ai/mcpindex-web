@@ -17,7 +17,7 @@ export default async function Leaderboard() {
   const ranked = rankByQuality(servers).slice(0, 50);
 
   return (
-    <article className="mx-auto max-w-[1080px] px-6 sm:px-10 pt-16 pb-24">
+    <article className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-16 pb-24">
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
           §01&nbsp;&nbsp;Leaderboard · top 50
@@ -26,7 +26,7 @@ export default async function Leaderboard() {
           MCP Quality Score
         </h1>
         <p className="mt-4 max-w-[680px] text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
-          Five-dimension composite score from public registry data only — freshness,
+          Five-dimension composite score from public registry data only - freshness,
           completeness, installability, documentation, semver stability.{' '}
           <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] hover:decoration-[var(--color-accent)]">
             Methodology

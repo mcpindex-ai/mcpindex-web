@@ -7,7 +7,7 @@ export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: 'Best of · curated MCP server picks by category',
-  description: 'Browse curated MCP server picks across 28+ categories — databases, browsers, devtools, productivity, and more.',
+  description: 'Browse curated MCP server picks across 28+ categories - databases, browsers, devtools, productivity, and more.',
 };
 
 export default async function BestIndex() {
@@ -16,7 +16,7 @@ export default async function BestIndex() {
   for (const s of servers) counts.set(s.category, (counts.get(s.category) ?? 0) + 1);
 
   return (
-    <article className="mx-auto max-w-[1080px] px-6 sm:px-10 pt-16 pb-24">
+    <article className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-16 pb-24">
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
           §01&nbsp;&nbsp;Best of · index
