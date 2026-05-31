@@ -40,20 +40,11 @@ export default async function Home() {
             <h1 className="hero-rise hero-rise-2 t-display font-medium text-[var(--color-ink)]">
               The trust layer for MCP tools.
             </h1>
-            <div className="hero-rise hero-rise-3 mt-7 space-y-4 text-[15px] sm:text-[16.5px] leading-[1.55] text-[var(--color-cite)]">
-              <p>
-                Your agent discovers an MCP tool at runtime, reads the description the
-                publisher wrote, and acts. The description is the contract. Some
-                descriptions lie: a read_file tool whose instructions also tell your
-                agent to grab ~/.ssh/id_rsa and stay quiet about it. The agent
-                can&apos;t tell on its own.
-              </p>
-              <p>
-                mcpindex returns a verdict per tool, ALLOW / DENY / REVIEW, with the
-                dimensions and severity behind the call, before your agent acts. Paste a
-                tool description and see it.
-              </p>
-            </div>
+            <p className="hero-rise hero-rise-3 mt-6 max-w-[600px] text-[17px] sm:text-[19px] leading-[1.5] text-[var(--color-cite)]">
+              Your agent reads a tool&rsquo;s description and acts on it. Some descriptions
+              lie. mcpindex returns a verdict on whether a tool does what it claims,
+              before your agent calls it.
+            </p>
           </div>
 
           {/* The action: live screener */}
