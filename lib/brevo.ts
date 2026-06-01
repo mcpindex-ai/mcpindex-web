@@ -11,7 +11,7 @@
 const API = 'https://api.brevo.com/v3';
 const TIMEOUT_MS = 5_000;
 
-export type LeadSource = 'waitlist' | 'pricing';
+export type LeadSource = 'waitlist' | 'pricing' | 'contact';
 export type LeadTier = 'pro' | 'enterprise';
 
 export interface Lead {
@@ -114,15 +114,20 @@ export async function upsertLeadContact(lead: Lead): Promise<BrevoResult> {
 
 // Single opt-in welcome to the subscriber themselves.
 export async function sendWelcomeEmail(lead: Lead): Promise<BrevoResult> {
-  const pricing = lead.source === 'pricing';
-  const subject = pricing
-    ? 'Thanks for your interest in mcpindex'
-    : 'You are on the mcpindex list';
-  const intro = pricing
-    ? `Thanks for reaching out about ${lead.tier === 'enterprise' ? 'Enterprise' : 'Pro'}. ` +
-      'We have your note and will be in touch shortly.'
-    : 'Thanks for joining the mcpindex waitlist. We will email you when v1 ships and ' +
+  const waitlist = lead.source === 'waitlist';
+  const subject = waitlist ? 'You are on the mcpindex list' : 'Thanks for reaching out to mcpindex';
+  let intro: string;
+  if (lead.source === 'waitlist') {
+    intro =
+      'Thanks for joining the mcpindex waitlist. We will email you when v1 ships and ' +
       'the Pro tier opens - nothing else.';
+  } else if (lead.source === 'pricing') {
+    intro =
+      `Thanks for reaching out about ${lead.tier === 'enterprise' ? 'Enterprise' : 'Pro'}. ` +
+      'We have your note and will be in touch shortly.';
+  } else {
+    intro = 'Thanks for reaching out. We have your message and will get back to you shortly.';
+  }
   const html =
     `<div style="font-family:ui-monospace,monospace;font-size:14px;line-height:1.6;color:#0a0a0a">` +
     `<p>${intro}</p><p>- the mcpindex team</p>` +

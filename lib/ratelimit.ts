@@ -31,11 +31,15 @@ export type ScreenLimit = { ok: true } | { ok: false; reason: 'ip' | 'global' };
 // sends; Brevo's free tier is 300 emails/day. These bounds protect that quota
 // from an abuser without throttling real signups.
 const WAITLIST_PER_IP_PER_MIN = 5;
-// Separate daily ceilings per source so a flood of free waitlist signups can't
-// starve higher-value pricing leads. Sum (300) stays within Brevo's 300/day.
-const WAITLIST_GLOBAL_PER_DAY: Record<WaitlistSource, number> = { waitlist: 200, pricing: 100 };
+// Separate daily ceilings per source so a flood of one kind can't starve the
+// others. Sum (300) stays within Brevo's 300/day.
+const WAITLIST_GLOBAL_PER_DAY: Record<WaitlistSource, number> = {
+  waitlist: 150,
+  pricing: 100,
+  contact: 50,
+};
 
-export type WaitlistSource = 'waitlist' | 'pricing';
+export type WaitlistSource = 'waitlist' | 'pricing' | 'contact';
 export type WaitlistLimit = { ok: true } | { ok: false; reason: 'ip' | 'global' };
 
 // In-memory per-instance backstop for when Upstash is unconfigured OR errors.

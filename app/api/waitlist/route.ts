@@ -67,19 +67,20 @@ export async function POST(req: NextRequest) {
 
   // Parse first so the rate limiter can bucket by source (paid vs free).
   let email = '';
-  let tier: LeadTier | undefined;
+  let variant: string | undefined; // pro | enterprise | contact (from the modal)
   let company = '';
   let message = '';
 
   if (isJson) {
     const body = (await req.json().catch(() => ({}))) as {
       email?: string;
-      tier?: string;
+      variant?: string;
+      tier?: string; // legacy alias for variant
       company?: string;
       message?: string;
     };
     email = clean(body.email, 254).toLowerCase();
-    tier = body.tier === 'pro' || body.tier === 'enterprise' ? body.tier : undefined;
+    variant = body.variant ?? body.tier;
     company = clean(body.company, MAX_COMPANY);
     message = clean(body.message, MAX_MESSAGE);
   } else {
@@ -91,7 +92,11 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'invalid_email' }, { status: 400 });
   }
 
-  const source: Lead['source'] = tier ? 'pricing' : 'waitlist';
+  const tier: LeadTier | undefined =
+    variant === 'pro' || variant === 'enterprise' ? variant : undefined;
+  // pricing = a tier CTA; contact = the footer "Contact"; everything else
+  // (the homepage form) is a plain waitlist signup.
+  const source: Lead['source'] = tier ? 'pricing' : variant === 'contact' ? 'contact' : 'waitlist';
 
   // Quota guard before any Brevo send. Bounded even without Upstash (backstop).
   const limit = await checkWaitlistLimit(clientIp(req), source, new Date());

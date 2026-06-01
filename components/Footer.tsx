@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Mark } from './Mark';
+import { ContactTrigger } from './ContactModal';
 
 const COLUMN_LABEL =
   'font-mono text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-mute)] mb-4';
@@ -65,9 +66,9 @@ export function Footer() {
             <div className={COLUMN_LABEL}>Legal</div>
             <Link href="/terms" className={LINK}>Terms</Link>
             <Link href="/privacy" className={LINK}>Privacy</Link>
-            <a href="mailto:hello@mcpindex.ai?subject=Contact" className={LINK}>
+            <ContactTrigger variant="contact" className={`${LINK} text-left w-full bg-transparent cursor-pointer`}>
               Contact us
-            </a>
+            </ContactTrigger>
           </div>
         </div>
 
