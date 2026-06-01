@@ -50,6 +50,7 @@ export async function GET(
         status: v.status,
         directive: v.directive.decision,
         granularity: v.granularity ?? null,
+        tier: v.tier ?? 'scanned',
         dimensions: v.dimensions.map((d) => ({
           id: d.id,
           verdict: d.verdict,
@@ -64,6 +65,7 @@ export async function GET(
         status: 'ERROR',
         directive: 'UNVERIFIED',
         granularity: null,
+        tier: null,
         dimensions: [],
         expires_at: null,
         honest_limits: NO_VERDICT_LIMITS,
