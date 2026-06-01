@@ -1,27 +1,32 @@
-// INTERNAL, UNCOMMITTED BFF - powers the homepage "find the tool, then check
-// the verdict" demo in ONE round trip. Composes the same composite ranker as
-// /api/v1/recommend with the seeded verdict store, so the demo can show the
-// rank-1 server AND its trust verdict together.
+// PUBLIC v1-advisory "pre-flight" API. One round trip = the tool an agent would
+// reach for AND its trust verdict, so an agent can ask "what should I use, and
+// can I trust it?" before it acts. Composes the same composite ranker as
+// /api/v1/recommend with the seeded verdict store.
 //
-// NOT a public contract: undocumented, unversioned, no stability promise, and
-// marked noindex. The public, stable surface agents should build against is
-// /api/v1/trust/server/[server_id]. If we ever promote this to a documented
-// "pre-flight" wedge API, that promotion is the one-way door (decisions.md).
+// Contract (stable, v1-advisory): GET ?task=<natural language> ->
+//   { task, recommendations[<=3], screened_for, verdict, honest_limits }
+// - verdict is the rank-1 server's advisory verdict (decision REVIEW; never a
+//   confident ALLOW from a semantic-only screen), or null when that server is
+//   not yet screened (fail-closed: treat as not-cleared).
+// - honest_limits states the posture on the wire: advisory, semantic-only, no
+//   live conformance. The per-server primitive is /api/v1/trust/server/[slug].
+// Promotion to a public contract logged in tasks/decisions.md (one-way door).
 //
-// Why this returns the FULL verdict (incl. rationale) while the public trust
-// endpoint strips it: rationale is already shown publicly on /server/[slug],
-// and feeding the keystone VerdictCard requires the full Verdict shape.
+// Returns the FULL verdict (incl. rationale, already public on /server/[slug])
+// minus per-dimension evidence quotes.
 
 import type { NextRequest } from 'next/server';
 import { loadServers } from '@/lib/registry';
 import { rankServers, toRecommendations } from '@/lib/recommend';
 import { getVerdict } from '@/lib/verdicts';
+import { ADVISORY_FLOOR } from '@/lib/honest-limits';
 
 export const revalidate = 300;
 
-// Matches the public trust route's cap: a long arbitrary task becomes part of
-// the s-maxage cache key, so bound it to defend edge-cache-slot exhaustion.
-const MAX_TASK_LEN = 512;
+// Matches the public trust route's cap (256): a long arbitrary task becomes part
+// of the s-maxage cache key, so bound it to defend edge-cache-slot exhaustion.
+// The ranker discards most of a long task anyway (tokenize drops stopwords).
+const MAX_TASK_LEN = 256;
 
 export async function GET(req: NextRequest) {
   const task = req.nextUrl.searchParams.get('task')?.trim() ?? '';
@@ -44,10 +49,27 @@ export async function GET(req: NextRequest) {
   // today: ~158 of ~10k screened). The client renders that as "not screened".
   const top = recommendations[0];
   const full = top ? await getVerdict(top.slug) : null;
-  // Drop per-dimension evidence quotes: the demo's VerdictCard never renders
-  // them, so don't forward a field the public trust endpoint strips.
+  // Explicit field whitelist (not a spread): only opt-in fields reach the public
+  // wire, so a future internal verdict field (origin, model id, ...) can't leak.
+  // Keeps rationale (already public on /server/[slug]); drops per-dimension
+  // evidence quotes; the shape feeds the keystone VerdictCard directly.
   const verdict = full
-    ? { ...full, dimensions: full.dimensions.map(({ evidence: _evidence, ...d }) => d) }
+    ? {
+        schema_version: full.schema_version,
+        status: full.status,
+        directive: {
+          decision: full.directive.decision,
+          rationale: full.directive.rationale,
+          expires_at: full.directive.expires_at,
+        },
+        dimensions: full.dimensions.map((d) => ({
+          id: d.id,
+          verdict: d.verdict,
+          severity: d.severity,
+        })),
+        granularity: full.granularity ?? null,
+        honest_limits: full.honest_limits ?? null,
+      }
     : null;
 
   return Response.json(
@@ -55,13 +77,14 @@ export async function GET(req: NextRequest) {
       task,
       recommendations,
       screened_for: top?.slug ?? null,
-      verdict, // full Verdict | null (UPPERCASE enums, feeds VerdictCard directly)
+      verdict, // advisory verdict | null (UPPERCASE enums, feeds VerdictCard directly)
+      honest_limits: ADVISORY_FLOOR, // endpoint posture; verdict carries its own richer set
+      verdict_contract_version: '1.0.0',
     },
     {
       headers: {
         'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
-        'X-Robots-Tag': 'noindex',
-        'X-Source': 'mcpindex.ai/internal',
+        'X-Source': 'mcpindex.ai',
       },
     },
   );

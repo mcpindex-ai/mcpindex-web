@@ -11,14 +11,10 @@
 
 import type { NextRequest } from 'next/server';
 import { getVerdict } from '@/lib/verdicts';
+import { ADVISORY_FLOOR as FLOOR } from '@/lib/honest-limits';
 
 export const revalidate = 300;
 
-const FLOOR = [
-  'conformance_monitored_not_enforced',
-  'calibrated_false_v1',
-  'advisory_deployment',
-] as const;
 const NO_VERDICT_LIMITS = [...FLOOR, 'no_verdict_data_in_v1_advisory'];
 
 // Hard cap on subject identifiers - defends against cache-poison via long

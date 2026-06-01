@@ -27,6 +27,8 @@ export async function GET() {
       // `unverified_reason:<reason>` per-response when upstream is unreachable.
       // The floor here is the always-present set; per-response additions are
       // documented in contract-schema.md and integration-guide.md.
+      // Literal (not imported): scripts/check-graduation-honesty.mjs statically
+      // scans this file's source text for these tokens; an import would hide them.
       honest_limits: [
         'conformance_monitored_not_enforced',
         'calibrated_false_v1',
@@ -53,6 +55,8 @@ export async function GET() {
     endpoints: {
       search: 'https://mcpindex.ai/api/v1/search?q={query}',
       recommend: 'https://mcpindex.ai/api/v1/recommend?task={natural_language}',
+      // Pre-flight: discovery + the rank-1 server's advisory verdict in one call.
+      preflight: 'https://mcpindex.ai/api/v1/preflight?task={natural_language}',
       diff: 'https://mcpindex.ai/api/v1/diff?since={YYYY-MM-DD}',
       detail: 'https://mcpindex.ai/server/{slug}',
       llmsTxt: 'https://mcpindex.ai/llms.txt',

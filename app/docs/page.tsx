@@ -73,8 +73,11 @@ export default function DocsPage() {
             ``,
             `# discovery: find a tool for a task`,
             `curl "https://mcpindex.ai/api/v1/recommend?task=read+pdf+to+s3"`,
+            ``,
+            `# pre-flight: discovery + the rank-1 server's verdict in one call`,
+            `curl "https://mcpindex.ai/api/v1/preflight?task=read+pdf+to+s3"`,
           ]}
-          notes="trust returns a stored verdict (ALLOW / DENY / REVIEW, or UNVERIFIED if not screened); screen runs the live LLM judge on a pasted description and returns a fresh PARTIAL verdict; recommend returns ranked picks. All JSON, same shapes an MCP client gets."
+          notes="trust returns a stored verdict (ALLOW / DENY / REVIEW, or UNVERIFIED if not screened); screen runs the live LLM judge on a pasted description and returns a fresh PARTIAL verdict; recommend returns ranked picks; preflight composes the two - the top servers plus the rank-1 server's advisory verdict in one round trip (verdict is null when that server is not yet screened - treat as not-cleared). All JSON, same shapes an MCP client gets."
         />
         <UseCase
           letter="B"
