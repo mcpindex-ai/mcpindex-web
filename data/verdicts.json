@@ -2837,6 +2837,41 @@
     "title": "Radzen Blazor MCP",
     "verdict_contract_version": "1.0.0"
   },
+  "com-skipshit-mcp": {
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared capability"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-06-01T06:47:03.268555+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-06-01T05:47:03.268555+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "title": "com.skipshit/mcp",
+    "verdict_contract_version": "1.0.0"
+  },
   "com-stratalize-healthcare": {
     "dimensions": [
       {
