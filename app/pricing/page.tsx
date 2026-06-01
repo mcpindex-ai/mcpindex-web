@@ -1,12 +1,21 @@
-import Link from 'next/link';
 import type { Metadata } from 'next';
+import { TierCTA, type Cta } from './pricing-cta';
 
 export const metadata: Metadata = {
   title: 'Pricing',
   description: 'Free public API, optional Pro tier for higher rate limits, Enterprise for SLA.',
 };
 
-const TIERS = [
+type Tier = {
+  name: string;
+  price: string;
+  rate: string;
+  blurb: string;
+  bullets: string[];
+  cta: Cta;
+};
+
+const TIERS: Tier[] = [
   {
     name: 'Free',
     price: '$0',
@@ -33,7 +42,7 @@ const TIERS = [
       'Webhook on registry diff',
       'Email support',
     ],
-    cta: { label: 'Request access', href: 'mailto:hello@mcpindex.ai?subject=Pro%20tier' },
+    cta: { label: 'Get Pro access', contact: 'pro' },
   },
   {
     name: 'Enterprise',
@@ -47,12 +56,9 @@ const TIERS = [
       'Co-marketing on /best/ pages',
       'Acquisition discussions also welcome',
     ],
-    cta: { label: 'Talk to us', href: 'mailto:hello@mcpindex.ai?subject=Enterprise' },
+    cta: { label: 'Contact sales', contact: 'enterprise' },
   },
 ];
-
-const CTA_CLASS =
-  'mt-8 inline-block w-fit font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-ink)] border border-[var(--color-rule)] px-3 py-1.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]';
 
 export default function PricingPage() {
   return (
@@ -94,17 +100,7 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
-            {t.cta.href.startsWith('mailto:') ? (
-              // External protocol: a plain anchor, not next/link (which is for
-              // client-side route transitions). Matches every other mailto in the app.
-              <a href={t.cta.href} className={CTA_CLASS}>
-                {t.cta.label} →
-              </a>
-            ) : (
-              <Link href={t.cta.href} className={CTA_CLASS}>
-                {t.cta.label} →
-              </Link>
-            )}
+            <TierCTA cta={t.cta} />
           </div>
         ))}
       </div>

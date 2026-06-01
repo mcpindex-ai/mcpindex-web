@@ -25,8 +25,15 @@ export default function PrivacyPage() {
           operational and security purposes only. Logs are not sold or shared.
         </p>
         <p>
-          The waitlist form stores your email and submission timestamp. We use it to
-          notify you when v1 ships and nothing else. Unsubscribe at any time by emailing{' '}
+          The waitlist and the Pro / Enterprise contact forms store the email you submit
+          (plus any company name or message you include) so we can reach you about access
+          and ship updates - nothing else. We process and store these through{' '}
+          <a href="https://www.brevo.com/legal/privacypolicy/" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+            Brevo
+          </a>
+          , our email provider, who sends you a confirmation and may send those updates.
+          We do not sell your details or use them for third-party advertising. Unsubscribe
+          any time via the link in those emails, or by emailing{' '}
           <a href="mailto:hello@mcpindex.ai" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
             hello@mcpindex.ai
           </a>

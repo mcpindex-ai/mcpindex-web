@@ -27,6 +27,64 @@ const GLOBAL_PER_DAY = 5000; // hard daily ceiling on Groq calls regardless of I
 
 export type ScreenLimit = { ok: true } | { ok: false; reason: 'ip' | 'global' };
 
+// Lead capture (/api/waitlist). Each accepted lead can trigger up to 3 Brevo
+// sends; Brevo's free tier is 300 emails/day. These bounds protect that quota
+// from an abuser without throttling real signups.
+const WAITLIST_PER_IP_PER_MIN = 5;
+// Separate daily ceilings per source so a flood of free waitlist signups can't
+// starve higher-value pricing leads. Sum (300) stays within Brevo's 300/day.
+const WAITLIST_GLOBAL_PER_DAY: Record<WaitlistSource, number> = { waitlist: 200, pricing: 100 };
+
+export type WaitlistSource = 'waitlist' | 'pricing';
+export type WaitlistLimit = { ok: true } | { ok: false; reason: 'ip' | 'global' };
+
+// In-memory per-instance backstop for when Upstash is unconfigured OR errors.
+// Serverless instances are short-lived so this is weaker than Redis, but it turns
+// "fail-open = no limit at all" into "fail-open = bounded per instance" for a
+// public endpoint that spends real money + email quota. Keys are time-bucketed
+// (minute / day), so stale entries simply stop being hit; a size cap bounds memory.
+const memIp = new Map<string, number>();
+const memGlobal = new Map<string, number>();
+function memUnder(map: Map<string, number>, key: string, limit: number): boolean {
+  if (map.size > 10_000) map.clear(); // crude prune; only loosens limits briefly
+  const n = (map.get(key) ?? 0) + 1;
+  map.set(key, n);
+  return n <= limit;
+}
+function memCheck(ip: string, source: WaitlistSource, min: string, day: string): WaitlistLimit {
+  if (!memUnder(memIp, `${ip}:${min}`, WAITLIST_PER_IP_PER_MIN)) return { ok: false, reason: 'ip' };
+  if (!memUnder(memGlobal, `${source}:${day}`, WAITLIST_GLOBAL_PER_DAY[source]))
+    return { ok: false, reason: 'global' };
+  return { ok: true };
+}
+
+export async function checkWaitlistLimit(
+  ip: string,
+  source: WaitlistSource,
+  now: Date,
+): Promise<WaitlistLimit> {
+  const min = now.toISOString().slice(0, 16);
+  const day = now.toISOString().slice(0, 10);
+  const r = redis();
+  if (!r) return memCheck(ip, source, min, day); // no Redis -> in-memory backstop
+
+  try {
+    const ipKey = `waitlist:ip:${ip}:${min}`;
+    const c = await r.incr(ipKey);
+    if (c === 1) await r.expire(ipKey, 70);
+    if (c > WAITLIST_PER_IP_PER_MIN) return { ok: false, reason: 'ip' };
+
+    const gKey = `waitlist:global:${source}:${day}`;
+    const g = await r.incr(gKey);
+    if (g === 1) await r.expire(gKey, 90_000); // ~25h
+    if (g > WAITLIST_GLOBAL_PER_DAY[source]) return { ok: false, reason: 'global' };
+
+    return { ok: true };
+  } catch {
+    return memCheck(ip, source, min, day); // Redis error -> backstop, not no-limit
+  }
+}
+
 export async function checkScreenLimit(ip: string, now: Date): Promise<ScreenLimit> {
   const r = redis();
   if (!r) return { ok: true }; // fail-open: proxy.ts per-IP limit is the backstop
