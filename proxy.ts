@@ -47,12 +47,13 @@ export function proxy(req: NextRequest) {
   // gated only by `config.matcher`, and the docs warn that a matcher change or
   // refactor can silently broaden coverage (node_modules/next/dist/docs/.../
   // proxy.md, "Execution order"). This in-function path check guarantees we
-  // only rate-limit /api/v1/* even if the matcher is later widened - per Next's
-  // "verify inside, don't rely on the matcher alone" guidance. Keep it.
-  // Rate-limited surfaces: the public /api/v1/* API and /api/waitlist (which
-  // writes a log line per submit and is otherwise unthrottled - floodable).
+  // only rate-limit the intended surfaces even if the matcher is later widened -
+  // per Next's "verify inside, don't rely on the matcher alone" guidance. Keep it.
+  // Rate-limited surfaces: the public /api/v1/* API; /api/waitlist (writes a log
+  // line per submit, otherwise floodable); and /api/health/* (makes outbound Groq
+  // liveness calls, so cap per-IP spray on top of the route's own memo throttle).
   const p = req.nextUrl.pathname;
-  if (!p.startsWith('/api/v1/') && p !== '/api/waitlist') {
+  if (!p.startsWith('/api/v1/') && p !== '/api/waitlist' && !p.startsWith('/api/health/')) {
     return NextResponse.next();
   }
   // Vercel signs x-vercel-forwarded-for; raw x-forwarded-for is attacker-
@@ -91,5 +92,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/v1/:path*', '/api/waitlist'],
+  matcher: ['/api/v1/:path*', '/api/waitlist', '/api/health/:path*'],
 };
