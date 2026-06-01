@@ -1,6 +1,6 @@
 {
   "name": "mcp-server-mcpindex",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "An MCP server for finding MCP servers, plus advisory trust verdicts (check_tool_trust, assess_server) for agent frameworks. Drop-in for Claude Desktop, Cursor, Cline, Zed.",
   "keywords": [
     "mcp",
@@ -16,10 +16,11 @@
   "homepage": "https://mcpindex.ai",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mcpindex-ai/mcp-server-mcpindex"
+    "url": "https://github.com/mcpindex-ai/mcpindex-web",
+    "directory": "mcp-server-mcpindex"
   },
   "bugs": {
-    "url": "https://github.com/mcpindex-ai/mcp-server-mcpindex/issues"
+    "url": "https://github.com/mcpindex-ai/mcpindex-web/issues"
   },
   "author": "Bhartis LLC <hello@mcpindex.ai>",
   "license": "MIT",
@@ -39,7 +40,9 @@
   ],
   "scripts": {
     "build": "node --check src/index.mjs && node --check src/trust.mjs",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "check-published": "node scripts/check-published.mjs",
+    "release": "node scripts/release.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"

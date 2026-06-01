@@ -397,8 +397,8 @@ Args:     -y mcp-server-mcpindex`}
             indexed each day
           </li>
           <li>
-            <Ext href="https://github.com/mcpindex-ai/mcp-server-mcpindex">
-              github.com/mcpindex-ai/mcp-server-mcpindex
+            <Ext href="https://github.com/mcpindex-ai/mcpindex-web/tree/main/mcp-server-mcpindex">
+              github.com/mcpindex-ai/mcpindex-web/…/mcp-server-mcpindex
             </Ext>{' '}
             - npm package source, MIT
           </li>

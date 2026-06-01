@@ -4,6 +4,17 @@ All notable changes to `mcp-server-mcpindex` are recorded here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-05-31
+
+### Changed
+
+- **Repository metadata now points at the monorepo source.** `repository` is `mcpindex-ai/mcpindex-web` with `"directory": "mcp-server-mcpindex"` (the npm-standard convention for a package whose source lives in a monorepo subdirectory), and `bugs` points at that repo's issues. The previously-linked standalone repo `mcpindex-ai/mcp-server-mcpindex` was an orphaned `0.1.0` snapshot (pre-trust, no `trust.mjs`); it has been archived in favor of a single source of truth. No code change - `npm install` behaves identically to `0.2.1`.
+
+### Added
+
+- **`npm run release`** - one-command release (syntax check, tests, CHANGELOG-entry assertion, version, publish, tag) so the source-to-npm step can no longer drift by being done by hand.
+- **`npm run check-published`** - fails when the in-tree version is ahead of the published npm version (catches "edited but forgot to publish").
+
 ## [0.2.1] - 2026-05-29
 
 ### Fixed
