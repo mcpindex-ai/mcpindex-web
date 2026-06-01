@@ -9,6 +9,15 @@
 //
 // Fail-CLOSED everywhere: any missing key / non-200 / malformed output returns
 // `unavailable`, never a fake `clean`. We never assert a tool is safe on error.
+//
+// Key failover: an ordered pool [primary, fallback] (MCPINDEX_GROQ_API_KEY,
+// MCPINDEX_GROQ_API_KEY_FALLBACK). A single attempt that comes back
+// `unavailable` (429 / 5xx / auth / network / malformed) advances to the next
+// key; a real verdict (clean/flagged) is returned immediately and never failed
+// over. Each failover logs the key INDEX + reason (never the key value) so a
+// degrading primary is visible before the pool is exhausted. The per-call cost
+// ceiling lives in lib/ratelimit.ts (invocation-keyed), so failover serves the
+// same already-capped call and cannot widen spend.
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const MODEL = 'llama-3.3-70b-versatile';
@@ -30,10 +39,9 @@ export type ScreenResult =
   | { state: 'clean'; reason: string }
   | { state: 'unavailable'; why: string };
 
-export async function screenDescription(description: string): Promise<ScreenResult> {
-  const key = process.env.MCPINDEX_GROQ_API_KEY;
-  if (!key) return { state: 'unavailable', why: 'not_configured' };
-
+// One screen attempt against a single Groq key. Returns a real verdict
+// (clean/flagged) or `unavailable` with a precise reason; never throws.
+async function screenWithKey(key: string, description: string): Promise<ScreenResult> {
   let data: unknown;
   try {
     const res = await fetch(GROQ_URL, {
@@ -71,4 +79,35 @@ export async function screenDescription(description: string): Promise<ScreenResu
   } catch {
     return { state: 'unavailable', why: 'parse_failed' };
   }
+}
+
+export async function screenDescription(description: string): Promise<ScreenResult> {
+  // Ordered pool: primary first, then fallback. Empty entries are dropped so a
+  // single configured key still works.
+  const keys = [
+    process.env.MCPINDEX_GROQ_API_KEY,
+    process.env.MCPINDEX_GROQ_API_KEY_FALLBACK,
+  ].filter((k): k is string => typeof k === 'string' && k.length > 0);
+  if (keys.length === 0) return { state: 'unavailable', why: 'not_configured' };
+
+  let last: ScreenResult = { state: 'unavailable', why: 'not_configured' };
+  for (let i = 0; i < keys.length; i++) {
+    const result = await screenWithKey(keys[i], description);
+    if (result.state !== 'unavailable') return result; // real verdict: never fail over
+    last = result;
+    const hasNext = i < keys.length - 1;
+    // Key value is NEVER logged - index + reason only. An auth failure (revoked /
+    // expired key) means the pool silently lost a member; escalate to an
+    // alertable level with a stable tag, distinct from a transient 429/5xx, so a
+    // dead primary is caught before the backup is the only key left.
+    if (result.why === 'groq_401' || result.why === 'groq_403') {
+      console.error(
+        `[screen-key-auth-failed] groq key #${i} auth-failed (${result.why})` +
+          (hasNext ? `; failing over to #${i + 1}` : '; pool exhausted'),
+      );
+    } else if (hasNext) {
+      console.warn(`screen: groq key #${i} unavailable (${result.why}); failing over to #${i + 1}`);
+    }
+  }
+  return last; // pool exhausted -> fail-closed with the last reason
 }
