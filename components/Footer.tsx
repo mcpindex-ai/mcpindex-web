@@ -65,7 +65,7 @@ export function Footer() {
             <div className={COLUMN_LABEL}>Legal</div>
             <Link href="/terms" className={LINK}>Terms</Link>
             <Link href="/privacy" className={LINK}>Privacy</Link>
-            <a href="mailto:hello@mcpindex.ai" className={LINK}>
+            <a href="mailto:hello@mcpindex.ai?subject=Contact" className={LINK}>
               Contact us
             </a>
           </div>
