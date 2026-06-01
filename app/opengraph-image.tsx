@@ -21,30 +21,13 @@ export default function OpengraphImage() {
           padding: '76px',
         }}
       >
-        {/* wordmark */}
+        {/* wordmark: bracket mark + name */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div
-            style={{
-              display: 'flex',
-              width: '44px',
-              height: '44px',
-              border: '3px solid #0a0a0a',
-              borderRadius: '9px',
-              position: 'relative',
-            }}
-          >
-            <div
-              style={{
-                position: 'absolute',
-                top: '8px',
-                left: '8px',
-                width: '18px',
-                height: '9px',
-                background: '#ea580c',
-                borderRadius: '2px',
-              }}
-            />
-          </div>
+          <svg width="46" height="46" viewBox="0 0 40 40" fill="none">
+            <path d="M15 8 H10 V32 H15" stroke="#0a0a0a" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M25 8 H30 V32 H25" stroke="#0a0a0a" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round" />
+            <rect x="15" y="18" width="10" height="4" rx="1.8" fill="#ea580c" />
+          </svg>
           <div style={{ display: 'flex', fontSize: '30px', color: '#0a0a0a', fontWeight: 600 }}>
             mcpindex.ai
           </div>

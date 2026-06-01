@@ -48,6 +48,7 @@ export function Footer() {
           <div>
             <div className={COLUMN_LABEL}>Project</div>
             <Link href="/about" className={LINK}>About</Link>
+            <Link href="/brand" className={LINK}>Brand</Link>
             <a
               href="https://github.com/mcpindex-ai"
               target="_blank"

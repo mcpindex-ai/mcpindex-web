@@ -1,21 +1,25 @@
-// The mcpindex mark: a miniature Verdict Card. A bordered frame (the card),
-// an amber decision token (top-left), and two dimension rows beneath. The
-// brand object propagated down to a glyph. currentColor = ink; the token
-// uses the accent so the mark carries the one reserved color, like the card.
-export function Mark({ size = 20 }: { size?: number }) {
+// The mcpindex mark: the bracket verdict. Square brackets (an index entry, a
+// checkbox verdict, a gate) holding the amber decision token. The token is the
+// brand atom; the bracket is the logo; the Seal and the Verdict Card are the
+// same idea at larger scales.
+//
+// Colors are props so the same component renders in the DOM (currentColor +
+// the accent CSS var) and inside next/og / Satori (explicit hex, since CSS
+// vars do not resolve there).
+export function Mark({
+  size = 20,
+  bracket = 'currentColor',
+  token = 'var(--color-accent)',
+}: {
+  size?: number;
+  bracket?: string;
+  token?: string;
+}) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 20 20"
-      fill="none"
-      aria-hidden="true"
-      className="shrink-0"
-    >
-      <rect x="1.5" y="1.5" width="17" height="17" rx="3" stroke="currentColor" strokeWidth="1.5" />
-      <rect x="5" y="4.8" width="6.2" height="3.2" rx="0.8" fill="var(--color-accent)" />
-      <line x1="5" y1="11.6" x2="15" y2="11.6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <line x1="5" y1="14.4" x2="12" y2="14.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden="true" className="shrink-0">
+      <path d="M15 8 H10 V32 H15" stroke={bracket} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M25 8 H30 V32 H25" stroke={bracket} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="15" y="18.2" width="10" height="3.6" rx="1.6" fill={token} />
     </svg>
   );
 }
