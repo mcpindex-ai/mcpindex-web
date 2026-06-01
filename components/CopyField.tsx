@@ -41,9 +41,13 @@ export function CopyField({
           type="button"
           onClick={copy}
           aria-label={copied ? 'Copied' : 'Copy to clipboard'}
-          className="absolute top-2 right-2 font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 px-1.5 py-0.5 transition-colors"
+          className={`absolute top-2 right-2 font-mono text-[10px] uppercase tracking-[0.12em] border px-1.5 py-0.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--color-accent)] ${
+            copied
+              ? 'text-emerald-400 border-emerald-500/60'
+              : 'text-zinc-400 hover:text-white border-zinc-700 hover:border-zinc-500'
+          }`}
         >
-          {copied ? 'copied' : 'copy'}
+          {copied ? '✓ copied' : 'copy'}
         </button>
       </div>
     </div>

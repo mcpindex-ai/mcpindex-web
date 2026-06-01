@@ -5,6 +5,7 @@ import { ScreenDemo } from '@/components/ScreenDemo';
 import { VerdictReveal } from '@/components/VerdictReveal';
 import { CopyField } from '@/components/CopyField';
 import { CopyIconButton } from '@/components/CopyIconButton';
+import { ProvenanceBadge } from '@/components/ProvenanceBadge';
 import { loadServers, getServerCount, getCategoryCount } from '@/lib/registry';
 import { rankByQuality } from '@/lib/quality';
 import { listScreened } from '@/lib/verdicts';
@@ -80,7 +81,7 @@ export default async function Home() {
                 <span className="italic font-normal pr-[0.12em]">every</span> tool
                 it&rsquo;s handed.
                 <br />
-                <span className="font-extrabold text-[var(--color-accent)]">
+                <span className="font-semibold text-[var(--color-accent)]">
                   mcpindex doesn&rsquo;t.
                 </span>
               </h1>
@@ -88,17 +89,6 @@ export default async function Home() {
                 A verdict on whether an MCP tool does what it claims, before your agent
                 acts.
               </p>
-              <div className="hero-rise hero-rise-3 mt-4 flex flex-wrap gap-2">
-                <span className="font-mono text-[11px] uppercase tracking-[0.12em] border border-emerald-300 text-emerald-700 bg-emerald-50 px-2.5 py-1">
-                  allow
-                </span>
-                <span className="font-mono text-[11px] uppercase tracking-[0.12em] border border-red-300 text-red-700 bg-red-50 px-2.5 py-1">
-                  deny
-                </span>
-                <span className="font-mono text-[11px] uppercase tracking-[0.12em] border border-amber-300 text-amber-700 bg-amber-50 px-2.5 py-1">
-                  review
-                </span>
-              </div>
               <div className="hero-rise hero-rise-4 mt-8 flex flex-wrap items-center gap-3">
                 <a
                   href="#install"
@@ -112,11 +102,23 @@ export default async function Home() {
                 >
                   90-second demo →
                 </a>
+                <a
+                  href="mailto:hello@mcpindex.ai"
+                  className="font-mono text-[12px] text-[var(--color-mute)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] transition-colors"
+                >
+                  or talk to us →
+                </a>
               </div>
               <div className="hero-rise hero-rise-4 mt-8 font-mono text-[12px] leading-[1.5] text-[var(--color-mute)]">
                 <span className="text-[var(--color-ink)] tabular-nums">{count.toLocaleString()}</span>{' '}
                 MCP servers across {categories} categories · works in Claude Desktop, Cursor,
                 Cline, Zed
+              </div>
+              <div className="hero-rise hero-rise-4 mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                <ProvenanceBadge />
+                <span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--color-mute)]">
+                  Methodology public · adversarial-first
+                </span>
               </div>
             </div>
 
