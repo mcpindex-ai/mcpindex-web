@@ -198,6 +198,28 @@ export default async function ServerPage(
               </p>
             </section>
 
+            {/* Embed badge - puts the live verdict next to "Connect" wherever
+                this server is listed. Reflects the current screen and links back. */}
+            {verdictState.kind === 'verdict' && (
+              <section className="mt-14">
+                <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
+                  Embed this badge
+                </div>
+                <p className="text-[13px] leading-[1.55] text-[var(--color-cite)] max-w-[640px] mb-3">
+                  A live verdict badge for your README or listing. It reflects the current screen,
+                  links back here, and updates when the verdict does.
+                </p>
+                <CopyField
+                  label="Markdown"
+                  value={`[![mcpindex](https://mcpindex.ai/api/v1/badge/${server.slug})](https://mcpindex.ai/server/${server.slug})`}
+                />
+                <CopyField
+                  label="HTML"
+                  value={`<a href="https://mcpindex.ai/server/${server.slug}"><img src="https://mcpindex.ai/api/v1/badge/${server.slug}" alt="mcpindex verdict" height="20" /></a>`}
+                />
+              </section>
+            )}
+
             {/* Env vars */}
             {server.envVars.length > 0 && (
               <section className="mt-14">

@@ -82,6 +82,47 @@ function walk(dir) {
 }
 walk(path.join(root, 'app'));
 
+// 4) The embeddable badge (lib/badge.ts) is a public trust claim with no link
+//    context, so its honesty boundary is stricter: a badge label must never
+//    assert safety/certification, and "screened" (an advisory semantic-only
+//    pass) must never render green - green is reserved for a real ALLOW that
+//    only a conformance probe can earn. Guard both at build time.
+try {
+  const badge = fs.readFileSync(path.join(root, 'lib/badge.ts'), 'utf8');
+  // 4a) banned safety words anywhere in a label string (quote-agnostic so a
+  //     reformat to double-quotes can't silently void the check). Assert we
+  //     actually parsed labels - zero matches means the regex drifted from the
+  //     code and is giving false confidence on the file it polices.
+  const labels = [...badge.matchAll(/right:\s*['"]([^'"]*)['"]/g)].map((m) => m[1]);
+  if (labels.length < 5) {
+    errors.push(`lib/badge.ts: badge-honesty scan parsed only ${labels.length} labels (expected >=5 BADGE_STYLE states). The label regex has drifted from the code - fix it before trusting the safety check.`);
+  }
+  for (const lbl of labels) {
+    if (/\b(safe|verified|trusted|secure|certified|approved)\b/i.test(lbl)) {
+      errors.push(`lib/badge.ts badge label "${lbl}" asserts safety/certification - a semantic-only screen cannot. Use a process word (e.g. "screened").`);
+    }
+    // Width is a 6.5px/char heuristic; an over-long label would clip the pill
+    // and silently pass. Bound length so future labels stay within the heuristic.
+    if (lbl.length > 16) {
+      errors.push(`lib/badge.ts badge label "${lbl}" (${lbl.length} chars) exceeds the 16-char budget the SVG pill-width heuristic safely fits. Shorten it or widen pillWidth deliberately.`);
+    }
+  }
+  // 4b) no badge state may render green - green is reserved for a real ALLOW
+  //     (post-conformance). Detect green by COLOR VALUE (not the word, which
+  //     legitimately appears in comments): parse every #rrggbb in the code
+  //     (comments stripped) and reject any green-dominant hue.
+  const code = badge.replace(/\/\/.*$/gm, '');
+  for (const m of code.matchAll(/#([0-9a-fA-F]{6})/g)) {
+    const n = parseInt(m[1], 16);
+    const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    if (g > r + 25 && g > b + 25 && g > 90) {
+      errors.push(`lib/badge.ts uses green color #${m[1]} - reserved for a real ALLOW (post-conformance). An advisory badge must not render green.`);
+    }
+  }
+} catch (err) {
+  errors.push(`could not read lib/badge.ts for the badge-honesty check: ${err.message}`);
+}
+
 if (errors.length) {
   console.error('\n[graduation-guard] BUILD BLOCKED - false trust claim detected:');
   for (const e of errors) console.error('  - ' + e);
