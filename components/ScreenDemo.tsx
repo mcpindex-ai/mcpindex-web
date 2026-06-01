@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Mark } from './Mark';
 
 // Belief moment: paste a tool description, watch the live judge catch a lie.
 // Calls POST /api/v1/screen (advisory, semantic-only, fail-closed).
@@ -69,7 +70,10 @@ export function ScreenDemo() {
   return (
     <div className="rule-t rule-b rule-l rule-r bg-white elevate">
       <div className="rule-b px-5 py-2.5 flex items-center justify-between font-mono text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-mute)]">
-        <span>POST&nbsp;&nbsp;/api/v1/screen</span>
+        <span className="flex items-center gap-2 text-[var(--color-ink)]">
+          <Mark size={14} />
+          <span className="text-[var(--color-mute)]">POST&nbsp;&nbsp;/api/v1/screen</span>
+        </span>
         <span className="hidden sm:inline">live · advisory · semantic-only</span>
       </div>
 
