@@ -1,0 +1,73 @@
+name: mcp-server-mcpindex CI
+
+# Drift guard for the in-tree npm package. The package source lives in this
+# monorepo (single source of truth); npm is published from it. This workflow
+# stops the two from silently diverging:
+#   1. build + test  - the package was previously uncovered by CI.
+#   2. version-bump gate - changing shipped source (src/) without bumping the
+#      version is rejected, so every code change is releasable and the
+#      "edited but never published" drift cannot accumulate. (Bumping the
+#      version satisfies the gate; the maintainer then runs `npm run release`.)
+#   3. published-parity - a NON-blocking report comparing in-tree vs npm,
+#      so a pending publish is visible without blocking the bump PR itself.
+
+on:
+  pull_request:
+    paths: ['mcp-server-mcpindex/**']
+  push:
+    branches: [main]
+    paths: ['mcp-server-mcpindex/**']
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # need history to diff against the base ref
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install
+        working-directory: mcp-server-mcpindex
+        run: npm ci
+
+      - name: Build (syntax) + test
+        working-directory: mcp-server-mcpindex
+        run: |
+          npm run build
+          npm test
+
+      # Runs at repo root: git pathspecs below are repo-root-relative.
+      - name: Drift guard - shipped source change requires a version bump
+        run: |
+          base="${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}"
+          if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            echo "No usable base ref ($base); skipping version-bump gate for this event."
+            exit 0
+          fi
+          changed=$(git diff --name-only "$base" HEAD -- mcp-server-mcpindex/src || true)
+          if [ -z "$changed" ]; then
+            echo "No shipped-source (src/) changes vs base. Gate passes."
+            exit 0
+          fi
+          echo "Shipped source changed:"; echo "$changed"
+          old=$(git show "$base:mcp-server-mcpindex/package.json" | node -pe "JSON.parse(require('fs').readFileSync(0,'utf8')).version")
+          new=$(node -pe "require('./mcp-server-mcpindex/package.json').version")
+          echo "version: $old -> $new"
+          if [ "$old" = "$new" ]; then
+            echo "::error::src/ changed but version stayed $new. Bump the version + add a CHANGELOG entry so the change reaches npm (npm run release)."
+            exit 1
+          fi
+          echo "Version was bumped; gate passes."
+
+      - name: Published-parity report (non-blocking)
+        working-directory: mcp-server-mcpindex
+        continue-on-error: true
+        run: npm run check-published
