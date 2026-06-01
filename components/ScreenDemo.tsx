@@ -114,7 +114,14 @@ export function ScreenDemo() {
               onChange={(e) => setContribute(e.target.checked)}
               className="accent-[var(--color-accent)]"
             />
-            Contribute this example to improve detection
+            <span>
+              Contribute this example to improve detection
+              {contribute && (
+                <span className="block text-[10px] normal-case text-[var(--color-cite)]">
+                  Stored as-is - don&apos;t include secrets, keys, or personal data.
+                </span>
+              )}
+            </span>
           </label>
           <button
             type="button"

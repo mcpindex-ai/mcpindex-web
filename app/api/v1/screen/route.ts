@@ -8,6 +8,16 @@ import { checkScreenLimit } from '@/lib/ratelimit';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  // Require application/json. A cross-origin browser sending JSON triggers a
+  // CORS preflight, which vercel.json's "GET, OPTIONS" allow-list rejects -
+  // so this closes the only no-preflight ("simple") cross-origin path
+  // (text/plain) that could let a third-party site burn the paid Groq budget
+  // from visitors' browsers. Direct (curl/script) callers are unaffected;
+  // the rate limiter + provider spend cap remain their backstop.
+  if (!(req.headers.get('content-type') ?? '').toLowerCase().includes('application/json')) {
+    return Response.json({ error: 'unsupported_media_type' }, { status: 415 });
+  }
+
   let body: { description?: string; contribute?: boolean };
   try {
     body = (await req.json()) as { description?: string; contribute?: boolean };

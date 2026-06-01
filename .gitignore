@@ -45,3 +45,9 @@ data/snapshots/
 
 # cursor-harness job bookkeeping — runtime artifact, never committed (defense-in-depth)
 .harness/
+
+# Internal-only working docs - this repo is PUBLIC. Strategy/GTM/roadmap notes
+# must never ship here; they live in the private repo. Guard against re-adding.
+/launch/
+/tasks/
+/READY_TO_LAUNCH.md
