@@ -213,7 +213,7 @@ export default async function Home() {
           <PillarRow
             num="01"
             title="A verdict, not a ranking"
-            body="Per-tool ALLOW / DENY / REVIEW with dimension verdicts and severity. Hybrid eval: deterministic conformance probe plus LLM judge for hidden intent. Conformance is monitored, not enforced; posture is advisory."
+            body="Per-tool ALLOW / DENY / REVIEW with dimension verdicts and severity. Hybrid eval: a deterministic conformance probe plus a stakes-keyed, fail-closed judge quorum for hidden intent - at high stakes a tool clears only if every judge clears it; disagreement or doubt fails closed to REVIEW, never to ALLOW. Conformance is monitored, not enforced; posture is advisory."
             code="curl -s mcpindex.ai/api/v1/trust/tool/<server_id>/<tool_name>"
           />
           <PillarRow
@@ -356,7 +356,9 @@ export default async function Home() {
             {[
               ['Advisory', 'We publish the verdict; the agent or IDE decides whether to act on it.'],
               ['Conformance monitored, not enforced', 'The deterministic schema-conformance probe is in build; today findings are semantic-only and labeled PARTIAL.'],
-              ['15 of 150 labels to graduation', 'Coverage rolls out as the corpus expands, adversarial cases first.'],
+              ['Fails closed, never open', 'Under judge disagreement, doubt, or degradation a verdict is REVIEW or DENY - never a silent ALLOW. Safety is the default; availability is not.'],
+              ['15 of 150 labels to graduation', 'A recent supply check confirmed the ecosystem holds enough conforming tools to graduate - focused sourcing is the remaining step, not a capability gap. Adversarial cases first.'],
+              ['Falsifiable, not asserted', 'Recall is measured against the shipped path and held to the same bar we hold the tools - when we find our own error, we correct it in public.'],
               ['Not yet calibrated', 'Confidences are reported but not calibrated against a production corpus (calibrated=false at v1).'],
             ].map(([k, v]) => (
               <div key={k} className="rule-b rule-r p-5 sm:p-6">
