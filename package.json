@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/check-graduation-honesty.mjs && next build",
+    "check:honesty": "node scripts/check-graduation-honesty.mjs",
     "start": "next start",
     "lint": "eslint"
   },

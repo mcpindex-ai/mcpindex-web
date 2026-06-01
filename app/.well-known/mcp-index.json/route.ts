@@ -36,6 +36,11 @@ export async function GET() {
         'https://mcpindex.ai/api/v1/trust/tool/{server_id}/{tool_name}',
         'https://mcpindex.ai/api/v1/trust/server/{server_id}',
       ],
+      // INVARIANT: these are LABELED-conforming-corpus gate values (mirror of
+      // mcpindex-trust/corpus_eval/GATES.json). They change ONLY when human-
+      // labeled conforming tools + a probed FP upper-95 exist. Registry-screening
+      // COVERAGE (data/verdicts.json) is a different axis and must NEVER raise
+      // them. scripts/check-graduation-honesty.mjs fails the build if violated.
       d3_graduation: {
         criterion: 'conforming_labels >= 150 AND fp_upper_95 <= 0.02',
         current_conforming_labels: 15,
