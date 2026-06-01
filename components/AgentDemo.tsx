@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState, useRef, FormEvent } from 'react';
+import type { Verdict, Decision } from '@/lib/verdicts';
+import { VerdictCard } from './VerdictCard';
 
 type Recommendation = {
   rank: number;
@@ -20,20 +22,41 @@ type Recommendation = {
   url: string;
 };
 
+type Preflight = {
+  recommendations: Recommendation[];
+  screened_for: string | null;
+  verdict: Verdict | null;
+};
+
+// Curated so the rank-1 server has a real verdict on file (mix of decisions for
+// the teaching contrast). Freeform queries still work - they just often land on
+// a not-yet-screened server, which the gate shows honestly. Verified against
+// /api/v1/preflight; see tasks/todo-mcpindex-verdict-demo.md.
 const HINTS = [
-  'postgres with read-only mode',
   'scrape a website and save to S3',
   'search github and open a PR',
   'read pdfs from drive',
   'send slack messages on alert',
-  'run sql against bigquery',
   'browse a webpage and summarize',
+  'run sql against a database',
 ];
 
-export function AgentDemo({ serverCount }: { serverCount?: number }) {
+const DECISION_CLS: Record<Decision, string> = {
+  ALLOW: 'text-emerald-700',
+  DENY: 'text-red-700',
+  REVIEW: 'text-amber-700',
+};
+
+export function AgentDemo({
+  serverCount,
+  screenedCount,
+}: {
+  serverCount?: number;
+  screenedCount?: number;
+}) {
   const [hintIndex, setHintIndex] = useState(0);
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Recommendation[] | null>(null);
+  const [data, setData] = useState<Preflight | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -51,10 +74,10 @@ export function AgentDemo({ serverCount }: { serverCount?: number }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/recommend?task=${encodeURIComponent(task)}`);
+      const res = await fetch(`/api/v1/preflight?task=${encodeURIComponent(task)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      setResults(json.recommendations ?? []);
+      const json = (await res.json()) as Preflight;
+      setData(json);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'request failed');
     } finally {
@@ -67,11 +90,14 @@ export function AgentDemo({ serverCount }: { serverCount?: number }) {
     inputRef.current?.focus();
   }
 
+  const results = data?.recommendations ?? null;
+  const top = results && results.length > 0 ? results[0] : null;
+
   return (
     <div className="rule-t rule-b rule-l rule-r bg-[var(--color-accent-soft)]/40">
       {/* Top strip: man-page header */}
       <div className="rule-b px-5 py-2.5 flex items-center justify-between font-mono text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-mute)]">
-        <span>POST&nbsp;&nbsp;/api/v1/recommend</span>
+        <span>find&nbsp;→&nbsp;verify</span>
         <span className="hidden sm:inline">live · no key required</span>
       </div>
 
@@ -109,12 +135,12 @@ export function AgentDemo({ serverCount }: { serverCount?: number }) {
             disabled={loading || !query.trim()}
             className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-ink)] border border-[var(--color-rule)] px-3 py-1.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? 'querying…' : 'recommend →'}
+            {loading ? 'checking…' : 'recommend →'}
           </button>
         </div>
 
         {/* Hint chips */}
-        {!results && !loading && (
+        {!data && !loading && (
           <div className="mt-5 flex flex-wrap gap-1.5">
             <span className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-mute)] mr-1 self-center">
               try
@@ -134,17 +160,16 @@ export function AgentDemo({ serverCount }: { serverCount?: number }) {
       </form>
 
       {/* Results */}
-      {(loading || results || error) && (
+      {(loading || data || error) && (
         <div className="rule-t bg-white">
           {loading && (
             <div className="px-5 py-8 font-mono text-[12px] text-[var(--color-mute)]">
-              <span className="text-[var(--color-accent)]">▸</span> ranking {serverCount ? serverCount.toLocaleString() : 'all'} servers…
+              <span className="text-[var(--color-accent)]">▸</span> ranking{' '}
+              {serverCount ? serverCount.toLocaleString() : 'all'} servers, then reading the verdict…
             </div>
           )}
           {error && (
-            <div className="px-5 py-8 font-mono text-[12px] text-red-600">
-              error: {error}
-            </div>
+            <div className="px-5 py-8 font-mono text-[12px] text-red-600">error: {error}</div>
           )}
           {results && results.length === 0 && !loading && (
             <div className="px-5 py-8 font-mono text-[12px] text-[var(--color-mute)]">
@@ -152,26 +177,129 @@ export function AgentDemo({ serverCount }: { serverCount?: number }) {
             </div>
           )}
           {results && results.length > 0 && (
-            <ul>
-              {results.map((r) => (
-                <ResultRow key={r.slug} r={r} />
-              ))}
-              <li className="rule-t px-5 py-3 font-mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-mute)] flex justify-between">
-                <span>response · ranked by composite score</span>
-                <a
-                  href={`/api/v1/recommend?task=${encodeURIComponent(query)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="hover:text-[var(--color-accent)]"
-                >
-                  view JSON →
-                </a>
-              </li>
-            </ul>
+            <>
+              <ul>
+                {results.map((r) => (
+                  <ResultRow key={r.slug} r={r} />
+                ))}
+                <li className="rule-t px-5 py-3 font-mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
+                  discovery · ranked by composite score
+                </li>
+              </ul>
+
+              {/* The payoff: discovery hands off to the trust gate for rank-1. */}
+              {top && (
+                <VerdictGate
+                  top={top}
+                  verdict={data?.verdict ?? null}
+                  screenedCount={screenedCount}
+                />
+              )}
+            </>
           )}
         </div>
       )}
     </div>
+  );
+}
+
+function VerdictGate({
+  top,
+  verdict,
+  screenedCount,
+}: {
+  top: Recommendation;
+  verdict: Verdict | null;
+  screenedCount?: number;
+}) {
+  const decision = verdict?.directive.decision ?? null;
+  return (
+    <div className="rule-t bg-[var(--color-accent-soft)]/30 px-5 py-6">
+      <div className="font-mono text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-mute)] mb-3">
+        before your agent connects <span className="text-[var(--color-ink)]">[01] {top.name}</span>
+      </div>
+
+      {/* Contrast: a directory stops at the score; the verdict is the next question. */}
+      <div className="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-[12px]">
+        <span className="text-[var(--color-mute)]">
+          directory rank <span className="text-[var(--color-ink)] tabular-nums">QS {top.qualityScore}</span>
+        </span>
+        <span className="text-[var(--color-rule)]">·</span>
+        <span className="text-[var(--color-mute)]">
+          mcpindex verdict{' '}
+          <span className={decision ? DECISION_CLS[decision] : 'text-stone-500'}>
+            {decision ?? 'NOT SCREENED'}
+          </span>
+        </span>
+      </div>
+
+      {verdict ? (
+        <VerdictCard verdict={verdict} />
+      ) : (
+        <NotScreened />
+      )}
+
+      {/* Coverage honesty + adoption hook. */}
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {typeof screenedCount === 'number' && (
+          <span className="font-mono text-[10.5px] text-[var(--color-mute)]">
+            <span className="text-[var(--color-ink)] tabular-nums">{screenedCount.toLocaleString()}</span>{' '}
+            servers screened, growing
+          </span>
+        )}
+        <CopyEndpoint slug={top.slug} />
+      </div>
+    </div>
+  );
+}
+
+function NotScreened() {
+  return (
+    <div className="rule-t rule-b rule-l rule-r bg-white p-5 sm:p-6">
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="inline-flex items-center border border-stone-300 bg-stone-50 px-3 py-1.5 font-mono text-[15px] font-medium tracking-wide text-stone-500">
+          NOT SCREENED
+        </span>
+        <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
+          fail-closed
+        </span>
+      </div>
+      <p className="mt-4 text-[14px] leading-[1.55] text-[var(--color-cite)] max-w-[640px]">
+        We have not screened this server yet, so there is no verdict to trust. The honest default is
+        to treat it as not-cleared and fall back to your own checks - never green by absence.
+      </p>
+    </div>
+  );
+}
+
+function CopyEndpoint({ slug }: { slug: string }) {
+  const [copied, setCopied] = useState(false);
+  // Adoption hook points at the PUBLIC, stable trust endpoint - the surface an
+  // agent should actually call - not the internal preflight BFF.
+  const endpoint = `GET /api/v1/trust/server/${slug}`;
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(`https://mcpindex.ai/api/v1/trust/server/${slug}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard blocked - the visible string is still selectable */
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      title="Copy the trust endpoint your agent can call before acting"
+      className="group inline-flex items-center gap-2 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-3 py-2 font-mono text-[11.5px] hover:opacity-90 transition-opacity"
+    >
+      <span className="whitespace-nowrap">$ {endpoint}</span>
+      <span className="shrink-0 text-zinc-400 group-hover:text-zinc-200">
+        {copied ? 'copied' : 'copy'}
+      </span>
+    </button>
   );
 }
 

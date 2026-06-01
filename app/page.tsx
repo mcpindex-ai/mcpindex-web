@@ -325,11 +325,11 @@ export default async function Home() {
             Find the tool, then check the verdict.
           </h2>
           <p className="mt-3 mb-10 max-w-[620px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            Discovery is how you arrive; the verdict is why you would trust the call. Search the
-            directory, open a server, read the trust state before the agent moves.
+            Discovery is how you arrive; the verdict is why you would trust the call. Ask what your
+            agent would ask, and read the trust state on the top result before it moves.
           </p>
           <div className="max-w-[800px]">
-            <AgentDemo serverCount={count} />
+            <AgentDemo serverCount={count} screenedCount={screened.length} />
           </div>
         </div>
       </section>

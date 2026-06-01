@@ -1,7 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { loadServers } from '@/lib/registry';
-import { search } from '@/lib/search';
-import { computeQuality } from '@/lib/quality';
+import { rankServers, toRecommendations } from '@/lib/recommend';
 
 export const revalidate = 300;
 
@@ -20,43 +19,12 @@ export async function GET(req: NextRequest) {
   }
 
   const servers = await loadServers();
-  const hits = search(servers, task, { limit: 10 });
-
-  // Composite rank: 70% search score + 30% quality.
-  const ranked = hits
-    .map((h) => {
-      const q = computeQuality(h.server).score;
-      const composite = h.score * 0.7 + q * 0.3;
-      return { hit: h, composite, quality: q };
-    })
-    .sort((a, b) => {
-      if (b.composite !== a.composite) return b.composite - a.composite;
-      // Deterministic tiebreaker so repeated identical queries return
-      // byte-identical responses (search order independent of map iteration).
-      return a.hit.server.slug.localeCompare(b.hit.server.slug);
-    })
-    .slice(0, 3);
+  const ranked = rankServers(servers, task, 3);
 
   return Response.json(
     {
       task,
-      recommendations: ranked.map(({ hit, quality }, i) => ({
-        rank: i + 1,
-        slug: hit.server.slug,
-        name: hit.server.name,
-        title: hit.server.title,
-        description: hit.server.description,
-        category: hit.server.category,
-        qualityScore: quality,
-        reasoning: buildReasoning(hit, task),
-        installs: {
-          npm: hit.server.npmPackage,
-          pypi: hit.server.pypiPackage,
-          docker: hit.server.dockerImage,
-          remote: hit.server.remoteUrl,
-        },
-        url: `https://mcpindex.ai/server/${hit.server.slug}`,
-      })),
+      recommendations: toRecommendations(ranked),
       note:
         'v0 ranker - heuristic score blends keyword match (70%) with MCP Quality Score (30%). ' +
         'See /methodology for scoring details.',
@@ -68,19 +36,4 @@ export async function GET(req: NextRequest) {
       },
     },
   );
-}
-
-function buildReasoning(
-  hit: { server: { title: string; category: string; description: string }; matchedTerms: string[] },
-  _task: string,
-): string {
-  const matched = hit.matchedTerms.length;
-  const cat = hit.server.category;
-  if (matched >= 2) {
-    return `Matches ${hit.matchedTerms.join(', ')} in title/description; category: ${cat}.`;
-  }
-  if (matched === 1) {
-    return `Matches "${hit.matchedTerms[0]}" in ${cat}-category server.`;
-  }
-  return `Closest fit in ${cat} category by description overlap.`;
 }

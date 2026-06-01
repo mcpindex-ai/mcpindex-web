@@ -43,6 +43,12 @@ const LIMIT_LABEL: Record<string, string> = {
   conformance_monitored_not_enforced: 'conformance monitored, not enforced',
   calibrated_false_v1: 'not yet calibrated',
   advisory_deployment: 'advisory',
+  // Limit keys emitted by the seeded description-level verdicts.
+  semantic_only_no_conformance: 'semantic screen only, no live conformance',
+  description_level_screen: 'description-level screen',
+  registry_description_only_no_input_schema: 'registry description only, no input schema',
+  advisory: 'advisory',
+  no_verdict_data_in_v1_advisory: 'no verdict on file yet',
 };
 
 export function VerdictCard({ verdict }: { verdict: Verdict }) {
