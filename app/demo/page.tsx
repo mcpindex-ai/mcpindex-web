@@ -64,6 +64,39 @@ export default function DemoPage() {
 
       <section className="mt-16 max-w-[900px]">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
+          How to use it, by setup
+        </div>
+        <h2 className="t-h3 font-medium text-[var(--color-ink)]">
+          However you build, the same gate.
+        </h2>
+        <p className="mt-3 mb-6 max-w-[640px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+          Claude Code and Cursor, the OpenAI or Anthropic API, or a whole fleet - the same
+          verdict before your agent acts, with the command for each.
+        </p>
+        <div className="rule-t rule-b rule-l rule-r bg-black">
+          <video
+            className="w-full aspect-video"
+            controls
+            playsInline
+            preload="metadata"
+            poster="/promo/poster-demo.jpg"
+          >
+            <source src="/promo/mcpindex-demo.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </div>
+        <div className="mt-4 font-mono text-[12.5px]">
+          <a
+            className="text-[var(--color-cite)] hover:text-[var(--color-accent)]"
+            href="/promo/mcpindex-demo.mp4"
+          >
+            Direct video (.mp4) →
+          </a>
+        </div>
+      </section>
+
+      <section className="mt-16 max-w-[900px]">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
           Embed it anywhere
         </div>
         <p className="max-w-[620px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">

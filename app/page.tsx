@@ -405,6 +405,41 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* §06b HOW TO USE - the persona how-to demo, conversion-adjacent to install */}
+      <section id="how" className="rule-t scroll-mt-20">
+        <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-14 sm:py-16">
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
+            How to use it
+          </div>
+          <h2 className="t-h3 font-medium text-[var(--color-ink)] max-w-[680px]">
+            However you build, the same gate.
+          </h2>
+          <p className="mt-3 mb-8 max-w-[640px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+            Three setups, one trust check before your agent acts: Claude Code and Cursor, the
+            OpenAI or Anthropic API, or a whole fleet. Find your version, then grab the command
+            right below.
+          </p>
+          <div className="max-w-[900px] rule-t rule-b rule-l rule-r bg-black">
+            <video
+              className="w-full aspect-video"
+              controls
+              playsInline
+              preload="metadata"
+              poster="/promo/poster-demo.jpg"
+            >
+              <source src="/promo/mcpindex-demo.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
+            <CopyIconButton
+              value="https://mcpindex.ai/promo/mcpindex-demo.mp4"
+              label="video link"
+            />
+          </div>
+        </div>
+      </section>
+
       {/* §07 Install + API + waitlist */}
       <section id="install" className="rule-t scroll-mt-20">
         <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-24">
