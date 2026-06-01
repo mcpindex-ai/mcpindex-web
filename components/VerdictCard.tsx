@@ -50,7 +50,7 @@ export function VerdictCard({ verdict }: { verdict: Verdict }) {
   const exp = freshness(verdict.directive.expires_at);
 
   return (
-    <div className="rule-t rule-b rule-l rule-r p-5 sm:p-6">
+    <div className="rule-t rule-b rule-l rule-r bg-white elevate p-5 sm:p-6">
       {/* decision token + status */}
       <div className="flex flex-wrap items-center gap-3">
         <span

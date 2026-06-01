@@ -54,6 +54,15 @@ body {
   letter-spacing: -0.01em;
 }
 
+/* The single reserved elevation tier - applied ONLY to the Verdict Card and
+   the hero screener (the product object). Depth means "this is the product",
+   the way color means "this is a verdict". Soft, low-spread, never decorative. */
+.elevate {
+  box-shadow:
+    0 1px 2px rgba(10, 10, 10, 0.04),
+    0 10px 28px -14px rgba(10, 10, 10, 0.14);
+}
+
 /* Subtle dotted bg for hero sections */
 .bg-dots {
   background-image: radial-gradient(circle at 1px 1px, #e5e5e5 1px, transparent 0);

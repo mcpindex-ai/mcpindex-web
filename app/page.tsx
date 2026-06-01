@@ -367,6 +367,44 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Dark proof band - the single gear-change in the long light stack;
+          also surfaces the promoted trust surface in context. */}
+      <section className="rule-t bg-[var(--color-ink)]">
+        <div className="reveal mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-24">
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-500 mb-3">
+            Trust, stated plainly
+          </div>
+          <h2 className="t-h3 font-medium text-white max-w-[680px]">
+            A verdict you can audit, not a vibe you take on faith.
+          </h2>
+          <p className="mt-3 mb-8 max-w-[640px] text-[14.5px] leading-[1.55] text-zinc-400">
+            Every verdict comes from a hybrid eval, ships with its honest limits, and is
+            anchored to Bitcoin so its history cannot be quietly rewritten. We state where
+            it stops as plainly as what it catches.
+          </p>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+            <Link
+              href="/trust"
+              className="font-mono text-[12.5px] uppercase tracking-[0.14em] text-white border border-zinc-700 px-5 py-3 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
+            >
+              Read the trust model →
+            </Link>
+            <Link
+              href="/methodology"
+              className="font-mono text-[12px] uppercase tracking-[0.14em] text-zinc-400 hover:text-white transition-colors"
+            >
+              Methodology →
+            </Link>
+            <Link
+              href="/status"
+              className="font-mono text-[12px] uppercase tracking-[0.14em] text-zinc-400 hover:text-white transition-colors"
+            >
+              Status →
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* §07 Install + API + waitlist */}
       <section id="install" className="rule-t scroll-mt-20">
         <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-24">

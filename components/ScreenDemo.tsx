@@ -67,7 +67,7 @@ export function ScreenDemo() {
   }
 
   return (
-    <div className="rule-t rule-b rule-l rule-r bg-[var(--color-accent-soft)]/40">
+    <div className="rule-t rule-b rule-l rule-r bg-white elevate">
       <div className="rule-b px-5 py-2.5 flex items-center justify-between font-mono text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-mute)]">
         <span>POST&nbsp;&nbsp;/api/v1/screen</span>
         <span className="hidden sm:inline">live · advisory · semantic-only</span>
