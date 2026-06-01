@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ContactTrigger } from '@/components/ContactModal';
 import { Mark } from '@/components/Mark';
 import { Seal } from '@/components/Seal';
 
@@ -166,7 +167,7 @@ export default function BrandPage() {
       </section>
 
       <p className="mt-10 font-mono text-[12px] text-[var(--color-mute)]">
-        Questions? <a href="mailto:hello@mcpindex.ai" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">hello@mcpindex.ai</a>
+        Questions? <ContactTrigger variant="contact" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] inline cursor-pointer">hello@mcpindex.ai</ContactTrigger>
       </p>
     </article>
   );

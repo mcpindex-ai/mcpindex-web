@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ContactTrigger } from '@/components/ContactModal';
 import { LiveTicker } from '@/components/LiveTicker';
 import { AgentDemo } from '@/components/AgentDemo';
 import { ScreenDemo } from '@/components/ScreenDemo';
@@ -102,12 +103,12 @@ export default async function Home() {
                 >
                   90-second demo →
                 </a>
-                <a
-                  href="mailto:hello@mcpindex.ai"
-                  className="font-mono text-[12px] text-[var(--color-mute)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] transition-colors"
+                <ContactTrigger
+                  variant="contact"
+                  className="font-mono text-[12px] text-[var(--color-mute)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] transition-colors inline cursor-pointer"
                 >
                   or talk to us →
-                </a>
+                </ContactTrigger>
               </div>
               <div className="hero-rise hero-rise-4 mt-8 font-mono text-[12px] leading-[1.5] text-[var(--color-mute)]">
                 <span className="text-[var(--color-ink)] tabular-nums">{count.toLocaleString()}</span>{' '}

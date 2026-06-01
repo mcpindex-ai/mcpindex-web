@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ContactTrigger } from '@/components/ContactModal';
 
 export const metadata: Metadata = {
   title: 'Privacy',
@@ -34,9 +35,9 @@ export default function PrivacyPage() {
           , our email provider, who sends you a confirmation and may send those updates.
           We do not sell your details or use them for third-party advertising. Unsubscribe
           any time via the link in those emails, or by emailing{' '}
-          <a href="mailto:hello@mcpindex.ai" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+          <ContactTrigger variant="contact" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] inline cursor-pointer">
             hello@mcpindex.ai
-          </a>
+          </ContactTrigger>
           .
         </p>
         <p>
@@ -58,9 +59,9 @@ export default function PrivacyPage() {
         </p>
         <p>
           GDPR / CCPA: email{' '}
-          <a href="mailto:hello@mcpindex.ai" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+          <ContactTrigger variant="contact" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] inline cursor-pointer">
             hello@mcpindex.ai
-          </a>{' '}
+          </ContactTrigger>{' '}
           to request deletion of any personal data tied to you.
         </p>
       </div>

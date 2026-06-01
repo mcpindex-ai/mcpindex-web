@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { ContactTrigger } from '@/components/ContactModal';
 
 export const metadata: Metadata = {
   title: 'About',
@@ -120,9 +121,9 @@ export default function AboutPage() {
             LinkedIn
           </a>
           {' · '}
-          <a href="mailto:hello@mcpindex.ai" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+          <ContactTrigger variant="contact" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] inline cursor-pointer">
             hello@mcpindex.ai
-          </a>
+          </ContactTrigger>
         </p>
       </section>
 

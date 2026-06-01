@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { ContactTrigger } from '@/components/ContactModal';
 import { ProvenanceBadge } from '@/components/ProvenanceBadge';
 
 export const metadata: Metadata = {
@@ -103,12 +104,12 @@ export default function TrustPage() {
           attestation (SOC 2 Type 2) is on the roadmap when enterprise demand
           warrants the audit, not before. If you have a specific compliance
           requirement,{' '}
-          <a
-            href="mailto:hello@mcpindex.ai"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+          <ContactTrigger
+            variant="contact"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] inline cursor-pointer"
           >
             tell us what you need
-          </a>{' '}
+          </ContactTrigger>{' '}
           and we will answer honestly about where we are.
         </p>
         <p className="mt-4 text-[13.5px] text-[var(--color-mute)]">
@@ -134,12 +135,12 @@ export default function TrustPage() {
           Live system status, data freshness, and the incident log are at{' '}
           <TLink href="/status">/status</TLink>. To report a problem with a
           verdict or a security concern, email{' '}
-          <a
-            href="mailto:hello@mcpindex.ai"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+          <ContactTrigger
+            variant="contact"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] inline cursor-pointer"
           >
             hello@mcpindex.ai
-          </a>
+          </ContactTrigger>
           .
         </p>
       </Section>

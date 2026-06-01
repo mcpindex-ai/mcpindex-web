@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { ContactTrigger } from '@/components/ContactModal';
 import { ArchDiagram } from '@/components/ArchDiagram';
 
 export const metadata: Metadata = {
@@ -411,13 +412,12 @@ Args:     -y mcp-server-mcpindex`}
           style={{ color: 'var(--color-mute)' }}
         >
           Found a gap, a typo, or a wiring question that isn&rsquo;t answered here?{' '}
-          <a
-            href="mailto:hello@mcpindex.ai"
-            className="underline hover:no-underline"
-            style={{ color: 'var(--color-accent)' }}
+          <ContactTrigger
+            variant="contact"
+            className="underline hover:no-underline text-[var(--color-accent)] inline cursor-pointer"
           >
             hello@mcpindex.ai
-          </a>
+          </ContactTrigger>
           .
         </p>
       </Section>
