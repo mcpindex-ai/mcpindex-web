@@ -33,11 +33,11 @@ const TIERS = [
       'Webhook on registry diff',
       'Email support',
     ],
-    cta: { label: 'Email to start', href: 'mailto:hello@mcpindex.ai?subject=Pro%20tier' },
+    cta: { label: 'Request access', href: 'mailto:hello@mcpindex.ai?subject=Pro%20tier' },
   },
   {
     name: 'Enterprise',
-    price: 'Contact',
+    price: 'Custom',
     rate: 'Custom',
     blurb: 'For platforms that re-distribute MCP discovery.',
     bullets: [
@@ -47,9 +47,12 @@ const TIERS = [
       'Co-marketing on /best/ pages',
       'Acquisition discussions also welcome',
     ],
-    cta: { label: 'Contact', href: 'mailto:hello@mcpindex.ai?subject=Enterprise' },
+    cta: { label: 'Talk to us', href: 'mailto:hello@mcpindex.ai?subject=Enterprise' },
   },
 ];
+
+const CTA_CLASS =
+  'mt-8 inline-block w-fit font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-ink)] border border-[var(--color-rule)] px-3 py-1.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]';
 
 export default function PricingPage() {
   return (
@@ -91,12 +94,17 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
-            <Link
-              href={t.cta.href}
-              className="mt-8 inline-block w-fit font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-ink)] border border-[var(--color-rule)] px-3 py-1.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
-            >
-              {t.cta.label} →
-            </Link>
+            {t.cta.href.startsWith('mailto:') ? (
+              // External protocol: a plain anchor, not next/link (which is for
+              // client-side route transitions). Matches every other mailto in the app.
+              <a href={t.cta.href} className={CTA_CLASS}>
+                {t.cta.label} →
+              </a>
+            ) : (
+              <Link href={t.cta.href} className={CTA_CLASS}>
+                {t.cta.label} →
+              </Link>
+            )}
           </div>
         ))}
       </div>
