@@ -33,7 +33,7 @@ const TIERS = [
       'Webhook on registry diff',
       'Email support',
     ],
-    cta: { label: 'Email to start', href: 'mailto:hello@mcpindex.ai?subject=Pro%20tier' },
+    cta: { label: 'Request access', href: 'mailto:hello@mcpindex.ai?subject=Pro%20tier' },
   },
   {
     name: 'Enterprise',
@@ -47,7 +47,7 @@ const TIERS = [
       'Co-marketing on /best/ pages',
       'Acquisition discussions also welcome',
     ],
-    cta: { label: 'Contact', href: 'mailto:hello@mcpindex.ai?subject=Enterprise' },
+    cta: { label: 'Talk to us', href: 'mailto:hello@mcpindex.ai?subject=Enterprise' },
   },
 ];
 
