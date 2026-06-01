@@ -4,7 +4,8 @@ import type { Metadata } from 'next';
 import { loadServers } from '@/lib/registry';
 import { rankByQuality } from '@/lib/quality';
 import { ALL_CATEGORIES, CATEGORY_LABELS } from '@/lib/categorize';
-import { listScreened, listFixtures, isFlagged } from '@/lib/verdicts';
+import { listScreened, listFixtures } from '@/lib/verdicts';
+import { computeBadgeState } from '@/lib/badge';
 
 export const revalidate = 3600;
 
@@ -186,7 +187,11 @@ async function FilesystemEvidence() {
     loadServers(),
   ]);
   const bySlug = new Map(servers.map((s) => [s.slug, s]));
-  const flaggedCount = screened.filter(({ verdict }) => isFlagged(verdict)).length;
+  // Public surfaces honor the accusation gate (same computeBadgeState the badge
+  // uses - one source of truth): only a human-confirmed flag is "flagged"; a raw
+  // screen flag is "held for review", never publicly accused or counted as flagged.
+  const flaggedCount = screened.filter(({ verdict }) => computeBadgeState(verdict) === 'flagged').length;
+  const heldCount = screened.filter(({ verdict }) => computeBadgeState(verdict) === 'review').length;
 
   const faqLd = {
     '@context': 'https://schema.org',
@@ -197,7 +202,7 @@ async function FilesystemEvidence() {
         name: 'Which filesystem MCP servers are safe to use?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: `mcpindex screens filesystem MCP server descriptions for hidden instructions. ${screened.length} are screened; ${flaggedCount} were flagged for a manipulation pattern. This is a semantic, advisory screen of the description: a clean result means the description is not lying, not that the tool is safe to grant filesystem access.`,
+          text: `mcpindex screens filesystem MCP server descriptions for hidden instructions. ${screened.length} are screened; ${flaggedCount} were confirmed flagged after human review; ${heldCount} are held for review. This is a semantic, advisory screen of the description: a clean result means the description is not lying, not that the tool is safe to grant filesystem access.`,
         },
       },
       {
@@ -234,8 +239,8 @@ async function FilesystemEvidence() {
             Filesystem MCP servers, screened for description honesty.
           </h1>
           <p className="mt-4 max-w-[680px] text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
-            {screened.length} servers screened · {flaggedCount} flagged for a
-            manipulation pattern. An LLM judge reads each tool description for
+            {screened.length} servers screened · {flaggedCount} confirmed flagged ·{' '}
+            {heldCount} held for review. An LLM judge reads each tool description for
             hidden instructions (semantic screen, advisory, status PARTIAL). A
             clean result means the description is not lying - <em>not</em> that
             the tool is safe to grant filesystem access. Method:{' '}
@@ -255,7 +260,13 @@ async function FilesystemEvidence() {
         <ol className="mt-10 rule-t">
           {screened.map(({ slug, verdict }) => {
             const srv = bySlug.get(slug);
-            const flagged = isFlagged(verdict);
+            const state = computeBadgeState(verdict);
+            const pill =
+              state === 'flagged'
+                ? { cls: 'bg-rose-50 text-rose-900 border-rose-300', label: 'flagged · confirmed' }
+                : state === 'review'
+                  ? { cls: 'bg-amber-50 text-amber-900 border-amber-300', label: 'held for review' }
+                  : { cls: 'bg-[var(--color-accent-soft)] text-[var(--color-cite)] border-[var(--color-rule)]', label: 'screened · no manipulation' };
             const evidence = verdict.dimensions[0]?.evidence?.[0]?.quote;
             return (
               <li
@@ -270,13 +281,9 @@ async function FilesystemEvidence() {
                     {srv?.title ?? verdict.title ?? slug}
                   </Link>
                   <span
-                    className={`font-mono text-[10.5px] uppercase tracking-[0.16em] px-2 py-1 border ${
-                      flagged
-                        ? 'bg-rose-50 text-rose-900 border-rose-300'
-                        : 'bg-[var(--color-accent-soft)] text-[var(--color-cite)] border-[var(--color-rule)]'
-                    }`}
+                    className={`font-mono text-[10.5px] uppercase tracking-[0.16em] px-2 py-1 border ${pill.cls}`}
                   >
-                    {flagged ? 'review · flagged' : 'screened · no manipulation'}
+                    {pill.label}
                   </span>
                 </div>
                 {srv?.description && (

@@ -42,7 +42,9 @@ export function computeBadgeState(v: Verdict | null): BadgeState {
   if (!v) return 'not-screened';
   if (v.status === 'STALE') return 'stale';
   if (v.status === 'ERROR') return 'not-screened';
-  // mirrors verdicts.isFlagged - inlined to keep this module import-free + pure.
+  // raw "has a FAIL dimension" - inlined to keep this module import-free + pure.
+  // This is the ONLY gate-aware flag predicate; public surfaces must route here,
+  // not through a bare FAIL check (see lib/verdicts note).
   const flagged = v.dimensions.some((d) => d.verdict === 'FAIL');
   if (flagged) {
     if (v.adjudication?.decision === 'confirmed') return 'flagged';

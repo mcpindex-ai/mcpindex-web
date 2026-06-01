@@ -125,16 +125,46 @@ try {
   //     on phrasing). Assert there is exactly one `return 'flagged'` and that it
   //     is gated by a 'confirmed' check, so a future edit can't let raw flags
   //     leak to the public badge.
-  const codeNoComments = code; // comments already stripped above
-  const flaggedReturns = (codeNoComments.match(/return\s+'flagged'/g) || []).length;
+  const flaggedReturns = (code.match(/return\s+'flagged'/g) || []).length;
   if (flaggedReturns !== 1) {
     errors.push(`lib/badge.ts has ${flaggedReturns} \`return 'flagged'\` paths (expected exactly 1, gated on a confirmed adjudication). A raw screen flag must never publicly accuse.`);
   }
-  if (!/===\s*'confirmed'\)\s*return\s+'flagged'/.test(codeNoComments)) {
-    errors.push("lib/badge.ts: \`return 'flagged'\` is not gated by \`=== 'confirmed'\`. The accusation gate is broken - only a human-confirmed adjudication may render 'flagged'.");
+  // Brace/newline-tolerant: only require that a 'confirmed' comparison appears
+  // shortly before the single `return 'flagged'` - not that it is adjacent, so a
+  // faithful refactor (braces, hoisted const) still passes while an ungated
+  // return does not.
+  if (!/'confirmed'[\s\S]{0,80}?return\s+'flagged'/.test(code)) {
+    errors.push("lib/badge.ts: `return 'flagged'` is not gated by a `'confirmed'` check. The accusation gate is broken - only a human-confirmed adjudication may render 'flagged'.");
   }
 } catch (err) {
   errors.push(`could not read lib/badge.ts for the badge-honesty check: ${err.message}`);
+}
+
+// 5) No public surface may drive a "flagged" label from a RAW flag predicate
+//    (a bare `.verdict === 'FAIL'` / removed isFlagged) - that bypasses the
+//    accusation gate (the HIGH that shipped firma as publicly "flagged" on the
+//    category page). Public surfaces must route through computeBadgeState.
+try {
+  const offenders = [];
+  const scan = (dir) => {
+    for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (ent.name === 'node_modules' || ent.name === '.next') continue;
+      const p = path.join(dir, ent.name);
+      if (ent.isDirectory()) scan(p);
+      else if (/\.tsx?$/.test(ent.name)) {
+        const txt = fs.readFileSync(p, 'utf8');
+        if (/\bisFlagged\s*\(/.test(txt) || /import\s*\{[^}]*\bisFlagged\b/.test(txt)) {
+          offenders.push(path.relative(root, p));
+        }
+      }
+    }
+  };
+  scan(path.join(root, 'app'));
+  if (offenders.length) {
+    errors.push(`raw flag predicate isFlagged() used in public surface(s): ${offenders.join(', ')}. Route through computeBadgeState so unadjudicated false positives are held as "review", not publicly "flagged".`);
+  }
+} catch (err) {
+  errors.push(`could not run the raw-flag-predicate check: ${err.message}`);
 }
 
 if (errors.length) {

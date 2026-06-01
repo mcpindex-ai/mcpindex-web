@@ -503,15 +503,15 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
         {verdict.directive.rationale}
       </p>
 
-      {verdict.adjudication && (
+      {verdict.adjudication ? (
         <div className="mt-3 px-3 py-2 bg-[var(--color-accent-soft)] border border-[var(--color-rule)] max-w-[640px]">
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-mute)] mr-2">
             human review
           </span>
           <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-ink)]">
             {verdict.adjudication.decision === 'cleared'
-              ? 'cleared — screen flag was a false positive'
-              : 'confirmed — screen flag upheld'}
+              ? 'cleared - screen flag was a false positive'
+              : 'confirmed - screen flag upheld'}
           </span>
           {verdict.adjudication.reason && (
             <p className="mt-1 text-[12.5px] leading-[1.5] text-[var(--color-cite)]">
@@ -519,6 +519,18 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
             </p>
           )}
         </div>
+      ) : (
+        verdict.dimensions.some((d) => d.verdict === 'FAIL') && (
+          <div className="mt-3 px-3 py-2 bg-amber-50 border border-amber-300 max-w-[640px]">
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-amber-800 mr-2">
+              held for review
+            </span>
+            <span className="text-[12.5px] leading-[1.5] text-[var(--color-cite)]">
+              The semantic screen raised a flag, but it has not been human-reviewed.
+              It is held - not a confirmed finding - until a reviewer confirms or clears it.
+            </span>
+          </div>
+        )
       )}
 
       {verdict.dimensions.length > 0 && (

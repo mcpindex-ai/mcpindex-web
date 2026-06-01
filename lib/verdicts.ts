@@ -173,6 +173,8 @@ export async function listFixtures(): Promise<Array<{ slug: string; verdict: Ver
     .map(([slug, verdict]) => ({ slug, verdict }));
 }
 
-export function isFlagged(v: Verdict): boolean {
-  return v.dimensions.some((d) => d.verdict === 'FAIL');
-}
+// NOTE: a raw "has a FAIL dimension" predicate was deliberately REMOVED. It is a
+// footgun for public surfaces: an unadjudicated false-positive screen flag must
+// never be publicly shown/counted as "flagged". Use computeBadgeState (lib/badge)
+// everywhere - it applies the accusation gate (only a human-confirmed flag is
+// "flagged"; a raw flag is held as "review").
