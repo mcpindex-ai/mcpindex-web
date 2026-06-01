@@ -28,18 +28,18 @@ type Preflight = {
   verdict: Verdict | null;
 };
 
-// The first four (shown as chips) are curated so rank-1 is BOTH a real,
-// topical server AND has a verdict on file. The last two are honest but weaker:
-// today's ranker surfaces a junk rank-1 for them (a known ranker/QS gap), so
-// they stay off the chip row until that lever is fixed. Freeform queries still
-// work and show NOT SCREENED honestly. See tasks/todo-mcpindex-verdict-demo.md.
+// The first four (shown as chips) are curated so rank-1 is BOTH a real, topical
+// server AND has a verdict on file. The last is the lone weak case: "save TO s3"
+// is a compound intent where the secondary noun loses to the primary verb, so it
+// stays off the chip row. Freeform queries still work and show NOT SCREENED
+// honestly. See tasks/todo-mcpindex-verdict-demo.md.
 const HINTS = [
+  'search github and open a PR',
   'read pdfs from drive',
   'send slack messages on alert',
-  'browse a webpage and summarize',
   'run sql against a database',
+  'browse a webpage and summarize',
   'scrape a website and save to S3',
-  'search github and open a PR',
 ];
 
 const DECISION_CLS: Record<Decision, string> = {

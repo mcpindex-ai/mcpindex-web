@@ -2,8 +2,9 @@
 // /api/v1/preflight BFF. One source of truth so the directory ranking and the
 // pre-flight verdict gate always agree on which server is rank-1.
 //
-// Composite = 70% keyword search score + 30% MCP Quality Score. The slug
-// tiebreaker keeps repeated identical queries byte-identical (cache-friendly).
+// Composite is relevance-dominant: keyword search score leads, MCP Quality Score
+// contributes a small tiebreak (QS*0.1). The slug tiebreaker keeps repeated
+// identical queries byte-identical (cache-friendly).
 
 import type { IndexedServer } from './types';
 import { search, type SearchHit } from './search';
@@ -33,7 +34,11 @@ export function rankServers(
   return hits
     .map((hit) => {
       const quality = computeQuality(hit.server).score;
-      const composite = hit.score * 0.7 + quality * 0.3;
+      // Relevance-dominant: search score leads; QS*0.1 (0-10, ~1.5 term-fields)
+      // only breaks ties between near-equal-relevance servers. QS is 0-100, so
+      // the old 0.3*QS swamped the small search score and floated generic
+      // high-QS servers to rank-1 (validated 2026-06-01, held-out intent set).
+      const composite = hit.score + quality * 0.1;
       return { hit, quality, composite };
     })
     .sort((a, b) => {
