@@ -119,6 +119,20 @@ try {
       errors.push(`lib/badge.ts uses green color #${m[1]} - reserved for a real ALLOW (post-conformance). An advisory badge must not render green.`);
     }
   }
+  // 4c) THE ACCUSATION GATE: the badge may render "flagged" ONLY through a
+  //     human 'confirmed' adjudication. A raw screen flag must never publicly
+  //     accuse a server (false positives exist - e.g. honest tools over-flagged
+  //     on phrasing). Assert there is exactly one `return 'flagged'` and that it
+  //     is gated by a 'confirmed' check, so a future edit can't let raw flags
+  //     leak to the public badge.
+  const codeNoComments = code; // comments already stripped above
+  const flaggedReturns = (codeNoComments.match(/return\s+'flagged'/g) || []).length;
+  if (flaggedReturns !== 1) {
+    errors.push(`lib/badge.ts has ${flaggedReturns} \`return 'flagged'\` paths (expected exactly 1, gated on a confirmed adjudication). A raw screen flag must never publicly accuse.`);
+  }
+  if (!/===\s*'confirmed'\)\s*return\s+'flagged'/.test(codeNoComments)) {
+    errors.push("lib/badge.ts: \`return 'flagged'\` is not gated by \`=== 'confirmed'\`. The accusation gate is broken - only a human-confirmed adjudication may render 'flagged'.");
+  }
 } catch (err) {
   errors.push(`could not read lib/badge.ts for the badge-honesty check: ${err.message}`);
 }

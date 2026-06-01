@@ -503,6 +503,24 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
         {verdict.directive.rationale}
       </p>
 
+      {verdict.adjudication && (
+        <div className="mt-3 px-3 py-2 bg-[var(--color-accent-soft)] border border-[var(--color-rule)] max-w-[640px]">
+          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-mute)] mr-2">
+            human review
+          </span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-ink)]">
+            {verdict.adjudication.decision === 'cleared'
+              ? 'cleared — screen flag was a false positive'
+              : 'confirmed — screen flag upheld'}
+          </span>
+          {verdict.adjudication.reason && (
+            <p className="mt-1 text-[12.5px] leading-[1.5] text-[var(--color-cite)]">
+              {verdict.adjudication.reason}
+            </p>
+          )}
+        </div>
+      )}
+
       {verdict.dimensions.length > 0 && (
         <div className="mt-4 rule-t">
           {verdict.dimensions.map((d) => (

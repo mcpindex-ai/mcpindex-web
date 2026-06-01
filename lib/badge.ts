@@ -27,16 +27,28 @@ export const BADGE_STYLE: Record<BadgeState, Style> = {
   'not-screened': { right: 'not screened', color: '#71717a' }, // zinc-500
 };
 
-// State is derived from the same signals the page uses (status + dimensions),
-// NOT an independent expiry clock - the site does not expire verdicts on render,
-// so neither does the badge (keeps them in lockstep). Fail-closed: no verdict,
-// an errored verdict, or any dimension FAIL never resolves to "screened".
+// State is derived from the same signals the page uses (status + dimensions +
+// human adjudication), NOT an independent expiry clock - the site does not
+// expire verdicts on render, so neither does the badge (keeps them in lockstep).
+// Fail-closed: no verdict, an errored verdict, or any dimension FAIL never
+// resolves to "screened" on its own.
+//
+// THE ACCUSATION GATE: a raw SCREEN flag never publicly accuses a server. Only a
+// human-`confirmed` adjudication renders "flagged"; a `cleared` adjudication
+// overturns a false positive (e.g. an honest tool over-flagged on phrasing) to
+// "screened"; an UNREVIEWED flag is HELD as "review" - neither clean nor accused.
+// This is the publish gate: "flagged" is reachable ONLY through `confirmed`.
 export function computeBadgeState(v: Verdict | null): BadgeState {
   if (!v) return 'not-screened';
   if (v.status === 'STALE') return 'stale';
   if (v.status === 'ERROR') return 'not-screened';
   // mirrors verdicts.isFlagged - inlined to keep this module import-free + pure.
-  if (v.dimensions.some((d) => d.verdict === 'FAIL')) return 'flagged';
+  const flagged = v.dimensions.some((d) => d.verdict === 'FAIL');
+  if (flagged) {
+    if (v.adjudication?.decision === 'confirmed') return 'flagged';
+    if (v.adjudication?.decision === 'cleared') return 'screened';
+    return 'review'; // unreviewed screen flag - held, never a public accusation
+  }
   const integ = v.dimensions.find((d) => d.id === 'mcpindex.integrity.description');
   if (integ && integ.verdict === 'PASS') return 'screened';
   return 'review'; // verdict present but no clean integrity pass

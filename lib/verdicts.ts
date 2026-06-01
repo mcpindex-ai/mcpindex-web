@@ -20,16 +20,29 @@ export type Dimension = {
   evidence?: ReadonlyArray<{ quote: string; method?: string }>;
 };
 
+// Human adjudication of a SCREEN flag. A raw screen flag never publicly accuses
+// on its own (see computeBadgeState): only `confirmed` shows "flagged"; `cleared`
+// overturns a false positive. Absent = unreviewed = held as "review".
+export type AdjudicationDecision = 'confirmed' | 'cleared';
+export type Adjudication = {
+  decision: AdjudicationDecision;
+  reason: string;
+  by: string;
+  at: string;
+};
+
 export type Verdict = {
   schema_version: '1.0';
   status: VerdictStatus;
   directive: { decision: Decision; rationale: string; expires_at: string };
   dimensions: ReadonlyArray<Dimension>;
   granularity?: string;
+  tier?: string; // evidence tier ("scanned" = description-only screen)
   honest_limits?: ReadonlyArray<string>;
   fixture: boolean;
   origin?: string;
   title?: string;
+  adjudication?: Adjudication;
 };
 
 type RawVerdict = {
@@ -42,10 +55,12 @@ type RawVerdict = {
     evidence?: Array<{ quote: string; method?: string }>;
   }>;
   granularity?: string;
+  tier?: string;
   honest_limits?: string[];
   fixture?: boolean;
   origin?: string;
   title?: string;
+  adjudication?: { decision?: string; reason?: string; by?: string; at?: string };
 };
 
 const STORE = path.join(process.cwd(), 'data', 'verdicts.json');
@@ -60,10 +75,26 @@ const DECISIONS = new Set<string>(['ALLOW', 'DENY', 'REVIEW']);
 const STATUSES = new Set<string>(['EVALUATED', 'PARTIAL', 'STALE', 'ERROR']);
 const DVERDICTS = new Set<string>(['PASS', 'FAIL', 'UNVERIFIED', 'ERROR']);
 const SEVERITIES = new Set<string>(['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
+const ADJ_DECISIONS = new Set<string>(['confirmed', 'cleared']);
 
 function coerce<T extends string>(s: string | undefined, set: Set<string>, fallback: T): T {
   const u = UP(s);
   return (set.has(u) ? u : fallback) as T;
+}
+
+// Fail-closed: an absent OR unrecognized adjudication decision returns undefined,
+// so a flagged verdict with garbage adjudication is treated as UNREVIEWED (held
+// as "review") - never silently promoted to a confirmed flag or a cleared pass.
+function coerceAdjudication(raw: RawVerdict['adjudication']): Adjudication | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const dec = (raw.decision ?? '').toLowerCase();
+  if (!ADJ_DECISIONS.has(dec)) return undefined;
+  return {
+    decision: dec as AdjudicationDecision,
+    reason: raw.reason ?? '',
+    by: raw.by ?? '',
+    at: raw.at ?? '',
+  };
 }
 
 function normalize(raw: RawVerdict): Verdict {
@@ -82,10 +113,12 @@ function normalize(raw: RawVerdict): Verdict {
       evidence: d.evidence,
     })),
     granularity: raw.granularity,
+    tier: raw.tier,
     honest_limits: raw.honest_limits,
     fixture: raw.fixture ?? false,
     origin: raw.origin,
     title: raw.title,
+    adjudication: coerceAdjudication(raw.adjudication),
   };
 }
 
