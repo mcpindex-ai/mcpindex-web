@@ -1,16 +1,20 @@
+<p align="center">
+  <a href="https://mcpindex.ai"><img src="public/brand/github-readme.png" alt="mcpindex.ai - the trust layer for MCP tools" width="840"></a>
+</p>
+
 # mcpindex.ai
 
-> The agent-native index of MCP servers.
+> The trust layer for MCP tools.
 
-Discovery layer + drop-in MCP server for finding the right MCP server at inference time, not the developer browsing a sidebar.
+A verdict (ALLOW / DENY / REVIEW) on whether an MCP tool does what it claims, before your agent acts. Your agent trusts every tool it is handed; mcpindex doesn't.
 
-[Live site](https://mcpindex.ai) · [API](https://mcpindex.ai/api/v1/recommend?task=read+pdfs) · [Methodology](https://mcpindex.ai/methodology) · [npm: mcp-server-mcpindex](https://www.npmjs.com/package/mcp-server-mcpindex)
+[Live site](https://mcpindex.ai) · [Trust](https://mcpindex.ai/trust) · [Methodology](https://mcpindex.ai/methodology) · [Brand](https://mcpindex.ai/brand) · [npm: mcp-server-mcpindex](https://www.npmjs.com/package/mcp-server-mcpindex)
 
 ## Three primitives
 
-1. **Recommendation API** — `GET /api/v1/recommend?task=<NL>` returns top 3 ranked picks with reasoning + install commands.
-2. **Drop-in MCP server** — `npm install -g mcp-server-mcpindex`. Add to Claude Desktop / Cursor / Cline / Zed.
-3. **Agent-readable surfaces** — `/llms.txt`, `/.well-known/mcp-index.json`, JSON-LD on every page.
+1. **Trust verdict API** - `GET /api/v1/trust/tool/<server_id>/<tool_name>` returns a per-tool verdict: decision + dimensions + severity. Fail-closed; advisory at v1.
+2. **Drop-in MCP server** - `npm install -g mcp-server-mcpindex`. Add to Claude Desktop / Cursor / Cline / Zed; ask `check_tool_trust` before invoking a tool it just discovered.
+3. **Agent-readable surfaces** - indexed directory plus `/llms.txt`, `/.well-known/mcp-index.json`, and JSON-LD on every page.
 
 ## Develop
 
@@ -27,7 +31,7 @@ Snapshot lives at `data/snapshot.json` (committed). Refresh anytime with the scr
 - Next.js 16 (App Router) on Vercel
 - Tailwind v4
 - Local snapshot of `registry.modelcontextprotocol.io/v0/servers`, refreshed daily via Vercel cron
-- Quality Score: `lib/quality.ts` (open methodology — PRs welcome)
+- Quality Score: `lib/quality.ts` (open methodology - PRs welcome)
 - Search: `lib/search.ts` (keyword now; embeddings v2 when OPENAI_API_KEY is wired)
 
 ## Project layout

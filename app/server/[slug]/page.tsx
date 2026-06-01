@@ -55,6 +55,13 @@ export async function generateMetadata(
       description: server.description,
       url: `https://mcpindex.ai/server/${server.slug}`,
       type: 'website',
+      images: [`/server/${server.slug}/og`],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: server.title,
+      description: server.description,
+      images: [`/server/${server.slug}/og`],
     },
   };
 }
