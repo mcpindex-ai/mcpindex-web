@@ -167,7 +167,7 @@ export default function BrandPage() {
       </section>
 
       <p className="mt-10 font-mono text-[12px] text-[var(--color-mute)]">
-        Questions? <ContactTrigger variant="contact" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] inline cursor-pointer">hello@mcpindex.ai</ContactTrigger>
+        Questions? <ContactTrigger variant="contact" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] inline cursor-pointer">Get in touch</ContactTrigger>
       </p>
     </article>
   );

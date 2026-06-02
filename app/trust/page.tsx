@@ -134,12 +134,12 @@ export default function TrustPage() {
         <p>
           Live system status, data freshness, and the incident log are at{' '}
           <TLink href="/status">/status</TLink>. To report a problem with a
-          verdict or a security concern, email{' '}
+          verdict or a security concern,{' '}
           <ContactTrigger
             variant="contact"
             className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] inline cursor-pointer"
           >
-            hello@mcpindex.ai
+            contact us
           </ContactTrigger>
           .
         </p>

@@ -416,7 +416,7 @@ Args:     -y mcp-server-mcpindex`}
             variant="contact"
             className="underline hover:no-underline text-[var(--color-accent)] inline cursor-pointer"
           >
-            hello@mcpindex.ai
+            Let us know
           </ContactTrigger>
           .
         </p>

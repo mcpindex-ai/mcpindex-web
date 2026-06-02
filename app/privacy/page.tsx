@@ -34,9 +34,9 @@ export default function PrivacyPage() {
           </a>
           , our email provider, who sends you a confirmation and may send those updates.
           We do not sell your details or use them for third-party advertising. Unsubscribe
-          any time via the link in those emails, or by emailing{' '}
+          any time via the link in those emails, or{' '}
           <ContactTrigger variant="contact" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] inline cursor-pointer">
-            hello@mcpindex.ai
+            contact us
           </ContactTrigger>
           .
         </p>
@@ -58,9 +58,9 @@ export default function PrivacyPage() {
           for routing.
         </p>
         <p>
-          GDPR / CCPA: email{' '}
+          GDPR / CCPA:{' '}
           <ContactTrigger variant="contact" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] inline cursor-pointer">
-            hello@mcpindex.ai
+            contact us
           </ContactTrigger>{' '}
           to request deletion of any personal data tied to you.
         </p>

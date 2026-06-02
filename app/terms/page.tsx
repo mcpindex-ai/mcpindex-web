@@ -46,9 +46,9 @@ export default function TermsPage() {
         </p>
         <p>
           Excessive use that disrupts service for others may be rate-limited, blocked, or
-          throttled without notice. Email{' '}
+          throttled without notice.{' '}
           <ContactTrigger variant="contact" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] inline cursor-pointer">
-            hello@mcpindex.ai
+            Contact us
           </ContactTrigger>{' '}
           if you need higher limits.
         </p>

@@ -122,7 +122,7 @@ export default function AboutPage() {
           </a>
           {' · '}
           <ContactTrigger variant="contact" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] inline cursor-pointer">
-            hello@mcpindex.ai
+            Email us
           </ContactTrigger>
         </p>
       </section>
