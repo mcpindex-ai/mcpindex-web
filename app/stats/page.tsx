@@ -30,7 +30,7 @@ export default async function StatsPage() {
       value: 'registry.modelcontextprotocol.io',
       note: 'Anthropic-maintained, community-contributed.',
     },
-    { label: 'API rate limit', value: '60 req/min/IP', note: 'hello@mcpindex.ai for higher limits' },
+    { label: 'API rate limit', value: '60 req/min/IP', note: 'Contact us for higher limits' },
   ];
 
   return (

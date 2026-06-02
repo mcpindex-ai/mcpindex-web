@@ -97,7 +97,7 @@ export default function DocsPage() {
             `  encodeURIComponent(userTask));`,
             `const { recommendations } = await res.json();`,
           ]}
-          notes="Attribution appreciated. Email hello@mcpindex.ai if you want a higher rate limit."
+          notes="Attribution appreciated. Contact us if you want a higher rate limit."
         />
       </Section>
 
@@ -239,7 +239,7 @@ Args:     -y mcp-server-mcpindex`}
         <ul className="space-y-3">
           <Limit
             label="Rate"
-            body="60 requests / minute / IP across /api/v1/* on the free tier. The live screen endpoint (/api/v1/screen) is tighter - 10 / minute / IP plus a global daily ceiling, since each call runs an LLM. No key required. 429 with Retry-After when exceeded. Email hello@mcpindex.ai for higher limits or for a Pro key."
+            body="60 requests / minute / IP across /api/v1/* on the free tier. The live screen endpoint (/api/v1/screen) is tighter - 10 / minute / IP plus a global daily ceiling, since each call runs an LLM. No key required. 429 with Retry-After when exceeded. Contact us for higher limits or a Pro key."
           />
           <Limit
             label="Schema stability"
