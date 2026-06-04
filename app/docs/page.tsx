@@ -320,8 +320,8 @@ curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
             drop-in.
           </p>
           <pre className="mt-3 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
-            <code>{`// TypeScript
-import { wrap, PreflightPin } from "mcpindex";
+            <code>{`// TypeScript — npm i @mcp-index/sdk
+import { wrap, PreflightPin } from "@mcp-index/sdk";
 
 const guarded = wrap(session, { pin: new PreflightPin(), serverId: "your-server" });
 // use guarded.list_tools() / guarded.call_tool(...) exactly as before
