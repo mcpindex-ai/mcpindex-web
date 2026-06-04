@@ -17,12 +17,13 @@ export default function MethodologyPage() {
         How a verdict is produced.
       </h1>
       <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)] max-w-[680px]">
-        mcpindex evaluates MCP tools and publishes a finding per tool. Today
-        an LLM judge reads the tool description for hidden instructions, bound
-        to the exact tool definition that was seen (tool_definition_hash). A
-        deterministic conformance probe is in build; until it ships, findings
-        are semantic-only and labeled PARTIAL. The finding is what an agent
-        reads before it calls.
+        mcpindex evaluates MCP tools and publishes a finding per tool. An LLM
+        judge reads the tool description for hidden instructions, bound to the
+        exact tool definition that was seen (tool_definition_hash), and a
+        deterministic conformance probe drives the tool against its declared
+        schema. The finding is what an agent reads before it calls. The probe
+        is monitored, not enforced, and confidence is reported but not yet
+        calibrated (calibrated=false) — the honest limits below.
       </p>
 
       <section className="mt-12">
@@ -45,6 +46,49 @@ export default function MethodologyPage() {
             kind="OTS"
             body="OTS Bitcoin-anchored history with cadence bound = confirmation latency (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized); sub-window precision asserted, not proven. The verdict stream for a tool is hash-chained and timestamped via OpenTimestamps; the chain is auditable end-to-end once a block confirms."
           />
+        </ul>
+      </section>
+
+      <section className="mt-12 rule-t pt-10">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
+          The drift gate method
+        </div>
+        <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)] max-w-[680px]">
+          The screen above is the prior an agent reads before it wires a tool.
+          The drift gate is the live, in-path check during use. It answers a
+          narrower, provable question: did this tool&rsquo;s contract change
+          since you pinned it? The verdict is a contract-diff, not a safety
+          verdict &mdash; but the gate sits in the call path, so it can HOLD the
+          call before your agent acts on the change, not merely report it after.
+          The gate runs deterministically; it is dogfood-proven live on Cursor,
+          where a tool that silently added a required <code className="font-mono text-[13px] text-[var(--color-ink)]">admin_override</code>{' '}
+          param was held before the agent ran it.
+        </p>
+        <ul className="rule-t mt-6">
+          <Dim
+            label="TOFU pin"
+            kind="baseline"
+            body="On first sight of a tool (the client's tools/list), the gate pins the tool's contract trust-on-first-use: a hash over name + description + input schema, plus the captured schema. The pin can persist across restarts, so a contract that changes while your agent is offline is still caught on the next call. The first-seen contract is the baseline; the gate cannot catch drift that happened before it was installed."
+          />
+          <Dim
+            label="Contract-diff"
+            kind="deterministic"
+            body="On a call, the gate re-derives the live contract and compares it to the pin. A mismatch is classified into a fixed taxonomy (ChangeKind): added-required-param, required-set-expanded, constraint-narrowed, type-changed, enum-values-removed, removed-param, annotation-flip-to-destructive, output-schema-added, output-schema-changed, tool-added/removed. It also scans for injection/exfil markers in the input AND output schema and the description. No LLM, no scoring you cannot trace; a structural surprise it cannot classify fails closed (deep-schema-undiffable), never open."
+          />
+          <Dim
+            label="Postures"
+            kind="policy"
+            body="Monitor notifies and proceeds; Guard (default) holds the unambiguously-breaking and dangerous changes while letting a proven-benign drift through; Strict holds on any drift. A benign change (added optional param or new tool, description byte-identical, no risk escalation, no marker) is auto-accepted and re-pinned, so cosmetic churn does not raise a false alarm. Anything else holds before the call."
+          />
+        </ul>
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mt-10 mb-4">
+          Honest limits (the gate)
+        </div>
+        <ul className="space-y-3 text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Contract-diff, not a safety verdict.</strong> A HOLD means &ldquo;this tool&rsquo;s contract changed vs what you pinned&rdquo; &mdash; not that the new contract is unsafe. You review the before/after and re-pin if the change is expected.</li>
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Advisory in judgment, in-path in effect.</strong> The gate does not assert a tool is safe; it asserts what changed. Because it sits in the call path, that judgment can actually HOLD the call &mdash; a passive scanner can only alert after the fact.</li>
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Deterministic tier-0, with the full ladder above it.</strong> The contract-diff is deterministic and runs first. Above it: a cloud tier-1 corpus lookup (a contract judged once clears or condemns it everywhere), a tier-2 LLM consult on the ambiguous, and a tier-3 behavioral verifier that exercises a changed tool to clear or refute the change. The behavioral tier clears or refutes a contract change; it is not a proof of safety, and confidence is reported but not yet calibrated (calibrated=false at v1).</li>
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Fail-closed.</strong> A tool with no pin, an unreadable contract, or a diff the gate cannot complete holds rather than proceeds. The gate never silently allows what it could not verify.</li>
         </ul>
       </section>
 

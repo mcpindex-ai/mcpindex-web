@@ -82,6 +82,98 @@ function walk(dir) {
 }
 walk(path.join(root, 'app'));
 
+// 3b) GATE OVER-CLAIM GUARD. The drift gate's cardinal honesty rule: it produces
+//     a CONTRACT-DIFF ("this tool's contract CHANGED vs your pin"), NOT a safety
+//     verdict. It is advisory in JUDGMENT but in-path so it can HOLD.
+//
+//     LAUNCH-STATE RECONCILIATION (per the value-prop-bible FRAMING DIRECTIVE):
+//     the DEPLOY-HELD (A) capabilities - the cloud tier-1 corpus lookup, the
+//     tier-2 LLM consult, the tier-3 behavioral verifier, multi-tenant - are
+//     CODE-COMPLETE and LIVE at launch, so present-tense claims about them are
+//     ALLOWED. What stays forbidden is the MATURITY (B) over-claim that DEPLOYING
+//     CANNOT MAKE TRUE: that the gate (or its behavioral tier) PROVES/GUARANTEES a
+//     tool SAFE, blocks/prevents attacks, is tamper-proof, or that confidence is
+//     CALIBRATED. The behavioral tier CLEARS or REFUTES a contract change - it is
+//     not a safety oracle. Two failure modes must never ship:
+//       (a) safety over-claims near the gate ("verified safe", "blocks attacks",
+//           "guarantees safety", "tamper-proof") - the gate asserts what changed,
+//           never that a tool is safe;
+//       (b) maturity (B) over-claims: flipping calibrated to true, or asserting
+//           the behavioral tier PROVES/GUARANTEES safety (vs the honest
+//           "clears/refutes/caught/held").
+//     Matched only where "gate" context is present (so the directory screen's own
+//     honest copy is not caught). The (A) present-tense capability phrasings
+//     ("the behavioral verifier exercises a changed tool", "the cloud tier-1
+//     corpus lookup runs", "the full tiered ladder is live") pass cleanly - those
+//     are now true at launch. "calibrated=false", "clears or refutes", "not a
+//     safety verdict" are the honest forms and pass.
+const GATE_SAFETY_CLAIMS = [
+  /\bverified safe\b/i,
+  /\bguaranteed safe\b/i,
+  /\bguarantees safety\b/i,
+  /\bguarantees? (?:a tool('?s)? )?safety\b/i,
+  /\bproven safe\b/i,
+  /\bproves? (?:a |the )?tool('?s)? (?:as )?safe\b/i,
+  /\bcertifies? (?:the tool|a tool|tools) (?:as )?safe\b/i,
+  /\bgate (?:guarantees|ensures) (?:safety|a safe)\b/i,
+  /\btamper[- ]?proof\b/i,
+  /\bblocks? attacks?\b/i,
+  /\bprevents? attacks?\b/i,
+  /\bstops? attacks?\b/i,
+];
+// (B) MATURITY over-claims: assertions DEPLOYING DOES NOT MAKE TRUE. These are
+// forbidden regardless of gate context (the claim is itself the lie). The honest
+// forms - "calibrated=false", "calibrated_false", "not yet calibrated", and the
+// behavioral tier "clears or refutes / caught / held" - do NOT match. The (A)
+// launch-state capability claims (verifier/consult/cloud lookup present-tense)
+// are intentionally NOT here: they are live at launch.
+const GATE_LIVE_OVERCLAIMS = [
+  // confidence calibration flipped to true (calibrated=false is the honest floor)
+  /\bcalibrated\s*[:=]\s*true\b/i,
+  /\bcalibration\s+(?:is\s+)?complete\b/i,
+  /\bconfidences?\s+are\s+calibrated\b/i,
+  // the behavioral tier asserted as a safety proof rather than clear/refute
+  /behavioral (?:verifier|tier|verification) (?:proves|guarantees|certifies)\b/i,
+  /\btier[- ]?3 (?:behavioral )?(?:verifier|tier) (?:proves|guarantees|certifies)\b/i,
+];
+const GATE_CONTEXT = /\b(?:drift gate|the gate\b|in-path gate|preflight|pre-flight|contract-diff|contract diff|TOFU|HOLD the call|holds? (?:the|a) call)\b/i;
+
+function gateScan(dir) {
+  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (ent.name === 'node_modules' || ent.name === '.next') continue;
+    const p = path.join(dir, ent.name);
+    if (ent.isDirectory()) gateScan(p);
+    else if (/\.(tsx?|json|txt)$/.test(ent.name)) {
+      const txt = fs.readFileSync(p, 'utf8');
+      const hasGate = GATE_CONTEXT.test(txt);
+      // Safety over-claims: forbidden anywhere a gate context exists in the file.
+      // A match preceded (within ~40 chars) by a negation cue is an honest
+      // DISCLAIMER ("we do NOT claim it blocks attacks", "never verified safe")
+      // and is allowed - the lie is the AFFIRMATIVE claim, not the denial of it.
+      if (hasGate) {
+        const NEG = /\b(?:not|never|n['’]t|no|without|cannot|can['’]t|does not|do not|don['’]t|isn['’]t|aren['’]t|rather than|instead of|claim|claims|claiming)\b/i;
+        for (const re of GATE_SAFETY_CLAIMS) {
+          const m = re.exec(txt);
+          if (!m) continue;
+          const before = txt.slice(Math.max(0, m.index - 48), m.index);
+          if (NEG.test(before)) continue; // honest disclaimer, not an over-claim
+          errors.push(`${path.relative(root, p)} asserts a GATE safety over-claim (${re}). The gate is a CONTRACT-DIFF, not a safety verdict - it asserts what CHANGED, never that a tool is "safe"/"verified"/"blocks attacks". Say "caught the change" / "held the call".`);
+        }
+      }
+      // (B) MATURITY over-claims: forbidden regardless of gate context (the claim
+      // is itself the lie - deploying does NOT make it true). The (A) launch-state
+      // capability claims are NOT matched here; only flipping calibration to true
+      // or asserting the behavioral tier PROVES safety is caught.
+      for (const re of GATE_LIVE_OVERCLAIMS) {
+        if (re.test(txt)) {
+          errors.push(`${path.relative(root, p)} states a (B) MATURITY over-claim (${re}). Deploying does NOT earn this: confidence stays calibrated=false until calibrated against a held-out corpus, and the behavioral tier CLEARS or REFUTES a contract change - it never PROVES a tool safe. Say "calibrated=false" / "clears or refutes" / "caught / held".`);
+        }
+      }
+    }
+  }
+}
+gateScan(path.join(root, 'app'));
+
 // 4) The embeddable badge (lib/badge.ts) is a public trust claim with no link
 //    context, so its honesty boundary is stricter: a badge label must never
 //    assert safety/certification, and "screened" (an advisory semantic-only

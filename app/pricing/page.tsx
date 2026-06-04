@@ -1,21 +1,12 @@
+import Link from 'next/link';
 import type { Metadata } from 'next';
-import { TierCTA, type Cta } from './pricing-cta';
 
 export const metadata: Metadata = {
   title: 'Pricing',
   description: 'Free public API, optional Pro tier for higher rate limits, Enterprise for SLA.',
 };
 
-type Tier = {
-  name: string;
-  price: string;
-  rate: string;
-  blurb: string;
-  bullets: string[];
-  cta: Cta;
-};
-
-const TIERS: Tier[] = [
+const TIERS = [
   {
     name: 'Free',
     price: '$0',
@@ -42,11 +33,11 @@ const TIERS: Tier[] = [
       'Webhook on registry diff',
       'Email support',
     ],
-    cta: { label: 'Get Pro access', contact: 'pro' },
+    cta: { label: 'Email to start', href: 'mailto:hello@mcpindex.ai?subject=Pro%20tier' },
   },
   {
     name: 'Enterprise',
-    price: 'Custom',
+    price: 'Contact',
     rate: 'Custom',
     blurb: 'For platforms that re-distribute MCP discovery.',
     bullets: [
@@ -56,7 +47,7 @@ const TIERS: Tier[] = [
       'Co-marketing on /best/ pages',
       'Acquisition discussions also welcome',
     ],
-    cta: { label: 'Contact sales', contact: 'enterprise' },
+    cta: { label: 'Contact', href: 'mailto:hello@mcpindex.ai?subject=Enterprise' },
   },
 ];
 
@@ -100,14 +91,19 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
-            <TierCTA cta={t.cta} />
+            <Link
+              href={t.cta.href}
+              className="mt-8 inline-block w-fit font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-ink)] border border-[var(--color-rule)] px-3 py-1.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+            >
+              {t.cta.label} →
+            </Link>
           </div>
         ))}
       </div>
 
       <p className="mt-10 font-mono text-[11.5px] text-[var(--color-mute)]">
-        v0 - paid tiers ship when waitlist clears 200. Until then, free tier covers everything
-        you can call.
+        Free tier covers everything you can call, no key required. Pro and Enterprise are live —
+        email to start.
       </p>
     </article>
   );

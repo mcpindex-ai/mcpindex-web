@@ -2,11 +2,14 @@ import Link from 'next/link';
 import { Mark } from './Mark';
 import { MobileMenu } from './MobileMenu';
 
-// Primary nav is intent-grouped: the product action (Screen), the trust
-// surface promoted to a peer (Trust), the developer docs, the commercial path
-// (Pricing), and the directory (Rankings). Secondary/meta destinations
-// (Best of, Changelog, About, Stats) live in the footer.
+// Primary nav leads with the wedge: the gate (the in-path product you install)
+// and its install path. Then the screening surface (Screen), the trust surface
+// (Trust), developer docs, the commercial path (Pricing), and the directory
+// (Rankings). Secondary/meta destinations (Best of, Changelog, About, Stats)
+// live in the footer.
 const NAV = [
+  { href: '/#how-it-works', label: 'The gate' },
+  { href: '/#install', label: 'Install' },
   { href: '/screen', label: 'Screen' },
   { href: '/trust', label: 'Trust' },
   { href: '/docs', label: 'Docs' },

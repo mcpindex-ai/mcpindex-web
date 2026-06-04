@@ -1,11 +1,10 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { ContactTrigger } from '@/components/ContactModal';
 
 export const metadata: Metadata = {
   title: 'About',
   description:
-    'mcpindex.ai is the trust-to-act layer for agent tool use. Why it exists: the gap between a tool existing and an agent being safe to call it. Independent; unaffiliated with Anthropic.',
+    'mcpindex.ai is the trust-to-act layer for agent tool use. Why it exists: the gap between a tool existing and an agent being clear to call it without you watching. Independent; unaffiliated with Anthropic.',
 };
 
 export default function AboutPage() {
@@ -49,12 +48,11 @@ export default function AboutPage() {
         </p>
         <p>
           mcpindex publishes a per-tool finding with dimension verdicts
-          (integrity, hidden intent, and others) and severity. Today an LLM
-          judge reads the description for hidden instructions; findings are
-          semantic-only and labeled PARTIAL. A deterministic conformance probe
-          (does observed behavior match the declared schema?) is in build.
-          History is OTS Bitcoin-anchored, so once a block confirms, the trust
-          record for a tool cannot be quietly rewritten.
+          (integrity, hidden intent, and others) and severity. An LLM judge
+          reads the description for hidden instructions, and a deterministic
+          conformance probe checks whether observed behavior matches the
+          declared schema. History is OTS Bitcoin-anchored, so once a block
+          confirms, the trust record for a tool cannot be quietly rewritten.
         </p>
         <p>
           v1 is honest about its edges. Conformance is monitored, not enforced.
@@ -65,6 +63,32 @@ export default function AboutPage() {
           verdict; the agent or IDE decides whether to act on it. The
           graduation gate to D3 is &gt;=150 conforming labels with FP upper-95
           &lt;=2%; today the corpus stands at 15/150.
+        </p>
+        <p>
+          The trust call happens at two moments, and mcpindex answers the same
+          question at both: should my agent act on this tool, right now? Before
+          you wire a tool, the directory screen is the prior &mdash; an advisory,
+          semantic read of whether the description matches the behavior. During
+          use, the drift gate is the live check: it pins each tool&rsquo;s
+          contract and HOLDs a call the instant that contract silently changes,
+          before your agent acts. The screen catches a lie at publish time; the
+          gate catches the silent change at runtime &mdash; the gap nothing else
+          covers, widening as agents get more autonomous. The gate is a
+          deterministic contract-diff, in-path, dogfood-proven on Cursor; above
+          that tier-0 it queries a cloud tier-1 corpus, escalates the ambiguous
+          to a tier-2 LLM consult, and exercises a changed tool with a tier-3
+          behavioral verifier. It is a contract-diff, not a safety verdict: the
+          behavioral tier clears or refutes a change, it does not prove a tool
+          safe.
+        </p>
+        <p>
+          The two moments feed each other, and that loop is the network. Every
+          drift the gate catches is a signal the corpus learns from; the corpus,
+          as it grows, becomes the tier-1 lookup the gate queries before it
+          decides. The gate alone is copyable. The corpus &times; the
+          outcome-flywheel &times; the governance the screen enforces is the moat
+          &mdash; the part that compounds and the part a competitor cannot clone
+          by re-implementing a diff.
         </p>
         <p>
           Three primitives are exposed:{' '}
@@ -121,9 +145,9 @@ export default function AboutPage() {
             LinkedIn
           </a>
           {' · '}
-          <ContactTrigger variant="contact" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] inline cursor-pointer">
-            Email us
-          </ContactTrigger>
+          <a href="mailto:hello@mcpindex.ai" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+            hello@mcpindex.ai
+          </a>
         </p>
       </section>
 

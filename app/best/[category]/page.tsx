@@ -210,7 +210,7 @@ async function FilesystemEvidence() {
         name: 'What does the screen check?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'An LLM judge reads each tool description for instructions that would make the agent act outside the user request: read secret files, exfiltrate data, follow hidden instructions, or conceal actions. The deterministic conformance probe is in build; findings today are semantic-only and labeled PARTIAL.',
+          text: 'An LLM judge reads each tool description for instructions that would make the agent act outside the user request: read secret files, exfiltrate data, follow hidden instructions, or conceal actions. The directory coverage here is semantic-only and labeled PARTIAL: the deterministic conformance probe has not been run on these servers yet.',
         },
       },
     ],

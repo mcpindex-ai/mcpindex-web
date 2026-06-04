@@ -7,7 +7,7 @@ export async function GET() {
   const body = {
     name: 'mcpindex.ai',
     description:
-      'Trust-to-act layer for agent tool use. Indexes MCP servers and publishes per-tool verdicts so an agent can check whether to invoke a tool before it acts.',
+      'Trust-to-act layer for agent tool use. An in-path drift gate pins each MCP tool contract (TOFU) and HOLDs a call before the agent acts when the contract silently changes (a deterministic contract-diff, not a safety verdict); a public directory indexes MCP servers and publishes per-tool screening verdicts so an agent can check a tool before it wires it.',
     version: '1',
     serversIndexed: count,
     upstream: 'https://registry.modelcontextprotocol.io',
@@ -50,6 +50,51 @@ export async function GET() {
         status: 'pre_graduation',
         terminal_v1_trigger_date: '2026-09-01',
       },
+    },
+
+    // The in-path drift gate (the WEDGE you install). Deterministic contract-diff
+    // is LIVE + dogfood-proven on Cursor; the full tiered ladder (tier-1 cloud
+    // corpus, tier-2 LLM consult, tier-3 behavioral verifier) is live at launch.
+    // The behavioral tier CLEARS or REFUTES a change - it is not a safety oracle,
+    // and calibration is held (calibrated_false). honest_limits is literal (not
+    // imported) so the build-time honesty guard can statically scan this file.
+    drift_gate: {
+      what: 'in-path trust gate for agent tool calls; pins each tool contract (TOFU) and HOLDs a call before the agent acts when the contract silently changes',
+      method: 'deterministic contract-diff over a ChangeKind taxonomy + injection/exfil marker scan (input schema, output schema, description)',
+      change_kinds: [
+        'added-required-param',
+        'required-set-expanded',
+        'constraint-narrowed',
+        'type-changed',
+        'enum-values-removed',
+        'removed-param',
+        'annotation-flip-to-destructive',
+        'output-schema-added',
+        'output-schema-changed',
+        'tool-added',
+        'tool-removed',
+      ],
+      postures: ['monitor', 'guard', 'strict'],
+      default_posture: 'guard',
+      fail_mode: 'fail_closed',
+      credential_custody: 'none - reuses the session the client already authenticated; reads only public tool contracts',
+      install: {
+        config_wire: ['claude_desktop', 'cursor', 'cline', 'zed'],
+        sdk: ['typescript_wrap', 'python_wrap'],
+        docs: 'https://mcpindex.ai/docs',
+      },
+      status: 'live_tiered_ladder_tier0_deterministic_dogfooded_on_cursor',
+      tiers: [
+        'tier0_deterministic_contract_diff',
+        'tier1_cloud_corpus_lookup',
+        'tier2_llm_consult',
+        'tier3_behavioral_verifier',
+      ],
+      honest_limits: [
+        'contract_diff_not_safety_verdict',
+        'behavioral_tier_clears_or_refutes_not_safety_oracle',
+        'calibrated_false_v1',
+      ],
     },
 
     endpoints: {

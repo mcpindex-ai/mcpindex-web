@@ -1,3 +1,8 @@
+// LAUNCH CONTENT — this tree is launch-state copy (everything BUILT = LIVE),
+// published in lockstep with the deploy per the PUBLISH-COUPLING rule. It ships
+// only on GB's explicit go-live. See /LAUNCH-CONTENT.md at the repo root and
+// ~/mcpindex-launch/value-prop-bible.md for the (A) deploy-held / (B) maturity-
+// held framing the copy and the honesty guard conform to.
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';

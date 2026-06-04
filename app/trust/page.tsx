@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { ContactTrigger } from '@/components/ContactModal';
 import { ProvenanceBadge } from '@/components/ProvenanceBadge';
+import { Seal } from '@/components/Seal';
 
 export const metadata: Metadata = {
   title: 'Trust',
@@ -16,7 +16,8 @@ export const metadata: Metadata = {
 export default function TrustPage() {
   return (
     <article className="mx-auto max-w-[820px] px-6 sm:px-10 pt-16 pb-24">
-      <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
+      <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
+        <Seal size={22} ring="var(--color-rule)" bracket="var(--color-mute)" />
         Trust
       </div>
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
@@ -68,9 +69,11 @@ export default function TrustPage() {
 
       <Section label="Security & data model">
         <ul className="space-y-3">
-          <Edge head="Advisory, not blocking.">
-            mcpindex publishes the verdict; your agent or IDE decides whether to
-            act. We do not sit in the call path or proxy your traffic.
+          <Edge head="Advisory, not blocking (the directory screen).">
+            The directory screen publishes a verdict; your agent or IDE decides
+            whether to act. The screen does not sit in your call path or proxy
+            your traffic. The in-path drift gate (below) is the separate surface
+            that can HOLD a call.
           </Edge>
           <Edge head="Public artifacts in.">
             Verdicts are produced from public tool definitions (description +
@@ -96,6 +99,42 @@ export default function TrustPage() {
         </ul>
       </Section>
 
+      <Section label="The drift gate's posture">
+        <p>
+          The screen above is advisory and out of the call path. The drift gate
+          is different in one decisive way: it is in-path. It pins each MCP
+          tool&rsquo;s contract on first sight and checks the live contract
+          before your agent acts, so it can HOLD the call &mdash; not just alert
+          after the fact, the way a passive scanner does. That position is what
+          lets it protect a running agent; it is also what makes its trust
+          posture worth stating exactly.
+        </p>
+        <ul className="mt-4 space-y-3">
+          <Edge head="Zero credential custody.">
+            The gate never receives your tokens. It observes the session your
+            client already authenticated and reads only the public tool contracts;
+            the one-click wiring passes a server&rsquo;s original env / headers
+            through to that server untouched. There is no token field and no
+            second connection &mdash; structurally, not as a promise.
+          </Edge>
+          <Edge head="Contract-diff, not a safety verdict.">
+            A HOLD means the tool&rsquo;s contract changed versus what you pinned,
+            not that the new contract is unsafe. The gate asserts what changed; you
+            review and re-pin if it is expected.
+          </Edge>
+          <Edge head="Fail-closed.">
+            A tool with no pin, an unreadable contract, or a diff the gate cannot
+            complete HOLDs rather than proceeds. The gate never renders a silent
+            ALLOW on something it could not verify.
+          </Edge>
+          <Edge head="Advisory in judgment, in-path in effect.">
+            The judgment is narrow and provable (a deterministic contract-diff);
+            the effect is real because the gate sits in the call path. We do not
+            claim it verifies safety, blocks attacks, or certifies a tool.
+          </Edge>
+        </ul>
+      </Section>
+
       <Section label="Compliance & roadmap">
         <p>
           Direct and current: mcpindex is pre-SOC 2. We are not going to imply
@@ -104,12 +143,12 @@ export default function TrustPage() {
           attestation (SOC 2 Type 2) is on the roadmap when enterprise demand
           warrants the audit, not before. If you have a specific compliance
           requirement,{' '}
-          <ContactTrigger
-            variant="contact"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] inline cursor-pointer"
+          <a
+            href="mailto:hello@mcpindex.ai"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
           >
             tell us what you need
-          </ContactTrigger>{' '}
+          </a>{' '}
           and we will answer honestly about where we are.
         </p>
         <p className="mt-4 text-[13.5px] text-[var(--color-mute)]">
@@ -134,13 +173,13 @@ export default function TrustPage() {
         <p>
           Live system status, data freshness, and the incident log are at{' '}
           <TLink href="/status">/status</TLink>. To report a problem with a
-          verdict or a security concern,{' '}
-          <ContactTrigger
-            variant="contact"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] inline cursor-pointer"
+          verdict or a security concern, email{' '}
+          <a
+            href="mailto:hello@mcpindex.ai"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
           >
-            contact us
-          </ContactTrigger>
+            hello@mcpindex.ai
+          </a>
           .
         </p>
       </Section>

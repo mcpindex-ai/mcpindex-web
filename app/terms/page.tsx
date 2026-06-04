@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { ContactTrigger } from '@/components/ContactModal';
 
 export const metadata: Metadata = {
   title: 'Terms',
@@ -46,10 +45,10 @@ export default function TermsPage() {
         </p>
         <p>
           Excessive use that disrupts service for others may be rate-limited, blocked, or
-          throttled without notice.{' '}
-          <ContactTrigger variant="contact" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] inline cursor-pointer">
-            Contact us
-          </ContactTrigger>{' '}
+          throttled without notice. Email{' '}
+          <a href="mailto:hello@mcpindex.ai" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+            hello@mcpindex.ai
+          </a>{' '}
           if you need higher limits.
         </p>
         <p>
