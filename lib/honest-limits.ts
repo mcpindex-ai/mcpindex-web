@@ -8,3 +8,13 @@ export const ADVISORY_FLOOR = [
   'calibrated_false_v1',
   'advisory_deployment',
 ] as const;
+
+// D3 graduation gate (mirror of mcpindex-trust/corpus_eval/GATES.json
+// `current_conforming_labels` / criterion). Single source so the count cannot
+// silently desync across surfaces (methodology, trust, about, the feeds, the
+// machine descriptor). These are LABELED-conforming-corpus values and change
+// ONLY when human-labeled conforming tools + a probed FP upper-95 exist;
+// registry-screening coverage must never raise them (the honesty guard enforces).
+export const D3_CONFORMING_LABELS = 15;
+export const D3_REQUIRED_LABELS = 150;
+export const D3_PROGRESS = `${D3_CONFORMING_LABELS}/${D3_REQUIRED_LABELS}` as const;

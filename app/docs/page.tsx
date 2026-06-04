@@ -22,18 +22,19 @@ export default function DocsPage() {
           Documentation
         </div>
         <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
-          Wire trust into your agent.
+          Install the gate. Or call the network.
         </h1>
         <p className="mt-5 max-w-[640px] text-[16px] leading-[1.6] text-[var(--color-cite)]">
-          An MCP-native API. Free, no key required, low-latency. Ask for a verdict
-          (ALLOW / DENY / REVIEW) on a tool before your agent calls it; a recommendation
-          endpoint also covers discovery. Three integration shapes: direct HTTP, drop-in
-          MCP server (recommended), or embedded into your platform. The whole surface fits
-          on this page.
+          The wedge is the in-path drift gate: one command pins every MCP tool&rsquo;s contract
+          and HOLDs a call the moment that contract silently changes, before your agent acts. No
+          key, zero credential custody. Start at{' '}
+          <Ext href="#install-the-gate">§3b &mdash; Install the gate</Ext>.
         </p>
         <p className="mt-3 max-w-[640px] text-[14px] leading-[1.55] text-[var(--color-mute)]">
-          Installing the in-path drift gate instead? Jump to{' '}
-          <Ext href="#install-the-gate">§3b — Install the gate</Ext>.
+          The rest of this page documents the advisory directory the gate queries: an MCP-native
+          API (free, no key, low-latency) that returns a verdict (ALLOW / DENY / REVIEW) on a tool
+          and a recommendation endpoint for discovery &mdash; direct HTTP, drop-in MCP server, or
+          embedded.
         </p>
       </header>
 
@@ -188,24 +189,28 @@ Args:     -y mcp-server-mcpindex`}
             className="text-[16px] tracking-tight font-semibold"
             style={{ color: 'var(--color-ink)' }}
           >
-            One-click install (Claude Desktop / Cursor / Cline / Zed)
+            Install (Claude Desktop / Cursor / Cline / Zed)
           </h3>
           <p
             className="mt-1 text-[14px] leading-[1.55]"
             style={{ color: 'var(--color-mute)' }}
           >
-            One command installs the gate and rewrites your host config so each
-            MCP server launches <em>behind</em> it:
+            The auditable path: install the package, then let the wizard rewrite
+            your host config so each MCP server launches <em>behind</em> the gate.
+            The <Mono>curl | sh</Mono> one-liner does the same thing in one step
+            &mdash; inspect it first if you prefer:
           </p>
           <pre className="mt-3 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
-            <code>{`# one-click: installs the gate + rewrites your host config
-curl -fsSL https://mcpindex.ai/install.sh | sh
+            <code>{`# auditable path — install the package, then run the wiring wizard
+uv tool install mcpindex-preflight
 
-# or run it without installing, via uvx
-uvx mcpindex-gate install
+# convenience: the same install + host-config rewrite in one command.
+# inspect it before you run it — it only rewrites your MCP host config,
+# and uninstall.sh restores it:
+curl -fsSL https://mcpindex.ai/install.sh | less   # read it first
+curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
 
-# or double-click the bundle in Claude Desktop
-mcpindex-gate.mcpb`}</code>
+# Windows (PowerShell): https://mcpindex.ai/install.ps1`}</code>
           </pre>
           <p
             className="mt-3 text-[14px] leading-[1.55]"
@@ -229,25 +234,68 @@ mcpindex-gate.mcpb`}</code>
   "args": ["-y", "@modelcontextprotocol/server-filesystem", "/data"]
 }
 
-// after: the gate launches the server and checks each tool's contract in-path
+// after: the gate launches the server and checks each tool's contract in-path.
+// The original command becomes --upstream-command; each original arg becomes a
+// separate --upstream-arg=VALUE (the =VALUE form is required — a dash-leading
+// arg like -y does not survive a bare passthrough).
 "filesystem": {
-  "command": "python",
-  "args": ["-m", "tooling.cse.preflight_gate",
-           "--", "npx", "-y", "@modelcontextprotocol/server-filesystem", "/data"]
+  "command": "uvx",
+  "args": ["--from", "mcpindex-preflight", "python", "-m", "tooling.cse.proxy",
+           "--mcpindex-stdio",
+           "--upstream-command", "npx",
+           "--upstream-arg=-y",
+           "--upstream-arg=@modelcontextprotocol/server-filesystem",
+           "--upstream-arg=/data"]
 }`}</code>
           </pre>
           <p
             className="mt-2 text-[13px] leading-[1.5]"
             style={{ color: 'var(--color-mute)' }}
           >
-            The gate forwards to your original server and checks the contract on
-            every call. Zero credentials change hands: a stdio server&rsquo;s
-            original <Mono>env</Mono> and an http server&rsquo;s original{' '}
+            Easier: let the one-click installer write this for you &mdash; it
+            rewrites every server entry, which is fiddly to do by hand. The gate
+            forwards to your original server and checks the contract on every
+            call. Zero credentials change hands: a stdio server&rsquo;s original{' '}
+            <Mono>env</Mono> and an http server&rsquo;s original{' '}
             <Mono>headers</Mono> ride through to your server untouched &mdash; the
             gate reads only the public tool contracts, never your tokens. The
             one-click installer (<Mono>install.sh</Mono> /{' '}
-            <Mono>install.ps1</Mono>), the <Mono>uvx</Mono> package, and the{' '}
-            <Mono>.mcpb</Mono> bundle above do this rewrite for you.
+            <Mono>install.ps1</Mono>) does this rewrite for you across every
+            detected host.
+          </p>
+        </div>
+
+        <div
+          className="rule-t pt-5"
+          style={{ borderColor: 'var(--color-rule)' }}
+        >
+          <h3
+            className="text-[16px] tracking-tight font-semibold"
+            style={{ color: 'var(--color-ink)' }}
+          >
+            Remote / HTTP MCP servers
+          </h3>
+          <p
+            className="mt-1 text-[14px] leading-[1.55]"
+            style={{ color: 'var(--color-mute)' }}
+          >
+            The example above wraps a stdio server. An <Mono>http</Mono> /{' '}
+            <Mono>url</Mono> entry (a remote server like a hosted GitHub MCP) is
+            routed through a local gateway instead: the gate rewrites the entry to
+            point your client at a loopback gateway, and the gateway forwards to
+            the upstream with your original <Mono>headers</Mono> threaded through
+            untouched &mdash; same zero-custody posture, just over HTTP.
+          </p>
+          <p
+            className="mt-2 text-[13px] leading-[1.5]"
+            style={{ color: 'var(--color-mute)' }}
+          >
+            One boundary to know: today the gateway gates only{' '}
+            <strong style={{ color: 'var(--color-ink)' }}>HTTPS upstreams that resolve to a public IP</strong>.
+            A plain-<Mono>http</Mono>, <Mono>localhost</Mono>, or LAN upstream is
+            rejected (<Mono>ssrf_blocked</Mono>), not silently passed through &mdash;
+            gating those is on the roadmap. So a remote HTTPS server is gated like
+            any stdio one; a local HTTP server is not yet covered.
           </p>
         </div>
 
@@ -273,8 +321,7 @@ mcpindex-gate.mcpb`}</code>
           </p>
           <pre className="mt-3 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
             <code>{`// TypeScript
-import { wrap } from "@mcpindex/preflight";
-import { PreflightPin } from "@mcpindex/preflight";
+import { wrap, PreflightPin } from "mcpindex";
 
 const guarded = wrap(session, { pin: new PreflightPin(), serverId: "your-server" });
 // use guarded.list_tools() / guarded.call_tool(...) exactly as before
@@ -330,9 +377,10 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
             (the exact ChangeKind, the before/after on a description change). It is
             fail-closed: a tool the gate cannot verify holds rather than proceeds.
             You review, then re-pin if the change is expected. On an ambiguous
-            change, the third-door behavioral verifier exercises the changed tool
-            to clear or refute the change &mdash; it clears or refutes, it does not
-            prove a tool safe.
+            change, the third-door behavioral verifier &mdash; a built in-path seam
+            that is held off by default and requires explicit opt-in &mdash; can
+            exercise the changed tool to clear or refute the change. It clears or
+            refutes; it does not prove a tool safe.
           </p>
         </div>
       </Section>
@@ -374,6 +422,14 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
           <Mono>no_verdict_data_in_v1_advisory</Mono> honest limit. An agent must treat
           UNVERIFIED as fail-closed - never as permission to proceed.
         </p>
+        <p className="text-[13.5px]" style={{ color: 'var(--color-mute)' }}>
+          At v1 the screen produces only <Mono>REVIEW</Mono> (a semantic-only read) or{' '}
+          <Mono>UNVERIFIED</Mono> (not yet on file). <Mono>ALLOW</Mono> and <Mono>DENY</Mono>{' '}
+          are in the contract and the response shape, but a real <Mono>ALLOW</Mono> requires
+          the behavioral conformance probe, which is gated to the D3 labeled-corpus milestone
+          and has not run on the public corpus yet. Treat the example above as the illustrative
+          shape, not the common case today.
+        </p>
         <p>
           The recommendation endpoint (discovery) returns a tight JSON envelope. Three
           picks ranked by composite score, each with reasoning, install commands per
@@ -407,8 +463,8 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
         </pre>
       </Section>
 
-      {/* §05 - Limits + guarantees */}
-      <Section number="05" title="Limits + guarantees">
+      {/* §05 - Limits + API guarantees */}
+      <Section number="05" title="Limits + API guarantees">
         <ul className="space-y-3">
           <Limit
             label="Rate"

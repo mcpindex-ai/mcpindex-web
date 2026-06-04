@@ -32,6 +32,7 @@ export function Footer() {
             <div className={COLUMN_LABEL}>Product</div>
             <Link href="/#how-it-works" className={LINK}>The gate</Link>
             <Link href="/#install" className={LINK}>Install</Link>
+            <Link href="/demo" className={LINK}>Demo</Link>
             <Link href="/screen" className={LINK}>Screen a tool</Link>
             <Link href="/docs" className={LINK}>Docs</Link>
             <Link href="/pricing" className={LINK}>Pricing</Link>

@@ -5,6 +5,7 @@ import { getServer, loadServers } from '@/lib/registry';
 import { computeQuality } from '@/lib/quality';
 import { buildInstalls } from '@/lib/installs';
 import { CATEGORY_LABELS } from '@/lib/categorize';
+import { D3_PROGRESS } from '@/lib/honest-limits';
 import { CopyField } from '@/components/CopyField';
 import {
   getVerdict,
@@ -445,12 +446,15 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
           </span>
         </div>
         <p className="mt-3 text-[14px] leading-[1.6] text-[var(--color-cite)] max-w-[640px]">
-          Verdict not yet evaluated for this tool. The hybrid eval runs adversarial
-          cases first; coverage rolls out as the corpus expands (15 of 150 labels to
-          graduation). Until a verdict is recorded, an agent should treat this tool as
-          not-yet-cleared and fall back to its own checks. Method:{' '}
+          Verdict not yet evaluated for this tool. The semantic screen takes
+          adversarial cases first; coverage rolls out as the corpus expands ({D3_PROGRESS} labels
+          to graduation). The deterministic conformance probe is built
+          but has not yet run on the public corpus, so a recorded verdict here is
+          REVIEW or UNVERIFIED, never a clearing ALLOW. Until a verdict is
+          recorded, an agent should treat this tool as not-yet-cleared and fall
+          back to its own checks. Method:{' '}
           <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
-            hybrid eval, four-state verdict, honest limits
+            the eval, four-state verdict, honest limits
           </Link>
           .
         </p>

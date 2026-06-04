@@ -118,7 +118,7 @@ export function BrandOg({
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', borderTop: `1px solid ${RULE}`, paddingTop: '22px' }}>
         <div style={{ display: 'flex', width: '34px', height: '8px', borderRadius: '3px', background: AMBER }} />
         <div style={{ display: 'flex', fontSize: '19px', color: ZINC }}>
-          A verdict on whether a tool does what it claims, before your agent acts.
+          The in-path trust gate that holds a call before your agent acts on a silent change.
         </div>
       </div>
     </div>

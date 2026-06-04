@@ -1,13 +1,14 @@
 import { ImageResponse } from 'next/og';
 
-// The root social card leads with the WEDGE: the in-path gate holding a silent
-// contract change. The verdict token is the amber HELD chip + the hexagon (⬡)
-// banner motif - amber #ea580c is reserved for the verdict token by brand rule.
-// (Per-server share cards keep red/green in lib/og VerdictOg; the root hero does
-// not - it sells the gate, not a directory verdict.)
+// The /demo social card, on the brand system (R2-M7). The prior static
+// /promo/og.jpg was off-system: a near-black/ink background while every other
+// card is white/paper, and "90 seconds." rendered entirely in amber as generic
+// emphasis (amber is reserved for the verdict token ONLY). This dynamic card
+// matches the root opengraph-image: white paper, ink type, the amber #ea580c
+// reserved for the ⬡ HELD verdict token, the bracket Mark wordmark.
 // Satori constraints: every multi-child node sets display:flex.
 export const alt =
-  'mcpindex - the in-path trust gate that holds a tool call before your agent acts on a silent contract change';
+  'mcpindex - watch the in-path gate hold a silent tool-contract change, in 90 seconds';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -16,7 +17,7 @@ const AMBER = '#ea580c';
 const MUTE = '#78716c';
 const RULE = '#e7e5e4';
 
-export default function OpengraphImage() {
+export default function DemoOpengraphImage() {
   return new ImageResponse(
     (
       <div
@@ -67,7 +68,7 @@ export default function OpengraphImage() {
                 letterSpacing: '2px',
               }}
             >
-              {/* ⬡ as inline SVG — the glyph font is not fetchable in next/og */}
+              {/* ⬡ as inline SVG - the glyph font is not fetchable in next/og */}
               <svg width="30" height="34" viewBox="0 0 30 34" fill="none">
                 <path
                   d="M15 2 L27 9 V25 L15 32 L3 25 V9 Z"
@@ -83,13 +84,13 @@ export default function OpengraphImage() {
             </div>
           </div>
           <div style={{ display: 'flex', fontSize: '30px', color: '#0f172a', marginTop: '30px', lineHeight: 1.35 }}>
-            A tool silently added a required <span style={{ color: AMBER }}>&nbsp;owner&nbsp;</span> param. The gate held the call before the agent ran it.
+            Pin a tool, apply a silent change, watch the in-path gate hold the call before your agent acts.
           </div>
         </div>
 
         {/* headline */}
         <div style={{ display: 'flex', fontSize: '30px', color: INK, lineHeight: 1.3, maxWidth: '1010px' }}>
-          The tool your agent trusted on Monday can change on Tuesday - silently. mcpindex holds the call before your agent acts.
+          Watch the gate hold a silent change, in 90 seconds.
         </div>
       </div>
     ),

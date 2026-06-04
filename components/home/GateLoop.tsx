@@ -7,25 +7,25 @@ const STEPS: { n: string; title: string; body: string; note?: string }[] = [
   {
     n: '01',
     title: 'Install once, rides your agent',
-    body: 'One config-wire in Claude Desktop, Cursor, Cline, or Zed. The gate sits in the MCP session your agent already opens. No credentials, no proxy account, no traffic leaves your machine.',
+    body: 'One config-wire in Claude Desktop, Cursor, Cline, or Zed. The gate sits in the MCP session your agent already opens. No credentials and no proxy account; the deterministic contract-diff runs locally and the default build egresses nothing (the optional cloud tier-1 lookup, held off by default, sends only a contract hash, never tokens or call data).',
     note: 'stdio interceptor + TS / Python SDK',
   },
   {
     n: '02',
     title: 'Pins each tool on first sight',
-    body: 'The first time a tool is offered, the gate records its contract — name, params, constraints, annotations, input and output schema — and persists it across restarts. Trust-on-first-use (TOFU): the baseline is what you actually saw, not a registry claim.',
+    body: 'The first time a tool is offered, the gate records its contract (name, params, constraints, annotations, input and output schema) and persists it across restarts. Trust-on-first-use (TOFU): the baseline is what you actually saw, not a registry claim.',
     note: 'TOFU pin · cross-restart persistence',
   },
   {
     n: '03',
     title: 'HOLDs the call when the contract changes',
-    body: 'On every later call the gate diffs the live contract against your pin. If a tool silently added a required param, narrowed a constraint, flipped an annotation to destructive, or grew a new output field, the gate HOLDs the call before your agent acts and names exactly what changed — the ChangeKind, in plain words.',
+    body: 'On every later call the gate diffs the live contract against your pin. If a tool silently added a required param, narrowed a constraint, flipped an annotation to destructive, or grew a new output field, the gate HOLDs the call before your agent acts and names exactly what changed: the ChangeKind, in plain words.',
     note: 'deterministic diff · Monitor / Guard / Strict',
   },
   {
     n: '04',
     title: 'You review, re-pin, or validate',
-    body: 'A held call is a decision, not a dead end: read the diff, accept the change and re-pin the new contract, or send it back. A benign added-optional param proceeds silently — no false alarm. The verdict is "this changed", never "this is unsafe".',
+    body: 'A held call is a decision, not a dead end: read the diff, accept the change and re-pin the new contract, or send it back. A benign added-optional param proceeds silently, no false alarm. The verdict is "this changed", never "this is unsafe".',
     note: 'review · re-pin · validate',
   },
 ];

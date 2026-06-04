@@ -15,7 +15,8 @@ export const metadata: Metadata = {
       'Pin an MCP tool\'s contract; apply a silent change; watch the in-path gate HOLD the call before your agent acts - a contract-diff, not a safety verdict.',
     url: 'https://mcpindex.ai/demo',
     type: 'video.other',
-    images: [{ url: '/promo/og.jpg', width: 1200, height: 630 }],
+    // images intentionally omitted - the colocated opengraph-image.tsx renders
+    // the on-brand white/HELD card (R2-M7); Next injects it automatically.
     videos: [
       { url: VIDEO_URL, secureUrl: VIDEO_URL, type: 'video/mp4', width: 1920, height: 1080 },
     ],
@@ -25,7 +26,8 @@ export const metadata: Metadata = {
     title: 'mcpindex - watch the gate hold a silent tool-contract change',
     description:
       'Pin an MCP tool\'s contract; apply a silent change; watch the in-path gate HOLD the call before your agent acts - a contract-diff, not a safety verdict.',
-    images: ['/promo/og.jpg'],
+    // image omitted - the colocated opengraph-image.tsx is used as the player
+    // card thumbnail too.
     players: [{ playerUrl: EMBED_URL, streamUrl: VIDEO_URL, width: 1920, height: 1080 }],
   },
 };
@@ -42,7 +44,7 @@ export default function DemoPage() {
         Demo
       </div>
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
-        The trust-to-act layer, in 90 seconds.
+        Watch the gate hold a silent change, in 90 seconds.
       </h1>
       <p className="mt-5 max-w-[640px] text-[16px] leading-[1.6] text-[var(--color-cite)]">
         Agents don&apos;t just answer anymore - they act. The tool your agent trusted on Monday
@@ -69,7 +71,7 @@ export default function DemoPage() {
         </div>
         <p className="mb-5 max-w-[640px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
           Why the gate exists: a tool&apos;s contract can change silently after you trust it. Watch
-          mcpindex hold the call before your agent acts, proven in Cursor.
+          mcpindex hold the call before your agent acts on the change.
         </p>
       </section>
 
@@ -102,7 +104,7 @@ export default function DemoPage() {
           controls
           playsInline
           preload="metadata"
-          poster="/promo/poster.jpg"
+          poster="/promo/poster-demo.jpg"
         >
           <source src="/promo/mcpindex-demo.mp4" type="video/mp4" />
           Your browser does not support the video tag.

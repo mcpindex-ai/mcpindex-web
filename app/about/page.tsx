@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
 
 export const metadata: Metadata = {
   title: 'About',
   description:
     'mcpindex.ai is the trust-to-act layer for agent tool use. Why it exists: the gap between a tool existing and an agent being clear to call it without you watching. Independent; unaffiliated with Anthropic.',
+  alternates: { canonical: 'https://mcpindex.ai/about' },
 };
 
 export default function AboutPage() {
@@ -14,12 +16,13 @@ export default function AboutPage() {
         About
       </div>
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
-        The trust-to-act layer for agent tool use.
+        Why the gate exists.
       </h1>
       <p className="mt-5 max-w-[640px] text-[16px] leading-[1.6] text-[var(--color-cite)]">
-        Agents discover tools at runtime, read the descriptions their authors
-        wrote, and call them. mcpindex sits in the gap between &ldquo;the tool
-        exists&rdquo; and &ldquo;the agent may invoke it without me watching.&rdquo;
+        mcpindex is the trust-to-act layer for agent tool use. Agents discover
+        tools at runtime, read the descriptions their authors wrote, and call
+        them. mcpindex sits in the gap between &ldquo;the tool exists&rdquo; and
+        &ldquo;the agent may invoke it without me watching.&rdquo;
       </p>
 
       <div className="mt-10 space-y-6 text-[15.5px] leading-[1.65] text-[var(--color-cite)]">
@@ -48,44 +51,53 @@ export default function AboutPage() {
         </p>
         <p>
           mcpindex publishes a per-tool finding with dimension verdicts
-          (integrity, hidden intent, and others) and severity. An LLM judge
-          reads the description for hidden instructions, and a deterministic
-          conformance probe checks whether observed behavior matches the
-          declared schema. History is OTS Bitcoin-anchored, so once a block
-          confirms, the trust record for a tool cannot be quietly rewritten.
+          (integrity, hidden intent, and others) and severity. Today the screen
+          is semantic-only: an LLM judge reads the description for hidden
+          instructions. The deterministic conformance probe &mdash; which checks
+          whether observed behavior matches the declared schema &mdash; is built
+          but has not yet run on the public corpus, so no published screen verdict
+          carries a conformance result yet. History is OTS Bitcoin-anchored, so
+          once a block confirms, the trust record for a tool cannot be quietly
+          rewritten.
         </p>
         <p>
-          v1 is honest about its edges. Conformance is monitored, not enforced.
+          v1 is honest about its edges. Conformance is built but not yet run on
+          the screen; when it runs it is monitored, not enforced.
           OTS Bitcoin-anchored history with cadence bound = confirmation latency
           (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized);
           sub-window precision asserted, not proven. Confidences are reported but not yet calibrated
           (calibrated=false). Deployment posture is advisory: we publish the
           verdict; the agent or IDE decides whether to act on it. The
-          graduation gate to D3 is &gt;=150 conforming labels with FP upper-95
-          &lt;=2%; today the corpus stands at 15/150.
+          graduation gate to D3 is &gt;={D3_REQUIRED_LABELS} conforming labels with FP upper-95
+          &lt;=2%; today the corpus stands at {D3_PROGRESS}.
         </p>
         <p>
           The trust call happens at two moments, and mcpindex answers the same
           question at both: should my agent act on this tool, right now? Before
-          you wire a tool, the directory screen is the prior &mdash; an advisory,
+          you wire a tool, the directory screen is the prior: an advisory,
           semantic read of whether the description matches the behavior. During
-          use, the drift gate is the live check: it pins each tool&rsquo;s
+          use, the drift gate is the live check. It pins each tool&rsquo;s
           contract and HOLDs a call the instant that contract silently changes,
           before your agent acts. The screen catches a lie at publish time; the
-          gate catches the silent change at runtime &mdash; the gap nothing else
-          covers, widening as agents get more autonomous. The gate is a
-          deterministic contract-diff, in-path, dogfood-proven on Cursor; above
-          that tier-0 it queries a cloud tier-1 corpus, escalates the ambiguous
-          to a tier-2 LLM consult, and exercises a changed tool with a tier-3
-          behavioral verifier. It is a contract-diff, not a safety verdict: the
-          behavioral tier clears or refutes a change, it does not prove a tool
-          safe.
+          gate catches the silent change at runtime, the gap nothing else
+          covers, widening as agents get more autonomous.
+        </p>
+        <p>
+          The gate is a deterministic contract-diff, in-path, and runs on your
+          host. Above that live tier-0, the ladder is built as in-path seams: a
+          cloud tier-1 corpus lookup, a tier-2 LLM consult on the ambiguous, and a
+          tier-3 behavioral verifier that exercises a changed tool. Each is held
+          off by default and requires explicit opt-in; the default build egresses
+          nothing and stays fail-closed. It is a contract-diff, not a safety
+          verdict: when enabled, the behavioral tier clears or refutes a change,
+          it does not prove a tool safe.
         </p>
         <p>
           The two moments feed each other, and that loop is the network. Every
-          drift the gate catches is a signal the corpus learns from; the corpus,
-          as it grows, becomes the tier-1 lookup the gate queries before it
-          decides. The gate alone is copyable. The corpus &times; the
+          drift the gate catches is a signal the corpus can learn from; the
+          corpus, as it grows, is designed to be the tier-1 lookup the gate
+          queries before it decides (held off by default at launch). The gate
+          alone is copyable. The corpus &times; the
           outcome-flywheel &times; the governance the screen enforces is the moat
           &mdash; the part that compounds and the part a competitor cannot clone
           by re-implementing a diff.
@@ -160,8 +172,9 @@ export default function AboutPage() {
           is unaffiliated with Anthropic. The Model Context Protocol is open
           under MIT and trademarks remain with their owners. Server data comes
           from the official MCP registry; quality scoring, semantic ranking,
-          and trust verdicts are produced locally from public artifacts and
-          live probes.
+          and trust verdicts are produced locally from public artifacts (the
+          tool description and schema). The deterministic behavioral probe is
+          built but has not yet run on the public corpus.
         </p>
       </section>
     </article>

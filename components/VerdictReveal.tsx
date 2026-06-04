@@ -37,12 +37,25 @@ export function VerdictReveal({ items }: { items: RevealItem[] }) {
   const [paused, setPaused] = useState(false);
   const first = useRef(true);
 
-  const reduced =
-    typeof window !== 'undefined' &&
-    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  // Track reduced-motion as state so a runtime change is respected and the
+  // auto-advance timer is correctly gated (not just the scan animation).
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (!mq) return;
+    setReduced(mq.matches);
+    const onChange = () => setReduced(mq.matches);
+    mq.addEventListener?.('change', onChange);
+    return () => mq.removeEventListener?.('change', onChange);
+  }, []);
+
+  // A reader-controlled pause (the visible Pause/Play toggle). Combined with the
+  // hover/focus pause below into the effective `paused` gate.
+  const [userPaused, setUserPaused] = useState(false);
+  const effectivePaused = paused || userPaused;
 
   useEffect(() => {
-    if (items.length === 0 || paused) return;
+    if (items.length === 0 || effectivePaused) return;
     // First item paints fully (correct SSR / first paint); later items get the
     // brief scan-then-stamp animation.
     let t1: ReturnType<typeof setTimeout> | null = null;
@@ -53,12 +66,18 @@ export function VerdictReveal({ items }: { items: RevealItem[] }) {
       setPhase('scan');
       t1 = setTimeout(() => setPhase('show'), SCAN_MS);
     }
-    const t2 = setTimeout(() => setI((p) => (p + 1) % items.length), HOLD_MS + SCAN_MS);
+    // WCAG 2.2.2: under prefers-reduced-motion we do NOT auto-advance the
+    // content - the reader steps manually via the dot buttons. Otherwise the
+    // timer cycles, pausable by the toggle, hover, or keyboard focus.
+    let t2: ReturnType<typeof setTimeout> | null = null;
+    if (!reduced) {
+      t2 = setTimeout(() => setI((p) => (p + 1) % items.length), HOLD_MS + SCAN_MS);
+    }
     return () => {
       if (t1) clearTimeout(t1);
-      clearTimeout(t2);
+      if (t2) clearTimeout(t2);
     };
-  }, [i, items.length, paused, reduced]);
+  }, [i, items.length, effectivePaused, reduced]);
 
   if (items.length === 0) return null;
   const item = items[i];
@@ -70,6 +89,11 @@ export function VerdictReveal({ items }: { items: RevealItem[] }) {
       className="rule-t rule-b rule-l rule-r bg-white"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={(e) => {
+        // resume only when focus leaves the whole widget (not on inner refocus)
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) setPaused(false);
+      }}
     >
       {/* header: the tool under test */}
       <div className="rule-b px-5 py-4 flex items-center justify-between gap-4">
@@ -104,10 +128,13 @@ export function VerdictReveal({ items }: { items: RevealItem[] }) {
         />
       </div>
 
-      {/* body: rationale + dimensions, fade in on 'show' */}
+      {/* body: rationale + dimensions, fade in on 'show'. aria-live so the
+          swap is announced to assistive tech (WCAG 2.2.2 companion). */}
       <div
         className="px-5 py-4 transition-opacity duration-300"
         style={{ opacity: scanning ? 0.25 : 1 }}
+        aria-live="polite"
+        aria-atomic="true"
       >
         <p className="text-[13.5px] leading-[1.55] text-[var(--color-cite)] min-h-[42px]">
           {item.rationale}
@@ -126,20 +153,41 @@ export function VerdictReveal({ items }: { items: RevealItem[] }) {
         )}
       </div>
 
-      {/* cycle indicator */}
+      {/* cycle indicator + controls. Dots are real buttons (keyboard-steppable,
+          required when reduced-motion suppresses auto-advance); a visible
+          Pause/Play toggle satisfies WCAG 2.2.2 for the auto-cycling content. */}
       <div className="rule-t px-5 py-3 flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => setUserPaused((p) => !p)}
+          aria-pressed={userPaused}
+          className="mr-2 font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-mute)] hover:text-[var(--color-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+        >
+          {userPaused || reduced ? '▸ play' : '❚❚ pause'}
+        </button>
         {items.map((_, k) => (
-          <span
+          <button
             key={k}
-            className="h-1.5 rounded-full transition-all duration-300"
-            style={{
-              width: k === i ? 18 : 6,
-              backgroundColor: k === i ? 'var(--color-accent)' : 'var(--color-rule)',
+            type="button"
+            onClick={() => {
+              first.current = true; // step without the scan animation
+              setI(k);
             }}
-          />
+            aria-label={`Show verdict ${k + 1} of ${items.length}`}
+            aria-current={k === i ? 'true' : undefined}
+            className="h-3 flex items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+          >
+            <span
+              className="h-1.5 rounded-full transition-all duration-300 block"
+              style={{
+                width: k === i ? 18 : 6,
+                backgroundColor: k === i ? 'var(--color-accent)' : 'var(--color-rule)',
+              }}
+            />
+          </button>
         ))}
         <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
-          real verdicts · hover to pause
+          {reduced ? 'real verdicts · step with the dots' : 'real verdicts · pause or hover'}
         </span>
       </div>
     </div>

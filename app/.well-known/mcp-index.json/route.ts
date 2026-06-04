@@ -1,9 +1,15 @@
 import { getServerCount } from '@/lib/registry';
+import { listScreened } from '@/lib/verdicts';
 
 export const revalidate = 3600;
 
 export async function GET() {
-  const count = await getServerCount();
+  const [count, screened] = await Promise.all([getServerCount(), listScreened()]);
+  // Derive the verdict-coverage note from the SAME getVerdict layer the live
+  // /api/v1/trust route uses, so the machine descriptor can never drift from
+  // the machine response. Screened servers return their real ALLOW/DENY/REVIEW;
+  // everything else returns UNVERIFIED (fail-closed).
+  const screenedCount = screened.length;
   const body = {
     name: 'mcpindex.ai',
     description:
@@ -16,9 +22,23 @@ export async function GET() {
       capability: 'check_tool_trust',
       version: 'v1-advisory',
       verdict_contract_version: '1.0.0',
-      // UPPERCASE per the AD-B contract (contract-schema.md S3); UNVERIFIED
-      // is the v1 default since the corpus is pre-graduation (15 of 150).
+      // UPPERCASE per the AD-B contract (contract-schema.md S3). A screened
+      // server returns its real ALLOW/DENY/REVIEW; a server not on file returns
+      // UNVERIFIED (fail-closed). Coverage is advisory + semantic-only (15 of 150
+      // labels to D3 graduation).
       verdict_states: ['ALLOW', 'DENY', 'REVIEW', 'UNVERIFIED'],
+      verdict_coverage: {
+        screened_servers: screenedCount,
+        unscreened_returns: 'UNVERIFIED',
+        // At v1 every published screen verdict is REVIEW or UNVERIFIED. The
+        // deterministic conformance probe is built but has NOT run on this
+        // corpus, so a clearing ALLOW (which the probe would earn) and an
+        // automatic public DENY are not produced today. Keep this in sync with
+        // /methodology and the honest_limits below.
+        screen_conformance: 'built_not_yet_run_on_public_corpus_semantic_only',
+        produced_decisions_at_v1: ['REVIEW', 'UNVERIFIED'],
+        note: 'A screened server returns its real REVIEW (semantic-only) from the same getVerdict layer the website renders; an unscreened server returns UNVERIFIED (fail-closed). ALLOW/DENY are reserved in the contract but not produced at v1 — a conforming ALLOW requires the behavioral probe (D3 milestone). Coverage is advisory and semantic-only.',
+      },
       severity_scale: ['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
       exposure_tier: 'free_tier_is_definition_only_history_is_paid',
       methodology: 'https://mcpindex.ai/methodology',
@@ -52,11 +72,13 @@ export async function GET() {
       },
     },
 
-    // The in-path drift gate (the WEDGE you install). Deterministic contract-diff
-    // is LIVE + dogfood-proven on Cursor; the full tiered ladder (tier-1 cloud
-    // corpus, tier-2 LLM consult, tier-3 behavioral verifier) is live at launch.
-    // The behavioral tier CLEARS or REFUTES a change - it is not a safety oracle,
-    // and calibration is held (calibrated_false). honest_limits is literal (not
+    // The in-path drift gate (the WEDGE you install). Deterministic tier-0
+    // contract-diff is LIVE (the deterministic leg). The tiers above it
+    // (tier-1 cloud corpus, tier-2 LLM consult, tier-3 behavioral verifier) are
+    // built as in-path seams but HELD OFF BY DEFAULT - each requires explicit
+    // opt-in; the default build egresses nothing and stays fail-closed. The
+    // behavioral tier CLEARS or REFUTES a change - it is not a safety oracle, and
+    // calibration is held (calibrated_false). honest_limits is literal (not
     // imported) so the build-time honesty guard can statically scan this file.
     drift_gate: {
       what: 'in-path trust gate for agent tool calls; pins each tool contract (TOFU) and HOLDs a call before the agent acts when the contract silently changes',
@@ -83,15 +105,17 @@ export async function GET() {
         sdk: ['typescript_wrap', 'python_wrap'],
         docs: 'https://mcpindex.ai/docs',
       },
-      status: 'live_tiered_ladder_tier0_deterministic_dogfooded_on_cursor',
+      status: 'tier0_deterministic_live_verified_end_to_end; tiers1to3_built_held_off_by_default_opt_in',
       tiers: [
-        'tier0_deterministic_contract_diff',
-        'tier1_cloud_corpus_lookup',
-        'tier2_llm_consult',
-        'tier3_behavioral_verifier',
+        { tier: 'tier0_deterministic_contract_diff', state: 'live' },
+        { tier: 'tier1_cloud_corpus_lookup', state: 'held_off_by_default_opt_in' },
+        { tier: 'tier2_llm_consult', state: 'held_off_by_default_opt_in' },
+        { tier: 'tier3_behavioral_verifier', state: 'held_off_by_default_opt_in' },
       ],
       honest_limits: [
         'contract_diff_not_safety_verdict',
+        'tiers1to3_held_off_by_default_opt_in',
+        'default_build_egresses_nothing_fail_closed',
         'behavioral_tier_clears_or_refutes_not_safety_oracle',
         'calibrated_false_v1',
       ],
@@ -106,9 +130,9 @@ export async function GET() {
       detail: 'https://mcpindex.ai/server/{slug}',
       llmsTxt: 'https://mcpindex.ai/llms.txt',
       llmsFullTxt: 'https://mcpindex.ai/llms-full.txt',
-      // Trust verdict endpoints. V1 advisory returns directive=UNVERIFIED for
-      // every request; the API surface is plumbed so verdicts can flow once
-      // the trust layer starts populating them.
+      // Trust verdict endpoints. A screened server returns its real
+      // ALLOW/DENY/REVIEW; an unscreened server returns UNVERIFIED (fail-closed).
+      // Advisory + semantic-only.
       verdictTool: 'https://mcpindex.ai/api/v1/trust/tool/{server_id}/{tool_name}',
       verdictServer: 'https://mcpindex.ai/api/v1/trust/server/{server_id}',
     },
@@ -117,7 +141,7 @@ export async function GET() {
 
     mcpServer: {
       package: 'mcp-server-mcpindex',
-      version: '0.2.0',
+      version: '0.2.2',
       registry: 'npm',
       tools: [
         'recommend_mcp_for_task',
