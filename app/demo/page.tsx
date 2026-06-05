@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
-import DriftGateDemo from '@/components/DriftGateDemo';
+import Link from 'next/link';
 import { PromoVideos } from '@/components/PromoVideos';
 
 const VIDEO_URL = 'https://mcpindex.ai/promo/mcpindex-promo.mp4';
 const EMBED_URL = 'https://mcpindex.ai/embed.html';
 
 export const metadata: Metadata = {
-  title: 'Demo',
+  title: 'Videos & embed',
   description:
-    'Watch the gate hold a silent tool-contract change. Pin an MCP tool\'s contract, apply a silent change, and watch the in-path gate HOLD the call before your agent acts - a contract-diff, not a safety verdict.',
+    'Persona walkthrough for the in-path drift gate, plus embed and share links. Interactive demo and overview film live on the homepage.',
   alternates: { canonical: '/demo' },
   openGraph: {
     title: 'mcpindex - watch the gate hold a silent tool-contract change',
@@ -16,8 +16,6 @@ export const metadata: Metadata = {
       'Pin an MCP tool\'s contract; apply a silent change; watch the in-path gate HOLD the call before your agent acts - a contract-diff, not a safety verdict.',
     url: 'https://mcpindex.ai/demo',
     type: 'video.other',
-    // images intentionally omitted - the colocated opengraph-image.tsx renders
-    // the on-brand white/HELD card (R2-M7); Next injects it automatically.
     videos: [
       { url: VIDEO_URL, secureUrl: VIDEO_URL, type: 'video/mp4', width: 1920, height: 1080 },
     ],
@@ -27,8 +25,6 @@ export const metadata: Metadata = {
     title: 'mcpindex - watch the gate hold a silent tool-contract change',
     description:
       'Pin an MCP tool\'s contract; apply a silent change; watch the in-path gate HOLD the call before your agent acts - a contract-diff, not a safety verdict.',
-    // image omitted - the colocated opengraph-image.tsx is used as the player
-    // card thumbnail too.
     players: [{ playerUrl: EMBED_URL, streamUrl: VIDEO_URL, width: 1920, height: 1080 }],
   },
 };
@@ -42,31 +38,45 @@ export default function DemoPage() {
   return (
     <div className="site-container pt-16 pb-24">
       <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
-        Demo
+        Videos &amp; embed
       </div>
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
-        Watch the gate hold a silent change, in 90 seconds.
+        How to use it — and share it.
       </h1>
       <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)]">
-        Agents don&apos;t just answer anymore - they act. The tool your agent trusted on Monday
-        can change on Tuesday, silently. mcpindex pins every tool&apos;s contract and HOLDs the
-        call the moment the contract drifts - before your agent acts on the change.
+        Persona walkthrough below. For the ~70s overview and the interactive drift gate, use the{' '}
+        <Link
+          href="/#concept"
+          className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+        >
+          homepage films &amp; demo
+        </Link>
+        .
       </p>
 
-      <section className="mt-10">
-        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
-          Watch it hold a drift
-        </div>
-        <p className="mb-5 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-          A tool with a pinned contract. Apply a silent change and watch the in-path gate decide,
-          deterministically, whether your agent should act on it. The verdicts here are the same
-          ones the real gate produces.
-        </p>
-        <DriftGateDemo />
-      </section>
+      <div className="mt-10 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[12px]">
+        <Link
+          href="/#concept"
+          className="text-[var(--color-cite)] hover:text-[var(--color-accent)] underline decoration-[var(--color-rule)] underline-offset-4"
+        >
+          Overview film (~70s) →
+        </Link>
+        <Link
+          href="/#demo"
+          className="text-[var(--color-cite)] hover:text-[var(--color-accent)] underline decoration-[var(--color-rule)] underline-offset-4"
+        >
+          Try the interactive gate →
+        </Link>
+        <Link
+          href="/#install"
+          className="text-[var(--color-cite)] hover:text-[var(--color-accent)] underline decoration-[var(--color-rule)] underline-offset-4"
+        >
+          Install now →
+        </Link>
+      </div>
 
-      <div className="mt-16">
-        <PromoVideos />
+      <div className="mt-14">
+        <PromoVideos variant="persona" />
       </div>
 
       <section className="mt-16">
@@ -74,22 +84,25 @@ export default function DemoPage() {
           Embed it anywhere
         </div>
         <p className="text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-          Drop this into any page, or share the link on social - it unfurls to a playable
-          card on X and LinkedIn.
+          Drop this into any page, or share the link on social — it unfurls to a playable card on
+          X and LinkedIn. The lightweight embed plays the overview film.
         </p>
         <pre className="mt-4 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
           <code>{EMBED_SNIPPET}</code>
         </pre>
         <div className="mt-5 flex flex-wrap gap-x-8 gap-y-2 font-mono text-[12.5px]">
           <a className="text-[var(--color-cite)] hover:text-[var(--color-accent)]" href="/promo/mcpindex-promo.mp4">
-            Direct video (.mp4) →
+            Overview video (.mp4) →
+          </a>
+          <a className="text-[var(--color-cite)] hover:text-[var(--color-accent)]" href="/promo/mcpindex-demo.mp4">
+            Persona video (.mp4) →
           </a>
           <a className="text-[var(--color-cite)] hover:text-[var(--color-accent)]" href={EMBED_URL}>
             Embed page →
           </a>
           <a
             className="text-[var(--color-cite)] hover:text-[var(--color-accent)]"
-            href="https://twitter.com/intent/tweet?text=The%20trust-to-act%20layer%20for%20agents.&url=https%3A%2F%2Fmcpindex.ai%2Fdemo"
+            href="https://twitter.com/intent/tweet?text=The%20in-path%20trust%20gate%20for%20agent%20tool%20calls.&url=https%3A%2F%2Fmcpindex.ai%2Fdemo"
             target="_blank"
             rel="noreferrer"
           >

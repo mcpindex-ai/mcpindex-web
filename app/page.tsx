@@ -5,6 +5,8 @@ import { CopyField } from '@/components/CopyField';
 import { ProvenanceBadge } from '@/components/ProvenanceBadge';
 import DriftGateDemo from '@/components/DriftGateDemo';
 import { PromoVideos } from '@/components/PromoVideos';
+import { InstallCtaButton } from '@/components/InstallCtaButton';
+import { INSTALL_SHELL_COMMAND } from '@/lib/install-command';
 import { GateLoop } from '@/components/home/GateLoop';
 import { GateEdges } from '@/components/home/GateEdges';
 import { Mark } from '@/components/Mark';
@@ -124,12 +126,7 @@ export default async function Home() {
             </div>
 
             <div className="hero-rise hero-rise-4 mt-8 flex flex-wrap items-center gap-3">
-              <a
-                href="#install"
-                className="font-mono text-[12.5px] uppercase tracking-[0.14em] text-white bg-[var(--color-accent)] px-6 py-3.5 hover:opacity-90 transition-opacity"
-              >
-                Install the gate →
-              </a>
+              <InstallCtaButton />
               <a
                 href="#demo"
                 className="font-mono text-[12.5px] uppercase tracking-[0.14em] text-[var(--color-ink)] border border-[var(--color-rule)] px-6 py-3.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
@@ -206,9 +203,15 @@ export default async function Home() {
             ChangeKind; a benign added-optional proceeds silently.
           </p>
           <DriftGateDemo />
-          <div className="mt-16">
-            <PromoVideos variant="persona" showDemoLink />
-          </div>
+          <p className="mt-10 font-mono text-[12px] text-[var(--color-mute)]">
+            Persona walkthrough &amp; embed:{' '}
+            <Link
+              href="/demo"
+              className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            >
+              Videos &amp; embed →
+            </Link>
+          </p>
         </div>
       </section>
 
@@ -303,7 +306,7 @@ export default async function Home() {
               href="/leaderboard"
               className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-cite)] hover:text-[var(--color-accent)]"
             >
-              Browse the rankings →
+              Maturity rankings →
             </Link>
             <Link
               href="/screen"
@@ -323,10 +326,10 @@ export default async function Home() {
         <div className="site-container py-20 sm:py-24">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3 flex items-center gap-2">
             <Mark size={13} />
-            Install it now
+            Just install now
           </div>
           <h2 className="t-h3 font-medium text-[var(--color-ink)]">
-            One command installs the gate.
+            One command. Claude Desktop, Cursor, Cline, or Zed.
           </h2>
           <p className="mt-3 mb-10 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
             The gate is what you install. It rides the MCP session your agent already opens, no
@@ -345,7 +348,7 @@ export default async function Home() {
             <div className="rule-t rule-b rule-l rule-r border-[var(--color-accent)] bg-[var(--color-accent-soft)] p-2">
               <CopyField
                 label="Install the gate: one command (Claude Desktop / Cursor / Cline / Zed)"
-                value="curl -fsSL https://mcpindex.ai/install.sh | sh"
+                value={INSTALL_SHELL_COMMAND}
                 notes="Wires the in-path gate into your host config: each MCP server launches behind the gate, which checks every tool's contract in-path and HOLDs on a silent change. Inspect it first with `curl -fsSL https://mcpindex.ai/install.sh | less` — it only rewrites your MCP host config; uninstall.sh restores it. Zero credentials change hands; the gate reuses the session you already authenticated. The auditable uv install, per-client manual wiring, and the SDK one-liner are in the docs."
               />
               <div className="flex items-start gap-3 px-4 pb-3 pt-1">

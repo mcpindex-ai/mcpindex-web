@@ -2,20 +2,15 @@ import Link from 'next/link';
 import { Mark } from './Mark';
 import { MobileMenu } from './MobileMenu';
 
-// Primary nav leads with the wedge: the gate (the in-path product you install)
-// and its install path. Then the screening surface (Screen), the trust surface
-// (Trust), developer docs, the commercial path (Pricing), and the directory
-// (Rankings). Secondary/meta destinations (Best of, Changelog, About, Stats)
-// live in the footer.
+// Primary nav: standalone pages only. Homepage owns proof (concept film, try-it,
+// install). /demo, install, and how-it-works live in footer or in-page CTAs.
 const NAV = [
-  { href: '/#how-it-works', label: 'The gate' },
-  { href: '/#install', label: 'Install' },
   { href: '/screen', label: 'Screen' },
   { href: '/trust', label: 'Trust' },
   { href: '/docs', label: 'Docs' },
   { href: '/whitepaper', label: 'Whitepaper' },
   { href: '/pricing', label: 'Pricing' },
-  { href: '/leaderboard', label: 'Rankings' },
+  { href: '/leaderboard', label: 'Maturity rankings' },
 ];
 
 export function Header() {

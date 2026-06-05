@@ -8,9 +8,9 @@ import { CATEGORY_LABELS } from '@/lib/categorize';
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: 'Two axes',
+  title: 'Maturity rankings',
   description:
-    'Two axes for every MCP server: maturity (the public-registry Quality Score) and the trust verdict on whether the tool does what it claims. The product is the gap between them.',
+    'Top MCP servers ranked by listing maturity (Quality Score from public registry signals). Trust verdict shown separately — not used for sort order.',
 };
 
 const VERDICT_CHIP: Record<string, string> = {
@@ -44,17 +44,17 @@ export default async function Leaderboard() {
     <article className="site-container pt-16 pb-24">
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
-          Two axes · top 50 by quality
+          Maturity rankings · top 50 by quality score
         </div>
         <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
           Quality, and the verdict.
         </h1>
         <p className="mt-4 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
-          One axis is maturity from public registry signal (freshness, completeness,
-          installability, documentation, semver stability). The other is the trust
-          verdict: does the tool do what its description claims. Ranked by quality below,
-          with each server&rsquo;s verdict beside its score - most maturity-leaders
-          aren&rsquo;t screened yet, and that gap is the product.{' '}
+          Sorted by listing maturity only: freshness, completeness, installability,
+          documentation, and semver stability (see{' '}
+          <code className="font-mono text-[13px] text-[var(--color-ink)]">lib/quality.ts</code>
+          ). Trust verdict is shown beside each row but does not affect rank — most
+          maturity-leaders aren&rsquo;t screened yet.{' '}
           <Link
             href="/methodology"
             className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] hover:decoration-[var(--color-accent)]"
