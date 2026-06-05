@@ -9,9 +9,9 @@ type Film = {
 
 const FILMS: ReadonlyArray<Film> = [
   {
-    label: 'The concept, in ~70 seconds',
+    label: 'The concept, in ~60 seconds',
     blurb:
-      "Why the gate exists: a tool's contract can change silently after you trust it. Watch mcpindex hold the call before your agent acts on the change.",
+      "Why the gate exists: a tool's contract can change silently after you trust it. Pin on first sight, diff on every call, HOLD before your agent acts on the change — a contract-diff, not a safety verdict.",
     src: '/promo/mcpindex-promo.mp4',
     poster: '/promo/poster.jpg',
   },
