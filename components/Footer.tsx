@@ -44,6 +44,7 @@ export function Footer() {
           <div>
             <div className={COLUMN_LABEL}>Trust</div>
             <Link href="/trust" className={LINK}>Trust model</Link>
+            <Link href="/whitepaper" className={LINK}>Whitepaper</Link>
             <Link href="/methodology" className={LINK}>Methodology</Link>
             <Link href="/status" className={LINK}>Status</Link>
             <Link href="/stats" className={LINK}>Stats</Link>
