@@ -13,6 +13,7 @@ const NAV = [
   { href: '/screen', label: 'Screen' },
   { href: '/trust', label: 'Trust' },
   { href: '/docs', label: 'Docs' },
+  { href: '/whitepaper', label: 'Whitepaper' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/leaderboard', label: 'Rankings' },
 ];

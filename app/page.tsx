@@ -142,6 +142,12 @@ export default async function Home() {
               >
                 Read the methodology →
               </Link>
+              <Link
+                href="/whitepaper"
+                className="font-mono text-[12px] text-[var(--color-mute)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] transition-colors"
+              >
+                Read the whitepaper →
+              </Link>
             </div>
 
             <div className="hero-rise hero-rise-4 mt-8 font-mono text-[12px] leading-[1.5] text-[var(--color-mute)]">

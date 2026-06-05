@@ -11,7 +11,7 @@
 const API = 'https://api.brevo.com/v3';
 const TIMEOUT_MS = 5_000;
 
-export type LeadSource = 'waitlist' | 'pricing' | 'contact';
+export type LeadSource = 'waitlist' | 'pricing' | 'contact' | 'enterprise_procurement';
 export type LeadTier = 'pro' | 'enterprise';
 
 export interface Lead {
@@ -42,6 +42,16 @@ function listId(): number | null {
   if (!raw) return null;
   const n = Number.parseInt(raw, 10);
   return Number.isFinite(n) ? n : null;
+}
+
+// Operator inbox for per-lead notifications. Env-driven; falls back to the org
+// notification/sender address, never a personal address.
+function notifyEmail(): string {
+  return (
+    process.env.BREVO_NOTIFY_EMAIL ||
+    process.env.BREVO_SENDER_EMAIL ||
+    'hello@mcpindex.ai'
+  );
 }
 
 // Escape user-controlled text before embedding in an HTML email body so a lead's
@@ -138,7 +148,7 @@ export async function sendWelcomeEmail(lead: Lead): Promise<BrevoResult> {
 
 // Per-lead notification to the operator.
 export async function notifyOperator(lead: Lead): Promise<BrevoResult> {
-  const to = process.env.BREVO_NOTIFY_EMAIL || 'gautamgb@gmail.com';
+  const to = notifyEmail();
   const rows: Array<[string, string]> = [
     ['Email', lead.email],
     ['Source', lead.source],

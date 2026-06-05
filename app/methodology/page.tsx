@@ -66,8 +66,14 @@ export default function MethodologyPage() {
           call before your agent acts on the change, not merely report it after.
           The gate runs deterministically and entirely on your host. Its
           verdicts are produced by the live gate code, not a hand-written
-          table; the reproducible scenario battery is documented in the
-          whitepaper.
+          table; the reproducible scenario battery is documented in the{' '}
+          <Link
+            href="/whitepaper"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+          >
+            whitepaper
+          </Link>
+          .
         </p>
         <ul className="rule-t mt-6">
           <Dim

@@ -41,6 +41,12 @@ Built so an agent (or the IDE driving one) can ask "should I invoke this tool" b
 - Honest limits: contract_diff_not_safety_verdict (a HOLD means the contract CHANGED vs your pin, not that the new contract is unsafe; when enabled, the behavioral tier clears or refutes a change, it does not prove a tool safe); tiers1to3_held_off_by_default_opt_in; default_build_egresses_nothing_fail_closed; calibrated_false_v1 (confidence reported but not yet calibrated against a held-out corpus).
 - Status: tier-0 deterministic contract-diff is live and verified end-to-end against the live gate; tiers 1-3 are built but held off by default (opt-in).
 
+## Whitepaper
+
+- The trust-to-act layer for agent tool calls: the full architecture, threat model, tiered ladder, methodology, dogfood proof, and the honest limits (contract-diff not safety oracle; calibrated=false; tiers 1-3 held off by default).
+- Public, free to read in full, with a free PDF (no email required): https://mcpindex.ai/whitepaper
+- PDF: https://mcpindex.ai/whitepaper.pdf
+
 ## Endpoints an agent can call
 
 - GET /api/v1/search?q=<query>                                   Keyword + semantic search across servers.
@@ -76,6 +82,7 @@ Add to Claude Desktop / Cursor / Cline / Zed. Three primary calls:
 - /changelog                Daily diff of registry changes.
 - /changelog.rss            RSS 2.0 feed of the above.
 - /methodology              The eval (semantic-only today; conformance probe built but not yet run), four-state verdict, honest limits.
+- /whitepaper               The trust-to-act layer whitepaper: architecture, threat model, methodology, honest limits. Public; free PDF, no email wall.
 - /about                    Why this exists.
 
 Unofficial. Not affiliated with Anthropic.

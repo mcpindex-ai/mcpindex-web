@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { TierCTA, type Cta } from './pricing-cta';
+import { EnterpriseCTA } from '@/components/EnterpriseCTA';
 
 export const metadata: Metadata = {
   title: 'Pricing',
@@ -139,6 +140,10 @@ export default function PricingPage() {
         manual today &mdash; request access above and we set you up. Enterprise multi-tenant is
         available on request (it is built but not the default deployment).
       </p>
+
+      <div className="mt-14">
+        <EnterpriseCTA />
+      </div>
     </article>
   );
 }
