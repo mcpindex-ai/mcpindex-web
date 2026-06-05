@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { INSTALL_SHELL_COMMAND } from '@/lib/install-command';
 
 const INSTALL_SECTION_ID = 'install';
@@ -8,6 +9,9 @@ const INSTALL_SECTION_ID = 'install';
 /** Hero primary CTA: scroll to #install, then copy the install command + toast. */
 export function InstallCtaButton() {
   const [toast, setToast] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   const dismissToast = useCallback(() => {
     setToast(false);
@@ -34,9 +38,8 @@ export function InstallCtaButton() {
       return;
     }
 
-    const alreadyVisible =
-      section.getBoundingClientRect().top >= 0 &&
-      section.getBoundingClientRect().top < window.innerHeight * 0.45;
+    const rect = section.getBoundingClientRect();
+    const alreadyVisible = rect.top >= 0 && rect.top < window.innerHeight * 0.45;
 
     if (alreadyVisible) {
       void copyCommand();
@@ -47,17 +50,30 @@ export function InstallCtaButton() {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        const hit = entries.some((e) => e.isIntersecting && e.intersectionRatio >= 0.15);
+        const hit = entries.some((e) => e.isIntersecting && e.intersectionRatio >= 0.12);
         if (!hit) return;
         observer.disconnect();
         void copyCommand();
       },
-      { threshold: [0.15, 0.35] },
+      { threshold: [0.12, 0.25] },
     );
     observer.observe(section);
 
-    window.setTimeout(() => observer.disconnect(), 4000);
+    window.setTimeout(() => observer.disconnect(), 5000);
   }, [copyCommand]);
+
+  const toastNode =
+    toast && mounted ? (
+      <div
+        role="status"
+        aria-live="polite"
+        className="fixed bottom-6 left-1/2 z-[200] -translate-x-1/2 max-w-[min(92vw,28rem)] border border-[var(--color-rule)] bg-[var(--color-ink)] px-4 py-3 shadow-lg pointer-events-none"
+      >
+        <p className="font-mono text-[12.5px] leading-snug text-zinc-100 text-center">
+          Install command copied — paste in your terminal
+        </p>
+      </div>
+    ) : null;
 
   return (
     <>
@@ -68,17 +84,7 @@ export function InstallCtaButton() {
       >
         Install now →
       </button>
-      {toast && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 max-w-[min(92vw,28rem)] border border-[var(--color-rule)] bg-[var(--color-ink)] px-4 py-3 shadow-lg"
-        >
-          <p className="font-mono text-[12.5px] leading-snug text-zinc-100 text-center">
-            Install command copied — paste in your terminal
-          </p>
-        </div>
-      )}
+      {mounted && toastNode ? createPortal(toastNode, document.body) : null}
     </>
   );
 }

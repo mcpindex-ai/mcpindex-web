@@ -326,7 +326,7 @@ export default async function Home() {
         <div className="site-container py-20 sm:py-24">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3 flex items-center gap-2">
             <Mark size={13} />
-            Just install now
+            Install Now
           </div>
           <h2 className="t-h3 font-medium text-[var(--color-ink)]">
             One command. Claude Desktop, Cursor, Cline, or Zed.
