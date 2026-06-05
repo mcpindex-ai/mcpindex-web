@@ -18,7 +18,7 @@ const FILMS: ReadonlyArray<Film> = [
   {
     label: 'How to use it, by persona',
     blurb:
-      'One-click install, then the gate pins every tool and holds a silent change before your agent runs it. By persona: MCP-client user, SDK builder, enterprise.',
+      'Same in-path gate, three surfaces: one-click install in Claude Desktop, Cursor, Cline, or Zed; a server-side diffGate for OpenAI/Anthropic agents; fleet posture and HOLD audit for enterprise. Pin, diff, HOLD — contract-diff, not a safety verdict.',
     src: '/promo/mcpindex-demo.mp4',
     poster: '/promo/poster-demo.jpg',
   },
