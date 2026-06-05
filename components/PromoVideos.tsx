@@ -9,16 +9,16 @@ type Film = {
 
 const FILMS: ReadonlyArray<Film> = [
   {
-    label: 'The concept, in ~60 seconds',
+    label: 'The concept, in ~70 seconds',
     blurb:
-      "Why the gate exists: a tool's contract can change silently after you trust it. Pin on first sight, diff on every call, HOLD before your agent acts on the change — a contract-diff, not a safety verdict.",
+      "Why the gate exists: a tool's contract can change silently after you trust it. Watch mcpindex hold the call before your agent acts on the change.",
     src: '/promo/mcpindex-promo.mp4',
     poster: '/promo/poster.jpg',
   },
   {
     label: 'How to use it, by persona',
     blurb:
-      'Same in-path gate, three surfaces: one-click install in Claude Desktop, Cursor, Cline, or Zed; a server-side diffGate for OpenAI/Anthropic agents; fleet posture and HOLD audit for enterprise. Pin, diff, HOLD — contract-diff, not a safety verdict.',
+      'One-click install, then the gate pins every tool and holds a silent change before your agent runs it. By persona: MCP-client user, SDK builder, enterprise.',
     src: '/promo/mcpindex-demo.mp4',
     poster: '/promo/poster-demo.jpg',
   },
