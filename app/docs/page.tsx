@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { ContactTrigger } from '@/components/ContactModal';
 import { ArchDiagram } from '@/components/ArchDiagram';
 
 export const metadata: Metadata = {
@@ -23,14 +22,19 @@ export default function DocsPage() {
           Documentation
         </div>
         <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
-          Wire trust into your agent.
+          Install the gate. Or call the network.
         </h1>
         <p className="mt-5 max-w-[640px] text-[16px] leading-[1.6] text-[var(--color-cite)]">
-          An MCP-native API. Free, no key required, low-latency. Ask for a verdict
-          (ALLOW / DENY / REVIEW) on a tool before your agent calls it; a recommendation
-          endpoint also covers discovery. Three integration shapes: direct HTTP, drop-in
-          MCP server (recommended), or embedded into your platform. The whole surface fits
-          on this page.
+          The wedge is the in-path drift gate: one command pins every MCP tool&rsquo;s contract
+          and HOLDs a call the moment that contract silently changes, before your agent acts. No
+          key, zero credential custody. Start at{' '}
+          <Ext href="#install-the-gate">§3b &mdash; Install the gate</Ext>.
+        </p>
+        <p className="mt-3 max-w-[640px] text-[14px] leading-[1.55] text-[var(--color-mute)]">
+          The rest of this page documents the advisory directory the gate queries: an MCP-native
+          API (free, no key, low-latency) that returns a verdict (ALLOW / DENY / REVIEW) on a tool
+          and a recommendation endpoint for discovery &mdash; direct HTTP, drop-in MCP server, or
+          embedded.
         </p>
       </header>
 
@@ -97,7 +101,7 @@ export default function DocsPage() {
             `  encodeURIComponent(userTask));`,
             `const { recommendations } = await res.json();`,
           ]}
-          notes="Attribution appreciated. Contact us if you want a higher rate limit."
+          notes="Attribution appreciated. Email hello@mcpindex.ai if you want a higher rate limit."
         />
       </Section>
 
@@ -164,6 +168,223 @@ Args:     -y mcp-server-mcpindex`}
         </p>
       </Section>
 
+      {/* §3b - Install the gate */}
+      <div id="install-the-gate" className="scroll-mt-20" />
+      <Section number="3b" title="Install the gate">
+        <p>
+          The directory tools above answer &ldquo;which tool, and is it
+          screened&rdquo; before you wire it. The drift gate is the live,
+          in-path check during use: it pins each MCP tool&rsquo;s contract on
+          first sight and HOLDs a call the moment that contract silently changes,
+          before your agent acts. It is a contract-diff, not a safety verdict
+          (see <Ext href="/methodology">/methodology</Ext>), and it never
+          receives your credentials.
+        </p>
+
+        <div
+          className="rule-t pt-5"
+          style={{ borderColor: 'var(--color-rule)' }}
+        >
+          <h3
+            className="text-[16px] tracking-tight font-semibold"
+            style={{ color: 'var(--color-ink)' }}
+          >
+            Install (Claude Desktop / Cursor / Cline / Zed)
+          </h3>
+          <p
+            className="mt-1 text-[14px] leading-[1.55]"
+            style={{ color: 'var(--color-mute)' }}
+          >
+            The auditable path: install the package, then let the wizard rewrite
+            your host config so each MCP server launches <em>behind</em> the gate.
+            The <Mono>curl | sh</Mono> one-liner does the same thing in one step
+            &mdash; inspect it first if you prefer:
+          </p>
+          <pre className="mt-3 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
+            <code>{`# auditable path — install the package, then run the wiring wizard
+uv tool install mcpindex-preflight
+
+# convenience: the same install + host-config rewrite in one command.
+# inspect it before you run it — it only rewrites your MCP host config,
+# and uninstall.sh restores it:
+curl -fsSL https://mcpindex.ai/install.sh | less   # read it first
+curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
+
+# Windows (PowerShell): https://mcpindex.ai/install.ps1`}</code>
+          </pre>
+          <p
+            className="mt-3 text-[14px] leading-[1.55]"
+            style={{ color: 'var(--color-mute)' }}
+          >
+            Prefer to wire it by hand? Rewrite each MCP server entry so the agent
+            launches that server <em>behind</em> the gate: keep the
+            server&rsquo;s original command as the gate&rsquo;s argument. The
+            example below wraps a stdio server (<Mono>before</Mono> &rarr;{' '}
+            <Mono>after</Mono>); the same shape works in Cursor{' '}
+            (<Mono>.cursor/mcp.json</Mono>) and Zed{' '}
+            (<Mono>~/.config/zed/settings.json</Mono>). Restart the client after
+            editing.
+          </p>
+          <pre className="mt-3 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
+            <code>{`# claude_desktop_config.json — route an existing server through the gate
+
+// before: the agent talks to the server directly
+"filesystem": {
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-filesystem", "/data"]
+}
+
+// after: the gate launches the server and checks each tool's contract in-path.
+// The original command becomes --upstream-command; each original arg becomes a
+// separate --upstream-arg=VALUE (the =VALUE form is required — a dash-leading
+// arg like -y does not survive a bare passthrough).
+"filesystem": {
+  "command": "uvx",
+  "args": ["--from", "mcpindex-preflight", "python", "-m", "tooling.cse.proxy",
+           "--mcpindex-stdio",
+           "--upstream-command", "npx",
+           "--upstream-arg=-y",
+           "--upstream-arg=@modelcontextprotocol/server-filesystem",
+           "--upstream-arg=/data"]
+}`}</code>
+          </pre>
+          <p
+            className="mt-2 text-[13px] leading-[1.5]"
+            style={{ color: 'var(--color-mute)' }}
+          >
+            Easier: let the one-click installer write this for you &mdash; it
+            rewrites every server entry, which is fiddly to do by hand. The gate
+            forwards to your original server and checks the contract on every
+            call. Zero credentials change hands: a stdio server&rsquo;s original{' '}
+            <Mono>env</Mono> and an http server&rsquo;s original{' '}
+            <Mono>headers</Mono> ride through to your server untouched &mdash; the
+            gate reads only the public tool contracts, never your tokens. The
+            one-click installer (<Mono>install.sh</Mono> /{' '}
+            <Mono>install.ps1</Mono>) does this rewrite for you across every
+            detected host.
+          </p>
+        </div>
+
+        <div
+          className="rule-t pt-5"
+          style={{ borderColor: 'var(--color-rule)' }}
+        >
+          <h3
+            className="text-[16px] tracking-tight font-semibold"
+            style={{ color: 'var(--color-ink)' }}
+          >
+            Remote / HTTP MCP servers
+          </h3>
+          <p
+            className="mt-1 text-[14px] leading-[1.55]"
+            style={{ color: 'var(--color-mute)' }}
+          >
+            The example above wraps a stdio server. An <Mono>http</Mono> /{' '}
+            <Mono>url</Mono> entry (a remote server like a hosted GitHub MCP) is
+            routed through a local gateway instead: the gate rewrites the entry to
+            point your client at a loopback gateway, and the gateway forwards to
+            the upstream with your original <Mono>headers</Mono> threaded through
+            untouched &mdash; same zero-custody posture, just over HTTP.
+          </p>
+          <p
+            className="mt-2 text-[13px] leading-[1.5]"
+            style={{ color: 'var(--color-mute)' }}
+          >
+            One boundary to know: today the gateway gates only{' '}
+            <strong style={{ color: 'var(--color-ink)' }}>HTTPS upstreams that resolve to a public IP</strong>.
+            A plain-<Mono>http</Mono>, <Mono>localhost</Mono>, or LAN upstream is
+            rejected (<Mono>ssrf_blocked</Mono>), not silently passed through &mdash;
+            gating those is on the roadmap. So a remote HTTPS server is gated like
+            any stdio one; a local HTTP server is not yet covered.
+          </p>
+        </div>
+
+        <div
+          className="rule-t pt-5"
+          style={{ borderColor: 'var(--color-rule)' }}
+        >
+          <h3
+            className="text-[16px] tracking-tight font-semibold"
+            style={{ color: 'var(--color-ink)' }}
+          >
+            SDK: wrap an already-authenticated session
+          </h3>
+          <p
+            className="mt-1 text-[14px] leading-[1.55]"
+            style={{ color: 'var(--color-mute)' }}
+          >
+            For a server-side agent or custom orchestrator, wrap the MCP client
+            session you already authenticated. One line; no per-server config, no
+            token handling &mdash; the wrapper reuses the session&rsquo;s own
+            transport. <Mono>list_tools</Mono> / <Mono>call_tool</Mono> stay
+            drop-in.
+          </p>
+          <pre className="mt-3 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
+            <code>{`// TypeScript — npm i @mcp-index/sdk
+import { wrap, PreflightPin } from "@mcp-index/sdk";
+
+const guarded = wrap(session, { pin: new PreflightPin(), serverId: "your-server" });
+// use guarded.list_tools() / guarded.call_tool(...) exactly as before
+
+# Python
+from tooling.cse.preflight_intercept import wrap
+from tooling.cse.preflight import PreflightPin
+
+session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
+          </pre>
+          <p
+            className="mt-2 text-[13px] leading-[1.5]"
+            style={{ color: 'var(--color-mute)' }}
+          >
+            Pass <Mono>PreflightPin(path=…)</Mono> to persist the baseline across
+            restarts (so drift while the agent is offline is still caught on the
+            next call). On a hold the wrapper raises (or calls your{' '}
+            <Mono>on_hold</Mono> handler) with the structured verdict; the wrapped
+            session is never called on a hold.
+          </p>
+        </div>
+
+        <div
+          className="rule-t pt-5"
+          style={{ borderColor: 'var(--color-rule)' }}
+        >
+          <h3
+            className="text-[16px] tracking-tight font-semibold"
+            style={{ color: 'var(--color-ink)' }}
+          >
+            Postures and what a HOLD does
+          </h3>
+          <ul className="mt-2 space-y-2 text-[14px] leading-[1.55]" style={{ color: 'var(--color-cite)' }}>
+            <li>
+              <Mono>Monitor</Mono> &mdash; notify and proceed (awareness, no
+              friction).
+            </li>
+            <li>
+              <Mono>Guard</Mono> (default) &mdash; hold the unambiguously
+              breaking and dangerous changes; auto-accept a proven-benign drift
+              (added optional param, byte-identical description) and re-pin so
+              cosmetic churn never raises a false alarm.
+            </li>
+            <li>
+              <Mono>Strict</Mono> &mdash; hold on any drift.
+            </li>
+          </ul>
+          <p
+            className="mt-2 text-[13px] leading-[1.5]"
+            style={{ color: 'var(--color-mute)' }}
+          >
+            A HOLD stops the call before your agent acts and surfaces what changed
+            (the exact ChangeKind, the before/after on a description change). It is
+            fail-closed: a tool the gate cannot verify holds rather than proceeds.
+            You review, then re-pin if the change is expected. On an ambiguous
+            change, the third-door behavioral verifier &mdash; a built in-path seam
+            that is held off by default and requires explicit opt-in &mdash; can
+            exercise the changed tool to clear or refute the change. It clears or
+            refutes; it does not prove a tool safe.
+          </p>
+        </div>
+      </Section>
+
       {/* §04 - Anatomy of a response */}
       <Section number="04" title="Anatomy of a response">
         <p>
@@ -201,6 +422,14 @@ Args:     -y mcp-server-mcpindex`}
           <Mono>no_verdict_data_in_v1_advisory</Mono> honest limit. An agent must treat
           UNVERIFIED as fail-closed - never as permission to proceed.
         </p>
+        <p className="text-[13.5px]" style={{ color: 'var(--color-mute)' }}>
+          At v1 the screen produces only <Mono>REVIEW</Mono> (a semantic-only read) or{' '}
+          <Mono>UNVERIFIED</Mono> (not yet on file). <Mono>ALLOW</Mono> and <Mono>DENY</Mono>{' '}
+          are in the contract and the response shape, but a real <Mono>ALLOW</Mono> requires
+          the behavioral conformance probe, which is gated to the D3 labeled-corpus milestone
+          and has not run on the public corpus yet. Treat the example above as the illustrative
+          shape, not the common case today.
+        </p>
         <p>
           The recommendation endpoint (discovery) returns a tight JSON envelope. Three
           picks ranked by composite score, each with reasoning, install commands per
@@ -234,12 +463,12 @@ Args:     -y mcp-server-mcpindex`}
         </pre>
       </Section>
 
-      {/* §05 - Limits + guarantees */}
-      <Section number="05" title="Limits + guarantees">
+      {/* §05 - Limits + API guarantees */}
+      <Section number="05" title="Limits + API guarantees">
         <ul className="space-y-3">
           <Limit
             label="Rate"
-            body="60 requests / minute / IP across /api/v1/* on the free tier. The live screen endpoint (/api/v1/screen) is tighter - 10 / minute / IP plus a global daily ceiling, since each call runs an LLM. No key required. 429 with Retry-After when exceeded. Contact us for higher limits or a Pro key."
+            body="60 requests / minute / IP across /api/v1/* on the free tier. The live screen endpoint (/api/v1/screen) is tighter - 10 / minute / IP plus a global daily ceiling, since each call runs an LLM. No key required. 429 with Retry-After when exceeded. Email hello@mcpindex.ai for higher limits or for a Pro key."
           />
           <Limit
             label="Schema stability"
@@ -272,7 +501,7 @@ Args:     -y mcp-server-mcpindex`}
           />
           <Limit
             label="Authentication"
-            body="None on free tier - public endpoints. CORS open. Pro tier (when ramped) uses bearer tokens; existing free endpoints stay open."
+            body="None on free tier - public endpoints. CORS open. The Pro tier uses bearer tokens for higher limits and multi-tenant/enterprise use; existing free endpoints stay open."
           />
         </ul>
       </Section>
@@ -412,12 +641,13 @@ Args:     -y mcp-server-mcpindex`}
           style={{ color: 'var(--color-mute)' }}
         >
           Found a gap, a typo, or a wiring question that isn&rsquo;t answered here?{' '}
-          <ContactTrigger
-            variant="contact"
-            className="underline hover:no-underline text-[var(--color-accent)] inline cursor-pointer"
+          <a
+            href="mailto:hello@mcpindex.ai"
+            className="underline hover:no-underline"
+            style={{ color: 'var(--color-accent)' }}
           >
-            Let us know
-          </ContactTrigger>
+            hello@mcpindex.ai
+          </a>
           .
         </p>
       </Section>

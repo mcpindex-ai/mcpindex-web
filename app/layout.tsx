@@ -1,3 +1,8 @@
+// LAUNCH CONTENT — this tree is launch-state copy (everything BUILT = LIVE),
+// published in lockstep with the deploy per the PUBLISH-COUPLING rule. It ships
+// only on GB's explicit go-live. See /LAUNCH-CONTENT.md at the repo root and
+// ~/mcpindex-launch/value-prop-bible.md for the (A) deploy-held / (B) maturity-
+// held framing the copy and the honesty guard conform to.
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
@@ -12,23 +17,24 @@ const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin']
 export const metadata: Metadata = {
   metadataBase: new URL('https://mcpindex.ai'),
   title: {
-    default: 'mcpindex - the trust layer for MCP tools',
+    default: 'mcpindex - the in-path trust gate for agent tool calls',
     template: '%s · mcpindex.ai',
   },
   description:
-    'A verdict (ALLOW, DENY, or REVIEW) on whether an MCP tool does what it claims, before your agent acts.',
+    'An in-path trust gate that pins every MCP tool contract and HOLDs a call the moment the contract silently changes - before your agent acts. Zero credentials. One-click in Claude Desktop, Cursor, Cline, Zed.',
   openGraph: {
-    title: 'mcpindex - the trust layer for MCP tools',
+    title: 'mcpindex - the in-path trust gate for agent tool calls',
     description:
-      'A verdict (ALLOW, DENY, or REVIEW) on whether an MCP tool does what it claims, before your agent acts.',
+      'The tool your agent trusted on Monday can change on Tuesday - silently. mcpindex holds the call before your agent acts on the change.',
     url: 'https://mcpindex.ai',
     siteName: 'mcpindex.ai',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'mcpindex.ai',
-    description: 'A verdict on whether an MCP tool does what it claims, before your agent acts.',
+    title: 'mcpindex - the in-path trust gate for agent tool calls',
+    description:
+      'The tool your agent trusted on Monday can change on Tuesday - silently. mcpindex holds the call before your agent acts on the change.',
   },
   alternates: {
     types: {
@@ -44,7 +50,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
-      <body className="min-h-screen bg-white text-zinc-900 selection:bg-amber-200/60 flex flex-col">
+      <body className="min-h-screen bg-white text-zinc-900 flex flex-col">
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />

@@ -1,5 +1,6 @@
 import { loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { CATEGORY_LABELS } from '@/lib/categorize';
+import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
 import type { IndexedServer } from '@/lib/types';
 
 export const revalidate = 3600;
@@ -23,16 +24,31 @@ function buildBody(servers: IndexedServer[]): string {
     '',
     '## Trust Layer (v1, advisory)',
     '',
-    'Each server page exposes a verdict surface (ALLOW / DENY / REVIEW / UNVERIFIED) once the hybrid eval has run.',
+    'Each server page exposes a verdict surface (ALLOW / DENY / REVIEW / UNVERIFIED). Today every published verdict is REVIEW or UNVERIFIED.',
     'Verdict contract version: 1.0.0. Capability: check_tool_trust (via the npm MCP server).',
-    'Pipeline: an LLM judge reads each tool description for hidden instructions today (findings semantic-only, status PARTIAL). A deterministic conformance probe is in build; the second leg does not yet run.',
+    'Pipeline (screen): today the screen is semantic-only — an LLM judge reads each tool description for hidden instructions. The deterministic conformance probe (drives the tool against its declared schema) is built but has NOT yet run on the public corpus, so no published screen verdict carries a conformance result; a clearing ALLOW (which the probe would earn) is not produced at v1. When the probe runs it is monitored, not enforced. Confidence is reported but not yet calibrated (calibrated=false).',
     'History: OTS Bitcoin-anchored. Cadence bound = confirmation latency (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized). Sub-window precision asserted, not proven. In-process verify proves the proof carries a Bitcoin BlockHeaderAttestation; confirmation-depth check requires the relying party run their own Bitcoin node.',
-    'Calibration: calibrated=false at v1. D3 graduation gate: >=150 conforming labels with FP upper-95 <=2%. Current: 15/150. Terminal-v1 trigger 2026-09-01: under 50 conforming = ships calibrated=false as terminal v1 (v2 graduation, not v1).',
+    `Calibration: calibrated=false at v1. D3 graduation gate: >=${D3_REQUIRED_LABELS} conforming labels with FP upper-95 <=2%. Current: ${D3_PROGRESS}. Terminal-v1 trigger 2026-09-01: under 50 conforming = ships calibrated=false as terminal v1 (v2 graduation, not v1).`,
     'Posture: advisory. The agent or IDE decides whether to act on the verdict.',
     'Endpoints:',
-    '  - GET /api/v1/trust/tool/{server_id}/{tool_name}  per-tool verdict (v1 advisory returns UNVERIFIED).',
-    '  - GET /api/v1/trust/server/{server_id}            server-level verdict (v1 advisory returns UNVERIFIED).',
+    '  - GET /api/v1/trust/tool/{server_id}/{tool_name}  per-tool verdict (screened: real ALLOW/DENY/REVIEW; unscreened: UNVERIFIED, fail-closed; advisory).',
+    '  - GET /api/v1/trust/server/{server_id}            server-level verdict (screened: real ALLOW/DENY/REVIEW; unscreened: UNVERIFIED, fail-closed; advisory).',
     'Full method: https://mcpindex.ai/methodology',
+    '',
+    '## Drift Gate (in-path; tier-0 live, tiers 1-3 held off by default)',
+    '',
+    'In-path trust gate for agent tool calls. Pins each MCP tool contract trust-on-first-use (TOFU) and HOLDs a call before the agent acts the moment the contract silently changes. Sits in the call path, so it can HOLD (not merely alert like the advisory screen).',
+    'Method: deterministic contract-diff over a ChangeKind taxonomy (added-required-param, required-set-expanded, constraint-narrowed, type-changed, enum-values-removed, removed-param, annotation-flip-to-destructive, output-schema-added/changed, tool-added/removed) + an injection/exfil marker scan over input schema, output schema, and description. Postures: Monitor / Guard (default) / Strict. Fail-closed.',
+    'Install: one-click config-wire across Claude Desktop / Cursor / Cline / Zed (zero credentials change hands) or the SDK wrap() one-liner (TS + Python). See https://mcpindex.ai/docs.',
+    'Tiered ladder: tier-0 deterministic contract-diff is the live, deterministic leg and runs first. Above it the ladder is built as in-path seams — a cloud tier-1 corpus lookup, a tier-2 LLM consult on the ambiguous, and a tier-3 behavioral verifier that exercises a changed tool to clear or refute the change — but each is held off by default and requires explicit opt-in; the default build egresses nothing and stays fail-closed.',
+    'Honest limits: contract_diff_not_safety_verdict (a HOLD means the contract CHANGED vs your pin, not that it is unsafe; when enabled, the behavioral tier clears or refutes, it does not prove a tool safe); tiers1to3_held_off_by_default_opt_in; default_build_egresses_nothing_fail_closed; calibrated_false_v1 (confidence reported but not yet calibrated against a held-out corpus).',
+    'Status: tier-0 deterministic contract-diff is live and verified end-to-end against the live gate; tiers 1-3 are built but held off by default (opt-in).',
+    '',
+    '## Whitepaper',
+    '',
+    'The trust-to-act layer for agent tool calls: full architecture, threat model, the tiered ladder, methodology, the dogfood proof (§7), and the honest limits (contract-diff not safety oracle; calibrated=false; tiers 1-3 held off by default). Public and free to read in full, with a free PDF and no email wall.',
+    'Read: https://mcpindex.ai/whitepaper',
+    'PDF: https://mcpindex.ai/whitepaper.pdf',
     '',
   ];
   for (const [cat, list] of [...byCategory.entries()].sort()) {

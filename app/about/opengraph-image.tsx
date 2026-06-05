@@ -11,7 +11,7 @@ export default function Image() {
       <BrandOg
         eyebrow="About"
         title="The trust-to-act layer for agent tool use."
-        sub="The gap between a tool existing and an agent being safe to call it without you watching."
+        sub="The gap between a tool existing and an agent being clear to call it without you watching."
       />
     ),
     size,

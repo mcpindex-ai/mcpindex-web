@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { Mark } from './Mark';
-import { ContactTrigger } from './ContactModal';
 
 const COLUMN_LABEL =
   'font-mono text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-mute)] mb-4';
@@ -20,8 +19,9 @@ export function Footer() {
               </span>
             </div>
             <p className="mt-3 text-[12.5px] leading-[1.55] text-[var(--color-mute)]">
-              The trust layer for MCP tools. A verdict on whether a tool does what
-              it claims, before your agent acts.
+              The in-path trust gate for agent tool calls. It pins each MCP
+              tool&rsquo;s contract and HOLDs a call when the contract silently
+              changes — before your agent acts.
             </p>
             <p className="mt-4 font-mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
               Unofficial. Not affiliated with Anthropic.
@@ -30,6 +30,9 @@ export function Footer() {
 
           <div>
             <div className={COLUMN_LABEL}>Product</div>
+            <Link href="/#how-it-works" className={LINK}>The gate</Link>
+            <Link href="/#install" className={LINK}>Install</Link>
+            <Link href="/demo" className={LINK}>Demo</Link>
             <Link href="/screen" className={LINK}>Screen a tool</Link>
             <Link href="/docs" className={LINK}>Docs</Link>
             <Link href="/pricing" className={LINK}>Pricing</Link>
@@ -66,15 +69,15 @@ export function Footer() {
             <div className={COLUMN_LABEL}>Legal</div>
             <Link href="/terms" className={LINK}>Terms</Link>
             <Link href="/privacy" className={LINK}>Privacy</Link>
-            <ContactTrigger variant="contact" className={`${LINK} text-left w-full bg-transparent cursor-pointer`}>
-              Contact us
-            </ContactTrigger>
+            <a href="mailto:hello@mcpindex.ai" className={LINK}>
+              Contact
+            </a>
           </div>
         </div>
 
         <div className="rule-t mt-12 pt-6 flex flex-col sm:flex-row justify-between gap-3 font-mono text-[11.5px] text-[var(--color-mute)]">
           <div>© 2026 Bhartis LLC</div>
-          <div>mcpindex.ai · the trust layer for MCP tools</div>
+          <div>mcpindex.ai · the in-path trust gate for agent tool calls</div>
         </div>
       </div>
     </footer>

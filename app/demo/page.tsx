@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import DriftGateDemo from '@/components/DriftGateDemo';
 
 const VIDEO_URL = 'https://mcpindex.ai/promo/mcpindex-promo.mp4';
 const EMBED_URL = 'https://mcpindex.ai/embed.html';
@@ -6,25 +7,27 @@ const EMBED_URL = 'https://mcpindex.ai/embed.html';
 export const metadata: Metadata = {
   title: 'Demo',
   description:
-    'A 90-second demo: before your agent acts, mcpindex returns a verdict on whether an MCP tool does what it claims.',
+    'Watch the gate hold a silent tool-contract change. Pin an MCP tool\'s contract, apply a silent change, and watch the in-path gate HOLD the call before your agent acts - a contract-diff, not a safety verdict.',
   alternates: { canonical: '/demo' },
   openGraph: {
-    title: 'mcpindex - the trust-to-act layer, in 90 seconds',
+    title: 'mcpindex - watch the gate hold a silent tool-contract change',
     description:
-      'Before your agent acts, mcpindex returns a verdict on whether an MCP tool does what it claims.',
+      'Pin an MCP tool\'s contract; apply a silent change; watch the in-path gate HOLD the call before your agent acts - a contract-diff, not a safety verdict.',
     url: 'https://mcpindex.ai/demo',
     type: 'video.other',
-    images: [{ url: '/promo/og.jpg', width: 1200, height: 630 }],
+    // images intentionally omitted - the colocated opengraph-image.tsx renders
+    // the on-brand white/HELD card (R2-M7); Next injects it automatically.
     videos: [
       { url: VIDEO_URL, secureUrl: VIDEO_URL, type: 'video/mp4', width: 1920, height: 1080 },
     ],
   },
   twitter: {
     card: 'player',
-    title: 'mcpindex - the trust-to-act layer, in 90 seconds',
+    title: 'mcpindex - watch the gate hold a silent tool-contract change',
     description:
-      'Before your agent acts, mcpindex returns a verdict on whether an MCP tool does what it claims.',
-    images: ['/promo/og.jpg'],
+      'Pin an MCP tool\'s contract; apply a silent change; watch the in-path gate HOLD the call before your agent acts - a contract-diff, not a safety verdict.',
+    // image omitted - the colocated opengraph-image.tsx is used as the player
+    // card thumbnail too.
     players: [{ playerUrl: EMBED_URL, streamUrl: VIDEO_URL, width: 1920, height: 1080 }],
   },
 };
@@ -41,15 +44,38 @@ export default function DemoPage() {
         Demo
       </div>
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
-        The trust-to-act layer, in 90 seconds.
+        Watch the gate hold a silent change, in 90 seconds.
       </h1>
       <p className="mt-5 max-w-[640px] text-[16px] leading-[1.6] text-[var(--color-cite)]">
-        Agents don&apos;t just answer anymore - they act. Before your agent calls an MCP
-        tool, mcpindex returns a verdict on whether the tool does what it claims. Here is the
-        whole loop, end to end.
+        Agents don&apos;t just answer anymore - they act. The tool your agent trusted on Monday
+        can change on Tuesday, silently. mcpindex pins every tool&apos;s contract and HOLDs the
+        call the moment the contract drifts - before your agent acts on the change.
       </p>
 
-      <div className="mt-8 max-w-[900px] rule-t rule-b rule-l rule-r bg-black">
+      <section className="mt-10 max-w-[900px]">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
+          Watch it hold a drift
+        </div>
+        <p className="mb-5 max-w-[640px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+          A tool with a pinned contract. Apply a silent change and watch the in-path gate decide,
+          deterministically, whether your agent should act on it. The verdicts here are the same
+          ones the real gate produces.
+        </p>
+        <DriftGateDemo />
+      </section>
+
+      {/* Two complementary films: A = the concept (why), B = how to use it (how). No overlap. */}
+      <section className="mt-16 max-w-[900px]">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
+          The concept, in ~70 seconds
+        </div>
+        <p className="mb-5 max-w-[640px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+          Why the gate exists: a tool&apos;s contract can change silently after you trust it. Watch
+          mcpindex hold the call before your agent acts on the change.
+        </p>
+      </section>
+
+      <div className="mt-5 max-w-[900px] rule-t rule-b rule-l rule-r bg-black">
         <video
           className="w-full aspect-video"
           controls
@@ -64,36 +90,26 @@ export default function DemoPage() {
 
       <section className="mt-16 max-w-[900px]">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
-          How to use it, by setup
+          How to use it, by persona
         </div>
-        <h2 className="t-h3 font-medium text-[var(--color-ink)]">
-          However you build, the same gate.
-        </h2>
-        <p className="mt-3 mb-6 max-w-[640px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-          Claude Code and Cursor, the OpenAI or Anthropic API, or a whole fleet - the same
-          verdict before your agent acts, with the command for each.
+        <p className="mb-5 max-w-[640px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+          One-click install, then the gate pins every tool and holds a silent change before your
+          agent runs it. By persona: MCP-client user, SDK builder, enterprise.
         </p>
-        <div className="rule-t rule-b rule-l rule-r bg-black">
-          <video
-            className="w-full aspect-video"
-            controls
-            playsInline
-            preload="metadata"
-            poster="/promo/poster-demo.jpg"
-          >
-            <source src="/promo/mcpindex-demo.mp4" type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-        </div>
-        <div className="mt-4 font-mono text-[12.5px]">
-          <a
-            className="text-[var(--color-cite)] hover:text-[var(--color-accent)]"
-            href="/promo/mcpindex-demo.mp4"
-          >
-            Direct video (.mp4) →
-          </a>
-        </div>
       </section>
+
+      <div className="mt-5 max-w-[900px] rule-t rule-b rule-l rule-r bg-black">
+        <video
+          className="w-full aspect-video"
+          controls
+          playsInline
+          preload="metadata"
+          poster="/promo/poster-demo.jpg"
+        >
+          <source src="/promo/mcpindex-demo.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+      </div>
 
       <section className="mt-16 max-w-[900px]">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">

@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
 
 export const metadata: Metadata = {
   title: 'Methodology',
   description:
-    'How mcpindex evaluates MCP tools. Hybrid eval (deterministic conformance probe + LLM judge), four-state verdict, OTS Bitcoin-anchored history; Bitcoin-finalized at N=6 confirmations (~1 hr); pending in ~10 min. Honest limits at v1 advisory.',
+    'How mcpindex evaluates MCP tools. At v1 the screen is semantic-only (an LLM judge reads the description); the deterministic conformance probe is built but has not run on the public corpus yet. Four-state verdict, OTS Bitcoin-anchored history; Bitcoin-finalized at N=6 confirmations (~1 hr); pending in ~10 min. Honest limits at v1 advisory.',
+  alternates: { canonical: 'https://mcpindex.ai/methodology' },
 };
 
 export default function MethodologyPage() {
@@ -18,22 +20,25 @@ export default function MethodologyPage() {
       </h1>
       <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)] max-w-[680px]">
         mcpindex evaluates MCP tools and publishes a finding per tool. Today
-        an LLM judge reads the tool description for hidden instructions, bound
-        to the exact tool definition that was seen (tool_definition_hash). A
-        deterministic conformance probe is in build; until it ships, findings
-        are semantic-only and labeled PARTIAL. The finding is what an agent
-        reads before it calls.
+        every published screen verdict is semantic-only: an LLM judge reads the
+        tool description for hidden instructions, bound to the exact tool
+        definition that was seen (tool_definition_hash). The deterministic
+        conformance probe is built but has not yet run against the public
+        corpus &mdash; so a conforming ALLOW (which the probe would have to earn)
+        is not produced at v1; the screen emits REVIEW or UNVERIFIED. The finding
+        is what an agent reads before it calls. Confidence is reported but not
+        yet calibrated (calibrated=false) &mdash; the honest limits below.
       </p>
 
       <section className="mt-12">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
-          Hybrid eval
+          The eval
         </div>
         <ul className="rule-t">
           <Dim
             label="Conformance probe"
-            kind="deterministic"
-            body="Drives the tool against its declared schema and checks whether observed behavior matches what the description claims. Output is a pass/fail dimension verdict with a captured trace. At v1 the probe is MONITORED, not enforced: a conformance fail surfaces in the verdict; it does not block the call upstream."
+            kind="roadmap"
+            body="Built but not yet run on the public corpus. When it runs, it drives the tool against its declared schema and checks whether observed behavior matches what the description claims (a pass/fail dimension verdict with a captured trace), gated to the D3 labeled-corpus milestone. At v1 it is built-not-run on the screen: no public verdict carries a conformance result yet, and a conformance result, when it lands, will be monitored, not enforced — it surfaces in the verdict; it does not block the call upstream."
           />
           <Dim
             label="Intent judge"
@@ -50,6 +55,56 @@ export default function MethodologyPage() {
 
       <section className="mt-12 rule-t pt-10">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
+          The drift gate method
+        </div>
+        <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)] max-w-[680px]">
+          The screen above is the prior an agent reads before it wires a tool.
+          The drift gate is the live, in-path check during use. It answers a
+          narrower, provable question: did this tool&rsquo;s contract change
+          since you pinned it? The verdict is a contract-diff, not a safety
+          verdict &mdash; but the gate sits in the call path, so it can HOLD the
+          call before your agent acts on the change, not merely report it after.
+          The gate runs deterministically and entirely on your host. Its
+          verdicts are produced by the live gate code, not a hand-written
+          table; the reproducible scenario battery is documented in the{' '}
+          <Link
+            href="/whitepaper"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+          >
+            whitepaper
+          </Link>
+          .
+        </p>
+        <ul className="rule-t mt-6">
+          <Dim
+            label="TOFU pin"
+            kind="baseline"
+            body="On first sight of a tool (the client's tools/list), the gate pins the tool's contract trust-on-first-use: a hash over name + description + input schema, plus the captured schema. The pin can persist across restarts, so a contract that changes while your agent is offline is still caught on the next call. The first-seen contract is the baseline; the gate cannot catch drift that happened before it was installed."
+          />
+          <Dim
+            label="Contract-diff"
+            kind="deterministic"
+            body="On a call, the gate re-derives the live contract and compares it to the pin. A mismatch is classified into a fixed taxonomy (ChangeKind): added-required-param, required-set-expanded, constraint-narrowed, type-changed, enum-values-removed, removed-param, annotation-flip-to-destructive, output-schema-added, output-schema-changed, tool-added/removed. It also scans for injection/exfil markers in the input AND output schema and the description. No LLM, no scoring you cannot trace; a structural surprise it cannot classify fails closed (deep-schema-undiffable), never open."
+          />
+          <Dim
+            label="Postures"
+            kind="policy"
+            body="Monitor notifies and proceeds; Guard (default) holds the unambiguously-breaking and dangerous changes while letting a proven-benign drift through; Strict holds on any drift. A benign change (added optional param or new tool, description byte-identical, no risk escalation, no marker) is auto-accepted and re-pinned, so cosmetic churn does not raise a false alarm. Anything else holds before the call."
+          />
+        </ul>
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mt-10 mb-4">
+          Honest limits (the gate)
+        </div>
+        <ul className="space-y-3 text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Contract-diff, not a safety verdict.</strong> A HOLD means &ldquo;this tool&rsquo;s contract changed vs what you pinned&rdquo; &mdash; not that the new contract is unsafe. You review the before/after and re-pin if the change is expected.</li>
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Advisory in judgment, in-path in effect.</strong> The gate does not assert a tool is safe; it asserts what changed. Because it sits in the call path, that judgment can actually HOLD the call &mdash; a passive scanner can only alert after the fact.</li>
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Deterministic tier-0 live; tiers 1-3 built but held off by default.</strong> The contract-diff is deterministic, runs first, and is the live, deterministic leg. Above it the ladder is built as in-path seams — a cloud tier-1 corpus lookup (a contract judged once clears or condemns it everywhere), a tier-2 LLM consult on the ambiguous, and a tier-3 behavioral verifier that exercises a changed tool to clear or refute the change — but each is held off by default and requires explicit opt-in; the default build egresses nothing and stays fail-closed. When enabled, the behavioral tier clears or refutes a contract change; it is not a proof of safety, and confidence is reported but not yet calibrated (calibrated=false at v1).</li>
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Fail-closed.</strong> A tool with no pin, an unreadable contract, or a diff the gate cannot complete holds rather than proceeds. The gate never silently allows what it could not verify.</li>
+        </ul>
+      </section>
+
+      <section className="mt-12 rule-t pt-10">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
           Four-state verdict
         </div>
         <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)] max-w-[680px]">
@@ -60,13 +115,13 @@ export default function MethodologyPage() {
         <ul className="rule-t mt-6">
           <Dim
             label="ALLOW"
-            kind="decision"
-            body="The eval ran end-to-end and the tool cleared its checks at the recorded clearance level. The agent may invoke within that clearance until expires_at."
+            kind="decision (roadmap)"
+            body="The eval ran end-to-end and the tool cleared its checks at the recorded clearance level; the agent may invoke within that clearance until expires_at. Not produced at v1: a clearing ALLOW requires the behavioral conformance probe, gated to the D3 labeled-corpus milestone. Today the screen emits REVIEW or UNVERIFIED only."
           />
           <Dim
             label="DENY"
-            kind="decision"
-            body="The eval ran end-to-end and a finding crossed the deny threshold (high-severity intent flag, conformance regression, or a poisoned description). The agent should not invoke."
+            kind="decision (roadmap)"
+            body="The eval ran end-to-end and a finding crossed the deny threshold (high-severity intent flag, conformance regression, or a poisoned description); the agent should not invoke. Reserved in the contract; at v1 a high-severity finding surfaces as REVIEW for human adjudication rather than an automatic public DENY."
           />
           <Dim
             label="REVIEW"
@@ -87,11 +142,11 @@ export default function MethodologyPage() {
         </div>
         <ul className="space-y-3 text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
           <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Definition, not runtime.</strong> The eval is bound to the tool definition (description + schema) at evaluation time. Runtime behavior on a specific call is not covered.</li>
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Conformance monitored, not enforced.</strong> A conformance fail is reported in the verdict and the public surface. It is not enforced on the wire.</li>
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Conformance built, not yet run; monitored, not enforced.</strong> The deterministic conformance probe has not run on the public corpus, so no published screen verdict carries a conformance result today. When it runs, a conformance result is reported in the verdict and the public surface, not enforced on the wire.</li>
           <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">OTS cadence bound = confirmation latency.</strong> The OTS anchor proves the verdict existed by some Bitcoin block; it does not prove minute-level ordering inside the confirmation window.</li>
           <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">calibrated = false at v1.</strong> Confidence scores are reported but not calibrated against a held-out adversarial corpus yet.</li>
           <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Advisory, not blocking.</strong> mcpindex publishes the verdict. The agent or IDE decides whether to act.</li>
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">D3 graduation gate.</strong> &gt;=150 conforming labels with FP upper-95 &lt;=2%. Current: 15/150.</li>
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">D3 graduation gate.</strong> &gt;={D3_REQUIRED_LABELS} conforming labels with FP upper-95 &lt;=2%. Current: {D3_PROGRESS}.</li>
         </ul>
         <p className="mt-6 text-[14px] text-[var(--color-cite)] leading-[1.6] max-w-[680px]">
           The honest-limits list is a contract. If any of these stops being

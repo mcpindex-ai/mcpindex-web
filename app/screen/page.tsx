@@ -45,8 +45,8 @@ export default function ScreenPage() {
         <ul className="space-y-4 text-[14px] leading-[1.6] text-[var(--color-cite)]">
           <li>
             <strong className="text-[var(--color-ink)]">Advisory and semantic-only.</strong> We read
-            the description, not the running tool. The deterministic conformance probe is in build;
-            until it ships, findings are labeled PARTIAL.
+            the description, not the running tool. This screen does not run the deterministic
+            conformance probe, so findings here are labeled PARTIAL.
           </li>
           <li>
             <strong className="text-[var(--color-ink)]">A pass is not a safety guarantee.</strong> It

@@ -5,6 +5,7 @@ import { getServer, loadServers } from '@/lib/registry';
 import { computeQuality } from '@/lib/quality';
 import { buildInstalls } from '@/lib/installs';
 import { CATEGORY_LABELS } from '@/lib/categorize';
+import { D3_PROGRESS } from '@/lib/honest-limits';
 import { CopyField } from '@/components/CopyField';
 import {
   getVerdict,
@@ -445,12 +446,15 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
           </span>
         </div>
         <p className="mt-3 text-[14px] leading-[1.6] text-[var(--color-cite)] max-w-[640px]">
-          Verdict not yet evaluated for this tool. The hybrid eval runs adversarial
-          cases first; coverage rolls out as the corpus expands (15 of 150 labels to
-          graduation). Until a verdict is recorded, an agent should treat this tool as
-          not-yet-cleared and fall back to its own checks. Method:{' '}
+          Verdict not yet evaluated for this tool. The semantic screen takes
+          adversarial cases first; coverage rolls out as the corpus expands ({D3_PROGRESS} labels
+          to graduation). The deterministic conformance probe is built
+          but has not yet run on the public corpus, so a recorded verdict here is
+          REVIEW or UNVERIFIED, never a clearing ALLOW. Until a verdict is
+          recorded, an agent should treat this tool as not-yet-cleared and fall
+          back to its own checks. Method:{' '}
           <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
-            hybrid eval, four-state verdict, honest limits
+            the eval, four-state verdict, honest limits
           </Link>
           .
         </p>
@@ -494,9 +498,6 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
         <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
           status: {verdict.status}
         </span>
-        <span className="font-mono text-[11px] uppercase tracking-[0.16em] px-2 py-0.5 bg-[var(--color-accent-soft)] text-[var(--color-cite)] border border-[var(--color-rule)]">
-          tier: {verdict.tier === 'evaluated' ? 'evaluated' : 'screened'}
-        </span>
         <span className="font-mono text-[11px] text-[var(--color-mute)]">
           fresh until {expiresLabel}
         </span>
@@ -505,21 +506,6 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
       <p className="mt-3 text-[14.5px] leading-[1.55] text-[var(--color-ink)] max-w-[640px]">
         {verdict.directive.rationale}
       </p>
-
-      {/* Evidence-tier framing - the honesty firewall: a screened (description-
-          only) verdict must never read as a behavioural guarantee. */}
-      {verdict.tier !== 'evaluated' && (
-        <p className="mt-2 text-[12.5px] leading-[1.5] text-[var(--color-mute)] max-w-[640px]">
-          <strong className="text-[var(--color-cite)]">Screened tier (description-only).</strong>{' '}
-          We screened the published description for manipulation patterns. The tool&rsquo;s
-          input schema and runtime behaviour have <strong>not</strong> been evaluated - that is the
-          deeper{' '}
-          <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
-            evaluated tier
-          </Link>
-          . Treat this as advisory, not a behavioural guarantee.
-        </p>
-      )}
 
       {verdict.adjudication ? (
         <div className="mt-3 px-3 py-2 bg-[var(--color-accent-soft)] border border-[var(--color-rule)] max-w-[640px]">
@@ -584,9 +570,9 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
         instructions (status PARTIAL). A pass means the description is not
         lying, not that the tool is safe: a high-capability tool with an honest
         description still warrants caution. The deterministic conformance probe
-        is in build, not yet run here. Posture: advisory. Confidences are
-        reported but not yet calibrated (calibrated=false at v1). History is
-        paid-tier and not shown here.
+        has not been run on this server yet, so the screen here is semantic-only.
+        Posture: advisory. Confidences are reported but not yet calibrated
+        (calibrated=false at v1). History is paid-tier and not shown here.
       </p>
     </div>
   );
