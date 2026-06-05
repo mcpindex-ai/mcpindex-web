@@ -16,7 +16,7 @@ export default async function BestIndex() {
   for (const s of servers) counts.set(s.category, (counts.get(s.category) ?? 0) + 1);
 
   return (
-    <article className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-16 pb-24">
+    <article className="site-container pt-16 pb-24">
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
           Best of · index
@@ -24,7 +24,7 @@ export default async function BestIndex() {
         <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
           Curated picks by category.
         </h1>
-        <p className="mt-4 max-w-[680px] text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
+        <p className="mt-4 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
           {ALL_CATEGORIES.length} categories. Each page ranks the top servers by{' '}
           <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
             MCP Quality Score

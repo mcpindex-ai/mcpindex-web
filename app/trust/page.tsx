@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 // hiding; a stated posture + roadmap reads as serious.
 export default function TrustPage() {
   return (
-    <article className="mx-auto max-w-[820px] px-6 sm:px-10 pt-16 pb-24">
+    <article className="site-container pt-16 pb-24">
       <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
         <Seal size={22} ring="var(--color-rule)" bracket="var(--color-mute)" />
         Trust
@@ -25,7 +25,7 @@ export default function TrustPage() {
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
         Trust, stated plainly.
       </h1>
-      <p className="mt-5 max-w-[680px] text-[16px] leading-[1.6] text-[var(--color-cite)]">
+      <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)]">
         mcpindex is the layer an agent consults before it acts on a tool. A
         trust product has to earn the word: by being legible about how it
         works, what it anchors, and exactly where it stops. This page is that
@@ -277,7 +277,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
       <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
         {label}
       </div>
-      <div className="max-w-[680px] text-[15px] leading-[1.65] text-[var(--color-cite)]">
+      <div className=" text-[15px] leading-[1.65] text-[var(--color-cite)]">
         {children}
       </div>
     </section>

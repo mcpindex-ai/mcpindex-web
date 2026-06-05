@@ -9,7 +9,7 @@ const LINK =
 export function Footer() {
   return (
     <footer className="rule-t mt-32">
-      <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-16">
+      <div className="site-container py-16">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-10">
           <div className="col-span-2 md:col-span-1 max-w-[260px]">
             <div className="flex items-center gap-2 text-[var(--color-ink)]">

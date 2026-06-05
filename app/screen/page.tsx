@@ -14,31 +14,31 @@ const UNDERLINE =
 
 export default function ScreenPage() {
   return (
-    <article className="mx-auto max-w-[760px] px-6 sm:px-10 pt-16 pb-24">
+    <article className="site-container pt-16 pb-24">
       <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
         Screen
       </div>
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
         Screen an MCP tool.
       </h1>
-      <p className="mt-4 max-w-[680px] text-[16px] leading-[1.6] text-[var(--color-cite)]">
+      <p className="mt-4 text-[16px] leading-[1.6] text-[var(--color-cite)]">
         Paste a tool description. An LLM judge reads it for hidden instructions -
         the kind that tell an agent to read a secret file, exfiltrate data, or
         follow a buried command - and flags the exact line.
       </p>
-      <p className="mt-3 max-w-[680px] text-[15px] leading-[1.6] text-[var(--color-cite)]">
+      <p className="mt-3 text-[15px] leading-[1.6] text-[var(--color-cite)]">
         <strong className="text-[var(--color-ink)]">Building an MCP server?</strong>{' '}
         Run yours through it and see the verdict your users would see before
         their agent calls your tool. Same screen, same output, whether you own
         the tool or are deciding whether to trust it.
       </p>
 
-      <div className="mt-8 max-w-[800px]">
+      <div className="mt-8">
         <ScreenDemo />
       </div>
 
       {/* Guardrail: foreclose the "certification / badge" reading in the product itself. */}
-      <section className="mt-12 rule-t pt-8 max-w-[720px]">
+      <section className="mt-12 rule-t pt-8">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-5">
           What this is - and isn&apos;t
         </div>

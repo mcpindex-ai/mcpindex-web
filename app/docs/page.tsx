@@ -15,7 +15,7 @@ const FONT_MONO = '"Geist Mono", ui-monospace, monospace';
 
 export default function DocsPage() {
   return (
-    <article className="mx-auto max-w-[760px] px-6 sm:px-10 pt-16 pb-24">
+    <article className="site-container pt-16 pb-24">
       {/* §00 - Hero */}
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
@@ -24,13 +24,13 @@ export default function DocsPage() {
         <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
           Install the gate. Or call the network.
         </h1>
-        <p className="mt-5 max-w-[640px] text-[16px] leading-[1.6] text-[var(--color-cite)]">
+        <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)]">
           The wedge is the in-path drift gate: one command pins every MCP tool&rsquo;s contract
           and HOLDs a call the moment that contract silently changes, before your agent acts. No
           key, zero credential custody. Start at{' '}
           <Ext href="#install-the-gate">§3b &mdash; Install the gate</Ext>.
         </p>
-        <p className="mt-3 max-w-[640px] text-[14px] leading-[1.55] text-[var(--color-mute)]">
+        <p className="mt-3 text-[14px] leading-[1.55] text-[var(--color-mute)]">
           The rest of this page documents the advisory directory the gate queries: an MCP-native
           API (free, no key, low-latency) that returns a verdict (ALLOW / DENY / REVIEW) on a tool
           and a recommendation endpoint for discovery &mdash; direct HTTP, drop-in MCP server, or

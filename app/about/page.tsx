@@ -11,14 +11,14 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <article className="mx-auto max-w-[760px] px-6 sm:px-10 pt-16 pb-24">
+    <article className="site-container pt-16 pb-24">
       <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
         About
       </div>
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
         Why the gate exists.
       </h1>
-      <p className="mt-5 max-w-[640px] text-[16px] leading-[1.6] text-[var(--color-cite)]">
+      <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)]">
         mcpindex is the trust-to-act layer for agent tool use. Agents discover
         tools at runtime, read the descriptions their authors wrote, and call
         them. mcpindex sits in the gap between &ldquo;the tool exists&rdquo; and

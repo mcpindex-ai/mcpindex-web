@@ -34,7 +34,7 @@ export default async function StatsPage() {
   ];
 
   return (
-    <article className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-16 pb-24">
+    <article className="site-container pt-16 pb-24">
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
           Public stats · auto-generated daily
@@ -42,7 +42,7 @@ export default async function StatsPage() {
         <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
           Numbers, on the page.
         </h1>
-        <p className="mt-4 max-w-[640px] text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
+        <p className="mt-4 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
           All metrics are derived from public registry data. No analytics tracking is sold or shared.
           Source code:{' '}
           <a

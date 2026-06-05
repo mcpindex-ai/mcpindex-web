@@ -11,14 +11,14 @@ export const metadata: Metadata = {
 
 export default function MethodologyPage() {
   return (
-    <article className="mx-auto max-w-[760px] px-6 sm:px-10 pt-16 pb-24">
+    <article className="site-container pt-16 pb-24">
       <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
         Methodology · v1 advisory
       </div>
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
         How a verdict is produced.
       </h1>
-      <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)] max-w-[680px]">
+      <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)]">
         mcpindex evaluates MCP tools and publishes a finding per tool. Today
         every published screen verdict is semantic-only: an LLM judge reads the
         tool description for hidden instructions, bound to the exact tool
@@ -57,7 +57,7 @@ export default function MethodologyPage() {
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
           The drift gate method
         </div>
-        <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)] max-w-[680px]">
+        <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
           The screen above is the prior an agent reads before it wires a tool.
           The drift gate is the live, in-path check during use. It answers a
           narrower, provable question: did this tool&rsquo;s contract change
@@ -107,7 +107,7 @@ export default function MethodologyPage() {
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
           Four-state verdict
         </div>
-        <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)] max-w-[680px]">
+        <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
           The directive an agent reads is one of three decisions, on top of a
           status that says how the eval went. Together they are four states an
           agent must distinguish.
@@ -148,7 +148,7 @@ export default function MethodologyPage() {
           <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Advisory, not blocking.</strong> mcpindex publishes the verdict. The agent or IDE decides whether to act.</li>
           <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">D3 graduation gate.</strong> &gt;={D3_REQUIRED_LABELS} conforming labels with FP upper-95 &lt;=2%. Current: {D3_PROGRESS}.</li>
         </ul>
-        <p className="mt-6 text-[14px] text-[var(--color-cite)] leading-[1.6] max-w-[680px]">
+        <p className="mt-6 text-[14px] text-[var(--color-cite)] leading-[1.6]">
           The honest-limits list is a contract. If any of these stops being
           true, the methodology page changes first, the verdict surface
           changes second, and the network only sees the upgrade after both.
@@ -159,7 +159,7 @@ export default function MethodologyPage() {
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
           Quality score (directory axis)
         </div>
-        <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)] max-w-[680px]">
+        <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
           The trust verdict answers &ldquo;does this tool behave as it
           claims.&rdquo; The directory still answers a simpler question:
           which servers look mature from public registry signal. The 0-100

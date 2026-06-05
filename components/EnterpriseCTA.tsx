@@ -50,16 +50,16 @@ export function EnterpriseCTA({
       <h2 className="t-h4 font-medium text-[var(--color-ink)]">{title}</h2>
 
       {state === 'success' ? (
-        <p className="mt-4 max-w-[640px] text-[14px] leading-[1.6] text-[var(--color-cite)]">
+        <p className="mt-4 text-[14px] leading-[1.6] text-[var(--color-cite)]">
           Thanks. We have your request and will be in touch with the security &amp; procurement
           pack shortly. The whitepaper itself stays free above &mdash; no wall.
         </p>
       ) : (
         <>
-          <p className="mt-3 max-w-[640px] text-[14px] leading-[1.55] text-[var(--color-cite)]">
+          <p className="mt-3 text-[14px] leading-[1.55] text-[var(--color-cite)]">
             {blurb}
           </p>
-          <form onSubmit={onSubmit} className="mt-6 grid gap-3 sm:grid-cols-2 max-w-[680px]">
+          <form onSubmit={onSubmit} className="mt-6 grid gap-3 sm:grid-cols-2">
             <Field label="Work email" name="email" type="email" required placeholder="you@company.com" />
             <Field label="Company" name="company" placeholder="Acme Inc." />
             <div className="sm:col-span-2">

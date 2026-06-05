@@ -43,7 +43,7 @@ export default async function Changelog() {
   const buckets = bucketByDay(servers);
 
   return (
-    <article className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-16 pb-24">
+    <article className="site-container pt-16 pb-24">
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
           Changelog

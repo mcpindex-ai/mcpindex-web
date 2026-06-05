@@ -153,7 +153,7 @@ export default async function ServerPage(
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <div className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-12 pb-24">
+      <div className="site-container pt-12 pb-24">
         <Link
           href="/leaderboard"
           className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-mute)] hover:text-[var(--color-accent)]"
@@ -178,7 +178,7 @@ export default async function ServerPage(
               </Link>
             </div>
 
-            <p className="mt-6 text-[17px] leading-[1.55] text-[var(--color-cite)] max-w-[640px]">
+            <p className="mt-6 text-[17px] leading-[1.55] text-[var(--color-cite)]">
               {server.description}
             </p>
 
@@ -206,7 +206,7 @@ export default async function ServerPage(
                 <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
                   Embed this badge
                 </div>
-                <p className="text-[13px] leading-[1.55] text-[var(--color-cite)] max-w-[640px] mb-3">
+                <p className="text-[13px] leading-[1.55] text-[var(--color-cite)] mb-3">
                   A live verdict badge for your README or listing. It reflects the current screen,
                   links back here, and updates when the verdict does.
                 </p>
@@ -445,7 +445,7 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
             no verdict on file
           </span>
         </div>
-        <p className="mt-3 text-[14px] leading-[1.6] text-[var(--color-cite)] max-w-[640px]">
+        <p className="mt-3 text-[14px] leading-[1.6] text-[var(--color-cite)]">
           Verdict not yet evaluated for this tool. The semantic screen takes
           adversarial cases first; coverage rolls out as the corpus expands ({D3_PROGRESS} labels
           to graduation). The deterministic conformance probe is built
@@ -473,7 +473,7 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
             verdict API unreachable
           </span>
         </div>
-        <p className="mt-3 text-[14px] leading-[1.6] text-[var(--color-cite)] max-w-[640px]">
+        <p className="mt-3 text-[14px] leading-[1.6] text-[var(--color-cite)]">
           The trust verdict API did not respond. Treat this tool as not-cleared
           and fall back to your own checks until the verdict surface is reachable
           again. This is a transient failure, not a verdict.
@@ -503,12 +503,12 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
         </span>
       </div>
 
-      <p className="mt-3 text-[14.5px] leading-[1.55] text-[var(--color-ink)] max-w-[640px]">
+      <p className="mt-3 text-[14.5px] leading-[1.55] text-[var(--color-ink)]">
         {verdict.directive.rationale}
       </p>
 
       {verdict.adjudication ? (
-        <div className="mt-3 px-3 py-2 bg-[var(--color-accent-soft)] border border-[var(--color-rule)] max-w-[640px]">
+        <div className="mt-3 px-3 py-2 bg-[var(--color-accent-soft)] border border-[var(--color-rule)]">
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-mute)] mr-2">
             human review
           </span>
@@ -525,7 +525,7 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
         </div>
       ) : (
         verdict.dimensions.some((d) => d.verdict === 'FAIL') && (
-          <div className="mt-3 px-3 py-2 bg-amber-50 border border-amber-300 max-w-[640px]">
+          <div className="mt-3 px-3 py-2 bg-amber-50 border border-amber-300">
             <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-amber-800 mr-2">
               held for review
             </span>
@@ -565,7 +565,7 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
         </div>
       )}
 
-      <p className="mt-4 font-mono text-[10.5px] leading-[1.55] text-[var(--color-mute)] max-w-[640px]">
+      <p className="mt-4 font-mono text-[10.5px] leading-[1.55] text-[var(--color-mute)]">
         Semantic screen: an LLM judge reads the tool description for hidden
         instructions (status PARTIAL). A pass means the description is not
         lying, not that the tool is safe: a high-capability tool with an honest
