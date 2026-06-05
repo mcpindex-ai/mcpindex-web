@@ -40,7 +40,7 @@ export function ArchDiagram() {
         viewBox={`0 0 ${VB_W} ${VB_H}`}
         role="img"
         aria-label="mcpindex.ai architecture: request flows from agent client through a discovery adapter into the recommendation API, which ranks against an indexed catalog. A daily refresh worker keeps the catalog current from an upstream source."
-        className="block w-full max-w-[860px] mx-auto"
+        className="block w-full mx-auto"
         style={{ height: 'auto' }}
       >
         {/* Subtle dotted background grid in the empty top-right area to add texture */}

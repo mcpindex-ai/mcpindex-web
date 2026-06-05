@@ -46,7 +46,7 @@ export function MobileMenu({ items }: { items: { href: string; label: string }[]
 
       {open && (
         <div className="fixed inset-x-0 top-14 z-50 bg-white border-b border-[var(--color-rule)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.18)]">
-          <nav className="mx-auto flex max-w-[1180px] flex-col px-6 py-2">
+          <nav className="site-container flex flex-col py-2">
             {items.map((item) => (
               <Link
                 key={item.href}

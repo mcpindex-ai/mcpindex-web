@@ -137,13 +137,13 @@ export default function WhitepaperPage() {
   const content = loadWhitepaper();
 
   return (
-    <article className="mx-auto max-w-[820px] px-6 sm:px-10 pt-16 pb-24">
+    <article className="site-container pt-16 pb-24">
       <header className="rule-b pb-8">
         <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
           <Mark size={14} />
           Whitepaper · v1.0 launch edition
         </div>
-        <p className="mt-4 max-w-[640px] text-[14px] leading-[1.6] text-[var(--color-mute)]">
+        <p className="mt-4 text-[14px] leading-[1.6] text-[var(--color-mute)]">
           Free to read in full below. Free PDF, no email required &mdash; the paper is the open,
           honest credibility engine, not a lead wall.
         </p>

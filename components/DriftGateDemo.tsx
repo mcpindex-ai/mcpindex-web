@@ -384,7 +384,7 @@ function HeldVerdict({
         <code>{banner}</code>
       </pre>
 
-      <p className="mt-4 text-[14px] leading-[1.55] text-[var(--color-cite)] max-w-[640px]">
+      <p className="mt-4 text-[14px] leading-[1.55] text-[var(--color-cite)]">
         {drift.reason}
       </p>
 
@@ -433,7 +433,7 @@ function ProceedVerdict({
           {drift.changeKind}
         </span>
       </div>
-      <p className="mt-4 text-[14px] leading-[1.55] text-[var(--color-cite)] max-w-[640px]">
+      <p className="mt-4 text-[14px] leading-[1.55] text-[var(--color-cite)]">
         {drift.isControl && !notify ? (
           <>
             Proceeds — benign additive change, no hold. Adding an optional parameter cannot break an

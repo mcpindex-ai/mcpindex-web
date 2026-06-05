@@ -20,14 +20,14 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function GuidesIndex() {
   const guides = await loadGuides();
   return (
-    <section className="mx-auto max-w-[760px] px-6 sm:px-10 pt-16 pb-24">
+    <section className="site-container pt-16 pb-24">
       <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
         Guides
       </div>
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
         MCP guides
       </h1>
-      <p className="mt-5 max-w-[640px] text-[16px] leading-[1.6] text-[var(--color-cite)]">
+      <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)]">
         Trust and security reviews, comparisons, and integration how-tos for the
         Model Context Protocol ecosystem.
       </p>

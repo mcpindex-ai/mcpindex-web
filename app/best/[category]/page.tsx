@@ -90,7 +90,7 @@ export default async function BestCategory(
           __html: JSON.stringify(faqLd).replace(/</g, '\\u003c').replace(/>/g, '\\u003e'),
         }}
       />
-      <article className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-16 pb-24">
+      <article className="site-container pt-16 pb-24">
         <Link
           href="/leaderboard"
           className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-mute)] hover:text-[var(--color-accent)]"
@@ -104,7 +104,7 @@ export default async function BestCategory(
           <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
             Best {label} MCP servers.
           </h1>
-          <p className="mt-4 max-w-[680px] text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
+          <p className="mt-4 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
             {inCategory.length} active servers indexed in this category.
             Ranked by{' '}
             <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
@@ -224,7 +224,7 @@ async function FilesystemEvidence() {
           __html: JSON.stringify(faqLd).replace(/</g, '\\u003c').replace(/>/g, '\\u003e'),
         }}
       />
-      <article className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-16 pb-24">
+      <article className="site-container pt-16 pb-24">
         <Link
           href="/best"
           className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-mute)] hover:text-[var(--color-accent)]"
@@ -238,7 +238,7 @@ async function FilesystemEvidence() {
           <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
             Filesystem MCP servers, screened for description honesty.
           </h1>
-          <p className="mt-4 max-w-[680px] text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
+          <p className="mt-4 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
             {screened.length} servers screened · {flaggedCount} confirmed flagged ·{' '}
             {heldCount} held for review. An LLM judge reads each tool description for
             hidden instructions (semantic screen, advisory, status PARTIAL). A
@@ -287,7 +287,7 @@ async function FilesystemEvidence() {
                   </span>
                 </div>
                 {srv?.description && (
-                  <p className="mt-1.5 text-[13px] text-[var(--color-cite)] line-clamp-2 max-w-[680px]">
+                  <p className="mt-1.5 text-[13px] text-[var(--color-cite)] line-clamp-2">
                     {srv.description}
                   </p>
                 )}
@@ -309,7 +309,7 @@ async function FilesystemEvidence() {
             <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
               Adversarial test fixtures
             </div>
-            <p className="mb-6 max-w-[680px] text-[14px] leading-[1.55] text-[var(--color-cite)]">
+            <p className="mb-6 text-[14px] leading-[1.55] text-[var(--color-cite)]">
               These are <strong>synthetic, hand-authored</strong> poisoned tool
               descriptions - <strong>not real registry servers</strong> - run
               through the same screen to show what it catches. They are excluded

@@ -25,10 +25,10 @@ function Swatch({ name, hex, ink = false }: { name: string; hex: string; ink?: b
 
 export default function BrandPage() {
   return (
-    <article className="mx-auto max-w-[900px] px-6 sm:px-10 pt-16 pb-24">
+    <article className="site-container pt-16 pb-24">
       <div className={LABEL}>Brand</div>
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">The mcpindex brand kit.</h1>
-      <p className="mt-5 max-w-[680px] text-[16px] leading-[1.6] text-[var(--color-cite)]">
+      <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)]">
         One idea at every scale: the amber decision token is the atom, the bracket is the mark,
         the seal is a sealed (anchored) verdict, and the Verdict Card is the object. Assets below
         are free to use for referencing mcpindex; don&apos;t alter the proportions or recolor the
@@ -90,7 +90,7 @@ export default function BrandPage() {
           <Swatch name="Mute" hex="#78716c" />
           <Swatch name="Rule" hex="#e7e5e4" />
         </div>
-        <p className="mt-4 text-[13.5px] leading-[1.6] text-[var(--color-cite)] max-w-[640px]">
+        <p className="mt-4 text-[13.5px] leading-[1.6] text-[var(--color-cite)]">
           The site is ink on paper. Amber is reserved almost entirely for the verdict token, so
           color always means &ldquo;a verdict.&rdquo;
         </p>

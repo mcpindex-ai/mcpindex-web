@@ -71,7 +71,7 @@ const TIERS: Tier[] = [
 
 export default function PricingPage() {
   return (
-    <article className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-16 pb-24">
+    <article className="site-container pt-16 pb-24">
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
           Pricing
@@ -79,12 +79,12 @@ export default function PricingPage() {
         <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
           The gate is free. The network is paid.
         </h1>
-        <p className="mt-4 max-w-[660px] text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
+        <p className="mt-4 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
           The in-path gate you install is free, local, and open-core &mdash; all postures, the SDK,
           and zero credential custody. Paid tiers add the optional cloud tier-1 corpus lookup, a
           higher-rate trust API, and the multi-tenant gateway.
         </p>
-        <p className="mt-3 max-w-[660px] text-[14px] leading-[1.55] text-[var(--color-mute)]">
+        <p className="mt-3 text-[14px] leading-[1.55] text-[var(--color-mute)]">
           To be clear about what is paywalled: the gate&rsquo;s protection &mdash; the
           deterministic tier-0 contract-diff &mdash; is fully functional on Free, runs locally, and
           is unmetered. The cloud tier-1 corpus lookup is held off by default and opt-in; Pro is
@@ -122,7 +122,7 @@ export default function PricingPage() {
         ))}
       </div>
 
-      <div className="mt-12 rule-t pt-8 max-w-[760px]">
+      <div className="mt-12 rule-t pt-8">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
           The directory & trust API (secondary)
         </div>
@@ -135,7 +135,7 @@ export default function PricingPage() {
         </p>
       </div>
 
-      <p className="mt-10 font-mono text-[11.5px] text-[var(--color-mute)] max-w-[760px]">
+      <p className="mt-10 font-mono text-[11.5px] text-[var(--color-mute)]">
         Free covers everything you can call, no key required. Pro and Enterprise provisioning is
         manual today &mdash; request access above and we set you up. Enterprise multi-tenant is
         available on request (it is built but not the default deployment).

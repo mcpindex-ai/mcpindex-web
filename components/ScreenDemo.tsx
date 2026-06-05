@@ -168,7 +168,7 @@ export function ScreenDemo() {
                       status: {result.data.status}
                     </span>
                   </div>
-                  <p className="mt-3 text-[14px] leading-[1.55] text-[var(--color-ink)] max-w-[640px]">
+                  <p className="mt-3 text-[14px] leading-[1.55] text-[var(--color-ink)]">
                     {result.data.directive.rationale}
                   </p>
                   {flagged && result.data.finding.quote && (

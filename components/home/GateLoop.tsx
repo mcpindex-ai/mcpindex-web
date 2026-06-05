@@ -43,7 +43,7 @@ export function GateLoop() {
           </div>
           <div>
             <h3 className="t-h4 font-medium text-[var(--color-ink)]">{s.title}</h3>
-            <p className="mt-2 max-w-[520px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+            <p className="mt-2 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
               {s.body}
             </p>
           </div>

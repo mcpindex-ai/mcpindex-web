@@ -9,7 +9,7 @@ export async function LiveTicker() {
 
   return (
     <div className="rule-b">
-      <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-2 flex items-center justify-between gap-4 font-mono text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-mute)] overflow-hidden">
+      <div className="site-container py-2 flex items-center justify-between gap-4 font-mono text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-mute)] overflow-hidden">
         <div className="flex items-center gap-2 shrink-0">
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] live-dot" aria-hidden />
           <span>Live</span>

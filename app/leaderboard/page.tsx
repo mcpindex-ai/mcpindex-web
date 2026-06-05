@@ -41,7 +41,7 @@ export default async function Leaderboard() {
   );
 
   return (
-    <article className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-16 pb-24">
+    <article className="site-container pt-16 pb-24">
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
           Two axes · top 50 by quality
@@ -49,7 +49,7 @@ export default async function Leaderboard() {
         <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
           Quality, and the verdict.
         </h1>
-        <p className="mt-4 max-w-[680px] text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
+        <p className="mt-4 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
           One axis is maturity from public registry signal (freshness, completeness,
           installability, documentation, semver stability). The other is the trust
           verdict: does the tool do what its description claims. Ranked by quality below,

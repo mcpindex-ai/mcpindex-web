@@ -21,7 +21,7 @@ const NAV = [
 export function Header() {
   return (
     <header className="scroll-shadow">
-      <div className="mx-auto max-w-[1180px] px-6 sm:px-10">
+      <div className="site-container">
         <div className="flex h-14 items-center justify-between">
           <Link
             href="/"

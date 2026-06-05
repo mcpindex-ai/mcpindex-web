@@ -39,24 +39,24 @@ const EMBED_SNIPPET = `<iframe src="${EMBED_URL}" width="720" height="405"
 
 export default function DemoPage() {
   return (
-    <div className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-16 pb-24">
+    <div className="site-container pt-16 pb-24">
       <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
         Demo
       </div>
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
         Watch the gate hold a silent change, in 90 seconds.
       </h1>
-      <p className="mt-5 max-w-[640px] text-[16px] leading-[1.6] text-[var(--color-cite)]">
+      <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)]">
         Agents don&apos;t just answer anymore - they act. The tool your agent trusted on Monday
         can change on Tuesday, silently. mcpindex pins every tool&apos;s contract and HOLDs the
         call the moment the contract drifts - before your agent acts on the change.
       </p>
 
-      <section className="mt-10 max-w-[900px]">
+      <section className="mt-10">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
           Watch it hold a drift
         </div>
-        <p className="mb-5 max-w-[640px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+        <p className="mb-5 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
           A tool with a pinned contract. Apply a silent change and watch the in-path gate decide,
           deterministically, whether your agent should act on it. The verdicts here are the same
           ones the real gate produces.
@@ -65,17 +65,17 @@ export default function DemoPage() {
       </section>
 
       {/* Two complementary films: A = the concept (why), B = how to use it (how). No overlap. */}
-      <section className="mt-16 max-w-[900px]">
+      <section className="mt-16">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
           The concept, in ~70 seconds
         </div>
-        <p className="mb-5 max-w-[640px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+        <p className="mb-5 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
           Why the gate exists: a tool&apos;s contract can change silently after you trust it. Watch
           mcpindex hold the call before your agent acts on the change.
         </p>
       </section>
 
-      <div className="mt-5 max-w-[900px] rule-t rule-b rule-l rule-r bg-black">
+      <div className="mt-5 rule-t rule-b rule-l rule-r bg-black">
         <video
           className="w-full aspect-video"
           controls
@@ -88,17 +88,17 @@ export default function DemoPage() {
         </video>
       </div>
 
-      <section className="mt-16 max-w-[900px]">
+      <section className="mt-16">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
           How to use it, by persona
         </div>
-        <p className="mb-5 max-w-[640px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+        <p className="mb-5 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
           One-click install, then the gate pins every tool and holds a silent change before your
           agent runs it. By persona: MCP-client user, SDK builder, enterprise.
         </p>
       </section>
 
-      <div className="mt-5 max-w-[900px] rule-t rule-b rule-l rule-r bg-black">
+      <div className="mt-5 rule-t rule-b rule-l rule-r bg-black">
         <video
           className="w-full aspect-video"
           controls
@@ -111,11 +111,11 @@ export default function DemoPage() {
         </video>
       </div>
 
-      <section className="mt-16 max-w-[900px]">
+      <section className="mt-16">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
           Embed it anywhere
         </div>
-        <p className="max-w-[620px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+        <p className="text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
           Drop this into any page, or share the link on social - it unfurls to a playable
           card on X and LinkedIn.
         </p>

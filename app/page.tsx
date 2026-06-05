@@ -91,8 +91,7 @@ export default async function Home() {
       />
       {/* §00 HERO — the gate: the silent-change pain, then the HOLD. */}
       <section className="rule-b bg-[var(--color-accent-soft)]">
-        <div className="mx-auto max-w-[1180px] px-6 sm:px-10 pt-14 pb-16 sm:pt-20 sm:pb-24">
-          <div className="max-w-[820px]">
+        <div className="site-container pt-14 pb-16 sm:pt-20 sm:pb-24">
             <div className="hero-rise hero-rise-1 font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-accent)] mb-6">
               In-path trust gate for agent tool calls
             </div>
@@ -104,7 +103,7 @@ export default async function Home() {
                 mcpindex holds the call before your agent acts on the change.
               </span>
             </h1>
-            <p className="hero-rise hero-rise-3 mt-6 max-w-[620px] text-[16px] sm:text-[17.5px] leading-[1.5] text-[var(--color-cite)]">
+            <p className="hero-rise hero-rise-3 mt-6 text-[16px] sm:text-[17.5px] leading-[1.5] text-[var(--color-cite)]">
               It pins every MCP tool&rsquo;s contract on first sight and HOLDs the call the
               instant that contract drifts, before your agent acts on it. Zero credentials.
               One-click in Claude Desktop, Cursor, Cline, Zed.
@@ -112,7 +111,7 @@ export default async function Home() {
 
             {/* High-level trust-properties callout (not a single-test brag — the
                 reproducible proof lives in the whitepaper §7). */}
-            <div className="hero-rise hero-rise-3 mt-6 max-w-[640px] rule-t rule-b rule-l rule-r bg-white px-4 py-3">
+            <div className="hero-rise hero-rise-3 mt-6 rule-t rule-b rule-l rule-r bg-white px-4 py-3">
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-mute)] mb-1.5">
                 In-path · deterministic · on your host
               </div>
@@ -160,7 +159,6 @@ export default async function Home() {
                 Deterministic diff · contract-diff, not a safety verdict
               </span>
             </div>
-          </div>
         </div>
       </section>
 
@@ -168,14 +166,14 @@ export default async function Home() {
 
       {/* §how-it-works — the gate loop, four concrete steps. */}
       <section id="how-it-works" className="rule-t scroll-mt-20">
-        <div className="reveal mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
+        <div className="reveal site-container py-20 sm:py-28">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
             How the gate works
           </div>
-          <h2 className="t-h3 font-medium text-[var(--color-ink)] max-w-[680px]">
+          <h2 className="t-h3 font-medium text-[var(--color-ink)]">
             Pin the contract. HOLD the change.
           </h2>
-          <p className="mt-3 mb-8 max-w-[640px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+          <p className="mt-3 mb-8 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
             Agents act on a tool&rsquo;s description the way they act on a system prompt. MCP
             tools are remote and updatable with no version bump. The description your agent
             trusted can change underneath it. The gate is the in-path check that catches that
@@ -187,14 +185,14 @@ export default async function Home() {
 
       {/* §demo — the real deterministic gate, client-side. */}
       <section id="demo" className="rule-t scroll-mt-20">
-        <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
+        <div className="site-container py-20 sm:py-28">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
             Watch it hold a drift
           </div>
-          <h2 className="t-h3 font-medium text-[var(--color-ink)] max-w-[680px]">
+          <h2 className="t-h3 font-medium text-[var(--color-ink)]">
             Pin a tool, apply a change, see the verdict.
           </h2>
-          <p className="mt-3 mb-10 max-w-[640px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+          <p className="mt-3 mb-10 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
             The same deterministic gate that runs in your agent: a contract-diff, not a safety
             verdict. Pick a drift. A breaking or dangerous change is HELD with the exact
             ChangeKind; a benign added-optional proceeds silently.
@@ -205,14 +203,14 @@ export default async function Home() {
 
       {/* §honest-edges — updated for the gate. */}
       <section className="rule-t">
-        <div className="reveal mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
+        <div className="reveal site-container py-20 sm:py-28">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
             Honest about the edges
           </div>
-          <h2 className="t-h3 font-medium text-[var(--color-ink)] max-w-[680px]">
+          <h2 className="t-h3 font-medium text-[var(--color-ink)]">
             What the gate claims — and what it doesn&apos;t.
           </h2>
-          <p className="mt-3 mb-10 max-w-[640px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+          <p className="mt-3 mb-10 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
             A trust product earns trust by stating its edges. The gate&rsquo;s verdict is
             &ldquo;this contract changed&rdquo;, never &ldquo;this is safe&rdquo;.{' '}
             <Link
@@ -229,14 +227,14 @@ export default async function Home() {
 
       {/* Dark proof band — the trust posture, in context. */}
       <section className="rule-t bg-[var(--color-ink)]">
-        <div className="reveal mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-24">
+        <div className="reveal site-container py-20 sm:py-24">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-500 mb-3">
             Trust, stated plainly
           </div>
-          <h2 className="t-h3 font-medium text-white max-w-[680px]">
+          <h2 className="t-h3 font-medium text-white">
             In-path, deterministic, and no custody of your credentials.
           </h2>
-          <p className="mt-3 mb-8 max-w-[660px] text-[14.5px] leading-[1.55] text-zinc-400">
+          <p className="mt-3 mb-8 text-[14.5px] leading-[1.55] text-zinc-400">
             The gate diffs a tool&rsquo;s live contract against what you pinned, fails closed to
             a HOLD on doubt, and never holds your keys. We state where it stops as plainly as
             what it catches.
@@ -267,14 +265,14 @@ export default async function Home() {
       {/* §the-network — the directory, the corpus the gate queries. Below the
           dark trust band so the gate proof + install own the fold (R2-M2). */}
       <section className="rule-t">
-        <div className="reveal mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-28">
+        <div className="reveal site-container py-20 sm:py-28">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
             The corpus the gate queries
           </div>
-          <h2 className="t-h3 font-medium text-[var(--color-ink)] max-w-[700px]">
+          <h2 className="t-h3 font-medium text-[var(--color-ink)]">
             One question, two moments.
           </h2>
-          <p className="mt-3 mb-8 max-w-[680px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+          <p className="mt-3 mb-8 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
             Different verdict, same question. Before you wire a tool, the public directory
             screens it and says REVIEW or UNVERIFIED &mdash; a prior on whether a tool does what
             it claims. While you use it, the gate says HELD or PROCEED in the call path. Today
@@ -284,7 +282,7 @@ export default async function Home() {
           </p>
 
           {reveals.length > 0 && (
-            <div className="max-w-[760px] mb-8">
+            <div className=" mb-8">
               <VerdictReveal items={reveals} />
             </div>
           )}
@@ -311,15 +309,15 @@ export default async function Home() {
 
       {/* §install + API */}
       <section id="install" className="rule-t scroll-mt-20">
-        <div className="mx-auto max-w-[1180px] px-6 sm:px-10 py-20 sm:py-24">
+        <div className="site-container py-20 sm:py-24">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3 flex items-center gap-2">
             <Mark size={13} />
             Install it now
           </div>
-          <h2 className="t-h3 font-medium text-[var(--color-ink)] max-w-[680px]">
+          <h2 className="t-h3 font-medium text-[var(--color-ink)]">
             One command installs the gate.
           </h2>
-          <p className="mt-3 mb-10 max-w-[640px] text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+          <p className="mt-3 mb-10 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
             The gate is what you install. It rides the MCP session your agent already opens, no
             key required. Prefer to read before you run? The auditable path is{' '}
             <code className="font-mono text-[13px] text-[var(--color-ink)]">uv tool install</code>{' '}
@@ -332,7 +330,7 @@ export default async function Home() {
             </Link>
             . The one command below is the convenience path.
           </p>
-          <div className="max-w-[720px] space-y-5">
+          <div className=" space-y-5">
             <div className="rule-t rule-b rule-l rule-r border-[var(--color-accent)] bg-[var(--color-accent-soft)] p-2">
               <CopyField
                 label="Install the gate: one command (Claude Desktop / Cursor / Cline / Zed)"

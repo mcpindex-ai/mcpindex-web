@@ -97,7 +97,7 @@ export default async function GuidePage(
   }).replace(/</g, '\\u003c');
 
   return (
-    <article className="mx-auto max-w-[760px] px-6 sm:px-10 pt-16 pb-24">
+    <article className="site-container pt-16 pb-24">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd }}
