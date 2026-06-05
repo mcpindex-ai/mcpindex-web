@@ -2,15 +2,16 @@ import Link from 'next/link';
 import { Mark } from './Mark';
 import { MobileMenu } from './MobileMenu';
 
-// Primary nav: standalone pages only. Homepage owns proof (concept film, try-it,
-// install). /demo, install, and how-it-works live in footer or in-page CTAs.
+// Primary nav: gate-first funnel — ship (Docs) → believe (Trust) → buy (Pricing) →
+// directory surfaces (Screen, Maturity rankings) → deep read (Whitepaper).
+// Homepage owns proof; install/try-it live in hero + footer.
 const NAV = [
-  { href: '/screen', label: 'Screen' },
-  { href: '/trust', label: 'Trust' },
   { href: '/docs', label: 'Docs' },
-  { href: '/whitepaper', label: 'Whitepaper' },
+  { href: '/trust', label: 'Trust' },
   { href: '/pricing', label: 'Pricing' },
+  { href: '/screen', label: 'Screen' },
   { href: '/leaderboard', label: 'Maturity rankings' },
+  { href: '/whitepaper', label: 'Whitepaper' },
 ];
 
 export function Header() {

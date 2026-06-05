@@ -33,9 +33,9 @@ export function Footer() {
             <Link href="/#demo" className={LINK}>Try the gate</Link>
             <Link href="/#install" className={LINK}>Install</Link>
             <Link href="/demo" className={LINK}>Videos &amp; embed</Link>
-            <Link href="/screen" className={LINK}>Screen a tool</Link>
             <Link href="/docs" className={LINK}>Docs</Link>
             <Link href="/pricing" className={LINK}>Pricing</Link>
+            <Link href="/screen" className={LINK}>Screen a tool</Link>
             <Link href="/leaderboard" className={LINK}>Maturity rankings</Link>
             <Link href="/best" className={LINK}>Best of</Link>
             <Link href="/changelog" className={LINK}>Changelog</Link>
