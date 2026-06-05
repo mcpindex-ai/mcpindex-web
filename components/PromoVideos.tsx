@@ -1,6 +1,9 @@
 import Link from 'next/link';
 
+type FilmId = 'concept' | 'persona';
+
 type Film = {
+  readonly id: FilmId;
   readonly label: string;
   readonly blurb: string;
   readonly src: string;
@@ -9,6 +12,7 @@ type Film = {
 
 const FILMS: ReadonlyArray<Film> = [
   {
+    id: 'concept',
     label: 'The concept, in ~70 seconds',
     blurb:
       "Why the gate exists: a tool's contract can change silently after you trust it. Watch mcpindex hold the call before your agent acts on the change.",
@@ -16,6 +20,7 @@ const FILMS: ReadonlyArray<Film> = [
     poster: '/promo/poster.jpg',
   },
   {
+    id: 'persona',
     label: 'How to use it, by persona',
     blurb:
       'One-click install, then the gate pins every tool and holds a silent change before your agent runs it. By persona: MCP-client user, SDK builder, enterprise.',
@@ -24,11 +29,20 @@ const FILMS: ReadonlyArray<Film> = [
   },
 ];
 
-/** The two gate-centered promo films (concept + persona). Served from /public/promo. */
-export function PromoVideos({ showDemoLink = false }: { showDemoLink?: boolean }) {
+type PromoVideosProps = {
+  /** Which film(s) to render. Homepage splits concept (after hero) and persona (below #demo). */
+  readonly variant?: FilmId | 'both';
+  readonly showDemoLink?: boolean;
+};
+
+/** Gate-centered promo films. Served from /public/promo. */
+export function PromoVideos({ variant = 'both', showDemoLink = false }: PromoVideosProps) {
+  const films =
+    variant === 'both' ? FILMS : FILMS.filter((film) => film.id === variant);
+
   return (
     <div className="space-y-16">
-      {FILMS.map((film) => (
+      {films.map((film) => (
         <section key={film.src}>
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
             {film.label}

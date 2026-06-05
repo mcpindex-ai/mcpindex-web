@@ -163,6 +163,13 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* §concept — narrated proof immediately after the hero promise. */}
+      <section id="concept" className="rule-t scroll-mt-20">
+        <div className="site-container py-16 sm:py-20">
+          <PromoVideos variant="concept" />
+        </div>
+      </section>
+
       <LiveTicker />
 
       {/* §how-it-works — the gate loop, four concrete steps. */}
@@ -200,7 +207,7 @@ export default async function Home() {
           </p>
           <DriftGateDemo />
           <div className="mt-16">
-            <PromoVideos showDemoLink />
+            <PromoVideos variant="persona" showDemoLink />
           </div>
         </div>
       </section>
