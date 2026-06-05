@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import DriftGateDemo from '@/components/DriftGateDemo';
+import { PromoVideos } from '@/components/PromoVideos';
 
 const VIDEO_URL = 'https://mcpindex.ai/promo/mcpindex-promo.mp4';
 const EMBED_URL = 'https://mcpindex.ai/embed.html';
@@ -64,51 +65,8 @@ export default function DemoPage() {
         <DriftGateDemo />
       </section>
 
-      {/* Two complementary films: A = the concept (why), B = how to use it (how). No overlap. */}
-      <section className="mt-16">
-        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
-          The concept, in ~70 seconds
-        </div>
-        <p className="mb-5 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-          Why the gate exists: a tool&apos;s contract can change silently after you trust it. Watch
-          mcpindex hold the call before your agent acts on the change.
-        </p>
-      </section>
-
-      <div className="mt-5 rule-t rule-b rule-l rule-r bg-black">
-        <video
-          className="w-full aspect-video"
-          controls
-          playsInline
-          preload="metadata"
-          poster="/promo/poster.jpg"
-        >
-          <source src="/promo/mcpindex-promo.mp4" type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-      </div>
-
-      <section className="mt-16">
-        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
-          How to use it, by persona
-        </div>
-        <p className="mb-5 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-          One-click install, then the gate pins every tool and holds a silent change before your
-          agent runs it. By persona: MCP-client user, SDK builder, enterprise.
-        </p>
-      </section>
-
-      <div className="mt-5 rule-t rule-b rule-l rule-r bg-black">
-        <video
-          className="w-full aspect-video"
-          controls
-          playsInline
-          preload="metadata"
-          poster="/promo/poster-demo.jpg"
-        >
-          <source src="/promo/mcpindex-demo.mp4" type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
+      <div className="mt-16">
+        <PromoVideos />
       </div>
 
       <section className="mt-16">

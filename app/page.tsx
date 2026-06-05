@@ -4,6 +4,7 @@ import { VerdictReveal } from '@/components/VerdictReveal';
 import { CopyField } from '@/components/CopyField';
 import { ProvenanceBadge } from '@/components/ProvenanceBadge';
 import DriftGateDemo from '@/components/DriftGateDemo';
+import { PromoVideos } from '@/components/PromoVideos';
 import { GateLoop } from '@/components/home/GateLoop';
 import { GateEdges } from '@/components/home/GateEdges';
 import { Mark } from '@/components/Mark';
@@ -198,6 +199,9 @@ export default async function Home() {
             ChangeKind; a benign added-optional proceeds silently.
           </p>
           <DriftGateDemo />
+          <div className="mt-16">
+            <PromoVideos showDemoLink />
+          </div>
         </div>
       </section>
 
