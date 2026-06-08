@@ -47,6 +47,33 @@ export type ScreenResult =
   | { state: 'clean'; reason: string }
   | { state: 'unavailable'; why: string };
 
+// Invisible + bidi-control characters an attacker uses to hide an instruction
+// inside an otherwise-benign-looking description: zero-width spaces/joiners, the
+// word joiner, soft hyphen, BOM/ZWNBSP, and the LRO/RLO/LRI… bidi overrides.
+const INVISIBLE_CHARS = /[­᠎​-‏‪-‮⁠-⁤⁦-⁩﻿]/g;
+
+// The single canonical form of a description: NFKC (fold compatibility / fullwidth
+// forms) → strip invisible + bidi-control characters → collapse whitespace runs →
+// trim. This is what the judge screens AND what a future content-address would
+// hash, so the model and any cache see the SAME bytes, and an instruction hidden
+// behind invisible characters cannot slip past the screen. NOTE: this folds
+// invisible-character and compatibility-form evasion, NOT script-confusable
+// homoglyphs (a Cyrillic 'а' for a Latin 'a') — that needs a confusables map.
+export function canonicalize(s: string): string {
+  return s.normalize('NFKC').replace(INVISIBLE_CHARS, '').replace(/\s+/g, ' ').trim();
+}
+
+// True iff the judge's `quote` actually appears in the (already-canonical) screened
+// text — a case-insensitive containment check on the same canonical form. An empty
+// or absent quote is NOT grounded. The judge POINTS (it returns a quote); this
+// VERIFIES the pointer, so a hallucinated/paraphrased quote cannot be surfaced as a
+// verbatim highlight.
+export function quoteIsGrounded(canonicalDescription: string, quote: string): boolean {
+  const q = canonicalize(quote).toLowerCase();
+  if (!q) return false;
+  return canonicalDescription.toLowerCase().includes(q);
+}
+
 // One screen attempt against a single Groq key. Returns a real verdict
 // (clean/flagged) or `unavailable` with a precise reason; never throws.
 async function screenWithKey(key: string, description: string): Promise<ScreenResult> {
@@ -81,7 +108,17 @@ async function screenWithKey(key: string, description: string): Promise<ScreenRe
     if (typeof obj.malicious !== 'boolean') return { state: 'unavailable', why: 'bad_output' };
     const reason = typeof obj.reason === 'string' ? obj.reason : '';
     if (obj.malicious) {
-      return { state: 'flagged', reason, quote: typeof obj.quote === 'string' ? obj.quote : '' };
+      // Verify the judge's pointer before surfacing it. An ungrounded quote (not
+      // present in the screened text) is a fabricated highlight: we KEEP the flag
+      // (fail-closed — a flag routes to REVIEW, the safe direction) but never show
+      // an unverifiable quote, and log the fabrication so a drifting judge that
+      // invents evidence is visible before it erodes trust. No user data is logged.
+      const rawQuote = typeof obj.quote === 'string' ? obj.quote : '';
+      const grounded = quoteIsGrounded(description, rawQuote);
+      if (rawQuote && !grounded) {
+        console.warn('[screen-quote-ungrounded] judge quote not found in screened text; dropped');
+      }
+      return { state: 'flagged', reason, quote: grounded ? rawQuote : '' };
     }
     return { state: 'clean', reason };
   } catch {
@@ -90,6 +127,10 @@ async function screenWithKey(key: string, description: string): Promise<ScreenRe
 }
 
 export async function screenDescription(description: string): Promise<ScreenResult> {
+  // Canonicalize ONCE: the judge sees the de-obfuscated text, and the same form
+  // feeds quote-grounding below, so an invisible-character payload can neither
+  // evade the judge nor desync the quote check.
+  const canonical = canonicalize(description);
   // Ordered pool: primary first, then fallback. Empty entries are dropped so a
   // single configured key still works.
   const keys = [
@@ -100,7 +141,7 @@ export async function screenDescription(description: string): Promise<ScreenResu
 
   let last: ScreenResult = { state: 'unavailable', why: 'not_configured' };
   for (let i = 0; i < keys.length; i++) {
-    const result = await screenWithKey(keys[i], description);
+    const result = await screenWithKey(keys[i], canonical);
     if (result.state !== 'unavailable') return result; // real verdict: never fail over
     last = result;
     const hasNext = i < keys.length - 1;
