@@ -8,14 +8,20 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+import { createRequire } from 'node:module';
 export { checkToolTrust, assessServer, VERDICT_CONTRACT_VERSION, V1_HONEST_LIMITS } from './trust.mjs';
+import { notifyUpdateIfAvailable } from './update-check.mjs';
 
 const API_BASE = process.env.MCPINDEX_API_BASE ?? 'https://mcpindex.ai';
-const PKG_VERSION = '0.2.1';
+// Single source of truth for the running version — read from package.json so the
+// User-Agent and the update-check can never drift from what npm actually shipped.
+const PKG_VERSION = createRequire(import.meta.url)('../package.json').version;
 
 const server = new Server(
   { name: 'mcp-server-mcpindex', version: PKG_VERSION },
-  { capabilities: { tools: {} } },
+  // `logging` lets us push the update notice as an MCP notifications/message the
+  // host may render to the user; `sendLoggingMessage` no-ops without it.
+  { capabilities: { tools: {}, logging: {} } },
 );
 
 const TOOLS = [
@@ -284,3 +290,8 @@ function formatCompare(rows) {
 const transport = new StdioServerTransport();
 await server.connect(transport);
 console.error('[mcp-server-mcpindex] connected via stdio');
+
+// Fire-and-forget: tell the user if a newer version exists (stderr + best-effort
+// MCP notification). Dropped onto the event loop AFTER connect so it can never
+// delay or crash startup; all errors are swallowed inside.
+notifyUpdateIfAvailable({ currentVersion: PKG_VERSION, server }).catch(() => {});

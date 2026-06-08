@@ -4,6 +4,21 @@ All notable changes to `mcp-server-mcpindex` are recorded here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-06-08
+
+### Added
+
+- **Update notice on startup.** After the server connects, it does a best-effort check against the npm registry and, if a newer version is published, prints one advisory line to stderr and (if the host enabled MCP logging) sends a `notifications/message` the host may render — including the reminder to **restart your MCP host to load the new version**. The check is time-boxed (~2.5s), fail-silent on any error, fire-and-forget (it can never delay or crash startup), sends no telemetry beyond the standard registry GET, and never follows a redirect off the pinned registry host. Opt out with `MCPINDEX_NO_UPDATE_CHECK=1`.
+
+### Changed
+
+- **The running version is now read from `package.json`** instead of a hardcoded constant (which had drifted to `0.2.1` while the package was `0.2.2`), so the User-Agent and the update check always reflect what npm actually shipped.
+- The `logging` server capability is now declared (required to deliver the update notice as an MCP notification).
+
+### Internal
+
+- New `src/update-check.mjs` (pure, injected-`fetch`, unit-tested) + `test/update-check.test.mjs`. `npm run build` now syntax-checks it too.
+
 ## [0.2.2] - 2026-05-31
 
 ### Changed
