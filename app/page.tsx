@@ -78,7 +78,7 @@ export default async function Home() {
         applicationCategory: 'DeveloperApplication',
         operatingSystem: 'macOS, Linux, Windows',
         description:
-          'An in-path trust gate that pins every MCP tool contract and HOLDs a call the moment the contract silently changes, before your agent acts. A deterministic contract-diff, not a safety verdict.',
+          'An in-path trust gate that pins every MCP tool contract and HOLDs a call the moment the contract silently changes, and grades the blast radius of every call (read, write, delete, send; reversible or not) before your agent acts. Deterministic and advisory — a contract-diff and a blast-radius label, not a safety verdict.',
         url: 'https://mcpindex.ai',
         offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
         publisher: { '@id': 'https://mcpindex.ai/#org' },
@@ -108,8 +108,10 @@ export default async function Home() {
             </h1>
             <p className="hero-rise hero-rise-3 mt-6 text-[16px] sm:text-[17.5px] leading-[1.5] text-[var(--color-cite)]">
               It pins every MCP tool&rsquo;s contract on first sight and HOLDs the call the
-              instant that contract drifts, before your agent acts on it. Zero credentials.
-              One-click in Claude Desktop, Cursor, Cline, Zed.
+              instant that contract drifts, before your agent acts on it. It now also grades
+              each call&rsquo;s blast radius &mdash; what it would do (read, write, delete, send)
+              and whether it can be undone &mdash; so an irreversible action never runs unseen.
+              Zero credentials. One-click in Claude Desktop, Cursor, Cline, Zed.
             </p>
 
             {/* High-level trust-properties callout (not a single-test brag — the
@@ -188,6 +190,33 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* §grade-the-move — the blast-radius grade, the now-live second check. */}
+      <section id="grade-the-move" className="rule-t scroll-mt-20">
+        <div className="reveal site-container py-20 sm:py-28">
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
+            Grade the move, not just the tool
+          </div>
+          <h2 className="t-h3 font-medium text-[var(--color-ink)]">
+            See the blast radius of a call before your agent makes it.
+          </h2>
+          <p className="mt-3 mb-8 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+            A read and an irreversible delete leave your agent looking identical: both are just
+            &ldquo;a tool call.&rdquo; The gate now labels each one in the call path &mdash; its
+            action (read, write, delete, send, execute), what it touches, whether it can be
+            undone, and whether it leaves your org. A call you can&rsquo;t reverse is never
+            indistinguishable from one that only reads.
+          </p>
+          <p className="font-mono text-[12.5px] leading-[1.55] text-[var(--color-mute)]">
+            Deterministic and advisory. The grade describes what a call <em>would do</em>,
+            derived from the tool&rsquo;s own contract; it rides alongside the gate&rsquo;s
+            decision and never overrides it. It says &ldquo;this is an irreversible delete,&rdquo;
+            not &ldquo;this is safe.&rdquo; On by default in the{' '}
+            <code className="text-[var(--color-ink)]">@mcp-index/sdk</code> and{' '}
+            <code className="text-[var(--color-ink)]">mcpindex-preflight</code> clients.
+          </p>
+        </div>
+      </section>
+
       {/* §demo — the real deterministic gate, client-side. */}
       <section id="demo" className="rule-t scroll-mt-20">
         <div className="site-container py-20 sm:py-28">
@@ -226,7 +255,9 @@ export default async function Home() {
           </h2>
           <p className="mt-3 mb-10 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
             A trust product earns trust by stating its edges. The gate&rsquo;s verdict is
-            &ldquo;this contract changed&rdquo;, never &ldquo;this is safe&rdquo;.{' '}
+            &ldquo;this contract changed&rdquo;, never &ldquo;this is safe&rdquo;; the
+            blast-radius grade is advisory and static &mdash; what a call would do, read from its
+            contract, not a safety call.{' '}
             <Link
               href="/methodology"
               className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] hover:decoration-[var(--color-accent)]"
@@ -306,7 +337,7 @@ export default async function Home() {
               href="/leaderboard"
               className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-cite)] hover:text-[var(--color-accent)]"
             >
-              Maturity rankings →
+              Maturity Rankings →
             </Link>
             <Link
               href="/screen"

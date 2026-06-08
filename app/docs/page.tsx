@@ -383,6 +383,43 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
             refutes; it does not prove a tool safe.
           </p>
         </div>
+
+        <div
+          className="rule-t pt-5"
+          style={{ borderColor: 'var(--color-rule)' }}
+        >
+          <h3
+            className="text-[16px] tracking-tight font-semibold"
+            style={{ color: 'var(--color-ink)' }}
+          >
+            Blast-radius grade (on by default)
+          </h3>
+          <p
+            className="mt-1 text-[14px] leading-[1.55]"
+            style={{ color: 'var(--color-mute)' }}
+          >
+            Alongside the contract-diff, the gate labels what each call would do
+            before your agent acts &mdash; <Mono>action_type</Mono> (read, write,
+            delete, send), whether it can be undone (<Mono>reversibility</Mono>),
+            and whether it leaves the machine (<Mono>egress</Mono>) &mdash; plus a
+            static autonomy ceiling. A read and an irreversible delete look
+            identical to an agent until something labels them; this is that label.
+            It is on by default in <Mono>@mcp-index/sdk</Mono> and{' '}
+            <Mono>mcpindex-preflight</Mono>.
+          </p>
+          <p
+            className="mt-2 text-[13px] leading-[1.5]"
+            style={{ color: 'var(--color-mute)' }}
+          >
+            The grade is read statically from the tool&rsquo;s declared contract
+            &mdash; it never runs the tool &mdash; so it is deterministic, needs no
+            network, and carries no argument values (every field is a typed enum or
+            hash). It is advisory and fail-closed: when the contract is ambiguous it
+            grades toward the more dangerous class. It says what a call{' '}
+            <em>would</em> do, not whether the contract is safe; your orchestrator
+            owns whether to allow, pause, or require approval.
+          </p>
+        </div>
       </Section>
 
       {/* §04 - Anatomy of a response */}
@@ -514,9 +551,9 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
           needs.
         </p>
 
-        <div className="mt-4 -mx-2 sm:mx-0 overflow-x-auto">
+        <div className="mt-4 site-table-wrap rule-t rule-b rule-l rule-r">
           <table
-            className="w-full min-w-[640px] border-collapse text-[13.5px]"
+            className="w-full min-w-[640px] sm:min-w-0 border-collapse text-[13.5px]"
             style={{ color: 'var(--color-cite)' }}
           >
             <thead>
@@ -779,7 +816,7 @@ function Limit({
   body: React.ReactNode;
 }) {
   return (
-    <li className="grid grid-cols-[120px_1fr] gap-4">
+    <li className="row-kv">
       <span
         className="text-[11px] font-semibold uppercase tracking-[0.16em] pt-0.5"
         style={{ fontFamily: FONT_MONO, color: 'var(--color-ink)' }}

@@ -13,7 +13,7 @@ export async function GET() {
   const body = {
     name: 'mcpindex.ai',
     description:
-      'Trust-to-act layer for agent tool use. An in-path drift gate pins each MCP tool contract (TOFU) and HOLDs a call before the agent acts when the contract silently changes (a deterministic contract-diff, not a safety verdict); a public directory indexes MCP servers and publishes per-tool screening verdicts so an agent can check a tool before it wires it.',
+      'Trust-to-act layer for agent tool use. An in-path gate pins each MCP tool contract (TOFU) and HOLDs a call before the agent acts when the contract silently changes (a deterministic contract-diff, not a safety verdict), and grades each call\'s blast radius — what it would do (read, write, delete, send) and whether it can be undone — read from the tool\'s declared contract (advisory and static, on by default in the clients); a public directory indexes MCP servers and publishes per-tool screening verdicts so an agent can check a tool before it wires it.',
     version: '1',
     serversIndexed: count,
     upstream: 'https://registry.modelcontextprotocol.io',
@@ -118,6 +118,29 @@ export async function GET() {
         'default_build_egresses_nothing_fail_closed',
         'behavioral_tier_clears_or_refutes_not_safety_oracle',
         'calibrated_false_v1',
+      ],
+    },
+
+    // The in-path blast-radius grade (shipped, on by default in the clients).
+    // A deterministic STATIC classifier derived from the tool's declared
+    // contract - it reads what a call WOULD do, it does not run the tool.
+    // Advisory and fail-closed (grades toward the more dangerous class when the
+    // contract is ambiguous). Deny-by-construction: every field is a typed
+    // enum/hash/bool, so no raw argument value can ride along. honest_limits is
+    // literal (not imported) so the build-time honesty guard can scan it.
+    blast_radius: {
+      what: 'labels the blast radius of each tool call before the agent acts: what it would do (read/write/delete/send), whether it can be undone, and whether it leaves the machine',
+      method: 'deterministic static classifier over the tool\'s declared contract (name, description, input/output schema); does not run the tool',
+      fields: ['action_type', 'side_effect_class', 'reversibility', 'egress', 'autonomy_ceiling'],
+      fail_mode: 'fail_closed',
+      ambiguity_posture: 'grades_up_assumes_more_dangerous_class',
+      privacy: 'deny_by_construction - every field is a typed enum/hash/bool; no raw argument value is carried',
+      default: 'on_by_default_in_published_clients',
+      clients: ['@mcp-index/sdk (typescript)', 'mcpindex-preflight (python)'],
+      honest_limits: [
+        'blast_radius_is_static_not_a_safety_verdict',
+        'reads_what_a_call_would_do_not_runtime_arguments',
+        'advisory_grade_orchestrator_decides',
       ],
     },
 
