@@ -1,6 +1,6 @@
 {
   "name": "mcp-server-mcpindex",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "An MCP server for finding MCP servers, plus advisory trust verdicts (check_tool_trust, assess_server) for agent frameworks. Drop-in for Claude Desktop, Cursor, Cline, Zed.",
   "keywords": [
     "mcp",
@@ -39,7 +39,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "node --check src/index.mjs && node --check src/trust.mjs",
+    "build": "node --check src/index.mjs && node --check src/trust.mjs && node --check src/update-check.mjs",
     "test": "node --test test/*.test.mjs",
     "check-published": "node scripts/check-published.mjs",
     "release": "node scripts/release.mjs"
