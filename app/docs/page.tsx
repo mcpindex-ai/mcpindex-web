@@ -32,7 +32,7 @@ export default function DocsPage() {
         </p>
         <p className="mt-3 text-[14px] leading-[1.55] text-[var(--color-mute)]">
           The rest of this page documents the advisory directory the gate queries: an MCP-native
-          API (free, no key, low-latency) that returns a verdict (ALLOW / DENY / REVIEW) on a tool
+          API (free, no key, low-latency) that returns a verdict (REVIEW or UNVERIFIED today; ALLOW / DENY are reserved in the contract) on a tool
           and a recommendation endpoint for discovery &mdash; direct HTTP, drop-in MCP server, or
           embedded.
         </p>

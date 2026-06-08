@@ -97,10 +97,11 @@ export default function AboutPage() {
           drift the gate catches is a signal the corpus can learn from; the
           corpus, as it grows, is designed to be the tier-1 lookup the gate
           queries before it decides (held off by default at launch). The gate
-          alone is copyable. The corpus &times; the
-          outcome-flywheel &times; the governance the screen enforces is the moat
-          &mdash; the part that compounds and the part a competitor cannot clone
-          by re-implementing a diff.
+          alone is copyable, and open source by design. What compounds is behind
+          it: the growing corpus of verdicts, the drift the network has already
+          caught, and the published methodology that governs them. A competitor
+          can re-implement a contract-diff in a weekend; they cannot
+          re-implement the record.
         </p>
         <p>
           Three primitives are exposed:{' '}

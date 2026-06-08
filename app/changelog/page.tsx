@@ -8,7 +8,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: 'Changelog',
   description:
-    'Daily diff of the MCP server registry - what was added, what changed version, what was deprecated.',
+    'Daily diff of the MCP server registry - the new MCP servers added each day.',
   alternates: {
     canonical: 'https://mcpindex.ai/changelog',
     types: { 'application/rss+xml': 'https://mcpindex.ai/changelog.rss' },
@@ -31,7 +31,7 @@ export default async function Changelog() {
   const sorted = [...servers].sort((a, b) =>
     b.publishedAt.localeCompare(a.publishedAt),
   );
-  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const cutoff = new Date(snap.fetchedAt).getTime() - 30 * 24 * 60 * 60 * 1000;
   const recent = sorted.filter((s) => new Date(s.publishedAt).getTime() > cutoff);
   const byDay = new Map<string, typeof sorted>();
   for (const s of recent) {
@@ -105,7 +105,7 @@ export default async function Changelog() {
 
       <section className="mt-16 rule-t pt-10">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
-          Daily counts (all-time)
+          Daily counts · last 28 days
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-1 font-mono text-[12px]">
           {buckets.slice(0, 28).map(([day, count]) => (

@@ -154,7 +154,7 @@ export default function TrustPage() {
           </Edge>
           <Edge head="What leaves by default: nothing.">
             The deterministic tier-0 contract-diff runs locally; the default build
-            egresses nothing and holds your credentials never. Tiers 1-3 (cloud
+            egresses nothing and never holds your credentials. Tiers 1-3 (cloud
             corpus lookup, LLM consult, behavioral verifier) are built in-path
             seams, each held off by default and gated behind explicit opt-in.
           </Edge>

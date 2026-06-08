@@ -56,8 +56,8 @@ export default function ScreenPage() {
           <li>
             <strong className="text-[var(--color-ink)]">Not a certification or a badge.</strong>{' '}
             Screening your own tool does not get it endorsed, listed, or ranked higher. We publish
-            what the judge finds, including DENY, and the verdict is the same one a user evaluating
-            your tool would get. We screen tools; we don&apos;t sell them a verdict.
+            what the judge finds, including a finding that flags your own tool, and the verdict is
+            the same one a user evaluating your tool would get. We screen tools; we don&apos;t sell them a verdict.
           </li>
           <li>
             <strong className="text-[var(--color-ink)]">Your input isn&apos;t stored</strong> unless

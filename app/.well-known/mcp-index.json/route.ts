@@ -164,7 +164,7 @@ export async function GET() {
 
     mcpServer: {
       package: 'mcp-server-mcpindex',
-      version: '0.2.2',
+      version: '0.3.3',
       registry: 'npm',
       tools: [
         'recommend_mcp_for_task',
