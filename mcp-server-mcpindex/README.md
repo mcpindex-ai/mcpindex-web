@@ -19,11 +19,15 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "mcpindex": {
       "command": "npx",
-      "args": ["-y", "mcp-server-mcpindex"]
+      "args": ["-y", "mcp-server-mcpindex@latest"]
     }
   }
 }
 ```
+
+> `@latest` keeps you current: this is the advisory discovery server (not the in-path drift
+> gate), so it carries no version pin — `npx` fetches the newest on your next host restart, no
+> manual upgrade step.
 
 Restart Claude Desktop. Then ask:
 
@@ -40,7 +44,7 @@ Add to `.cursor/mcp.json`:
   "mcpServers": {
     "mcpindex": {
       "command": "npx",
-      "args": ["-y", "mcp-server-mcpindex"]
+      "args": ["-y", "mcp-server-mcpindex@latest"]
     }
   }
 }
@@ -51,7 +55,7 @@ Add to `.cursor/mcp.json`:
 Add to your Cline settings:
 
 ```bash
-npx -y mcp-server-mcpindex
+npx -y mcp-server-mcpindex@latest
 ```
 
 ## Tools exposed
@@ -112,7 +116,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 
 const mcpindex = new Client({ name: 'gate', version: '1.0.0' }, { capabilities: {} });
 await mcpindex.connect(new StdioClientTransport({
-  command: 'npx', args: ['-y', 'mcp-server-mcpindex'],
+  command: 'npx', args: ['-y', 'mcp-server-mcpindex@latest'],
 }));
 
 // gateToolCall wraps any agent tool dispatch. Plug it in front of
