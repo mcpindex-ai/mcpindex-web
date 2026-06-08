@@ -80,9 +80,11 @@ test('fetchLatestVersion: every failure mode returns null, never throws', async 
   assert.equal(await fetchLatestVersion({ fetchImpl: aborts, timeoutMs: 10 }), null);
 });
 
-test('notifyUpdateIfAvailable: emits on both channels when newer exists', async () => {
+test('notifyUpdateIfAvailable: emits to stderr ONLY — never a notifications/message', async () => {
   const logged = [];
   const notified = [];
+  // Even if a host-like server is handed in, we must NOT push an MCP logging notification —
+  // hosts render it inconsistently (Cursor logs a bare ` undefined`). stderr is the channel.
   const server = { sendLoggingMessage: async (p) => { notified.push(p); } };
   const fetchImpl = async () => ({ ok: true, json: async () => ({ version: '0.3.0' }) });
   const msg = await notifyUpdateIfAvailable({
@@ -92,9 +94,7 @@ test('notifyUpdateIfAvailable: emits on both channels when newer exists', async 
   assert.ok(msg);
   assert.equal(logged.length, 1);
   assert.match(logged[0], /0\.2\.2 -> 0\.3\.0/);
-  assert.equal(notified.length, 1);
-  assert.equal(notified[0].level, 'info');
-  assert.match(notified[0].data, /restart your MCP host/i);
+  assert.equal(notified.length, 0, 'must NOT emit notifications/message (Cursor shows it as undefined)');
 });
 
 test('notifyUpdateIfAvailable: silent when up to date', async () => {
@@ -115,18 +115,6 @@ test('notifyUpdateIfAvailable: opt-out short-circuits before any fetch', async (
   });
   assert.equal(msg, null);
   assert.equal(fetched, false);
-});
-
-test('notifyUpdateIfAvailable: a throwing logging channel never surfaces', async () => {
-  const logged = [];
-  const server = { sendLoggingMessage: async () => { throw new Error('host refused'); } };
-  const fetchImpl = async () => ({ ok: true, json: async () => ({ version: '0.3.0' }) });
-  // must resolve (not reject) and still have emitted to stderr
-  const msg = await notifyUpdateIfAvailable({
-    currentVersion: '0.2.2', server, env: {}, fetchImpl, log: (m) => logged.push(m),
-  });
-  assert.ok(msg);
-  assert.equal(logged.length, 1);
 });
 
 test('notifyUpdateIfAvailable: a throwing fetch never surfaces', async () => {

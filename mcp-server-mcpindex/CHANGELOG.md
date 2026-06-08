@@ -4,6 +4,13 @@ All notable changes to `mcp-server-mcpindex` are recorded here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2026-06-08
+
+### Changed
+
+- **Update notice is now stderr-only.** Removed the MCP `notifications/message` (`sendLoggingMessage`) from the update-notice path — it was redundant with the stderr line and hosts render it inconsistently (Cursor logged it as a bare ` undefined`). stderr is the universal channel every host (Cursor, Claude Desktop, Claude Code, Gemini CLI) surfaces in its per-server log, so nothing a host actually displayed is lost. Supersedes the 0.3.0 dual-channel behavior.
+- The `logging` server capability is **no longer declared** (it existed only to deliver that notification); the server now advertises `tools` only.
+
 ## [0.3.1] - 2026-06-08
 
 ### Changed

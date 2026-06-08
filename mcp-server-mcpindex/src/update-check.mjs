@@ -87,14 +87,15 @@ export async function fetchLatestVersion({
   }
 }
 
-/** Orchestration: check, and if a newer version exists, emit on BOTH channels.
- *  stderr is the reliable channel; the MCP logging notification is best-effort
- *  (only delivered if the host enabled `logging` and didn't filter `info`).
- *  Returns the message it emitted (or null) — handy for tests/callers.
- *  Never throws; never blocks the caller meaningfully (caller fire-and-forgets). */
+/** Orchestration: check, and if a newer version exists, emit the notice to STDERR only.
+ *  stderr is the UNIVERSAL channel — every MCP host (Cursor, Claude Desktop/Code, Gemini
+ *  CLI, …) surfaces a spawned server's stderr in its per-server log. We deliberately do NOT
+ *  emit an MCP `notifications/message`: hosts render it inconsistently (Cursor logs it as a
+ *  bare ` undefined`, swallowing the text), so it only adds noise where stderr already
+ *  carries the message cleanly. Returns the message it emitted (or null) — handy for
+ *  tests/callers. Never throws; never blocks the caller (caller fire-and-forgets). */
 export async function notifyUpdateIfAvailable({
   currentVersion,
-  server = null,
   env = process.env,
   log = (m) => console.error(`[mcp-server-mcpindex] ${m}`),
   fetchImpl = fetch,
@@ -105,14 +106,7 @@ export async function notifyUpdateIfAvailable({
     const latest = await fetchLatestVersion({ pkg, fetchImpl });
     if (!latest || !isOlder(currentVersion, latest)) return null;
     const msg = formatUpdateMessage(currentVersion, latest);
-    log(msg); // stderr — reliable
-    if (server && typeof server.sendLoggingMessage === 'function') {
-      try {
-        await server.sendLoggingMessage({ level: 'info', logger: 'mcpindex', data: msg });
-      } catch {
-        /* host didn't enable logging / filtered the level — stderr already covered it */
-      }
-    }
+    log(msg); // stderr — the one channel every host renders cleanly
     return msg;
   } catch {
     return null; // belt-and-suspenders: this path must never surface an error
