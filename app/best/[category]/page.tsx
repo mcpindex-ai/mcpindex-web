@@ -131,7 +131,7 @@ export default async function BestCategory(
             {ranked.map((row, i) => (
               <li
                 key={row.server.slug}
-                className="rule-b grid grid-cols-[40px_1fr_auto] gap-4 px-2 py-5 items-baseline group hover:bg-[var(--color-accent-soft)]/40 transition-colors"
+                className="rule-b row-rank-score px-2 py-5 group hover:bg-[var(--color-accent-soft)]/40 transition-colors"
               >
                 <span className="font-mono text-[12px] text-[var(--color-mute)] tabular-nums">
                   #{String(i + 1).padStart(2, '0')}

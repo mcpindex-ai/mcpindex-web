@@ -68,7 +68,7 @@ export default async function Changelog() {
       <section className="mt-12">
         {[...byDay.entries()].map(([day, list]) => (
           <div key={day} className="rule-t py-6">
-            <div className="grid sm:grid-cols-[140px_1fr] gap-4">
+            <div className="row-kv-wide">
               <div className="font-mono text-[12px] text-[var(--color-cite)] tabular-nums">
                 {day}
                 <div className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-mute)] mt-1">

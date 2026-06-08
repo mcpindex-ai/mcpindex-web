@@ -4,5 +4,5 @@ export const PRIMARY_NAV = [
   { href: '/trust', label: 'Trust' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/screen', label: 'Screen' },
-  { href: '/leaderboard', label: 'Maturity rankings' },
+  { href: '/leaderboard', label: 'Maturity Rankings' },
 ] as const;

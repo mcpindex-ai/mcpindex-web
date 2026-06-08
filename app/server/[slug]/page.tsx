@@ -231,7 +231,7 @@ export default async function ServerPage(
                   {server.envVars.map((v) => (
                     <div
                       key={v.name}
-                      className="rule-b grid sm:grid-cols-[200px_auto_1fr] gap-4 py-4 px-2"
+                      className="rule-b row-3up-wide py-4 px-2"
                     >
                       <code className="font-mono text-[13px] text-[var(--color-ink)]">{v.name}</code>
                       <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-mute)] flex gap-2">
@@ -261,7 +261,7 @@ export default async function ServerPage(
                 {Object.entries(breakdown).map(([k, v]) => (
                   <div
                     key={k}
-                    className="rule-b grid grid-cols-[1fr_60px] gap-4 py-3 px-2 items-center"
+                    className="rule-b row-2up-end py-3 px-2"
                   >
                     <div className="font-mono text-[12px] text-[var(--color-cite)] capitalize">{k}</div>
                     <div className="text-right font-mono tabular-nums text-[14px] text-[var(--color-ink)]">
@@ -392,7 +392,7 @@ export default async function ServerPage(
 
 function RailRow({ k, v, href }: { k: string; v: string; href?: string }) {
   return (
-    <div className="rule-b grid grid-cols-[auto_1fr] gap-3 py-2.5 items-baseline">
+    <div className="rule-b row-kv-auto py-2.5">
       <dt className="text-[var(--color-mute)] uppercase tracking-[0.12em] text-[10.5px]">{k}</dt>
       <dd className="text-right text-[var(--color-ink)] truncate">
         {href ? (
@@ -541,7 +541,7 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
         <div className="mt-4 rule-t">
           {verdict.dimensions.map((d) => (
             <div key={d.id} className="rule-b py-2.5 px-1">
-              <div className="grid grid-cols-[1fr_90px_90px] gap-3 items-baseline">
+              <div className="row-3up-tight">
                 <code className="font-mono text-[12px] text-[var(--color-cite)] truncate">
                   {d.id}
                 </code>

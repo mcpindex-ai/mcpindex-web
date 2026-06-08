@@ -111,7 +111,7 @@ const md: Components = {
     return <code className="inline-code">{children}</code>;
   },
   table: ({ children }) => (
-    <div className="mt-6 overflow-x-auto rule-t rule-b rule-l rule-r">
+    <div className="mt-6 site-table-wrap rule-t rule-b rule-l rule-r">
       <table className="w-full border-collapse text-left text-[13px]">{children}</table>
     </div>
   ),

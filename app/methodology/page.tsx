@@ -183,7 +183,7 @@ export default function MethodologyPage() {
           Cite this
         </div>
         <pre className="bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] overflow-x-auto leading-snug">
-          <code>{`Bharti, G. "mcpindex: the trust-to-act layer for agent tool use." mcpindex.ai/methodology, 2026.
+          <code>{`"mcpindex: the trust-to-act layer for agent tool use." mcpindex.ai/methodology, 2026.
 https://mcpindex.ai/methodology`}</code>
         </pre>
         <p className="mt-4 text-[13.5px] text-[var(--color-cite)]">
@@ -208,7 +208,7 @@ function Dim({
   body: string;
 }) {
   return (
-    <li className="rule-b grid grid-cols-[160px_90px_1fr] gap-4 py-5 px-2 items-baseline">
+    <li className="rule-b row-3up py-5 px-2">
       <div className="font-mono text-[12.5px] uppercase tracking-[0.12em] text-[var(--color-ink)]">
         {label}
       </div>

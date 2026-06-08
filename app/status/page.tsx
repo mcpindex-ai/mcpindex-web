@@ -66,7 +66,7 @@ export default async function StatusPage() {
         {data.map((r) => (
           <div
             key={r.k}
-            className="rule-b grid grid-cols-[1fr_auto] gap-4 py-4 items-baseline"
+            className="rule-b row-2up-end py-4"
           >
             <dt className="text-[14.5px] text-[var(--color-cite)]">
               {r.k}
@@ -90,7 +90,7 @@ export default async function StatusPage() {
         {endpoints.map((e) => (
           <li
             key={e.path}
-            className="rule-b grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-1 sm:gap-4 py-4"
+            className="rule-b row-2up-end py-4"
           >
             <code className="font-mono text-[13px] text-[var(--color-ink)] break-all">
               {e.path}

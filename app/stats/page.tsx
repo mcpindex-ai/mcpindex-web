@@ -61,7 +61,7 @@ export default async function StatsPage() {
         {stats.map((s) => (
           <div
             key={s.label}
-            className="rule-b grid grid-cols-[1fr_auto] gap-6 py-5 px-2 items-baseline"
+            className="rule-b row-2up-end py-5 px-2"
           >
             <dt className="font-mono text-[12.5px] text-[var(--color-cite)]">
               {s.label}

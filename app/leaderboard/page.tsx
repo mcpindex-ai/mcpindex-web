@@ -8,7 +8,7 @@ import { CATEGORY_LABELS } from '@/lib/categorize';
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: 'Maturity rankings',
+  title: 'Maturity Rankings',
   description:
     'Top MCP servers ranked by listing maturity (Quality Score from public registry signals). Trust verdict shown separately — not used for sort order.',
 };
@@ -44,7 +44,7 @@ export default async function Leaderboard() {
     <article className="site-container pt-16 pb-24">
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
-          Maturity rankings · top 50 by quality score
+          Maturity Rankings · top 50 by quality score
         </div>
         <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
           Quality, and the verdict.
@@ -80,7 +80,7 @@ export default async function Leaderboard() {
           return (
             <li
               key={row.server.slug}
-              className="rule-b grid grid-cols-[40px_1fr_auto] sm:grid-cols-[60px_1fr_150px_120px_110px] gap-4 px-2 py-5 items-baseline group hover:bg-[var(--color-accent-soft)]/40 transition-colors"
+              className="rule-b row-leaderboard px-2 py-5 group hover:bg-[var(--color-accent-soft)]/40 transition-colors"
             >
               <span className="font-mono text-[12px] text-[var(--color-mute)] tabular-nums">
                 #{String(i + 1).padStart(2, '0')}
