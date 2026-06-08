@@ -15,6 +15,10 @@ const EDGES: [string, string][] = [
     'The verdict is advice. But the gate runs inside the call path, so a HOLD actually stops your agent before it acts on the changed contract. It is not a notification after the fact.',
   ],
   [
+    'Fails closed, never open',
+    'When the gate can’t verify a changed contract (an unparsed tool, a tier held off, a degraded check), it HOLDs the call rather than waving it through. Doubt resolves to REVIEW or a hold, never to a silent proceed.',
+  ],
+  [
     'Deterministic diff, not an LLM guess',
     'The ChangeKind taxonomy (added-required-param, constraint-narrowed, annotation-flip-to-destructive, output-schema-changed, removed / type / enum drift) is computed structurally. Same pin, same contract, same verdict, every time.',
   ],
