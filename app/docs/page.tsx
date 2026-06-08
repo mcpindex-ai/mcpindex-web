@@ -420,6 +420,43 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
             owns whether to allow, pause, or require approval.
           </p>
         </div>
+
+        <div
+          className="rule-t pt-5"
+          style={{ borderColor: 'var(--color-rule)' }}
+        >
+          <h3
+            className="text-[16px] tracking-tight font-semibold"
+            style={{ color: 'var(--color-ink)' }}
+          >
+            Ambient presence (on by default)
+          </h3>
+          <p
+            className="mt-1 text-[14px] leading-[1.55]"
+            style={{ color: 'var(--color-mute)' }}
+          >
+            The clients leave a quiet trace that mcpindex is working: the first time
+            each tool is used in a session, one dim line on <Mono>stderr</Mono>{' '}
+            &mdash; <Mono>mcpindex &middot; watching github/create_issue &mdash;
+            write, reversible</Mono> &mdash; then silence on every repeat call, plus a
+            one-line session summary. It is local-only: no network, nothing
+            persisted, and it never touches <Mono>stdout</Mono> or changes a gate
+            decision.
+          </p>
+          <p
+            className="mt-2 text-[13px] leading-[1.5]"
+            style={{ color: 'var(--color-mute)' }}
+          >
+            The first line shows how to turn it off
+            (<Mono>silence: MCPINDEX_AMBIENT_NOTICE=off</Mono>); the cadence tunes via{' '}
+            <Mono>MCPINDEX_AMBIENT_NOTICE_MODE</Mono>{' '}
+            (<Mono>first_touch</Mono> / <Mono>summary</Mono> / <Mono>every</Mono> /{' '}
+            <Mono>off</Mono>), and it stays quiet in CI and under{' '}
+            <Mono>DO_NOT_TRACK</Mono>. To render it in your own UI instead, pass an{' '}
+            <Mono>on_invocation</Mono> callback (Python) / <Mono>onInvocation</Mono>{' '}
+            (TS) to <Mono>wrap()</Mono>.
+          </p>
+        </div>
       </Section>
 
       {/* §04 - Anatomy of a response */}
