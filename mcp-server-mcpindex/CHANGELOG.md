@@ -4,6 +4,12 @@ All notable changes to `mcp-server-mcpindex` are recorded here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-06-08
+
+### Changed
+
+- **No functional change.** Published to validate the 0.3.0 startup update-notice end-to-end in a live host (Cursor/Claude Desktop): a client running an older version now sees `0.3.0 -> 0.3.1 available` in the host's MCP log (the notice rides stderr, which the host surfaces). Confirms the notify-only update path works in the real environment.
+
 ## [0.3.0] - 2026-06-08
 
 ### Added
