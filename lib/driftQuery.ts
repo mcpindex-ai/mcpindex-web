@@ -29,6 +29,9 @@ function redis(): Redis | null {
 }
 
 function metaToResult(meta: Record<string, unknown> | null): DriftAny {
+  // SET membership ALONE is the corroboration signal (>=2 independent observers); the meta
+  // hash is decorative detail. So a hit with a missing/expired meta still reports drifted:true
+  // with sources:2 (the honest floor membership guarantees) -- never a false clean.
   if (!meta) return { drifted: true, sources: 2, safety_relevant: false, last_seen: null };
   const sources = Number(meta.sources);
   return {
@@ -61,7 +64,7 @@ export async function lookupCorroborated(fps: string[]): Promise<Record<string, 
         hits.map((fp) => r.hgetall<Record<string, unknown>>(`drift:corr:meta:${fp}`)),
       );
       hits.forEach((fp, i) => {
-        out[fp] = metaToResult(metas[i] ?? null);
+        out[fp] = metaToResult(metas[i]);
       });
     }
     return out;

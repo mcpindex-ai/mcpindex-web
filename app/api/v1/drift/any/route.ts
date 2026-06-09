@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { lookupCorroborated, FP_RE, MAX_FPS, type DriftAny } from '@/lib/driftQuery';
-import { checkDriftLimit } from '@/lib/ratelimit';
+import { checkDriftReadLimit } from '@/lib/ratelimit';
 
 // Fleet drift query (M3): "has this tool_fp drifted for anyone, corroborated?" Read-only,
 // fail-OPEN. GET ?fp=<32hex> for a single tool; POST {fps:[...]} for a session's tools.
@@ -19,7 +19,7 @@ function clientIp(req: NextRequest): string {
 }
 
 export async function GET(req: NextRequest) {
-  const limit = await checkDriftLimit(clientIp(req), new Date());
+  const limit = await checkDriftReadLimit(clientIp(req), new Date());
   if (!limit.ok) {
     return Response.json({ error: 'rate_limited' }, { status: 429, headers: { 'retry-after': '60' } });
   }
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   if (!(req.headers.get('content-type') ?? '').toLowerCase().includes('application/json')) {
     return Response.json({ error: 'unsupported_media_type' }, { status: 415 });
   }
-  const limit = await checkDriftLimit(clientIp(req), new Date());
+  const limit = await checkDriftReadLimit(clientIp(req), new Date());
   if (!limit.ok) {
     return Response.json({ error: 'rate_limited' }, { status: 429, headers: { 'retry-after': '60' } });
   }
