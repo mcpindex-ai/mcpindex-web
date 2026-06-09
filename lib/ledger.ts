@@ -52,7 +52,7 @@ export interface Ledger {
 
 const FP_RE = /^[0-9a-f]{32}$/;
 
-function coerceEvent(x: unknown): LedgerEvent | null {
+export function coerceEvent(x: unknown): LedgerEvent | null {
   if (!x || typeof x !== 'object') return null;
   const e = x as Record<string, unknown>;
   const tool_fp = typeof e.tool_fp === 'string' ? e.tool_fp : '';
@@ -67,7 +67,7 @@ function coerceEvent(x: unknown): LedgerEvent | null {
   };
 }
 
-function coerceStat(x: unknown): LedgerStat {
+export function coerceStat(x: unknown): LedgerStat {
   const s = (x && typeof x === 'object' ? x : {}) as Record<string, unknown>;
   const n = (v: unknown): number => {
     const k = Number(v);
