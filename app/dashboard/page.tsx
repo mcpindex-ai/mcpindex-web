@@ -24,7 +24,7 @@ export default async function DashboardPage() {
         { label: 'Servers covered', value: stats.serversCovered },
         { label: 'Tool pins seen', value: stats.pins },
         { label: 'Contract drifts seen (telemetry)', value: stats.drifts },
-        { label: 'Safety-relevant signals', value: stats.safetyRelevant },
+        { label: 'Safety-relevant contract changes', value: stats.safetyRelevant },
       ]
     : [];
 
@@ -86,6 +86,10 @@ export default async function DashboardPage() {
         <h2 className="font-mono text-[12px] uppercase tracking-[0.18em] text-[var(--color-mute)]">
           Crawler ledger
         </h2>
+        <p className="mt-2 text-[13px] leading-[1.5] text-[var(--color-mute)]">
+          A different population than the opt-in telemetry above: these come from the public-registry
+          crawl, so the counts will not match the telemetry numbers.
+        </p>
         {ledger ? (
           <dl className="mt-4 rule-t">
             {crawlerRows.map((s) => (

@@ -19,11 +19,12 @@ function truncateFp(fp: string): string {
 }
 
 // The blob carries hour-coarsened ISO timestamps (YYYY-MM-DDTHH:00:00Z). Show a human UTC string
-// to match the site's date voice (stats/status). Falls back to the raw string if it is not a date.
+// to match the site's date voice (stats/status). A non-date value renders nothing (not the raw
+// string) so an operator/attacker-controlled blob can never paint arbitrary text on a date line.
 function fmtTs(ts: string): string {
   if (!ts) return '';
   const d = new Date(ts);
-  return Number.isNaN(d.getTime()) ? ts : d.toUTCString();
+  return Number.isNaN(d.getTime()) ? '' : d.toUTCString();
 }
 
 export default async function LedgerPage() {
@@ -82,6 +83,9 @@ export default async function LedgerPage() {
           <div className="rule-b row-2up-end py-5 px-2">
             <dt className="font-mono text-[12.5px] text-[var(--color-cite)]">
               Safety-relevant contract changes
+              <span className="block mt-1 font-mono text-[11px] text-[var(--color-mute)] normal-case">
+                Changes that touch a safety-relevant field - not confirmed vulnerabilities.
+              </span>
             </dt>
             <dd className="font-mono text-[16px] text-[var(--color-ink)] tabular-nums text-right">
               {stat.safety_relevant.toLocaleString()}
@@ -106,10 +110,9 @@ export default async function LedgerPage() {
           </p>
           <p>No server pays to be listed or de-listed.</p>
         </div>
-        {ledger.framing && (
-          <p className="mt-6 text-[14px] leading-[1.55] text-[var(--color-mute)]">{ledger.framing}</p>
-        )}
-        {ledger.generated_at && (
+        {/* The blob also carries a `framing` string, but it is operator/attacker-controllable;
+            this page states its own framing above (hardcoded) rather than render blob prose. */}
+        {ledger.generated_at && fmtTs(ledger.generated_at) && (
           <p className="mt-2 font-mono text-[11px] text-[var(--color-mute)] tabular-nums">
             Generated {fmtTs(ledger.generated_at)}
           </p>

@@ -61,7 +61,7 @@ const TS_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 
 /** Bound any free string from the blob so a hostile value can't bloat the page (React already
  * escapes, so this is about size/format, not XSS). */
-function clampStr(v: unknown, max = 64): string {
+function clampStr(v: unknown, max: number): string {
   return typeof v === 'string' && v.length <= max ? v : '';
 }
 
