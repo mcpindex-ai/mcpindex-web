@@ -29,14 +29,15 @@ function redis(): Redis | null {
 }
 
 function metaToResult(meta: Record<string, unknown> | null): DriftAny {
-  // SET membership ALONE is the corroboration signal (>=2 independent observers); the meta
-  // hash is decorative detail. So a hit with a missing/expired meta still reports drifted:true
-  // with sources:2 (the honest floor membership guarantees) -- never a false clean.
-  if (!meta) return { drifted: true, sources: 2, safety_relevant: false, last_seen: null };
+  // SET membership means the central crawl saw this tool's contract drift (the unforgeable
+  // first-party observer); `sources` = 1 (the crawl) + any corroborating installs. The meta hash
+  // is decorative detail. A hit with missing/expired meta still reports drifted:true with the
+  // honest floor sources:1 (the crawl observation itself) -- never a false clean, never inflated.
+  if (!meta) return { drifted: true, sources: 1, safety_relevant: false, last_seen: null };
   const sources = Number(meta.sources);
   return {
     drifted: true,
-    sources: Number.isFinite(sources) && sources >= 2 ? sources : 2,
+    sources: Number.isFinite(sources) && sources >= 1 ? sources : 1,
     safety_relevant: meta.safety_relevant === '1' || meta.safety_relevant === 1 || meta.safety_relevant === true,
     last_seen: typeof meta.last_seen === 'string' ? meta.last_seen : null,
   };
