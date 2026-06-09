@@ -135,18 +135,22 @@ export default async function LedgerPage() {
         ) : (
           <div className="mt-6 site-table-wrap rule-t rule-b rule-l rule-r">
             <table className="w-full border-collapse text-left text-[13px]">
+              <caption className="sr-only">
+                Contract changes the crawler observed, by tool and server fingerprint, with last-seen
+                time and whether the change touched a safety-relevant field.
+              </caption>
               <thead className="bg-[#fafaf9]">
                 <tr>
-                  <th className="rule-b rule-r px-3 py-2 align-top font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-mute)]">
+                  <th scope="col" className="rule-b rule-r px-3 py-2 align-top font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-mute)]">
                     Tool fingerprint
                   </th>
-                  <th className="rule-b rule-r px-3 py-2 align-top font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-mute)]">
+                  <th scope="col" className="rule-b rule-r px-3 py-2 align-top font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-mute)]">
                     Server fingerprint
                   </th>
-                  <th className="rule-b rule-r px-3 py-2 align-top font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-mute)]">
+                  <th scope="col" className="rule-b rule-r px-3 py-2 align-top font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-mute)]">
                     Last seen
                   </th>
-                  <th className="rule-b rule-r px-3 py-2 align-top font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-mute)]">
+                  <th scope="col" className="rule-b rule-r px-3 py-2 align-top font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-mute)]">
                     Safety
                   </th>
                 </tr>
@@ -158,18 +162,28 @@ export default async function LedgerPage() {
                       {truncateFp(e.tool_fp)}
                     </td>
                     <td className="rule-b rule-r px-3 py-2 align-top font-mono text-[13px] text-[var(--color-cite)] tabular-nums">
-                      {e.server_fp ? truncateFp(e.server_fp) : '-'}
+                      {e.server_fp ? (
+                        truncateFp(e.server_fp)
+                      ) : (
+                        <>
+                          <span className="sr-only">No server fingerprint recorded</span>
+                          <span aria-hidden="true">-</span>
+                        </>
+                      )}
                     </td>
                     <td className="rule-b rule-r px-3 py-2 align-top font-mono text-[13px] text-[var(--color-cite)] tabular-nums">
                       {fmtTs(e.last_seen)}
                     </td>
                     <td className="rule-b rule-r px-3 py-2 align-top text-[13px] text-[var(--color-cite)]">
                       {e.safety_relevant ? (
-                        <span className="inline-block font-mono text-[10.5px] uppercase tracking-[0.08em] px-2 py-0.5 border border-[var(--color-rule)] text-[var(--color-accent)]">
+                        <span className="inline-block font-mono text-[10.5px] uppercase tracking-[0.08em] px-2 py-0.5 border border-[var(--color-cite)] text-[var(--color-cite)]">
                           safety-relevant diff
                         </span>
                       ) : (
-                        <span className="text-[var(--color-mute)]">-</span>
+                        <>
+                          <span className="sr-only">Not safety-relevant</span>
+                          <span aria-hidden="true" className="text-[var(--color-mute)]">-</span>
+                        </>
                       )}
                     </td>
                   </tr>

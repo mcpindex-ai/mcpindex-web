@@ -8,7 +8,7 @@
     "check:honesty": "node scripts/check-graduation-honesty.mjs",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test lib/badge.test.ts lib/driftIngest.test.ts lib/driftQuery.test.ts",
+    "test": "tsx --test lib/badge.test.ts lib/driftIngest.test.ts lib/driftQuery.test.ts lib/ledger.test.ts lib/driftStats.test.ts",
     "falsifier:drift": "node scripts/drift-falsifier-report.mjs"
   },
   "dependencies": {

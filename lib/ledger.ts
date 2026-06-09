@@ -95,21 +95,11 @@ export function coerceStat(x: unknown): LedgerStat {
   };
 }
 
-/** Read + validate the published ledger blob. Returns null when the flag is off, the cache is
- * unavailable, or the blob is missing/malformed — the page/API treat null as "not published".
- * Fail-CLOSED on shape (a corrupt blob is not published), but never throws. */
-export async function loadLedger(): Promise<Ledger | null> {
-  if (!ledgerEnabled()) return null;
-  const r = redis();
-  if (!r) return null;
-  let raw: unknown;
-  try {
-    raw = await r.get(LEDGER_KEY);
-  } catch {
-    return null; // cache hiccup => "not published right now", never a stale lie
-  }
+/** Validate a raw Upstash value (string OR already-parsed object, per `automaticDeserialization`)
+ * into a Ledger. Returns null for a missing/unparseable/wrong-schema blob. Pure + exported so the
+ * branchy parsing (the live data path) is unit-testable without a Redis. Never throws. */
+export function parseLedgerBlob(raw: unknown): Ledger | null {
   if (!raw) return null;
-  // Upstash may return the blob already parsed (JSON) or as a string.
   let blob: Record<string, unknown>;
   if (typeof raw === 'string') {
     try {
@@ -133,4 +123,20 @@ export async function loadLedger(): Promise<Ledger | null> {
     stat: coerceStat(blob.stat),
     events,
   };
+}
+
+/** Read + validate the published ledger blob. Returns null when the flag is off, the cache is
+ * unavailable, or the blob is missing/malformed — the page/API treat null as "not published".
+ * Fail-CLOSED on shape (a corrupt blob is not published), but never throws. */
+export async function loadLedger(): Promise<Ledger | null> {
+  if (!ledgerEnabled()) return null;
+  const r = redis();
+  if (!r) return null;
+  let raw: unknown;
+  try {
+    raw = await r.get(LEDGER_KEY);
+  } catch {
+    return null; // cache hiccup => "not published right now", never a stale lie
+  }
+  return parseLedgerBlob(raw);
 }

@@ -30,7 +30,10 @@ export async function GET(req: NextRequest) {
     // Flag on but blob unavailable/malformed: honest "not published right now", never a stale lie.
     return Response.json({ error: 'unavailable' }, { status: 503, headers: { 'retry-after': '120' } });
   }
+  // no-store, NOT max-age: this endpoint is flag-gated and force-dynamic. A browser-cached 200
+  // would keep serving the gated ledger for up to its TTL after an M4 rollback (flag flipped off),
+  // so the kill switch would not be a clean kill. Per-request is fine -- a single Upstash GET.
   return Response.json(ledger, {
-    headers: { 'cache-control': 'public, max-age=300, stale-while-revalidate=3600' },
+    headers: { 'cache-control': 'no-store' },
   });
 }

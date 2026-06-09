@@ -3,9 +3,10 @@
 // hits are not exercised here (no creds in CI).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { coerceEvent, coerceStat, ledgerEnabled, loadLedger } from './ledger';
+import { coerceEvent, coerceStat, ledgerEnabled, loadLedger, parseLedgerBlob } from './ledger';
 
 const FP = '0b4796d16feb3912c0db0824c39e9b70';
+const SCHEMA = 'mcpindex.drift.ledger/2';
 
 test('ledgerEnabled is false when NEXT_PUBLIC_DRIFT_LEDGER is unset or not "1"', () => {
   delete process.env.NEXT_PUBLIC_DRIFT_LEDGER;
@@ -76,6 +77,60 @@ test('coerceStat clamps negatives and NaN to 0', () => {
       safety_relevant: 0,
     },
   );
+});
+
+test('coerceStat maps each field to its own key (distinct values catch a field swap)', () => {
+  assert.deepEqual(
+    coerceStat({
+      tools_observed_drifting: 11,
+      total_contract_drifts_observed: 22,
+      servers: 7,
+      safety_relevant: 3,
+    }),
+    { tools_observed_drifting: 11, total_contract_drifts_observed: 22, servers: 7, safety_relevant: 3 },
+  );
+});
+
+test('parseLedgerBlob: parses a JSON string blob, passes through an object blob', () => {
+  const blob = {
+    schema: SCHEMA,
+    generated_at: '2026-06-09T06:00:00Z',
+    framing: 'observed by the crawler',
+    stat: { tools_observed_drifting: 2, total_contract_drifts_observed: 5, servers: 1, safety_relevant: 1 },
+    events: [{ tool_fp: FP, server_fp: '', sources: 1, safety_relevant: true, last_seen: '2026-06-09T06:00:00Z' }],
+  };
+  const fromObject = parseLedgerBlob(blob);
+  const fromString = parseLedgerBlob(JSON.stringify(blob));
+  assert.deepEqual(fromObject, fromString);
+  assert.equal(fromObject?.stat.tools_observed_drifting, 2);
+  assert.equal(fromObject?.events.length, 1);
+});
+
+test('parseLedgerBlob: rejects missing, unparseable, wrong-schema, and non-array-events blobs', () => {
+  assert.equal(parseLedgerBlob(null), null);
+  assert.equal(parseLedgerBlob(undefined), null);
+  assert.equal(parseLedgerBlob('{not json'), null);
+  assert.equal(parseLedgerBlob(42), null);
+  assert.equal(parseLedgerBlob({ schema: 'mcpindex.drift.ledger/1', events: [] }), null); // wrong version
+  const noEvents = parseLedgerBlob({ schema: SCHEMA, stat: {}, events: 'oops' });
+  assert.deepEqual(noEvents?.events, []); // non-array events -> [], not a throw
+});
+
+test('parseLedgerBlob: drops malformed events and bounds the free strings', () => {
+  const out = parseLedgerBlob({
+    schema: SCHEMA,
+    generated_at: 'x'.repeat(99), // over the 32 cap -> blanked
+    framing: 'y'.repeat(999), // over the 280 cap -> blanked
+    stat: {},
+    events: [
+      { tool_fp: FP, last_seen: '2026-06-09T06:00:00Z' }, // valid
+      { tool_fp: 'not-hex' }, // dropped
+      'garbage', // dropped
+    ],
+  });
+  assert.equal(out?.generated_at, '');
+  assert.equal(out?.framing, '');
+  assert.equal(out?.events.length, 1);
 });
 
 test('loadLedger resolves to null when the flag is off', async () => {
