@@ -51,3 +51,39 @@ export async function checkScreenLimit(ip: string, now: Date): Promise<ScreenLim
     return { ok: true }; // fail-open on Redis error
   }
 }
+
+// Drift-telemetry ingest limit (/api/v1/drift). Batched, free (no LLM spend), so the per-IP
+// ceiling is generous — it only exists to bound an abusive flood, not to ration a paid
+// resource. A blocked request is dropped silently by the route (telemetry is lossy by
+// design). Reuses the same Upstash instance + fail-open posture as the screen limiter.
+const DRIFT_BATCH_PER_IP_PER_MIN = 120;
+// Global daily ceiling on ACCEPTED batches. The per-IP limit is evadable by an attacker who
+// rotates x-forwarded-for when not behind Vercel's edge; this caps the total damage (counter
+// inflation + HyperLogLog cardinality poisoning of the M1 falsifier metrics) regardless of
+// source-IP distribution. 200k batches/day is far above real opt-in telemetry volume.
+const DRIFT_GLOBAL_BATCH_PER_DAY = 200_000;
+
+export type DriftLimit = { ok: true } | { ok: false };
+
+export async function checkDriftLimit(ip: string, now: Date): Promise<DriftLimit> {
+  const r = redis();
+  if (!r) return { ok: true }; // fail-open: drop-on-overflow is acceptable for telemetry
+
+  const min = now.toISOString().slice(0, 16); // yyyy-mm-ddThh:mm
+  const day = now.toISOString().slice(0, 10); // yyyy-mm-dd
+  try {
+    // Per-IP first; an IP-blocked request must NOT count toward the global ceiling.
+    const ipKey = `drift:ip:${ip}:${min}`;
+    const c = await r.incr(ipKey);
+    if (c === 1) await r.expire(ipKey, 70);
+    if (c > DRIFT_BATCH_PER_IP_PER_MIN) return { ok: false };
+
+    // Global daily circuit-breaker — bounds metric-poisoning under IP spoofing.
+    const gKey = `drift:global:${day}`;
+    const g = await r.incr(gKey);
+    if (g === 1) await r.expire(gKey, 90_000); // ~25h
+    return g > DRIFT_GLOBAL_BATCH_PER_DAY ? { ok: false } : { ok: true };
+  } catch {
+    return { ok: true }; // fail-open on Redis error
+  }
+}

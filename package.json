@@ -8,7 +8,7 @@
     "check:honesty": "node scripts/check-graduation-honesty.mjs",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test lib/badge.test.ts"
+    "test": "tsx --test lib/badge.test.ts lib/driftIngest.test.ts"
   },
   "dependencies": {
     "@upstash/redis": "^1.37.0",
