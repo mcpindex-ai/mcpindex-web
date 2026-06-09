@@ -4,6 +4,7 @@
 // treats null as "metrics unavailable", never a fabricated zero.
 
 import { Redis } from '@upstash/redis';
+import { ledgerEnabled } from './ledger';
 
 let _redis: Redis | null | undefined;
 function redis(): Redis | null {
@@ -31,6 +32,9 @@ export function coerceNonNegInt(v: unknown): number {
 
 /** Read aggregate drift counters. Returns null when Redis is unavailable or any read fails. */
 export async function loadDriftStats(): Promise<DriftStats | null> {
+  // Defense-in-depth: the dashboard page already 404s when the flag is off, but mirror loadLedger's
+  // internal guard so a future second caller can't expose the M5 counters pre-go-live.
+  if (!ledgerEnabled()) return null;
   const r = redis();
   if (!r) return null;
   try {

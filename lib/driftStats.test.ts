@@ -5,11 +5,18 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { coerceNonNegInt, loadDriftStats } from './driftStats';
 
-test('fail-closed: with no Upstash configured, loadDriftStats resolves to null', async () => {
+test('fail-closed: flag on but no Upstash configured, loadDriftStats resolves to null', async () => {
+  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1'; // past the defense-in-depth flag guard...
   delete process.env.UPSTASH_REDIS_REST_URL;
   delete process.env.UPSTASH_REDIS_REST_TOKEN;
   delete process.env.KV_REST_API_URL;
   delete process.env.KV_REST_API_TOKEN;
+  const res = await loadDriftStats(); // ...so this null is the Redis-unconfigured path
+  assert.equal(res, null);
+});
+
+test('flag off: loadDriftStats resolves to null (defense-in-depth, pre-go-live)', async () => {
+  delete process.env.NEXT_PUBLIC_DRIFT_LEDGER;
   const res = await loadDriftStats();
   assert.equal(res, null);
 });

@@ -2,7 +2,11 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { loadLedger, ledgerEnabled } from '@/lib/ledger';
 
-export const revalidate = 3600;
+// 300s, not 3600: a one-off Redis blip makes loadLedger() return null, and ISR would otherwise
+// cache that "not published" empty state for the whole window. 5 min bounds how long a transient
+// miss can show stale-empty on a public trust surface (the API route is force-dynamic, so it
+// self-heals per-request; this keeps the page close behind it).
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: 'Drift ledger',
@@ -12,6 +16,14 @@ export const metadata: Metadata = {
 
 function truncateFp(fp: string): string {
   return fp.length >= 12 ? `${fp.slice(0, 12)}...` : fp;
+}
+
+// The blob carries hour-coarsened ISO timestamps (YYYY-MM-DDTHH:00:00Z). Show a human UTC string
+// to match the site's date voice (stats/status). Falls back to the raw string if it is not a date.
+function fmtTs(ts: string): string {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return Number.isNaN(d.getTime()) ? ts : d.toUTCString();
 }
 
 export default async function LedgerPage() {
@@ -29,7 +41,7 @@ export default async function LedgerPage() {
           <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">Drift ledger</h1>
         </header>
         <p className="mt-8 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
-          No ledger published right now -- check back shortly.
+          No ledger published right now - check back shortly.
         </p>
       </article>
     );
@@ -52,25 +64,30 @@ export default async function LedgerPage() {
             Observed
           </div>
           <p className="mt-2 font-mono text-[32px] leading-none text-[var(--color-ink)] tabular-nums">
-            {stat.tools_observed_drifting.toLocaleString()} tools observed drifting
+            {stat.tools_observed_drifting.toLocaleString()} tools changed their contract
           </p>
           <p className="mt-2 font-mono text-[13px] text-[var(--color-cite)] tabular-nums">
-            of {stat.total_contract_drifts_observed.toLocaleString()} contract changes observed
+            across {stat.total_contract_drifts_observed.toLocaleString()} contract changes observed
+            (a tool can change more than once)
           </p>
         </div>
 
-        <div className="rule-b row-2up-end py-5 px-2">
-          <dt className="font-mono text-[12.5px] text-[var(--color-cite)]">Servers affected</dt>
-          <dd className="font-mono text-[16px] text-[var(--color-ink)] tabular-nums text-right">
-            {stat.servers.toLocaleString()}
-          </dd>
-        </div>
-        <div className="rule-b row-2up-end py-5 px-2">
-          <dt className="font-mono text-[12.5px] text-[var(--color-cite)]">Safety-relevant changes</dt>
-          <dd className="font-mono text-[16px] text-[var(--color-ink)] tabular-nums text-right">
-            {stat.safety_relevant.toLocaleString()}
-          </dd>
-        </div>
+        <dl>
+          <div className="rule-b row-2up-end py-5 px-2">
+            <dt className="font-mono text-[12.5px] text-[var(--color-cite)]">Servers affected</dt>
+            <dd className="font-mono text-[16px] text-[var(--color-ink)] tabular-nums text-right">
+              {stat.servers.toLocaleString()}
+            </dd>
+          </div>
+          <div className="rule-b row-2up-end py-5 px-2">
+            <dt className="font-mono text-[12.5px] text-[var(--color-cite)]">
+              Safety-relevant contract changes
+            </dt>
+            <dd className="font-mono text-[16px] text-[var(--color-ink)] tabular-nums text-right">
+              {stat.safety_relevant.toLocaleString()}
+            </dd>
+          </div>
+        </dl>
       </section>
 
       <section className="mt-12">
@@ -94,7 +111,7 @@ export default async function LedgerPage() {
         )}
         {ledger.generated_at && (
           <p className="mt-2 font-mono text-[11px] text-[var(--color-mute)] tabular-nums">
-            Generated {ledger.generated_at}
+            Generated {fmtTs(ledger.generated_at)}
           </p>
         )}
       </section>
@@ -103,6 +120,11 @@ export default async function LedgerPage() {
         <h2 className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
           Events
         </h2>
+        <p className="mt-4 text-[14px] leading-[1.55] text-[var(--color-mute)]">
+          Tools and servers are shown as content fingerprints, not names: mcpindex reports that a
+          contract changed without publicly naming a specific server. A dash means no server
+          fingerprint was recorded.
+        </p>
         {events.length === 0 ? (
           <p className="mt-4 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
             No contract drifts observed in the current window.
@@ -136,12 +158,12 @@ export default async function LedgerPage() {
                       {e.server_fp ? truncateFp(e.server_fp) : '-'}
                     </td>
                     <td className="rule-b rule-r px-3 py-2 align-top font-mono text-[13px] text-[var(--color-cite)] tabular-nums">
-                      {e.last_seen}
+                      {fmtTs(e.last_seen)}
                     </td>
                     <td className="rule-b rule-r px-3 py-2 align-top text-[13px] text-[var(--color-cite)]">
                       {e.safety_relevant ? (
                         <span className="inline-block font-mono text-[10.5px] uppercase tracking-[0.08em] px-2 py-0.5 border border-[var(--color-rule)] text-[var(--color-accent)]">
-                          safety-relevant
+                          safety-relevant diff
                         </span>
                       ) : (
                         <span className="text-[var(--color-mute)]">-</span>
@@ -156,7 +178,7 @@ export default async function LedgerPage() {
       </section>
 
       <p className="mt-10 font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
-        Page revalidates every hour
+        Page revalidates every 5 minutes
       </p>
     </article>
   );

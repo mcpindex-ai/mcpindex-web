@@ -44,6 +44,17 @@ test('coerceEvent blanks a bad server_fp', () => {
   assert.equal(coerceEvent({ ...base, server_fp: FP })?.server_fp, FP);
 });
 
+test('coerceEvent keeps an hour-coarsened ISO last_seen and blanks anything else', () => {
+  const base = { tool_fp: FP };
+  assert.equal(
+    coerceEvent({ ...base, last_seen: '2026-06-09T06:00:00Z' })?.last_seen,
+    '2026-06-09T06:00:00Z',
+  );
+  assert.equal(coerceEvent({ ...base, last_seen: '2026-01-01' })?.last_seen, ''); // not the coarsened shape
+  assert.equal(coerceEvent({ ...base, last_seen: 'x'.repeat(500) })?.last_seen, ''); // oversized
+  assert.equal(coerceEvent({ ...base, last_seen: 42 })?.last_seen, ''); // non-string
+});
+
 test('coerceStat clamps negatives and NaN to 0', () => {
   assert.deepEqual(coerceStat({}), {
     tools_observed_drifting: 0,

@@ -3,7 +3,9 @@ import { notFound } from 'next/navigation';
 import { loadDriftStats } from '@/lib/driftStats';
 import { loadLedger, ledgerEnabled } from '@/lib/ledger';
 
-export const revalidate = 3600;
+// 300s (see app/ledger/page.tsx): bounds how long a transient Redis-null empty state can be
+// ISR-cached on a public surface.
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: 'Drift dashboard',
@@ -52,6 +54,10 @@ export default async function DashboardPage() {
           Telemetry is opt-in (default off). These counts reflect only opted-in installs plus the
           public-registry crawl, not all mcpindex users.
         </p>
+        <p className="mt-3 text-[14px] leading-[1.55] text-[var(--color-mute)]">
+          Coverage is not endorsement: a server absent here is un-crawled or opted-out, not vouched
+          for - and listing is never bought.
+        </p>
       </header>
 
       <section className="mt-12">
@@ -71,7 +77,7 @@ export default async function DashboardPage() {
           </dl>
         ) : (
           <p className="mt-4 font-mono text-[13px] text-[var(--color-cite)]">
-            Adoption metrics unavailable right now.
+            Adoption metrics aren&apos;t published right now - check back shortly.
           </p>
         )}
       </section>
@@ -93,13 +99,13 @@ export default async function DashboardPage() {
           </dl>
         ) : (
           <p className="mt-4 font-mono text-[13px] text-[var(--color-cite)]">
-            Crawler ledger unavailable right now.
+            Crawler ledger isn&apos;t published right now - check back shortly.
           </p>
         )}
       </section>
 
       <p className="mt-10 font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
-        Page revalidates every hour
+        Page revalidates every 5 minutes
       </p>
     </article>
   );
