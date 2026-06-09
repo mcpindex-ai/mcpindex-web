@@ -46,6 +46,19 @@ export default function PrivacyPage() {
           improve detection. Leave it unchecked and nothing is retained.
         </p>
         <p>
+          Drift telemetry (the <span className="inline-code">@mcp-index/sdk</span> /{' '}
+          <span className="inline-code">mcpindex-preflight</span> clients): <strong>off by
+          default</strong>. The SDK sends <strong>nothing</strong> unless you set{' '}
+          <span className="inline-code">MCPINDEX_DRIFT_TELEMETRY=detection</span>. When enabled,
+          a tool-pin or a contract drift sends one one-way signal to{' '}
+          <span className="inline-code">/api/v1/drift</span>: salted (HMAC) fingerprints of the
+          server/tool id, the contract hashes, the change type, a safety flag, and an
+          hour-rounded time - plus a random install id that links one machine&rsquo;s signals so
+          we can count distinct installs (it is a random token, not derived from you, and is
+          never joined to your IP). It <strong>never</strong> sends tool schemas, arguments,
+          descriptions, URLs, or server/tool names. Unset the variable to stop.
+        </p>
+        <p>
           Cookies: none are set by the site itself. Vercel may set a single platform cookie
           for routing.
         </p>
