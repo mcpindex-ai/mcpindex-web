@@ -14,6 +14,7 @@ import {
   type Severity,
   type DimensionVerdict,
 } from '@/lib/verdicts';
+import { splitFlags } from '@/lib/badge';
 
 // Trust verdict shape (free-tier projection of the v1.0.0 verdict contract).
 // History and Provenance are deliberately omitted: anonymous surfaces never
@@ -483,7 +484,22 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
   }
 
   const verdict = state.verdict;
-  const style = DECISION_STYLE[verdict.directive.decision];
+
+  // The deterministic schema-content FAIL is on a different axis from the semantic
+  // screen, and the human `adjudication` is scoped to the SCREEN flag only. Insulate it:
+  // a schema-content FAIL is held independently and is never visually cleared by a
+  // `cleared` screen adjudication. Same split as the badge gate (one source of truth).
+  const { schemaContentFail, screenFail } = splitFlags(verdict);
+
+  // Defense-in-depth: the headline chip self-derives caution from the schema axis rather
+  // than trusting the stored directive. A held schema FAIL can never sit under a green
+  // ALLOW chip even if some other writer set ALLOW without the exporter's R7 floor (the
+  // web emits no ALLOW today; this makes the page fail-closed independent of pipeline order).
+  const effectiveDecision =
+    schemaContentFail && verdict.directive.decision === 'ALLOW'
+      ? 'REVIEW'
+      : verdict.directive.decision;
+  const style = DECISION_STYLE[effectiveDecision];
   const expires = new Date(verdict.directive.expires_at);
   const expiresLabel = Number.isNaN(expires.getTime())
     ? verdict.directive.expires_at
@@ -524,7 +540,7 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
           )}
         </div>
       ) : (
-        verdict.dimensions.some((d) => d.verdict === 'FAIL') && (
+        screenFail && (
           <div className="mt-3 px-3 py-2 bg-amber-50 border border-amber-300">
             <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-amber-800 mr-2">
               held for review
@@ -535,6 +551,23 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
             </span>
           </div>
         )
+      )}
+
+      {/* Deterministic schema-content FAIL: a SEPARATE axis, never cleared by the
+          screen adjudication above (avoids the fail-open where a cleared screen flag
+          would visually clear an unreviewed schema finding). */}
+      {schemaContentFail && (
+        <div className="mt-3 px-3 py-2 bg-amber-50 border border-amber-300">
+          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-amber-800 mr-2">
+            schema flag - held
+          </span>
+          <span className="text-[12.5px] leading-[1.5] text-[var(--color-cite)]">
+            A deterministic scan flagged a hostile marker in this tool&rsquo;s declared
+            schema - the part the semantic screen does not read. It is held, not a
+            confirmed accusation, pending review, and is not affected by any
+            semantic-screen review above.
+          </span>
+        </div>
       )}
 
       {verdict.dimensions.length > 0 && (

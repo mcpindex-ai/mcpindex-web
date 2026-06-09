@@ -13,6 +13,11 @@ export type VerdictStatus = 'EVALUATED' | 'PARTIAL' | 'STALE' | 'ERROR';
 export type DimensionVerdict = 'PASS' | 'FAIL' | 'UNVERIFIED' | 'ERROR';
 export type Severity = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
+// The deterministic schema-content integrity dimension (scan_schema). Centralized here
+// so the badge gate and the server page reference ONE id (no string drift on a
+// load-bearing dimension contract). Mirrors the producer's schema_scan._DIM_ID.
+export const SCHEMA_CONTENT_DIMENSION_ID = 'mcpindex.integrity.schema_content';
+
 export type Dimension = {
   id: string;
   verdict: DimensionVerdict;

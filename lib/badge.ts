@@ -10,7 +10,7 @@
 // "ALLOW" state - none exists pre-conformance. "screened" means we ran the
 // description poison-screen and it passed, nothing more.
 
-import type { Verdict } from './verdicts';
+import { SCHEMA_CONTENT_DIMENSION_ID, type Verdict } from './verdicts';
 
 export type BadgeState = 'screened' | 'flagged' | 'review' | 'not-screened' | 'stale';
 
@@ -38,19 +38,40 @@ export const BADGE_STYLE: Record<BadgeState, Style> = {
 // overturns a false positive (e.g. an honest tool over-flagged on phrasing) to
 // "screened"; an UNREVIEWED flag is HELD as "review" - neither clean nor accused.
 // This is the publish gate: "flagged" is reachable ONLY through `confirmed`.
+// Split a verdict's FAIL dimensions onto two INDEPENDENT axes. The per-verdict
+// `adjudication` governs ONLY the semantic screen flag (`screenFail`); a deterministic
+// schema-content FAIL is a separate axis that must never be cleared/escalated by it.
+// Exported so the badge gate AND the server page apply the SAME split - one source of
+// truth for a security-load-bearing predicate, no drift between the two surfaces.
+export function splitFlags(v: Verdict): { schemaContentFail: boolean; screenFail: boolean } {
+  return {
+    schemaContentFail: v.dimensions.some(
+      (d) => d.id === SCHEMA_CONTENT_DIMENSION_ID && d.verdict === 'FAIL',
+    ),
+    screenFail: v.dimensions.some(
+      (d) => d.id !== SCHEMA_CONTENT_DIMENSION_ID && d.verdict === 'FAIL',
+    ),
+  };
+}
+
 export function computeBadgeState(v: Verdict | null): BadgeState {
   if (!v) return 'not-screened';
   if (v.status === 'STALE') return 'stale';
   if (v.status === 'ERROR') return 'not-screened';
-  // raw "has a FAIL dimension" - inlined to keep this module import-free + pure.
-  // This is the ONLY gate-aware flag predicate; public surfaces must route here,
-  // not through a bare FAIL check (see lib/verdicts note).
-  const flagged = v.dimensions.some((d) => d.verdict === 'FAIL');
-  if (flagged) {
+
+  // A deterministic schema-content FAIL must NEVER be auto-cleared by a `cleared` screen
+  // adjudication (a fail-OPEN: a poisoned schema silently passed) nor auto-escalated to
+  // public "flagged" by a `confirmed` one. It independently HOLDS the badge at "review".
+  const { schemaContentFail, screenFail: screenFlagged } = splitFlags(v);
+
+  if (screenFlagged) {
     if (v.adjudication?.decision === 'confirmed') return 'flagged';
-    if (v.adjudication?.decision === 'cleared') return 'screened';
+    // a cleared SCREEN flag still cannot clear an unreviewed schema-content FAIL
+    if (v.adjudication?.decision === 'cleared') return schemaContentFail ? 'review' : 'screened';
     return 'review'; // unreviewed screen flag - held, never a public accusation
   }
+  if (schemaContentFail) return 'review'; // deterministic FAIL holds review, ungoverned by adjudication
+
   const integ = v.dimensions.find((d) => d.id === 'mcpindex.integrity.description');
   if (integ && integ.verdict === 'PASS') return 'screened';
   return 'review'; // verdict present but no clean integrity pass

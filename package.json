@@ -7,7 +7,8 @@
     "build": "node scripts/check-graduation-honesty.mjs && next build",
     "check:honesty": "node scripts/check-graduation-honesty.mjs",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "tsx --test lib/badge.test.ts"
   },
   "dependencies": {
     "@upstash/redis": "^1.37.0",
@@ -29,6 +30,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
+    "tsx": "^4.22.4",
     "typescript": "^5"
   }
 }
