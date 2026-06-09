@@ -20,6 +20,11 @@ const AT_HOUR = /^(?:\d{4}-\d{2}-\d{2}T\d{2}:00:00Z)?$/; // hour-coarsened or em
 const INSTALL_ID = /^[0-9a-f]{32}$/; // both SDKs emit exactly 16 random bytes = 32 hex
 
 export const MAX_BATCH = 256;
+// Daily counter keys expire after ~35 days — enough to PFMERGE a trailing-28-day window for
+// the opt-in/coverage measurement, but bounded so day-keys cannot accumulate forever.
+const DAILY_TTL_S = 35 * 86_400;
+// Hard ceiling on how long the (best-effort) counter write may hold the ingest response.
+const EXEC_TIMEOUT_MS = 2_000;
 
 export const DriftSignalSchema = z
   .object({
@@ -48,7 +53,9 @@ function redis(): Redis | null {
   if (_redis !== undefined) return _redis;
   const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
-  _redis = url && token ? new Redis({ url, token }) : null;
+  // retries:1 bounds the REST client's default 5-retry exponential backoff — a Redis incident
+  // must not stack ~11s of retries onto the ingest response (see EXEC_TIMEOUT_MS below).
+  _redis = url && token ? new Redis({ url, token, retry: { retries: 1 } }) : null;
   return _redis;
 }
 
@@ -70,15 +77,30 @@ export async function recordDriftBatch(signals: DriftSignal[], now: Date): Promi
     const p = r.pipeline();
     p.incrby('drift:signals:total', signals.length);
     p.incrby(`drift:signals:${day}`, signals.length);
+    p.expire(`drift:signals:${day}`, DAILY_TTL_S);
     if (pins.length) p.incrby('drift:event:pin', pins.length);
     if (drifts.length) p.incrby('drift:event:drift', drifts.length);
     if (safety.length) p.incrby('drift:safety_relevant', safety.length);
     if (installs.length) {
       p.pfadd('drift:installs', ...installs);
       p.pfadd(`drift:installs:${day}`, ...installs);
+      p.expire(`drift:installs:${day}`, DAILY_TTL_S);
     }
     if (servers.length) p.pfadd('drift:servers', ...servers);
-    await p.exec();
+
+    // Bound how long the counter write can hold the ingest response. The route awaits this
+    // before its 204, so a hung Upstash must not stall the request: race the pipeline against
+    // a timeout (the pipeline pre-swallows its own late rejection so it can lose harmlessly).
+    const exec = p.exec().then(
+      () => undefined,
+      () => undefined,
+    );
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, EXEC_TIMEOUT_MS);
+    });
+    await Promise.race([exec, timeout]);
+    clearTimeout(timer);
   } catch {
     // fail-open: counters are best-effort; never surface a Redis hiccup to the client
   }
