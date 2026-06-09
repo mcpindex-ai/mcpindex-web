@@ -244,6 +244,24 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* §persona — how to use it, by persona (the demo film). Restored to the homepage
+          below the interactive demo (reverts the dedupe that left only a /demo link). */}
+      <section id="persona" className="rule-t scroll-mt-20">
+        <div className="site-container py-20 sm:py-28">
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
+            How to use it
+          </div>
+          <h2 className="t-h3 font-medium text-[var(--color-ink)]">
+            One gate. Three ways to run it.
+          </h2>
+          <p className="mt-3 mb-10 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+            By persona: the MCP-client user, the SDK builder, the enterprise fleet. One install,
+            one line, or one policy. The model never sees the gate; your host or your code does.
+          </p>
+          <PromoVideos variant="persona" />
+        </div>
+      </section>
+
       {/* §honest-edges — updated for the gate. */}
       <section className="rule-t">
         <div className="reveal site-container py-20 sm:py-28">

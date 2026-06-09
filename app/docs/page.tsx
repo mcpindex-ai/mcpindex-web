@@ -456,8 +456,8 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
           >
             The clients leave a quiet trace that mcpindex is working: the first time
             each tool is used in a session, one dim line on <Mono>stderr</Mono>{' '}
-            &mdash; <Mono>mcpindex &middot; noted github/create_issue &mdash;
-            write, reversible</Mono> &mdash; then silence on every repeat call, plus a
+            &mdash; <Mono>mcpindex &middot; noted github/delete_repo &mdash;
+            delete, irreversible</Mono> &mdash; then silence on every repeat call, plus a
             one-line session summary. It is local-only: no network, nothing
             persisted, and it never touches <Mono>stdout</Mono> or changes a gate
             decision.
