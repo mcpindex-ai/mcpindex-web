@@ -60,7 +60,7 @@ export default function DocsPage() {
       </Section>
 
       {/* §02 - Three ways to use it */}
-      <Section number="02" title="Three ways to use it">
+      <Section number="02" title="Ways to use it">
         <p>Pick the shape that matches where the agent lives.</p>
 
         <UseCase
@@ -81,8 +81,17 @@ export default function DocsPage() {
             ``,
             `# pre-flight: discovery + the rank-1 server's verdict in one call`,
             `curl "https://mcpindex.ai/api/v1/preflight?task=read+pdf+to+s3"`,
+            ``,
+            `# search: full-text registry search (?q= required; &category= &limit= optional)`,
+            `curl "https://mcpindex.ai/api/v1/search?q=postgres&limit=10"`,
+            ``,
+            `# diff: what changed in the registry since a date`,
+            `curl "https://mcpindex.ai/api/v1/diff?since=2026-06-01"`,
+            ``,
+            `# server: the full record for one server by slug`,
+            `curl "https://mcpindex.ai/api/v1/server/<slug>"`,
           ]}
-          notes="trust returns a stored verdict (ALLOW / DENY / REVIEW, or UNVERIFIED if not screened); screen runs the live LLM judge on a pasted description and returns a fresh PARTIAL verdict; recommend returns ranked picks; preflight composes the two - the top servers plus the rank-1 server's advisory verdict in one round trip (verdict is null when that server is not yet screened - treat as not-cleared). All JSON, same shapes an MCP client gets."
+          notes="trust returns a stored verdict (REVIEW or UNVERIFIED today; ALLOW / DENY are reserved in the contract); screen runs the live LLM judge on a pasted description and returns a fresh PARTIAL verdict; recommend returns ranked picks; preflight composes the two - the top servers plus the rank-1 server's advisory verdict in one round trip (verdict is null when that server is not yet screened - treat as not-cleared); search and diff query the registry; server returns one full record. All JSON, same shapes an MCP client gets."
         />
         <UseCase
           letter="B"
@@ -103,6 +112,16 @@ export default function DocsPage() {
           ]}
           notes="Attribution appreciated. Email hello@mcpindex.ai if you want a higher rate limit."
         />
+        <UseCase
+          letter="D"
+          title="Embeddable verdict badge"
+          who="For READMEs and server listings - a live SVG that always agrees with the verdict page."
+          codeLines={[
+            `<!-- Markdown (GitHub-style; extension-less, keys off Content-Type) -->`,
+            `[![mcpindex](https://mcpindex.ai/api/v1/badge/<slug>)](https://mcpindex.ai/server/<slug>)`,
+          ]}
+          notes="The badge reads the same verdict the site pages and the trust API use, so the three never disagree. States are screened / flagged / review / re-check due, and a fail-closed gray not screened for an unknown slug - never green, never a fake pass, never a broken image."
+        />
       </Section>
 
       {/* §03 - Wire it to your client */}
@@ -119,7 +138,7 @@ export default function DocsPage() {
   "mcpServers": {
     "mcpindex": {
       "command": "npx",
-      "args": ["-y", "mcp-server-mcpindex"]
+      "args": ["-y", "mcp-server-mcpindex@latest"]
     }
   }
 }`}
@@ -132,7 +151,7 @@ export default function DocsPage() {
   "mcpServers": {
     "mcpindex": {
       "command": "npx",
-      "args": ["-y", "mcp-server-mcpindex"]
+      "args": ["-y", "mcp-server-mcpindex@latest"]
     }
   }
 }`}
@@ -142,7 +161,7 @@ export default function DocsPage() {
           client="Cline (VS Code)"
           path="Cline settings panel → MCP Servers → Add"
           json={`Command:  npx
-Args:     -y mcp-server-mcpindex`}
+Args:     -y mcp-server-mcpindex@latest`}
         />
 
         <ClientConfig
@@ -152,7 +171,7 @@ Args:     -y mcp-server-mcpindex`}
   "context_servers": {
     "mcpindex": {
       "command": "npx",
-      "args": ["-y", "mcp-server-mcpindex"]
+      "args": ["-y", "mcp-server-mcpindex@latest"]
     }
   }
 }`}
