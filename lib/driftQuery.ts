@@ -1,11 +1,15 @@
-// Fleet drift-query lookup (M3, read side). Answers "has this tool_fp drifted for anyone,
-// corroborated?" from the Upstash cache the mini32 drain maintains:
-//   - SET  `drift:corroborated`      -- tool_fps seen drifting by >= 2 INDEPENDENT observers
-//   - HASH `drift:corr:meta:<fp>`    -- { sources, safety_relevant, last_seen, server_fp }
+// Fleet drift-query lookup (M3, read side). Answers "has mcpindex's CRAWLER observed this tool's
+// contract drift?" from the Upstash cache the mini32 drain maintains:
+//   - SET  `drift:corroborated`      -- tool_fps the central CRAWL observed drifting (the only
+//                                       unforgeable, public-registry-only first-party observer;
+//                                       forgeable install reports never enter this set)
+//   - HASH `drift:corr:meta:<fp>`    -- { sources, safety_relevant, last_seen, server_fp } (all
+//                                       CRAWL-derived; sources=1 today, crawl only)
 //
 // READ-ONLY + fail-OPEN: a Redis miss/error returns `drifted: null` ("unknown"), NEVER a
-// false `drifted: false` ("clean"). Absence from the SET is a real `false` (we have the
-// cache and the fp isn't corroborated). The SDK treats only `drifted: true` as an advisory
+// false `drifted: false` ("clean"). Absence from the SET is a real `false` = "not observed
+// drifting by the crawl" (NOT a verified all-clear; a private/un-crawled tool is never here).
+// The SDK treats only `drifted: true` as an advisory
 // (AD-6-safe: it never moves PROCEED/HOLD). No tool data here -- a tool_fp is the same salted
 // fingerprint the SDK already emits under opt-in telemetry.
 
