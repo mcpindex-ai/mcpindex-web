@@ -25,6 +25,12 @@ export const MAX_BATCH = 256;
 const DAILY_TTL_S = 35 * 86_400;
 // Hard ceiling on how long the (best-effort) counter write may hold the ingest response.
 const EXEC_TIMEOUT_MS = 2_000;
+// M2 corpus stream: each validated signal is enqueued here for the mini32 drain, which builds
+// the `drift_events` corpus (Supabase) + the corroboration cache. Capped via xadd MAXLEN so a
+// down drain can't grow it unbounded; the drain trims consumed entries. The stream carries the
+// SAME closed, already-validated signal — no new field, no raw tool data.
+const STREAM_KEY = 'drift:stream';
+const STREAM_MAXLEN = 100_000;
 
 export const DriftSignalSchema = z
   .object({
@@ -87,6 +93,14 @@ export async function recordDriftBatch(signals: DriftSignal[], now: Date): Promi
       p.expire(`drift:installs:${day}`, DAILY_TTL_S);
     }
     if (servers.length) p.pfadd('drift:servers', ...servers);
+
+    // M2 corpus enqueue: stream each validated signal for the drain (best-effort, same
+    // fail-open as the counters; rides the same pipeline + timeout race below).
+    for (const s of signals) {
+      p.xadd(STREAM_KEY, '*', { d: JSON.stringify(s) }, {
+        trim: { type: 'MAXLEN', threshold: STREAM_MAXLEN, comparison: '~' },
+      });
+    }
 
     // Bound how long the counter write can hold the ingest response. The route awaits this
     // before its 204, so a hung Upstash must not stall the request: race the pipeline against
