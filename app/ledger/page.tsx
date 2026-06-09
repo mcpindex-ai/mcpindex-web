@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { loadLedger, ledgerEnabled } from '@/lib/ledger';
+import { ledgerEnabled } from '@/lib/ledger';
+import { loadLedger } from '@/lib/ledgerServer';
 
 // 300s, not 3600: a one-off Redis blip makes loadLedger() return null, and ISR would otherwise
 // cache that "not published" empty state for the whole window. 5 min bounds how long a transient
@@ -50,8 +51,25 @@ export default async function LedgerPage() {
 
   const { stat, events } = ledger;
 
+  // Static Dataset markup (no blob-derived fields -> no </script> injection surface).
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Dataset',
+    name: 'mcpindex drift ledger',
+    description:
+      "Contract changes mcpindex's crawler observed in public MCP tool definitions between daily " +
+      'registry snapshots. A contract diff, not a safety verdict.',
+    url: 'https://mcpindex.ai/ledger',
+    creator: { '@type': 'Organization', name: 'mcpindex', url: 'https://mcpindex.ai' },
+    isAccessibleForFree: true,
+  };
+
   return (
     <article className="site-container pt-16 pb-24">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
           Drift ledger · contract changes observed
@@ -195,7 +213,7 @@ export default async function LedgerPage() {
       </section>
 
       <p className="mt-10 font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
-        Page revalidates every 5 minutes
+        Refreshed from the crawler every 5 minutes
       </p>
     </article>
   );

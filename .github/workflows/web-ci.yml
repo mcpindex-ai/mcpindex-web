@@ -1,0 +1,57 @@
+name: mcpindex-web CI
+
+# Lint + typecheck + unit tests for the web app (repo root). Vercel runs `next build`
+# on deploy but never the test suite, so without this a regression in lib/ledger,
+# lib/driftStats, lib/driftQuery, lib/badge, etc. would ship unnoticed. ubuntu-only
+# (macOS runners bill 10x) and scoped to web-app paths so a mcp-server-mcpindex-only
+# change does not trigger it (that package has its own workflow).
+
+on:
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'lib/**'
+      - 'components/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - '.github/workflows/web-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'lib/**'
+      - 'components/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - '.github/workflows/web-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Test
+        run: npm test

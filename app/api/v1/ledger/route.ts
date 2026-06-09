@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
-import { loadLedger, ledgerEnabled } from '@/lib/ledger';
+import { ledgerEnabled } from '@/lib/ledger';
+import { loadLedger } from '@/lib/ledgerServer';
 import { checkDriftReadLimit } from '@/lib/ratelimit';
 
 // Public drift ledger (M4): the contract changes mcpindex's CRAWLER OBSERVED between daily

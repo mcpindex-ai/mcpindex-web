@@ -3,7 +3,7 @@
 // hits are not exercised here (no creds in CI).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { coerceEvent, coerceStat, ledgerEnabled, loadLedger, parseLedgerBlob } from './ledger';
+import { coerceEvent, coerceStat, ledgerEnabled, parseLedgerBlob } from './ledger';
 
 const FP = '0b4796d16feb3912c0db0824c39e9b70';
 const SCHEMA = 'mcpindex.drift.ledger/2';
@@ -133,11 +133,6 @@ test('parseLedgerBlob: drops malformed events and bounds the free strings', () =
   assert.equal(out?.events.length, 1);
 });
 
-test('loadLedger resolves to null when the flag is off', async () => {
-  delete process.env.NEXT_PUBLIC_DRIFT_LEDGER;
-  delete process.env.UPSTASH_REDIS_REST_URL;
-  delete process.env.UPSTASH_REDIS_REST_TOKEN;
-  delete process.env.KV_REST_API_URL;
-  delete process.env.KV_REST_API_TOKEN;
-  assert.equal(await loadLedger(), null);
-});
+// loadLedger lives in ledgerServer.ts (import 'server-only', not importable in plain node). Its
+// only logic beyond parseLedgerBlob (tested above) is `if (!ledgerEnabled()) return null` + a
+// guarded redis().get — both trivial and covered by the ledgerEnabled + parseLedgerBlob tests.

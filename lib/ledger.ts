@@ -6,20 +6,12 @@
 //
 // ONE-WAY DOOR: this surface is gated by NEXT_PUBLIC_DRIFT_LEDGER. Until it's '1', the page 404s
 // and the API 404s — go-live (M4) is a deliberate env flip + redeploy, never a merge side effect.
+//
+// This module is PURE (types + validation + the public flag) and has NO Upstash token, so it is
+// safe to import from anywhere and is unit-testable in plain node. The token-holding IO lives in
+// `ledgerServer.ts` (import 'server-only').
 
-import { Redis } from '@upstash/redis';
-
-const LEDGER_KEY = 'drift:ledger';
-const LEDGER_SCHEMA = 'mcpindex.drift.ledger/2';
-
-let _redis: Redis | null | undefined;
-function redis(): Redis | null {
-  if (_redis !== undefined) return _redis;
-  const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
-  _redis = url && token ? new Redis({ url, token }) : null;
-  return _redis;
-}
+export const LEDGER_SCHEMA = 'mcpindex.drift.ledger/2';
 
 /** The flag that makes the ledger public. M4 go-live = set this to '1' in Vercel + redeploy.
  * Read on the SERVER (page + route) so a flip takes effect on the next deploy, deterministically.
@@ -123,20 +115,4 @@ export function parseLedgerBlob(raw: unknown): Ledger | null {
     stat: coerceStat(blob.stat),
     events,
   };
-}
-
-/** Read + validate the published ledger blob. Returns null when the flag is off, the cache is
- * unavailable, or the blob is missing/malformed — the page/API treat null as "not published".
- * Fail-CLOSED on shape (a corrupt blob is not published), but never throws. */
-export async function loadLedger(): Promise<Ledger | null> {
-  if (!ledgerEnabled()) return null;
-  const r = redis();
-  if (!r) return null;
-  let raw: unknown;
-  try {
-    raw = await r.get(LEDGER_KEY);
-  } catch {
-    return null; // cache hiccup => "not published right now", never a stale lie
-  }
-  return parseLedgerBlob(raw);
 }

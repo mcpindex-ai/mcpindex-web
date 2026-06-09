@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { loadDriftStats } from '@/lib/driftStats';
-import { loadLedger, ledgerEnabled } from '@/lib/ledger';
+import { ledgerEnabled } from '@/lib/ledger';
+import { loadDriftStats } from '@/lib/driftStatsServer';
+import { loadLedger } from '@/lib/ledgerServer';
 
 // 300s (see app/ledger/page.tsx): bounds how long a transient Redis-null empty state can be
 // ISR-cached on a public surface.
@@ -109,7 +110,7 @@ export default async function DashboardPage() {
       </section>
 
       <p className="mt-10 font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
-        Page revalidates every 5 minutes
+        Refreshed every 5 minutes
       </p>
     </article>
   );

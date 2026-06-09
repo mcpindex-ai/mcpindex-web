@@ -8,6 +8,7 @@
 // Redis hiccup; the proxy.ts per-IP limit remains the backstop. (The global cap
 // is best-effort by design — it protects cost when Redis is healthy.)
 
+import 'server-only'; // build-time tripwire: this module holds the Upstash REST token; never bundle to the client
 import { Redis } from '@upstash/redis';
 
 let _redis: Redis | null | undefined;
