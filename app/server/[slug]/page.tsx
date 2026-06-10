@@ -15,8 +15,7 @@ import {
   type DimensionVerdict,
 } from '@/lib/verdicts';
 import { splitFlags } from '@/lib/badge';
-import { loadServerDrift } from '@/lib/serverDriftServer';
-import type { ServerDrift } from '@/lib/serverDrift';
+import { ContractDrift } from '@/components/ContractDrift';
 import { jsonLdSafe } from '@/lib/jsonLd';
 
 // Trust verdict shape (free-tier projection of the v1.0.0 verdict contract).
@@ -82,9 +81,6 @@ export default async function ServerPage(
   const { score, breakdown } = computeQuality(server);
   const installs = buildInstalls(server);
   const verdictState = await loadVerdictForServer(server.slug);
-  // Server-level drift, joined from the public ledger by this server's fingerprint (server.name is
-  // the crawl's server_id). null = ledger off/unavailable -> render nothing, never a false "clean".
-  const drift = await loadServerDrift(server.name);
   const alternatives = all
     .filter((s) => s.category === server.category && s.slug !== server.slug)
     .slice(0, 3);
@@ -206,7 +202,7 @@ export default async function ServerPage(
               </p>
             </section>
 
-            <ContractDriftSection drift={drift} />
+            <ContractDrift serverId={server.name} />
 
             {/* Embed badge - puts the live verdict next to "Connect" wherever
                 this server is listed. Reflects the current screen and links back. */}
@@ -451,26 +447,6 @@ function limitLabel(code: string): string {
   return LIMIT_LABEL[code] ?? code.replace(/_/g, ' ');
 }
 
-// Human labels for the surfaced ChangeKind taxonomy (mirrors lib/changeKinds SURFACE_CHANGE_KINDS),
-// so a non-expert reads "new required input" not "added-required-param". Raw token kept as title.
-const KIND_LABEL: Record<string, string> = {
-  'added-required-param': 'new required input',
-  'added-optional-param': 'new optional input',
-  'removed-param': 'input removed',
-  'type-changed': 'input type changed',
-  'enum-values-removed': 'allowed values removed',
-  'constraint-narrowed': 'input constraint tightened',
-  'required-set-expanded': 'more inputs now required',
-  'output-schema-changed': 'output shape changed',
-  'output-schema-added': 'output shape added',
-  'annotation-flip-to-destructive': 'now marked destructive',
-  'tool-removed': 'tool removed',
-  'deep-schema-undiffable': 'schema too nested to diff',
-};
-function kindLabel(code: string): string {
-  return KIND_LABEL[code] ?? code.replace(/-/g, ' ');
-}
-
 // Terse UTC date for the "screened" freshness line; flags a verdict older than 90 days as stale.
 const STALE_DAYS = 90;
 function screenedLabel(iso: string | undefined): { text: string; stale: boolean } | null {
@@ -695,75 +671,5 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
         (calibrated=false at v1). History is paid-tier and not shown here.
       </p>
     </div>
-  );
-}
-
-// Server-level contract-drift section. Joined from the public ledger by this server's fingerprint.
-// null (ledger off/unavailable) renders nothing - never a false "clean". Tools stay anonymized.
-function ContractDriftSection({ drift }: { drift: ServerDrift | null }) {
-  if (!drift) return null;
-  const generated = drift.ledgerGeneratedAt
-    ? new Date(drift.ledgerGeneratedAt).toISOString().slice(0, 10)
-    : null;
-  const lastSeen = drift.lastSeen && !Number.isNaN(new Date(drift.lastSeen).getTime())
-    ? new Date(drift.lastSeen).toUTCString()
-    : null;
-  return (
-    <section className="mt-14">
-      <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
-        Contract drift&nbsp;·&nbsp;crawler-observed&nbsp;·&nbsp;
-        <Link href="/ledger" className="hover:text-[var(--color-accent)]">
-          ledger
-        </Link>
-      </div>
-      <div className="rule-t rule-b rule-l rule-r p-5 bg-white">
-        {drift.changes === 0 ? (
-          <p className="text-[14px] leading-[1.6] text-[var(--color-cite)]">
-            No contract changes observed for this server in the current crawl window
-            {generated ? ` (as of ${generated})` : ''}. This reflects the public-registry crawl only,
-            not a guarantee of stability.
-          </p>
-        ) : (
-          <>
-            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-              <span className="font-mono text-[14px] uppercase tracking-[0.18em] px-2.5 py-1 bg-[var(--color-accent-soft)] text-[var(--color-cite)] border border-[var(--color-rule)] tabular-nums">
-                {drift.changes.toLocaleString()} contract change{drift.changes === 1 ? '' : 's'} observed
-              </span>
-              {lastSeen && (
-                <span className="font-mono text-[11px] text-[var(--color-mute)]">most recent {lastSeen}</span>
-              )}
-              {drift.safetyRelevant && (
-                <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] px-2 py-0.5 border border-[var(--color-cite)] text-[var(--color-cite)]">
-                  safety-relevant diff
-                </span>
-              )}
-            </div>
-            {drift.kinds.length > 0 && (
-              <div className="mt-3 flex flex-wrap items-baseline gap-2">
-                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
-                  what changed
-                </span>
-                {drift.kinds.map((k) => (
-                  <span
-                    key={k}
-                    title={k}
-                    className="text-[11px] px-2 py-0.5 border border-[var(--color-rule)] text-[var(--color-cite)]"
-                  >
-                    {kindLabel(k)}
-                  </span>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-        <p className="mt-4 font-mono text-[10.5px] leading-[1.55] text-[var(--color-mute)]">
-          Observed by mcpindex&rsquo;s crawler between daily registry snapshots - a contract diff,
-          not a safety verdict, and not an in-path prevention (that is the gate). A
-          &ldquo;safety-relevant diff&rdquo; touches a safety-relevant field; it is not a confirmed
-          vulnerability. Shown at the server level; individual tools stay anonymized. Absence is not
-          a clean bill of health: only public-registry servers are crawled.
-        </p>
-      </div>
-    </section>
   );
 }
