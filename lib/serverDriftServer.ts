@@ -8,15 +8,30 @@ import { loadLedger } from './ledgerServer';
 import { serverFp } from './driftFingerprint';
 import { aggregateServerDrift, type ServerDrift } from './serverDrift';
 
-// The server page prerenders ~11k pages and each needs the SAME ledger blob. Memoize it for 60s so
-// a full build does a handful of Upstash GETs instead of one per page. Only SUCCESSES are cached
-// (a transient null isn't poisoned across the window); freshness stays well inside the page's ISR.
-let _cached: { at: number; ledger: Ledger } | undefined;
+// The server page prerenders ~11.6k pages and each needs the SAME ledger blob. Memoize it so a full
+// build does a couple of Upstash GETs, not one per page. The memo lives on globalThis (NOT a module
+// `let`): Next's static generation renders pages in isolated module scopes that reset plain module
+// state, so a module-level memo silently re-fetches per page and turns a 12min build into hours.
+// In-flight dedup avoids a stampede; null IS cached (a build/Upstash hiccup must not re-fetch 11.6k
+// times); a 5min TTL bounds staleness well inside the page's 1h ISR.
+type LedgerMemo = { at: number; ledger: Ledger | null };
+const G = globalThis as unknown as {
+  __mcpiLedgerMemo?: LedgerMemo;
+  __mcpiLedgerInflight?: Promise<Ledger | null>;
+};
 async function cachedLedger(): Promise<Ledger | null> {
-  if (_cached && Date.now() - _cached.at < 60_000) return _cached.ledger;
-  const ledger = await loadLedger();
-  if (ledger) _cached = { at: Date.now(), ledger };
-  return ledger;
+  const m = G.__mcpiLedgerMemo;
+  if (m && Date.now() - m.at < 300_000) return m.ledger;
+  if (G.__mcpiLedgerInflight) return G.__mcpiLedgerInflight;
+  G.__mcpiLedgerInflight = loadLedger()
+    .then((ledger) => {
+      G.__mcpiLedgerMemo = { at: Date.now(), ledger };
+      return ledger;
+    })
+    .finally(() => {
+      G.__mcpiLedgerInflight = undefined;
+    });
+  return G.__mcpiLedgerInflight;
 }
 
 /** Drift summary for one named registry server. Returns null only when the ledger surface is off or
