@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ledgerEnabled } from '@/lib/ledger';
 import { loadLedger } from '@/lib/ledgerServer';
+import { jsonLdSafe } from '@/lib/jsonLd';
 
 // 300s, not 3600: a one-off Redis blip makes loadLedger() return null, and ISR would otherwise
 // cache that "not published" empty state for the whole window. 5 min bounds how long a transient
@@ -68,7 +69,7 @@ export default async function LedgerPage() {
     <article className="site-container pt-16 pb-24">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }}
       />
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">

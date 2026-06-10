@@ -17,6 +17,7 @@ import {
 import { splitFlags } from '@/lib/badge';
 import { loadServerDrift } from '@/lib/serverDriftServer';
 import type { ServerDrift } from '@/lib/serverDrift';
+import { jsonLdSafe } from '@/lib/jsonLd';
 
 // Trust verdict shape (free-tier projection of the v1.0.0 verdict contract).
 // History and Provenance are deliberately omitted: anonymous surfaces never
@@ -157,7 +158,7 @@ export default async function ServerPage(
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }}
       />
       <div className="site-container pt-12 pb-24">
         <Link

@@ -7,6 +7,7 @@ import {
   loadGuideSlugs,
 } from '@/lib/guides-content';
 import { getServer } from '@/lib/registry';
+import { jsonLdSafe } from '@/lib/jsonLd';
 
 export const revalidate = 3600;
 
@@ -67,7 +68,7 @@ export default async function GuidePage(
 
   // model-generated text goes into a dangerouslySetInnerHTML script; escape "<"
   // so a "</script>" in title/h1/description cannot break out of the LD block.
-  const jsonLd = JSON.stringify({
+  const jsonLd = jsonLdSafe({
     '@context': 'https://schema.org',
     '@graph': [
       {
@@ -94,7 +95,7 @@ export default async function GuidePage(
         ],
       },
     ],
-  }).replace(/</g, '\\u003c');
+  });
 
   return (
     <article className="site-container pt-16 pb-24">

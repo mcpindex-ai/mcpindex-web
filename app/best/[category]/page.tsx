@@ -6,6 +6,7 @@ import { rankByQuality } from '@/lib/quality';
 import { ALL_CATEGORIES, CATEGORY_LABELS } from '@/lib/categorize';
 import { listScreened, listFixtures } from '@/lib/verdicts';
 import { computeBadgeState } from '@/lib/badge';
+import { jsonLdSafe } from '@/lib/jsonLd';
 
 export const revalidate = 3600;
 
@@ -87,7 +88,7 @@ export default async function BestCategory(
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(faqLd).replace(/</g, '\\u003c').replace(/>/g, '\\u003e'),
+          __html: jsonLdSafe(faqLd),
         }}
       />
       <article className="site-container pt-16 pb-24">
@@ -221,7 +222,7 @@ async function FilesystemEvidence() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(faqLd).replace(/</g, '\\u003c').replace(/>/g, '\\u003e'),
+          __html: jsonLdSafe(faqLd),
         }}
       />
       <article className="site-container pt-16 pb-24">

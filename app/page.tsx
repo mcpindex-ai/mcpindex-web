@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { jsonLdSafe } from '@/lib/jsonLd';
 import { LiveTicker } from '@/components/LiveTicker';
 import { VerdictReveal } from '@/components/VerdictReveal';
 import { CopyField } from '@/components/CopyField';
@@ -85,7 +86,7 @@ export default async function Home() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }}
       />
       {/* §00 HERO — the gate: the silent-change pain, then the HOLD. */}
       <section className="rule-b bg-[var(--color-accent-soft)]">
