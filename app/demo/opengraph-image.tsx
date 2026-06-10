@@ -15,7 +15,6 @@ export const contentType = 'image/png';
 const INK = '#0a0a0a';
 const AMBER = '#ea580c';
 const MUTE = '#78716c';
-const RULE = '#e7e5e4';
 
 export default function DemoOpengraphImage() {
   return new ImageResponse(
