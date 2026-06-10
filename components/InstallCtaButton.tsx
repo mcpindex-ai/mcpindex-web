@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { INSTALL_SHELL_COMMAND } from '@/lib/install-command';
 
@@ -9,9 +9,6 @@ const INSTALL_SECTION_ID = 'install';
 /** Hero primary CTA: scroll to #install, then copy the install command + toast. */
 export function InstallCtaButton() {
   const [toast, setToast] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
 
   const dismissToast = useCallback(() => {
     setToast(false);
@@ -62,8 +59,10 @@ export function InstallCtaButton() {
     window.setTimeout(() => observer.disconnect(), 5000);
   }, [copyCommand]);
 
+  // toast only flips true from a user click (always post-hydration), so
+  // document.body is guaranteed present — no mount guard needed.
   const toastNode =
-    toast && mounted ? (
+    toast ? (
       <div
         role="status"
         aria-live="polite"
@@ -84,7 +83,7 @@ export function InstallCtaButton() {
       >
         Install now →
       </button>
-      {mounted && toastNode ? createPortal(toastNode, document.body) : null}
+      {toastNode ? createPortal(toastNode, document.body) : null}
     </>
   );
 }

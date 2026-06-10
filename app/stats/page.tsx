@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { loadServers, loadSnapshot } from '@/lib/registry';
 import { ALL_CATEGORIES } from '@/lib/categorize';
+import { daysAgoCutoff } from '@/lib/time';
 
 export const revalidate = 3600;
 
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 export default async function StatsPage() {
   const [servers, snap] = await Promise.all([loadServers(), loadSnapshot()]);
   const cats = new Set(servers.map((s) => s.category)).size;
-  const week = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const week = daysAgoCutoff(7);
   const last7Added = servers.filter((s) => new Date(s.publishedAt).getTime() > week).length;
   const withRemote = servers.filter((s) => s.hasRemote).length;
   const withPackage = servers.filter((s) => s.hasPackage).length;

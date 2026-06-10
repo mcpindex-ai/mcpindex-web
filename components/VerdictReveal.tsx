@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import type { Decision, DimensionVerdict } from '@/lib/verdicts';
 
@@ -31,23 +31,28 @@ const DIM: Record<DimensionVerdict, string> = {
 const SCAN_MS = 750;
 const HOLD_MS = 3100;
 
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+function subscribeReducedMotion(onChange: () => void): () => void {
+  const mq = window.matchMedia?.(REDUCED_MOTION_QUERY);
+  if (!mq) return () => {};
+  mq.addEventListener?.('change', onChange);
+  return () => mq.removeEventListener?.('change', onChange);
+}
+function getReducedMotion(): boolean {
+  return window.matchMedia?.(REDUCED_MOTION_QUERY).matches ?? false;
+}
+
 export function VerdictReveal({ items }: { items: RevealItem[] }) {
   const [i, setI] = useState(0);
   const [phase, setPhase] = useState<'scan' | 'show'>('show');
   const [paused, setPaused] = useState(false);
   const first = useRef(true);
 
-  // Track reduced-motion as state so a runtime change is respected and the
-  // auto-advance timer is correctly gated (not just the scan animation).
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-    if (!mq) return;
-    setReduced(mq.matches);
-    const onChange = () => setReduced(mq.matches);
-    mq.addEventListener?.('change', onChange);
-    return () => mq.removeEventListener?.('change', onChange);
-  }, []);
+  // Track reduced-motion via useSyncExternalStore so a runtime change is
+  // respected and the auto-advance timer is correctly gated (not just the scan
+  // animation). This is the canonical media-query subscription and avoids a
+  // setState-in-effect (server snapshot = false, matching SSR).
+  const reduced = useSyncExternalStore(subscribeReducedMotion, getReducedMotion, () => false);
 
   // A reader-controlled pause (the visible Pause/Play toggle). Combined with the
   // hover/focus pause below into the effective `paused` gate.

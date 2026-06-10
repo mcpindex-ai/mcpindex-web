@@ -1,10 +1,10 @@
 import { loadSnapshot, loadServers } from '@/lib/registry';
-import { timeAgo } from '@/lib/time';
+import { daysAgoCutoff, timeAgo } from '@/lib/time';
 
 export async function LiveTicker() {
   const [snap, servers] = await Promise.all([loadSnapshot(), loadServers()]);
   // Servers added in the last 7 days from the snapshot.
-  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const weekAgo = daysAgoCutoff(7);
   const fresh = servers.filter((s) => new Date(s.publishedAt).getTime() > weekAgo).length;
 
   return (
