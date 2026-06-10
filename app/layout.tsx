@@ -4,15 +4,18 @@
 // ~/mcpindex-launch/value-prop-bible.md for the (A) deploy-held / (B) maturity-
 // held framing the copy and the honesty guard conform to.
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+// Self-hosted Geist (bundled woff2) — NOT next/font/google. next/font/google fetches the font
+// files from Google AT BUILD; a transient socket drop there fails the whole Vercel build with
+// UND_ERR_SOCKET (errorStep direct:build). The `geist` package ships the same fonts locally, so
+// the build has zero outbound font dependency. Variable names ('--font-geist-sans'/'-mono') are
+// the package defaults and match globals.css, so no CSS change is needed.
+import { GeistSans } from 'geist/font/sans';
+import { GeistMono } from 'geist/font/mono';
 import './globals.css';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-
-const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
-const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://mcpindex.ai'),
@@ -48,7 +51,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
     >
       <body className="min-h-screen bg-white text-zinc-900 flex flex-col">
         <Header />
