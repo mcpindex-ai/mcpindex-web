@@ -1,5 +1,6 @@
 /** Primary header nav — gate product first, directory second. Whitepaper is footer-only (deep eval). */
 export const PRIMARY_NAV = [
+  { href: '/search', label: 'Search' },
   { href: '/docs', label: 'Docs' },
   { href: '/trust', label: 'Trust' },
   { href: '/pricing', label: 'Pricing' },
