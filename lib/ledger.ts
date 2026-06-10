@@ -11,6 +11,8 @@
 // safe to import from anywhere and is unit-testable in plain node. The token-holding IO lives in
 // `ledgerServer.ts` (import 'server-only').
 
+import { coerceChangeKinds } from './changeKinds';
+
 export const LEDGER_SCHEMA = 'mcpindex.drift.ledger/2';
 
 /** The flag that makes the ledger public. M4 go-live = set this to '1' in Vercel + redeploy.
@@ -28,6 +30,9 @@ export interface LedgerEvent {
   readonly sources: number; // 1 = the crawl (forgeable installs are excluded from this number)
   readonly safety_relevant: boolean;
   readonly last_seen: string;
+  // What changed (surfaceable ChangeKinds, e.g. 'added-required-param'). ADDITIVE on schema /2:
+  // an old blob without it coerces to [], a new blob's value is allowlist-validated. Never raw.
+  readonly change_kinds: readonly string[];
 }
 
 export interface LedgerStat {
@@ -70,6 +75,7 @@ export function coerceEvent(x: unknown): LedgerEvent | null {
     sources: Number.isFinite(sources) && sources >= 1 ? Math.floor(sources) : 1, // honest floor
     safety_relevant: e.safety_relevant === true,
     last_seen,
+    change_kinds: coerceChangeKinds(e.change_kinds), // allowlist-validated; [] for an old blob
   };
 }
 

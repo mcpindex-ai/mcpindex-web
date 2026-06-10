@@ -14,12 +14,19 @@
 // fingerprint the SDK already emits under opt-in telemetry.
 
 import { Redis } from '@upstash/redis';
+import { coerceChangeKinds } from './changeKinds';
 
 export const FP_RE = /^[0-9a-f]{32}$/;
 export const MAX_FPS = 256; // batch cap
 
 export type DriftAny =
-  | { drifted: true; sources: number; safety_relevant: boolean; last_seen: string | null }
+  | {
+      drifted: true;
+      sources: number;
+      safety_relevant: boolean;
+      last_seen: string | null;
+      change_kinds: readonly string[]; // what changed; [] when meta is missing/old
+    }
   | { drifted: false }
   | { drifted: null }; // unknown (cache unavailable) -- fail-open
 
@@ -32,18 +39,19 @@ function redis(): Redis | null {
   return _redis;
 }
 
-function metaToResult(meta: Record<string, unknown> | null): DriftAny {
+export function metaToResult(meta: Record<string, unknown> | null): DriftAny {
   // SET membership means the central crawl saw this tool's contract drift (the unforgeable
   // first-party observer); `sources` = 1 (the crawl) + any corroborating installs. The meta hash
   // is decorative detail. A hit with missing/expired meta still reports drifted:true with the
   // honest floor sources:1 (the crawl observation itself) -- never a false clean, never inflated.
-  if (!meta) return { drifted: true, sources: 1, safety_relevant: false, last_seen: null };
+  if (!meta) return { drifted: true, sources: 1, safety_relevant: false, last_seen: null, change_kinds: [] };
   const sources = Number(meta.sources);
   return {
     drifted: true,
     sources: Number.isFinite(sources) && sources >= 1 ? sources : 1,
     safety_relevant: meta.safety_relevant === '1' || meta.safety_relevant === 1 || meta.safety_relevant === true,
     last_seen: typeof meta.last_seen === 'string' ? meta.last_seen : null,
+    change_kinds: coerceChangeKinds(meta.change_kinds), // allowlist-validated; [] when absent/old
   };
 }
 

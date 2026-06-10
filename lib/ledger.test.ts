@@ -38,6 +38,17 @@ test('coerceEvent sets safety_relevant true only for boolean true', () => {
   assert.equal(coerceEvent({ ...base, safety_relevant: 1 })?.safety_relevant, false);
 });
 
+test('coerceEvent allowlist-validates change_kinds; [] for an old blob or hostile value', () => {
+  const base = { tool_fp: FP, last_seen: '2026-01-01' };
+  assert.deepEqual(coerceEvent(base)?.change_kinds, []); // old blob, field absent
+  assert.deepEqual(
+    coerceEvent({ ...base, change_kinds: ['type-changed', 'added-required-param', 'bogus-kind'] })?.change_kinds,
+    ['added-required-param', 'type-changed'], // sorted, unknown dropped
+  );
+  assert.deepEqual(coerceEvent({ ...base, change_kinds: '["removed-param"]' })?.change_kinds, ['removed-param']);
+  assert.deepEqual(coerceEvent({ ...base, change_kinds: '<script>' })?.change_kinds, []);
+});
+
 test('coerceEvent blanks a bad server_fp', () => {
   const base = { tool_fp: FP, last_seen: '2026-01-01' };
   assert.equal(coerceEvent(base)?.server_fp, '');

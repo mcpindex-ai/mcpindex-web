@@ -155,7 +155,8 @@ export default async function LedgerPage() {
             <table className="w-full border-collapse text-left text-[13px]">
               <caption className="sr-only">
                 Contract changes the crawler observed, by tool and server fingerprint, with last-seen
-                time and whether the change touched a safety-relevant field.
+                time, what changed (the contract-diff kind), and whether the change touched a
+                safety-relevant field.
               </caption>
               <thead className="bg-[#fafaf9]">
                 <tr>
@@ -167,6 +168,9 @@ export default async function LedgerPage() {
                   </th>
                   <th scope="col" className="rule-b rule-r px-3 py-2 align-top font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-mute)]">
                     Last seen
+                  </th>
+                  <th scope="col" className="rule-b rule-r px-3 py-2 align-top font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-mute)]">
+                    What changed
                   </th>
                   <th scope="col" className="rule-b rule-r px-3 py-2 align-top font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-mute)]">
                     Safety
@@ -191,6 +195,25 @@ export default async function LedgerPage() {
                     </td>
                     <td className="rule-b rule-r px-3 py-2 align-top font-mono text-[13px] text-[var(--color-cite)] tabular-nums">
                       {fmtTs(e.last_seen)}
+                    </td>
+                    <td className="rule-b rule-r px-3 py-2 align-top text-[13px] text-[var(--color-cite)]">
+                      {e.change_kinds.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {e.change_kinds.map((k) => (
+                            <span
+                              key={k}
+                              className="inline-block font-mono text-[10.5px] tracking-[0.04em] px-2 py-0.5 border border-[var(--color-mute)] text-[var(--color-cite)]"
+                            >
+                              {k}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <>
+                          <span className="sr-only">No specific change kind recorded</span>
+                          <span aria-hidden="true" className="text-[var(--color-mute)]">-</span>
+                        </>
+                      )}
                     </td>
                     <td className="rule-b rule-r px-3 py-2 align-top text-[13px] text-[var(--color-cite)]">
                       {e.safety_relevant ? (

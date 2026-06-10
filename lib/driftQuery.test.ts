@@ -3,7 +3,7 @@
 // `npm test` (tsx + node:test). Live Redis hits are not exercised here (no creds in CI).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { lookupCorroborated, FP_RE, MAX_FPS, type DriftAny } from './driftQuery';
+import { lookupCorroborated, metaToResult, FP_RE, MAX_FPS, type DriftAny } from './driftQuery';
 
 const FP = '0b4796d16feb3912c0db0824c39e9b70'; // 32 hex
 
@@ -30,4 +30,27 @@ test('fail-open: with no Upstash configured, every fp resolves to drifted:null (
 
 test('MAX_FPS batch cap is a sane bound', () => {
   assert.equal(MAX_FPS, 256);
+});
+
+test('metaToResult: change_kinds allowlist-parsed; missing meta -> drifted:true with []', () => {
+  // A SET hit with no meta still reports drifted:true (honest floor), now with empty change_kinds.
+  assert.deepEqual(metaToResult(null), {
+    drifted: true,
+    sources: 1,
+    safety_relevant: false,
+    last_seen: null,
+    change_kinds: [],
+  });
+  // Meta carries change_kinds as a JSON string (Redis HASH) OR an array (auto-deser) — both parse,
+  // and an unknown kind is dropped.
+  const fromStr = metaToResult({ sources: '1', safety_relevant: '1', change_kinds: '["type-changed","bogus"]' });
+  assert.deepEqual(fromStr, {
+    drifted: true,
+    sources: 1,
+    safety_relevant: true,
+    last_seen: null,
+    change_kinds: ['type-changed'],
+  });
+  const fromArr = metaToResult({ sources: 1, change_kinds: ['removed-param', 'removed-param'] });
+  assert.deepEqual((fromArr as Extract<DriftAny, { drifted: true }>).change_kinds, ['removed-param']);
 });
