@@ -47,6 +47,7 @@ export type Verdict = {
   fixture: boolean;
   origin?: string;
   title?: string;
+  evaluated_at?: string; // when the screen was produced (freshness signal); ISO string
   adjudication?: Adjudication;
 };
 
@@ -65,6 +66,7 @@ type RawVerdict = {
   fixture?: boolean;
   origin?: string;
   title?: string;
+  evaluated_at?: string;
   adjudication?: { decision?: string; reason?: string; by?: string; at?: string };
 };
 
@@ -123,6 +125,7 @@ function normalize(raw: RawVerdict): Verdict {
     fixture: raw.fixture ?? false,
     origin: raw.origin,
     title: raw.title,
+    evaluated_at: typeof raw.evaluated_at === 'string' ? raw.evaluated_at : undefined,
     adjudication: coerceAdjudication(raw.adjudication),
   };
 }
