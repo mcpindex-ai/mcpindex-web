@@ -48,6 +48,8 @@ export function Footer() {
             <Link href="/methodology" className={LINK}>Methodology</Link>
             <Link href="/status" className={LINK}>Status</Link>
             <Link href="/stats" className={LINK}>Stats</Link>
+            <Link href="/ledger" className={LINK}>Drift ledger</Link>
+            <Link href="/dashboard" className={LINK}>Drift dashboard</Link>
           </div>
 
           <div>
