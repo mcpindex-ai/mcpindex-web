@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { kindLabel } from '@/lib/kindLabels';
+import { fmtUtc, fmtDay } from '@/lib/dates';
 
 // Server-level contract-drift section, fetched at RUNTIME from /api/v1/server-drift (the build can't
 // reach Upstash; this is always current). Server-level only - individual tools stay anonymized.
@@ -14,35 +16,6 @@ interface ServerDrift {
   kinds: string[];
   safetyRelevant: boolean;
   ledgerGeneratedAt: string;
-}
-
-// Human labels for the surfaced ChangeKind taxonomy (mirrors lib/changeKinds SURFACE_CHANGE_KINDS).
-const KIND_LABEL: Record<string, string> = {
-  'added-required-param': 'new required input',
-  'added-optional-param': 'new optional input',
-  'removed-param': 'input removed',
-  'type-changed': 'input type changed',
-  'enum-values-removed': 'allowed values removed',
-  'constraint-narrowed': 'input constraint tightened',
-  'required-set-expanded': 'more inputs now required',
-  'output-schema-changed': 'output shape changed',
-  'output-schema-added': 'output shape added',
-  'annotation-flip-to-destructive': 'now marked destructive',
-  'tool-removed': 'tool removed',
-  'deep-schema-undiffable': 'schema too nested to diff',
-};
-function kindLabel(code: string): string {
-  return KIND_LABEL[code] ?? code.replace(/-/g, ' ');
-}
-
-function fmtDate(iso: string): string {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
-}
-function fmtTs(iso: string | null): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? '' : d.toUTCString();
 }
 
 export function ContractDrift({ serverId }: { serverId: string }) {
@@ -68,8 +41,8 @@ export function ContractDrift({ serverId }: { serverId: string }) {
   }, [serverId]);
 
   if (!show || !drift) return null;
-  const generated = fmtDate(drift.ledgerGeneratedAt);
-  const lastSeen = fmtTs(drift.lastSeen);
+  const generated = fmtDay(drift.ledgerGeneratedAt);
+  const lastSeen = fmtUtc(drift.lastSeen);
 
   return (
     <section className="mt-14">

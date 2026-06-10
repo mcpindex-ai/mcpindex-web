@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getServer, loadServers } from '@/lib/registry';
-import { computeQuality } from '@/lib/quality';
+import { computeQuality, rankByQuality } from '@/lib/quality';
 import { buildInstalls } from '@/lib/installs';
 import { CATEGORY_LABELS } from '@/lib/categorize';
 import { D3_PROGRESS } from '@/lib/honest-limits';
@@ -22,15 +22,15 @@ import { jsonLdSafe } from '@/lib/jsonLd';
 // History and Provenance are deliberately omitted: anonymous surfaces never
 // return back-history (the un-backfillable moat; authenticated tier only).
 //
-// Three rendering states for the trust panel, all FAIL-CLOSED (no ALLOW, no
+// Two rendering states for the trust panel, both FAIL-CLOSED (no ALLOW, no
 // green unless a real EVALUATED verdict says so):
 //   verdict     -> render the populated FreeTierVerdict
-//   unverified  -> reachable, no verdict yet (v1 default for ~all servers)
-//   unavailable -> verdict service unreachable
+//   unverified  -> no verdict on file (v1 default for ~all servers)
+// (Verdicts come from the build-time store, so there is no "service unreachable"
+// state today; reintroduce one only if a live verdict service is ever wired in.)
 type VerdictState =
   | { kind: 'verdict'; verdict: FreeTierVerdict }
-  | { kind: 'unverified' }
-  | { kind: 'unavailable' };
+  | { kind: 'unverified' };
 
 async function loadVerdictForServer(slug: string): Promise<VerdictState> {
   const verdict = await getVerdict(slug);
@@ -39,9 +39,18 @@ async function loadVerdictForServer(slug: string): Promise<VerdictState> {
 
 export const revalidate = 3600;
 
+// Prerender only the top servers by quality; the long tail is generated on-demand via ISR
+// (dynamicParams defaults to true) and then cached like any prerendered page. Prerendering ALL
+// ~11.6k pages made build time scale linearly with registry growth (+250 servers in one day) and
+// pushed Vercel builds toward resource-exhaustion errors. 1,500 covers what the leaderboard /
+// best-of / search funnels actually link to; a tail page costs one on-demand render on first visit.
+const PRERENDER_TOP_N = 1500;
+
 export async function generateStaticParams() {
   const servers = await loadServers();
-  return servers.map((s) => ({ slug: s.slug }));
+  return rankByQuality(servers)
+    .slice(0, PRERENDER_TOP_N)
+    .map(({ server }) => ({ slug: server.slug }));
 }
 
 export async function generateMetadata(
@@ -458,9 +467,8 @@ function screenedLabel(iso: string | undefined): { text: string; stale: boolean 
 }
 
 function TrustVerdictPanel({ state }: { state: VerdictState }) {
-  // Fail-CLOSED rendering. Neither 'unverified' nor 'unavailable' may show
-  // ALLOW or green. An un-evaluated tool is un-evaluated; the agent should
-  // not infer trust.
+  // Fail-CLOSED rendering. 'unverified' may never show ALLOW or green. An
+  // un-evaluated tool is un-evaluated; the agent should not infer trust.
   if (state.kind === 'unverified') {
     return (
       <div className="rule-t rule-b rule-l rule-r p-5 bg-white">
@@ -484,26 +492,6 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
             the eval, four-state verdict, honest limits
           </Link>
           .
-        </p>
-      </div>
-    );
-  }
-
-  if (state.kind === 'unavailable') {
-    return (
-      <div className="rule-t rule-b rule-l rule-r p-5 bg-white">
-        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-          <span className="font-mono text-[11px] uppercase tracking-[0.16em] px-2 py-1 bg-amber-50 text-amber-900 border border-amber-300">
-            VERDICT SERVICE UNAVAILABLE
-          </span>
-          <span className="font-mono text-[11px] text-[var(--color-mute)]">
-            verdict API unreachable
-          </span>
-        </div>
-        <p className="mt-3 text-[14px] leading-[1.6] text-[var(--color-cite)]">
-          The trust verdict API did not respond. Treat this tool as not-cleared
-          and fall back to your own checks until the verdict surface is reachable
-          again. This is a transient failure, not a verdict.
         </p>
       </div>
     );

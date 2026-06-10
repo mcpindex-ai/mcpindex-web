@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { ledgerEnabled } from '@/lib/ledger';
 import { loadLedger } from '@/lib/ledgerServer';
 import { jsonLdSafe } from '@/lib/jsonLd';
+import { fmtUtc } from '@/lib/dates';
 
 // 300s, not 3600: a one-off Redis blip makes loadLedger() return null, and ISR would otherwise
 // cache that "not published" empty state for the whole window. 5 min bounds how long a transient
@@ -20,14 +21,6 @@ function truncateFp(fp: string): string {
   return fp.length >= 12 ? `${fp.slice(0, 12)}...` : fp;
 }
 
-// The blob carries hour-coarsened ISO timestamps (YYYY-MM-DDTHH:00:00Z). Show a human UTC string
-// to match the site's date voice (stats/status). A non-date value renders nothing (not the raw
-// string) so an operator/attacker-controlled blob can never paint arbitrary text on a date line.
-function fmtTs(ts: string): string {
-  if (!ts) return '';
-  const d = new Date(ts);
-  return Number.isNaN(d.getTime()) ? '' : d.toUTCString();
-}
 
 export default async function LedgerPage() {
   if (!ledgerEnabled()) notFound();
@@ -138,9 +131,9 @@ export default async function LedgerPage() {
         </div>
         {/* The blob also carries a `framing` string, but it is operator/attacker-controllable;
             this page states its own framing above (hardcoded) rather than render blob prose. */}
-        {ledger.generated_at && fmtTs(ledger.generated_at) && (
+        {ledger.generated_at && fmtUtc(ledger.generated_at) && (
           <p className="mt-2 font-mono text-[11px] text-[var(--color-mute)] tabular-nums">
-            Generated {fmtTs(ledger.generated_at)}
+            Generated {fmtUtc(ledger.generated_at)}
           </p>
         )}
       </section>
@@ -202,7 +195,7 @@ export default async function LedgerPage() {
                       )}
                     </td>
                     <td className="rule-b rule-r px-3 py-2 align-top font-mono text-[13px] text-[var(--color-cite)] tabular-nums">
-                      {fmtTs(e.last_seen)}
+                      {fmtUtc(e.last_seen)}
                     </td>
                     <td className="rule-b rule-r px-3 py-2 align-top text-[13px] text-[var(--color-cite)]">
                       {e.change_kinds.length > 0 ? (
