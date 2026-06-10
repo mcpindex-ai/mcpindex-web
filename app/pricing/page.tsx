@@ -77,11 +77,13 @@ export default function PricingPage() {
           Pricing
         </div>
         <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
-          The gate is free. The network is paid.
+          The gate is free. The corpus is paid.
         </h1>
         <p className="mt-4 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
           The in-path gate you install is free, local, and open-core &mdash; all postures, the SDK,
-          and zero credential custody. Paid tiers add the optional cloud tier-1 corpus lookup, a
+          zero credential custody, and the opt-in drift network: crawler-corroborated advisories
+          that warn you on call 1, plus the public drift ledger. Paid tiers add the optional cloud
+          tier-1 corpus lookup (a contract judged once clears or condemns it everywhere), a
           higher-rate trust API, and the multi-tenant gateway.
         </p>
         <p className="mt-3 text-[14px] leading-[1.55] text-[var(--color-mute)]">

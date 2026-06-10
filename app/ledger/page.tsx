@@ -75,6 +75,13 @@ export default async function LedgerPage() {
           Drift ledger · contract changes observed
         </div>
         <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">Drift ledger</h1>
+        <p className="mt-4 text-[15px] leading-[1.55] text-[var(--color-cite)] max-w-2xl">
+          Public proof of the problem the gate solves. mcpindex crawls the public MCP registry
+          every day and records which tool contracts silently change. This is that record &mdash;
+          the same corroborated drift the gate asks the network about when you pin a tool, so it
+          can warn you on the first call. A contract-diff, not a safety verdict, and not
+          prevention; the gate is what HOLDs the call.
+        </p>
       </header>
 
       <section className="mt-12 rule-t">

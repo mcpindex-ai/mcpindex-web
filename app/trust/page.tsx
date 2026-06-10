@@ -158,13 +158,23 @@ export default function TrustPage() {
             corpus lookup, LLM consult, behavioral verifier) are built in-path
             seams, each held off by default and gated behind explicit opt-in.
           </Edge>
-          <Edge head="The one optional egress.">
+          <Edge head="Optional egress: the cloud corpus lookup.">
             If you opt into the cloud tier-1 corpus lookup, the only thing that
             leaves is a contract hash (a deterministic hash over the public tool
             contract) plus your bearer key on the pinned transport &mdash; never a
             token, an argument, a schema body, or your call data. Any error
             degrades to a miss (fail-closed). That request lands on mcpindex&rsquo;s
             US-region edge.
+          </Edge>
+          <Edge head="Optional egress: the drift network.">
+            If you opt into drift telemetry (<code className="font-mono">MCPINDEX_DRIFT_TELEMETRY=detection</code>,
+            off by default), the gate emits one one-way signal on a pin or a drift &mdash; salted
+            (HMAC) fingerprints of the server/tool id, the contract hashes, the change type, a
+            safety flag, an hour-rounded time, a random install id, and the SDK tag &mdash; and
+            queries the network so it can warn you on the first call. Never a schema, argument,
+            description, URL, or server/tool name. Fail-open: it never blocks or changes a call.
+            Full disclosure on{' '}
+            <Link href="/privacy" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">privacy</Link>.
           </Edge>
           <Edge head="Sub-processors.">
             None in the default local deployment &mdash; nothing leaves the host,

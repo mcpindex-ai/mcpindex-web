@@ -15,7 +15,7 @@ export default function PrivacyPage() {
         Privacy.
       </h1>
       <p className="mt-2 font-mono text-[11.5px] text-[var(--color-mute)]">
-        Last updated: 2026-04-30
+        Last updated: 2026-06-09
       </p>
 
       <div className="mt-10 space-y-6 text-[14.5px] leading-[1.65] text-[var(--color-cite)]">
@@ -52,11 +52,17 @@ export default function PrivacyPage() {
           <span className="inline-code">MCPINDEX_DRIFT_TELEMETRY=detection</span>. When enabled,
           a tool-pin or a contract drift sends one one-way signal to{' '}
           <span className="inline-code">/api/v1/drift</span>: salted (HMAC) fingerprints of the
-          server/tool id, the contract hashes, the change type, a safety flag, and an
-          hour-rounded time - plus a random install id that links one machine&rsquo;s signals so
-          we can count distinct installs (it is a random token, not derived from you, and is
-          never joined to your IP). It <strong>never</strong> sends tool schemas, arguments,
-          descriptions, URLs, or server/tool names. Unset the variable to stop.
+          server/tool id, the contract hashes, the change type, a safety flag, an
+          hour-rounded time, and the client SDK tag (<span className="inline-code">py</span> or{' '}
+          <span className="inline-code">ts</span>) - plus a random install id that links one
+          machine&rsquo;s signals so we can count distinct installs (it is a random token, not
+          derived from you, and is never joined to your IP). Under the same flag, the gate also
+          makes a read-only query to <span className="inline-code">/api/v1/drift/any</span> to ask
+          whether a tool&rsquo;s contract already drifted, so it can warn you on the first call;
+          that query sends only a salted fingerprint. It <strong>never</strong> sends tool schemas,
+          arguments, descriptions, URLs, or server/tool names. (<span className="inline-code">detection</span>{' '}
+          enables the signal above; <span className="inline-code">contribute</span> is reserved for
+          a future richer tier and behaves identically today.) Unset the variable to stop.
         </p>
         <p>
           Cookies: none are set by the site itself. Vercel may set a single platform cookie

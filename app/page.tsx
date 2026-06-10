@@ -11,17 +11,12 @@ import { GateLoop } from '@/components/home/GateLoop';
 import { GateEdges } from '@/components/home/GateEdges';
 import { Mark } from '@/components/Mark';
 import { Seal } from '@/components/Seal';
-import { getServerCount, getCategoryCount } from '@/lib/registry';
 import { listScreened } from '@/lib/verdicts';
 
 export const revalidate = 3600;
 
 export default async function Home() {
-  const [count, categories, screened] = await Promise.all([
-    getServerCount(),
-    getCategoryCount(),
-    listScreened(),
-  ]);
+  const screened = await listScreened();
 
   // Real verdicts (never fabricated) for the cycling reveal in §the-network.
   // Varied set: a DENY, an ALLOW, a REVIEW where present, then fill to four.
@@ -335,13 +330,21 @@ export default async function Home() {
           <h2 className="t-h3 font-medium text-[var(--color-ink)]">
             One question, two moments.
           </h2>
-          <p className="mt-3 mb-8 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+          <p className="mt-3 mb-6 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
             Different verdict, same question. Before you wire a tool, the public directory
             screens it and says REVIEW or UNVERIFIED &mdash; a prior on whether a tool does what
-            it claims. While you use it, the gate says HELD or PROCEED in the call path. Today
-            every screen verdict is semantic-only and advisory: a prior, not a guarantee, and
-            never an ALLOW or DENY (those unlock with the behavioral corpus). The corpus feedback
-            loop ships in Pro; today the gate runs fully standalone.
+            it claims. While you use it, the gate says HELD or PROCEED in the call path. Every
+            screen verdict is semantic-only and advisory: a prior, not a guarantee, and never an
+            ALLOW or DENY (those unlock with the behavioral corpus).
+          </p>
+          <p className="mt-3 mb-8 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+            And the gate no longer works alone. mcpindex crawls the public MCP registry every day
+            and records which tool contracts silently change. When you pin a tool, the gate asks
+            the network one question: has the crawler already caught this contract drifting? If it
+            has, you are warned on the first call &mdash; before a change you never saw burns you.
+            Opt-in and crawler-corroborated: a contract-diff advisory that rides alongside the
+            verdict and never moves the decision. Every drift the crawler catches is public in the{' '}
+            <Link href="/ledger" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">live drift ledger</Link>.
           </p>
 
           {reveals.length > 0 && (
@@ -362,6 +365,12 @@ export default async function Home() {
               className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-cite)] hover:text-[var(--color-accent)]"
             >
               Screen a tool →
+            </Link>
+            <Link
+              href="/ledger"
+              className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-cite)] hover:text-[var(--color-accent)]"
+            >
+              Drift ledger →
             </Link>
             <span className="font-mono text-[11.5px] text-[var(--color-mute)]">
               {screened.length} tools screened so far · advisory, semantic-only
