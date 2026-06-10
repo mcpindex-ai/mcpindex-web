@@ -89,8 +89,14 @@ export default function DocsPage() {
             ``,
             `# server: the full record for one server by slug`,
             `curl "https://mcpindex.ai/api/v1/server/<slug>"`,
+            ``,
+            `# fleet drift query: has this tool's contract drifted? (crawler-corroborated)`,
+            `curl "https://mcpindex.ai/api/v1/drift/any?fp=<tool_fingerprint>"`,
+            ``,
+            `# drift ledger: contract changes the crawler observed (fingerprint-only)`,
+            `curl "https://mcpindex.ai/api/v1/ledger"`,
           ]}
-          notes="trust returns a stored verdict (REVIEW or UNVERIFIED today; ALLOW / DENY are reserved in the contract); screen runs the live LLM judge on a pasted description and returns a fresh PARTIAL verdict; recommend returns ranked picks; preflight composes the two - the top servers plus the rank-1 server's advisory verdict in one round trip (verdict is null when that server is not yet screened - treat as not-cleared); search and diff query the registry; server returns one full record. All JSON, same shapes an MCP client gets."
+          notes="trust returns a stored verdict (REVIEW or UNVERIFIED today; ALLOW / DENY are reserved in the contract); screen runs the live LLM judge on a pasted description and returns a fresh PARTIAL verdict; recommend returns ranked picks; preflight composes the two - the top servers plus the rank-1 server's advisory verdict in one round trip (verdict is null when that server is not yet screened - treat as not-cleared); search and diff query the registry; server returns one full record; drift/any answers whether a tool's contract drifted (crawler-corroborated; powers warns-you-on-call-1) and ledger lists the public drift record. All JSON, same shapes an MCP client gets."
         />
         <UseCase
           letter="B"
@@ -473,6 +479,27 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
             <Mono>DO_NOT_TRACK</Mono>. To render it in your own UI instead, pass an{' '}
             <Mono>on_invocation</Mono> callback (Python) / <Mono>onInvocation</Mono>{' '}
             (TS) to <Mono>wrap()</Mono>.
+          </p>
+        </div>
+        <div className="rule-t pt-5" style={{ borderColor: 'var(--color-rule)' }}>
+          <h3 className="text-[16px] tracking-tight font-semibold" style={{ color: 'var(--color-ink)' }}>
+            Drift network (opt-in, off by default)
+          </h3>
+          <p className="mt-1 text-[14px] leading-[1.55]" style={{ color: 'var(--color-mute)' }}>
+            mcpindex crawls the public MCP registry every day and records which tool contracts
+            silently change. Turn the network on with{' '}
+            <Mono>MCPINDEX_DRIFT_TELEMETRY=detection</Mono> (off by default) and the gate asks it, on
+            each pin, whether the crawler already caught this contract drifting &mdash; warning you on
+            the first call. A contract-diff advisory: it rides alongside the verdict and never moves
+            PROCEED or HOLD. Surfaced by <Mono>renderVerdict</Mono> and the{' '}
+            <Mono>fleetAdvisory</Mono> field on the verdict.
+          </p>
+          <p className="mt-2 text-[13px] leading-[1.5]" style={{ color: 'var(--color-mute)' }}>
+            Under the same flag the gate emits one one-way salted-fingerprint signal on a pin or a
+            drift and queries <Mono>/api/v1/drift/any</Mono>; it never sends a schema, argument,
+            description, URL, or server/tool name, and fails open (never blocks a call). Every drift
+            the crawler catches is public in the <Mono>/ledger</Mono>. Full disclosure on{' '}
+            <Ext href="/privacy">privacy</Ext>.
           </p>
         </div>
       </Section>

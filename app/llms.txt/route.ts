@@ -49,6 +49,13 @@ Built so an agent (or the IDE driving one) can ask "should I invoke this tool" b
 - Where it runs: on by default in the published clients — @mcp-index/sdk (TypeScript) and mcpindex-preflight (Python). Deterministic, no network, no credentials.
 - Honest limits: blast_radius_is_static_not_a_safety_verdict (it says what a call would do, read from the contract — not whether the contract is safe, and not what a specific call's runtime arguments will actually do); advisory_grade_orchestrator_decides (mcpindex labels the blast radius; your agent or IDE owns whether to allow, pause, or require approval).
 
+## Drift Network (crawler-corroborated; warns you on call 1)
+
+- What it is: mcpindex crawls the public MCP registry every day and records which tool contracts silently change. When you pin a tool, the gate can ask the network whether the crawler already caught that contract drifting — and warn you on the FIRST call, before a change you never saw burns you. A contract-diff advisory; it rides alongside the verdict and never moves PROCEED/HOLD.
+- Opt-in: enable with MCPINDEX_DRIFT_TELEMETRY=detection (off by default). Under the same flag the gate emits one one-way salted-fingerprint signal on a pin/drift and queries the network; it never sends schemas, arguments, descriptions, URLs, or server/tool names.
+- Corroboration is crawler-first: the public count floors at the crawler (sources=1), never forgeable install reports.
+- Public proof: every drift the crawler catches is in the public drift ledger (/ledger).
+
 ## Whitepaper
 
 - The trust-to-act layer for agent tool calls: the full architecture, threat model, tiered ladder, methodology, dogfood proof, and the honest limits (contract-diff not safety oracle; calibrated=false; tiers 1-3 held off by default).
@@ -61,6 +68,8 @@ Built so an agent (or the IDE driving one) can ask "should I invoke this tool" b
 - GET /api/v1/recommend?task=<text>                              Natural language task -> top 3 servers with reasoning.
 - GET /api/v1/preflight?task=<text>                              Pre-flight: top servers + the rank-1 server's advisory verdict in one call.
 - GET /api/v1/diff?since=<YYYY-MM-DD>                            What changed in the registry since a date.
+- GET /api/v1/drift/any?fp=<tool_fingerprint>                    Fleet drift query: has this tool's contract drifted (crawler-corroborated)? Powers "warns you on call 1". Returns {drifted, sources, safety_relevant}.
+- GET /api/v1/ledger                                             Public drift ledger: contract changes the crawler observed (fingerprint-only; a contract-diff, not a safety verdict).
 - GET /api/v1/trust/tool/<server_id>/<tool_name>                 Per-tool trust verdict (screened: real ALLOW/DENY/REVIEW; unscreened: UNVERIFIED, fail-closed; advisory).
 - GET /api/v1/trust/server/<server_id>                           Server-level trust verdict (screened: real ALLOW/DENY/REVIEW; unscreened: UNVERIFIED, fail-closed; advisory).
 - GET /api/registry-count                                        Live server + category count.
@@ -87,6 +96,8 @@ Add to Claude Desktop / Cursor / Cline / Zed. Three primary calls:
 - /guides/<slug>            Individual guide (intent pages grounded in registry + trust data).
 - /best/<category>          Curated picks per category.
 - /leaderboard              Top 50 by MCP Quality Score.
+- /ledger                   Public drift ledger: contract changes the crawler observed across public MCP servers.
+- /dashboard                Drift network coverage + opt-in telemetry adoption (honest: opt-in counts are not all users).
 - /changelog                Daily diff of registry changes.
 - /changelog.rss            RSS 2.0 feed of the above.
 - /methodology              The eval (semantic-only today; conformance probe built but not yet run), four-state verdict, honest limits.

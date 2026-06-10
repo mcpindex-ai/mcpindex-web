@@ -105,6 +105,27 @@ export default function MethodologyPage() {
 
       <section className="mt-12 rule-t pt-10">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
+          The drift network method
+        </div>
+        <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
+          The in-path gate catches a change the first time you see it. The drift network catches it
+          before you do. mcpindex crawls the public MCP registry every day, re-derives each
+          tool&rsquo;s contract, and records every silent change as a fingerprint-only entry. When
+          you pin a tool, the gate can ask the network one question: has the crawler already caught
+          this contract drifting? If it has, you are warned on the first call &mdash; a contract-diff
+          advisory that rides alongside the verdict and never moves PROCEED or HOLD. Every drift the
+          crawler catches is public in the{' '}
+          <Link href="/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">drift ledger</Link>.
+        </p>
+        <ul className="space-y-3 text-[14.5px] leading-[1.6] text-[var(--color-cite)] mt-5">
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Crawler-corroborated, not crowd-sourced.</strong> The public corroboration count floors at the crawler (one first-party source); forgeable install reports are excluded from the public number. The warning is real today because the crawler sees the drift, not because other installs reported it.</li>
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Opt-in, privacy-by-construction.</strong> Off by default. When enabled, the only thing that leaves is a salted (HMAC) fingerprint plus closed-vocabulary fields (change type, safety flag, hour-rounded time) &mdash; never a schema, argument, description, URL, or server/tool name. Fail-open: it never blocks or changes a call.</li>
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Advisory, never the decision.</strong> The fleet advisory informs; the gate&rsquo;s deterministic contract-diff still decides. The network can raise your attention; it cannot move a PROCEED or a HOLD.</li>
+        </ul>
+      </section>
+
+      <section className="mt-12 rule-t pt-10">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
           Four-state verdict
         </div>
         <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)]">

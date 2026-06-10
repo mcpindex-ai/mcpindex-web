@@ -150,6 +150,12 @@ export async function GET() {
       // Pre-flight: discovery + the rank-1 server's advisory verdict in one call.
       preflight: 'https://mcpindex.ai/api/v1/preflight?task={natural_language}',
       diff: 'https://mcpindex.ai/api/v1/diff?since={YYYY-MM-DD}',
+      // Fleet drift query (crawler-corroborated; powers "warns you on call 1").
+      // Returns {drifted, sources, safety_relevant}; sources floors at 1 = the crawler.
+      driftAny: 'https://mcpindex.ai/api/v1/drift/any?fp={tool_fingerprint}',
+      // Public drift ledger: contract changes the crawler observed (fingerprint-only;
+      // a contract-diff, not a safety verdict).
+      driftLedger: 'https://mcpindex.ai/api/v1/ledger',
       detail: 'https://mcpindex.ai/server/{slug}',
       llmsTxt: 'https://mcpindex.ai/llms.txt',
       llmsFullTxt: 'https://mcpindex.ai/llms-full.txt',

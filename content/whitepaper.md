@@ -349,6 +349,20 @@ One scope precision: **a hash-keyed corpus verdict transfers a CONTRACT-level ju
 
 The cold-start truth: the network begins empty, and the contribute path ships held by default. Install #1's value is the local tier-0 gate, complete and zero-egress on day one; the network is the part that compounds (§6).
 
+### 5.2a The drift record: a crawler-first network that is live at launch
+
+The §5.2 corpus is a *verdict* corpus — "has this contract been judged?" — and it ships held and empty. A second, lighter network primitive ships **live and populated**: a *drift record*. mcpindex crawls the public MCP registry on a daily cadence, re-derives each reachable tool's public contract, and diffs it against the prior snapshot; every silent contract change is recorded as a fingerprint-only event. The gate (opt-in, `MCPINDEX_DRIFT_TELEMETRY=detection`, off by default) queries this record on a pin via `/api/v1/drift/any` and surfaces a `fleetAdvisory` when the crawler has already corroborated drift for that contract — the "warns you on call 1" property.
+
+Three properties keep this honest against the §5.2 cold-start discipline:
+
+1. **Crawler-first corroboration, not crowd-sourced.** The public corroboration count floors at the crawler (one first-party source); forgeable install reports are *excluded* from the public number (`compute_corroboration` drops non-crawl provenance). The advisory is real at launch because the crawler observes the drift, not because installs accrued — so this primitive does **not** inherit §5.2's empty-corpus cold-start. At launch the crawler had already observed contract drift across a non-trivial set of tools on the reachable remote-MCP surface.
+
+2. **Advisory, never the decision (AD-6).** The fleet advisory rides alongside the verdict and never moves PROCEED/HOLD; the deterministic tier-0 diff still decides. The network can raise attention; it cannot relax a HOLD. Redirects are hard-off and the query fails open.
+
+3. **Contract-DRIFT, not contract-JUDGMENT.** The drift record answers "has this contract been observed to change?", never "is this contract safe." It is the §2 distinction applied to the network: a public, fingerprint-only ledger of *observed change*, not a clearance. The record is public at `/ledger`.
+
+This is the first turning of the §6 outcome-flywheel that requires no install base — a record of observed drift that compounds from the crawler alone, while the install-fed verdict corpus (§5.2) stays held and empty until the §10 evidence standard lands.
+
 ### 5.3 LLM consult and behavioral verification
 
 Tier-2 is a cost-capped LLM read for the genuinely ambiguous. **The default is `HeldLLMJudge`: it abstains, makes no model or network call, and egresses nothing**, every INCONCLUSIVE escalating straight past it to tier-3. A real model (`ConfigurableLLMJudge`) is **injected only at the enterprise tier and never default-wired**; when provisioned, the *only* thing that leaves is a **bounded, curated contract-diff prompt** (the description plus a schema excerpt, capped at 4096 chars), never a credential, never tool arguments, never user data, sent to **the operator-configured model endpoint** (on-host or a cloud provider, the operator's choice and the single most important fact for a data-egress assessment). The description is hostile input: the judge cannot mint a positive clearance on the live path (escalate-only while `AUTONOMY_ENABLED = False`, §5.5), so a manipulated judge fails toward HOLD. A tier-2 resolution is always an **opinion**: advisory, never a deterministic or behavioral verdict.

@@ -3,6 +3,7 @@ export const PRIMARY_NAV = [
   { href: '/search', label: 'Search' },
   { href: '/docs', label: 'Docs' },
   { href: '/trust', label: 'Trust' },
+  { href: '/ledger', label: 'Drift ledger' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/screen', label: 'Screen' },
   { href: '/leaderboard', label: 'Maturity Rankings' },

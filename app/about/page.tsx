@@ -93,15 +93,17 @@ export default function AboutPage() {
           it does not prove a tool safe.
         </p>
         <p>
-          The two moments feed each other, and that loop is the network. Every
-          drift the gate catches is a signal the corpus can learn from; the
-          corpus, as it grows, is designed to be the tier-1 lookup the gate
-          queries before it decides (held off by default at launch). The gate
-          alone is copyable, and open source by design. What compounds is behind
-          it: the growing corpus of verdicts, the drift the network has already
-          caught, and the published methodology that governs them. A competitor
-          can re-implement a contract-diff in a weekend; they cannot
-          re-implement the record.
+          The two moments feed each other, and that loop is the network. The first
+          turn is already live: mcpindex crawls the public registry every day and
+          records every contract that drifts, and the gate can query that record to
+          warn you on the first call &mdash; crawler-corroborated and opt-in. That
+          record is public in the{' '}
+          <Link href="/ledger" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">live drift ledger</Link>.
+          The deeper tier-1 corpus lookup the gate queries before it decides is still
+          held off by default. The gate alone is copyable, and open source by design.
+          What compounds is behind it: the growing record of drift, the corpus of
+          verdicts, and the published methodology that governs them. A competitor can
+          re-implement a contract-diff in a weekend; they cannot re-implement the record.
         </p>
         <p>
           Three primitives are exposed:{' '}
