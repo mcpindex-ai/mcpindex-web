@@ -437,8 +437,11 @@ for (const g of FLAG_GUARDS) {
   }
 }
 // A single-'=' assignment to one of these env flags would force-enable the surface
-// at runtime regardless of deploy config (the comparison "=== '1'" is allowed).
-const FORCE_ENABLE = /process\.env\.DRIFT_(IDENTITY|OAUTH_UPGRADE|DARK_CORROBORATION)\s*=(?!=)\s*['"]/;
+// at runtime regardless of deploy config. The `=(?!=)` excludes the legit comparisons
+// (=== / == / !==); any remaining single-'=' assignment is caught regardless of the
+// RHS form (a quoted '1', String(1), a backtick, or a variable) - there is no honest
+// reason to ASSIGN to one of these env flags in committed code.
+const FORCE_ENABLE = /process\.env\.DRIFT_(IDENTITY|OAUTH_UPGRADE|DARK_CORROBORATION)\s*=(?!=)/;
 const scanForceEnable = (dir) => {
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
     if (ent.name === 'node_modules' || ent.name === '.next') continue;
