@@ -80,7 +80,11 @@ function redis(): Redis | null {
 // swallowed (the caller already 204'd the client). Distinct installs/servers use HyperLogLog
 // (PFADD) so cardinality is O(1) space regardless of volume — exactly the opt-in-rate and
 // coverage numbers the M1 falsifier needs, with no per-signal row retained.
-export async function recordDriftBatch(signals: DriftSignal[], now: Date): Promise<void> {
+export async function recordDriftBatch(
+  signals: DriftSignal[],
+  now: Date,
+  authedInstalls: ReadonlySet<string> = new Set(),
+): Promise<void> {
   const r = redis();
   if (!r) return;
   const day = now.toISOString().slice(0, 10); // yyyy-mm-dd
@@ -108,9 +112,12 @@ export async function recordDriftBatch(signals: DriftSignal[], now: Date): Promi
     // M2 corpus enqueue: stream each validated signal for the drain (best-effort, same
     // fail-open as the counters; rides the same pipeline + timeout race below).
     for (const s of signals) {
-      p.xadd(STREAM_KEY, '*', { d: JSON.stringify(s) }, {
-        trim: { type: 'MAXLEN', threshold: STREAM_MAXLEN, comparison: '~' },
-      });
+      p.xadd(
+        STREAM_KEY,
+        '*',
+        { d: JSON.stringify(s), auth: authedInstalls.has(s.install_id) ? '1' : '0' },
+        { trim: { type: 'MAXLEN', threshold: STREAM_MAXLEN, comparison: '~' } },
+      );
     }
 
     if (process.env.DRIFT_RECRAWL_HINTS === '1' && drifts.length) {

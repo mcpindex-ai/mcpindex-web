@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { DriftBatchSchema, recordDriftBatch } from '@/lib/driftIngest';
+import { resolveIngestAuthedInstalls } from '@/lib/driftIdentity';
 import { checkDriftLimit } from '@/lib/ratelimit';
 
 // Drift-telemetry ingest (M1). POST only. Accepts a batch of CLOSED DriftSignals from the
@@ -41,6 +42,12 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'invalid_signal' }, { status: 400 });
   }
 
-  await recordDriftBatch(parsed.data.signals, new Date());
+  const installIds = [...new Set(parsed.data.signals.map((s) => s.install_id))];
+  const authedInstalls = await resolveIngestAuthedInstalls(
+    installIds,
+    req.headers.get('authorization'),
+  );
+
+  await recordDriftBatch(parsed.data.signals, new Date(), authedInstalls);
   return new Response(null, { status: 204 });
 }
