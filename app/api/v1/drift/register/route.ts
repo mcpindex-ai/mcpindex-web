@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { INSTALL_ID, issueIdentity, revokeIdentity } from '@/lib/driftIdentity';
+import { driftIdentityEnabled, INSTALL_ID, issueIdentity, revokeIdentity } from '@/lib/driftIdentity';
 import { checkRegisterLimit } from '@/lib/ratelimit';
 
 export const dynamic = 'force-dynamic';
@@ -19,6 +19,10 @@ function parseBearer(req: NextRequest): string | null {
 }
 
 export async function POST(req: NextRequest) {
+  if (!driftIdentityEnabled()) {
+    return Response.json({ error: 'not_found' }, { status: 404 });
+  }
+
   if (!(req.headers.get('content-type') ?? '').toLowerCase().includes('application/json')) {
     return Response.json({ error: 'unsupported_media_type' }, { status: 415 });
   }
@@ -41,15 +45,26 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'invalid_install_id' }, { status: 400 });
   }
 
-  const issued = await issueIdentity(installId);
+  const currentToken = parseBearer(req) ?? undefined;
+  const issued = await issueIdentity(installId, currentToken);
   if (!issued) {
+    return Response.json({ error: 'invalid_install_id' }, { status: 400 });
+  }
+  if ('unavailable' in issued) {
     return Response.json({ error: 'identity_store_unavailable' }, { status: 503 });
+  }
+  if ('conflict' in issued) {
+    return Response.json({ error: 'already_registered' }, { status: 409 });
   }
 
   return Response.json({ install_id: installId, install_token: issued.token });
 }
 
 export async function DELETE(req: NextRequest) {
+  if (!driftIdentityEnabled()) {
+    return Response.json({ error: 'not_found' }, { status: 404 });
+  }
+
   const token = parseBearer(req);
   if (!token) {
     return Response.json({ error: 'missing_token' }, { status: 401 });

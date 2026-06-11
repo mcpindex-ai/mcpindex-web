@@ -13,6 +13,7 @@ import {
   __setDriftIngestRedisForTest,
   type DriftSignal,
 } from './driftIngest';
+import { resolveIngestAuthedInstalls, __setDriftIdentityRedisForTest } from './driftIdentity';
 
 type PipelineCall = { method: string; args: unknown[] };
 
@@ -55,9 +56,14 @@ function expireCalls(calls: PipelineCall[]) {
   return calls.filter((c) => c.method === 'expire');
 }
 
+const savedDriftIdentity = process.env.DRIFT_IDENTITY;
+
 afterEach(() => {
   __setDriftIngestRedisForTest(undefined);
+  __setDriftIdentityRedisForTest(undefined);
   delete process.env.DRIFT_RECRAWL_HINTS;
+  if (savedDriftIdentity === undefined) delete process.env.DRIFT_IDENTITY;
+  else process.env.DRIFT_IDENTITY = savedDriftIdentity;
 });
 
 const NOW = new Date('2026-06-09T12:00:00.000Z');
@@ -201,4 +207,22 @@ test('recordDriftBatch: authedInstalls stamps auth:1 only on matching install_id
   }
   assert.equal(byInstall.get(PIN.install_id), '1');
   assert.equal(byInstall.get('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'), '0');
+});
+
+test('resolveIngestAuthedInstalls: flag OFF ignores Bearer (empty set, route stamps auth:0)', async () => {
+  delete process.env.DRIFT_IDENTITY;
+  const authed = await resolveIngestAuthedInstalls([PIN.install_id], 'Bearer sometoken');
+  assert.equal(authed.size, 0);
+});
+
+test('resolveIngestAuthedInstalls: flag OFF + recordDriftBatch stamps auth:0 on all', async () => {
+  delete process.env.DRIFT_IDENTITY;
+  const { client, calls } = mockRedisPipeline();
+  __setDriftIngestRedisForTest(client);
+
+  const authed = await resolveIngestAuthedInstalls([PIN.install_id], 'Bearer sometoken');
+  await recordDriftBatch([PIN], NOW, authed);
+  const entries = xaddEntries(calls);
+  assert.equal(entries.length, 1);
+  assert.equal((entries[0]?.args[2] as Record<string, string>).auth, '0');
 });

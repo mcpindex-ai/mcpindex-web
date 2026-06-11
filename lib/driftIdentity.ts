@@ -7,6 +7,16 @@ export const INSTALL_ID = /^[0-9a-f]{32}$/;
 
 const IDENTITIES_SET = 'drift:identities';
 
+// Fixed dummy for constant-time compare when row is missing or revoked (64 hex chars).
+const DUMMY_TOKEN_SHA256 = '0'.repeat(64);
+
+// Cap distinct install_id verifications per ingest batch (real batches share one id).
+export const MAX_AUTHED_VERIFY_PER_BATCH = 32;
+
+export function driftIdentityEnabled(): boolean {
+  return process.env.DRIFT_IDENTITY === '1';
+}
+
 let _redis: Redis | null | undefined;
 
 /** @internal test seam: inject Redis (or null); pass undefined to reset lazy init. */
@@ -53,26 +63,62 @@ type IdentityRow = {
   github_hash: string;
 };
 
-export async function issueIdentity(installId: string): Promise<{ token: string } | null> {
+export type IssueIdentityResult =
+  | { ok: true; token: string }
+  | { conflict: true }
+  | { unavailable: true };
+
+export async function issueIdentity(
+  installId: string,
+  currentToken?: string,
+): Promise<IssueIdentityResult | null> {
   if (!INSTALL_ID.test(installId)) return null;
   const r = redis();
-  if (!r) return null;
+  if (!r) return { unavailable: true };
 
   try {
-    const token = generateToken();
-    const tokenHash = await sha256hex(token);
-    const now = new Date().toISOString();
-    await r.hset(identityKey(installId), {
-      token_sha256: tokenHash,
-      created_at: now,
-      status: 'active',
-      cost_class: 'none',
-      github_hash: '',
-    } satisfies IdentityRow);
-    await r.sadd(IDENTITIES_SET, installId);
-    return { token };
+    const existing = await r.hgetall<IdentityRow>(identityKey(installId));
+
+    if (!existing?.token_sha256) {
+      const token = generateToken();
+      const tokenHash = await sha256hex(token);
+      const now = new Date().toISOString();
+      await r.hset(identityKey(installId), {
+        token_sha256: tokenHash,
+        created_at: now,
+        status: 'active',
+        cost_class: 'none',
+        github_hash: '',
+      } satisfies IdentityRow);
+      await r.sadd(IDENTITIES_SET, installId);
+      return { ok: true, token };
+    }
+
+    if (existing.status === 'revoked') {
+      return { conflict: true };
+    }
+
+    if (existing.status === 'active') {
+      // Claim-once: rotation requires a valid current token.
+      // Bounded TOCTOU: HGETALL-then-HSET is non-atomic; rate-limit caps races; loser gets 409.
+      if (!currentToken || !(await verifyToken(installId, currentToken))) {
+        return { conflict: true };
+      }
+      const token = generateToken();
+      const tokenHash = await sha256hex(token);
+      await r.hset(identityKey(installId), {
+        token_sha256: tokenHash,
+        created_at: existing.created_at,
+        status: 'active',
+        cost_class: existing.cost_class ?? 'none',
+        github_hash: existing.github_hash ?? '',
+      });
+      return { ok: true, token };
+    }
+
+    return { conflict: true };
   } catch {
-    return null;
+    return { unavailable: true };
   }
 }
 
@@ -82,9 +128,10 @@ export async function verifyToken(installId: string, token: string): Promise<boo
 
   try {
     const row = await r.hgetall<IdentityRow>(identityKey(installId));
-    if (!row?.token_sha256 || row.status !== 'active') return false;
     const hash = await sha256hex(token);
-    return timingSafeEqual(hash, row.token_sha256);
+    const stored =
+      row?.token_sha256 && row.status === 'active' ? row.token_sha256 : DUMMY_TOKEN_SHA256;
+    return timingSafeEqual(hash, stored);
   } catch {
     return false;
   }
@@ -103,13 +150,37 @@ export async function revokeIdentity(installId: string, token: string): Promise<
   }
 }
 
+export async function resolveIngestAuthedInstalls(
+  installIds: readonly string[],
+  authorization: string | null,
+): Promise<Set<string>> {
+  if (!driftIdentityEnabled()) return new Set();
+  const bearer = /^Bearer\s+(.+)$/i.exec(authorization ?? '');
+  const token = bearer?.[1]?.trim();
+  if (!token) return new Set();
+  return authedInstallSet(installIds, token);
+}
+
 export async function authedInstallSet(
   installIds: readonly string[],
   token: string,
 ): Promise<Set<string>> {
+  const distinct = [...new Set(installIds)];
+  const toVerify = distinct.slice(0, MAX_AUTHED_VERIFY_PER_BATCH);
+
+  const results = await Promise.all(
+    toVerify.map(async (id) => {
+      try {
+        return (await verifyToken(id, token)) ? id : null;
+      } catch {
+        return null;
+      }
+    }),
+  );
+
   const authed = new Set<string>();
-  for (const id of installIds) {
-    if (await verifyToken(id, token)) authed.add(id);
+  for (const id of results) {
+    if (id) authed.add(id);
   }
   return authed;
 }

@@ -100,7 +100,8 @@ const DRIFT_READ_GLOBAL_PER_DAY = 5_000_000;
 // Drift identity register limit (/api/v1/drift/register). Tighter than ingest — registration
 // is an abuse vector (identity minting). Fail-open on Redis error.
 const REGISTER_PER_IP_PER_MIN = 10;
-const REGISTER_GLOBAL_PER_DAY = 10_000;
+// Per-IP limit is the real abuse control; global cap is only a blast-radius backstop.
+const REGISTER_GLOBAL_PER_DAY = 200_000;
 
 export async function checkRegisterLimit(ip: string, now: Date): Promise<DriftLimit> {
   const r = redis();

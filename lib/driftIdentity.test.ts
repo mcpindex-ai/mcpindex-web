@@ -6,7 +6,9 @@ import {
   verifyToken,
   revokeIdentity,
   authedInstallSet,
+  driftIdentityEnabled,
   sha256hex,
+  MAX_AUTHED_VERIFY_PER_BATCH,
   __setDriftIdentityRedisForTest,
 } from './driftIdentity';
 
@@ -44,8 +46,12 @@ function mockRedis(): { client: Redis; store: Store; calls: { method: string; ar
   return { client, store, calls };
 }
 
+const savedDriftIdentity = process.env.DRIFT_IDENTITY;
+
 afterEach(() => {
   __setDriftIdentityRedisForTest(undefined);
+  if (savedDriftIdentity === undefined) delete process.env.DRIFT_IDENTITY;
+  else process.env.DRIFT_IDENTITY = savedDriftIdentity;
 });
 
 test('issueIdentity returns token and stores token_sha256 (never raw token)', async () => {
@@ -53,7 +59,7 @@ test('issueIdentity returns token and stores token_sha256 (never raw token)', as
   __setDriftIdentityRedisForTest(client);
 
   const res = await issueIdentity(INSTALL_A);
-  assert.ok(res?.token);
+  assert.ok(res && 'ok' in res && res.ok);
   assert.match(res.token, /^[0-9a-f]{64}$/);
 
   const hset = calls.find((c) => c.method === 'hset');
@@ -75,7 +81,8 @@ test('issueIdentity returns token and stores token_sha256 (never raw token)', as
 test('verifyToken accepts issued token and rejects wrong token', async () => {
   const { client } = mockRedis();
   __setDriftIdentityRedisForTest(client);
-  const { token } = (await issueIdentity(INSTALL_A))!;
+  const res = (await issueIdentity(INSTALL_A))!;
+  const token = 'ok' in res ? res.token : '';
 
   assert.equal(await verifyToken(INSTALL_A, token), true);
   assert.equal(await verifyToken(INSTALL_A, '0'.repeat(64)), false);
@@ -85,7 +92,8 @@ test('verifyToken accepts issued token and rejects wrong token', async () => {
 test('revokeIdentity flips status only with correct token', async () => {
   const { client, store } = mockRedis();
   __setDriftIdentityRedisForTest(client);
-  const { token } = (await issueIdentity(INSTALL_A))!;
+  const res = (await issueIdentity(INSTALL_A))!;
+  const token = 'ok' in res ? res.token : '';
 
   assert.equal(await revokeIdentity(INSTALL_A, 'wrong'), false);
   assert.equal(store.hashes.get(`drift:identity:${INSTALL_A}`)?.status, 'active');
@@ -95,15 +103,50 @@ test('revokeIdentity flips status only with correct token', async () => {
   assert.equal(await verifyToken(INSTALL_A, token), false);
 });
 
-test('re-register overwrites token_sha256; old token no longer verifies', async () => {
+test('re-register without current token returns conflict; hash and created_at unchanged', async () => {
+  const { client, store } = mockRedis();
+  __setDriftIdentityRedisForTest(client);
+  const first = (await issueIdentity(INSTALL_A))!;
+  const firstToken = 'ok' in first ? first.token : '';
+  const rowBefore = store.hashes.get(`drift:identity:${INSTALL_A}`)!;
+  const hashBefore = rowBefore.token_sha256;
+  const createdBefore = rowBefore.created_at;
+
+  const second = await issueIdentity(INSTALL_A);
+  assert.deepEqual(second, { conflict: true });
+
+  const rowAfter = store.hashes.get(`drift:identity:${INSTALL_A}`)!;
+  assert.equal(rowAfter.token_sha256, hashBefore);
+  assert.equal(rowAfter.created_at, createdBefore);
+  assert.equal(await verifyToken(INSTALL_A, firstToken), true);
+});
+
+test('re-register with correct token rotates and preserves created_at', async () => {
+  const { client, store } = mockRedis();
+  __setDriftIdentityRedisForTest(client);
+  const first = (await issueIdentity(INSTALL_A))!;
+  const firstToken = 'ok' in first ? first.token : '';
+  const createdBefore = store.hashes.get(`drift:identity:${INSTALL_A}`)!.created_at;
+
+  const second = await issueIdentity(INSTALL_A, firstToken);
+  assert.ok(second && 'ok' in second && second.ok);
+  assert.notEqual(firstToken, second.token);
+
+  const rowAfter = store.hashes.get(`drift:identity:${INSTALL_A}`)!;
+  assert.equal(rowAfter.created_at, createdBefore);
+  assert.equal(await verifyToken(INSTALL_A, firstToken), false);
+  assert.equal(await verifyToken(INSTALL_A, second.token), true);
+});
+
+test('re-register of revoked install_id returns conflict', async () => {
   const { client } = mockRedis();
   __setDriftIdentityRedisForTest(client);
   const first = (await issueIdentity(INSTALL_A))!;
-  const second = (await issueIdentity(INSTALL_A))!;
+  const token = 'ok' in first ? first.token : '';
+  assert.equal(await revokeIdentity(INSTALL_A, token), true);
 
-  assert.notEqual(first.token, second.token);
-  assert.equal(await verifyToken(INSTALL_A, first.token), false);
-  assert.equal(await verifyToken(INSTALL_A, second.token), true);
+  const again = await issueIdentity(INSTALL_A, token);
+  assert.deepEqual(again, { conflict: true });
 });
 
 test('authedInstallSet returns only install_id matching the shared token', async () => {
@@ -111,17 +154,45 @@ test('authedInstallSet returns only install_id matching the shared token', async
   __setDriftIdentityRedisForTest(client);
   const a = (await issueIdentity(INSTALL_A))!;
   const b = (await issueIdentity(INSTALL_B))!;
+  const tokenA = 'ok' in a ? a.token : '';
+  const tokenB = 'ok' in b ? b.token : '';
 
-  const withA = await authedInstallSet([INSTALL_A, INSTALL_B], a.token);
+  const withA = await authedInstallSet([INSTALL_A, INSTALL_B], tokenA);
   assert.deepEqual([...withA], [INSTALL_A]);
 
-  const withB = await authedInstallSet([INSTALL_A, INSTALL_B], b.token);
+  const withB = await authedInstallSet([INSTALL_A, INSTALL_B], tokenB);
   assert.deepEqual([...withB], [INSTALL_B]);
 });
 
-test('fail-open: Redis null never throws', async () => {
+test('authedInstallSet verifies at most MAX_AUTHED_VERIFY_PER_BATCH distinct ids', async () => {
+  const { client, calls } = mockRedis();
+  __setDriftIdentityRedisForTest(client);
+
+  const ids: string[] = [];
+  for (let i = 0; i < MAX_AUTHED_VERIFY_PER_BATCH + 5; i++) {
+    ids.push(i.toString(16).padStart(32, '0'));
+  }
+
+  const first = await issueIdentity(ids[0]);
+  const token = first && 'ok' in first ? first.token : '';
+  for (let i = 1; i < ids.length; i++) {
+    await issueIdentity(ids[i]);
+  }
+
+  calls.length = 0;
+  const authed = await authedInstallSet(ids, token);
+  const verifyHgetalls = calls.filter((c) => c.method === 'hgetall');
+  assert.equal(verifyHgetalls.length, MAX_AUTHED_VERIFY_PER_BATCH);
+  assert.equal(authed.size, 1);
+  assert.ok(authed.has(ids[0]));
+  for (const id of ids.slice(MAX_AUTHED_VERIFY_PER_BATCH)) {
+    assert.ok(!authed.has(id));
+  }
+});
+
+test('fail-open: Redis null returns unavailable for issueIdentity', async () => {
   __setDriftIdentityRedisForTest(null);
-  assert.equal(await issueIdentity(INSTALL_A), null);
+  assert.deepEqual(await issueIdentity(INSTALL_A), { unavailable: true });
   assert.equal(await verifyToken(INSTALL_A, 'x'), false);
   assert.equal(await revokeIdentity(INSTALL_A, 'x'), false);
   assert.deepEqual([...(await authedInstallSet([INSTALL_A], 'x'))], []);
@@ -132,4 +203,16 @@ test('sha256hex is deterministic', async () => {
     await sha256hex('abc'),
     'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
   );
+});
+
+test('driftIdentityEnabled is false when DRIFT_IDENTITY is unset', () => {
+  delete process.env.DRIFT_IDENTITY;
+  assert.equal(driftIdentityEnabled(), false);
+});
+
+test('driftIdentityEnabled is true only when DRIFT_IDENTITY is 1', () => {
+  process.env.DRIFT_IDENTITY = '1';
+  assert.equal(driftIdentityEnabled(), true);
+  process.env.DRIFT_IDENTITY = '0';
+  assert.equal(driftIdentityEnabled(), false);
 });
