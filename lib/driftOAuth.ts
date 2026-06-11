@@ -39,6 +39,35 @@ function ghKey(githubHash: string): string {
   return `oauth:gh:${githubHash}`;
 }
 
+// Atomic reserve+bind: active-check, rebind-reject, one-per-GH, identity update in one EVAL.
+const BIND_GITHUB_SCRIPT = `
+local identityKey = KEYS[1]
+local ghRedisKey = KEYS[2]
+local githubHash = ARGV[1]
+local installId = ARGV[2]
+
+local token_sha256 = redis.call('HGET', identityKey, 'token_sha256')
+local status = redis.call('HGET', identityKey, 'status')
+if not token_sha256 or status ~= 'active' then
+  return 'inactive'
+end
+
+local cost_class = redis.call('HGET', identityKey, 'cost_class')
+local github_hash = redis.call('HGET', identityKey, 'github_hash')
+if cost_class == 'github' and github_hash and github_hash ~= '' and github_hash ~= githubHash then
+  return 'already_bound'
+end
+
+local existing = redis.call('GET', ghRedisKey)
+if existing and existing ~= installId then
+  return 'already_bound'
+end
+
+redis.call('SET', ghRedisKey, installId)
+redis.call('HSET', identityKey, 'cost_class', 'github', 'github_hash', githubHash)
+return 'ok'
+`;
+
 export interface OAuthTransport {
   exchangeCode(code: string): Promise<string | null>;
   fetchUserId(accessToken: string): Promise<string | null>;
@@ -143,14 +172,6 @@ export async function startUpgrade(
   }
 }
 
-type IdentityRow = {
-  token_sha256: string;
-  created_at: string;
-  status: string;
-  cost_class: string;
-  github_hash: string;
-};
-
 export type BindGithubResult =
   | { ok: true; cost_class: 'github' }
   | { error: 'invalid_state' | 'exchange_failed' | 'already_bound' }
@@ -183,29 +204,16 @@ export async function bindGithub(
 
     const githubHash = await sha256hex(ghId + pepper);
 
-    const row = await r.hgetall<IdentityRow>(identityKey(installId));
-    if (!row?.token_sha256 || row.status !== 'active') return { error: 'exchange_failed' };
+    const evalResult = await r.eval<[string, string], string>(
+      BIND_GITHUB_SCRIPT,
+      [identityKey(installId), ghKey(githubHash)],
+      [githubHash, installId],
+    );
 
-    if (
-      row.cost_class === 'github' &&
-      row.github_hash &&
-      row.github_hash !== githubHash
-    ) {
-      return { error: 'already_bound' };
-    }
-
-    const ghSet = await r.set(ghKey(githubHash), installId, { nx: true });
-    if (!ghSet) {
-      const existing = await r.get<string>(ghKey(githubHash));
-      if (existing && existing !== installId) return { error: 'already_bound' };
-    }
-
-    await r.hset(identityKey(installId), {
-      cost_class: 'github',
-      github_hash: githubHash,
-    });
-
-    return { ok: true, cost_class: 'github' };
+    if (evalResult === 'ok') return { ok: true, cost_class: 'github' };
+    if (evalResult === 'already_bound') return { error: 'already_bound' };
+    if (evalResult === 'inactive') return { error: 'exchange_failed' };
+    return { unavailable: true };
   } catch {
     return { unavailable: true };
   }
