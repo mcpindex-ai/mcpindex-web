@@ -413,6 +413,51 @@ try {
   errors.push(`could not run the raw-flag-predicate check: ${err.message}`);
 }
 
+// DRIFT-NETWORK FLAGS MUST STAY OFF BY DEFAULT. The authenticated-corroboration
+// surface (WS-A/B/C) is honest ONLY while dormant by default: install identity +
+// ingest-auth gate on DRIFT_IDENTITY, the dark installs-plane READ gates on
+// DRIFT_DARK_CORROBORATION, and the OAuth cost-class upgrade gates on
+// DRIFT_OAUTH_UPGRADE. If committed code drops one of those env guards or hard
+// force-enables a flag, the site would publicly serve forgeable install
+// corroboration (or a live OAuth surface) that has NOT cleared its go-live gate -
+// a false trust claim. Fail the build on either regression.
+const FLAG_GUARDS = [
+  { file: 'lib/driftIdentity.ts', needle: "process.env.DRIFT_IDENTITY === '1'", flag: 'DRIFT_IDENTITY' },
+  { file: 'lib/driftOAuth.ts', needle: "process.env.DRIFT_OAUTH_UPGRADE === '1'", flag: 'DRIFT_OAUTH_UPGRADE' },
+  { file: 'lib/driftQuery.ts', needle: "process.env.DRIFT_DARK_CORROBORATION !== '1'", flag: 'DRIFT_DARK_CORROBORATION' },
+];
+for (const g of FLAG_GUARDS) {
+  try {
+    const txt = fs.readFileSync(path.join(root, g.file), 'utf8');
+    if (!txt.includes(g.needle)) {
+      errors.push(`${g.file}: the ${g.flag} OFF-by-default env guard ("${g.needle}") is gone. The drift-network surface must stay dormant until its go-live gate clears.`);
+    }
+  } catch (err) {
+    errors.push(`could not read ${g.file} for the ${g.flag} flag-guard check: ${err.message}`);
+  }
+}
+// A single-'=' assignment to one of these env flags would force-enable the surface
+// at runtime regardless of deploy config (the comparison "=== '1'" is allowed).
+const FORCE_ENABLE = /process\.env\.DRIFT_(IDENTITY|OAUTH_UPGRADE|DARK_CORROBORATION)\s*=(?!=)\s*['"]/;
+const scanForceEnable = (dir) => {
+  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (ent.name === 'node_modules' || ent.name === '.next') continue;
+    const p = path.join(dir, ent.name);
+    if (ent.isDirectory()) scanForceEnable(p);
+    else if (/\.tsx?$/.test(ent.name) && !/\.test\.tsx?$/.test(ent.name)) {
+      if (FORCE_ENABLE.test(fs.readFileSync(p, 'utf8'))) {
+        errors.push(`${path.relative(root, p)} force-enables a drift-network flag by assignment. These flags must come from the deploy env only.`);
+      }
+    }
+  }
+};
+try {
+  scanForceEnable(path.join(root, 'lib'));
+  scanForceEnable(path.join(root, 'app'));
+} catch (err) {
+  errors.push(`could not run the drift-flag force-enable scan: ${err.message}`);
+}
+
 if (errors.length) {
   console.error('\n[graduation-guard] BUILD BLOCKED - false trust claim detected:');
   for (const e of errors) console.error('  - ' + e);
