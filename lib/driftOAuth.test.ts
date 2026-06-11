@@ -256,9 +256,92 @@ test('bindGithub only touches active identity', async () => {
   const state = 'a'.repeat(64);
   store.strings.set(`oauth:state:${state}`, INSTALL_A);
 
+  const expectedHash = await sha256hex(GH_ID + PEPPER);
   const result = await bindGithub(state, 'valid-code', fakeTransport());
   assert.deepEqual(result, { error: 'exchange_failed' });
   assert.notEqual(store.hashes.get(`drift:identity:${INSTALL_A}`)?.cost_class, 'github');
+  assert.equal(store.strings.get(`oauth:gh:${expectedHash}`), undefined);
+});
+
+test('bindGithub re-bind same install and same GH is idempotent', async () => {
+  const { client, store } = mockRedis();
+  __setDriftIdentityRedisForTest(client);
+  __setDriftOAuthRedisForTest(client);
+  process.env.DRIFT_OAUTH_PEPPER = PEPPER;
+  process.env.DRIFT_OAUTH_CLIENT_ID = 'cid';
+  process.env.DRIFT_OAUTH_REDIRECT_URI = 'https://example.com/callback';
+
+  const issued = (await issueIdentity(INSTALL_A))!;
+  const token = 'ok' in issued ? issued.token : '';
+  const start = await startUpgrade(INSTALL_A, token);
+  const state = new URL(start && 'url' in start ? start.url : 'http://x').searchParams.get('state')!;
+  const expectedHash = await sha256hex(GH_ID + PEPPER);
+
+  assert.deepEqual(await bindGithub(state, 'valid-code', fakeTransport()), {
+    ok: true,
+    cost_class: 'github',
+  });
+
+  const state2 = 'c'.repeat(64);
+  store.strings.set(`oauth:state:${state2}`, INSTALL_A);
+  assert.deepEqual(await bindGithub(state2, 'valid-code', fakeTransport()), {
+    ok: true,
+    cost_class: 'github',
+  });
+
+  const row = store.hashes.get(`drift:identity:${INSTALL_A}`);
+  assert.equal(row?.github_hash, expectedHash);
+  assert.equal(store.strings.get(`oauth:gh:${expectedHash}`), INSTALL_A);
+});
+
+test('bindGithub rejects re-bind to different GH without overwriting', async () => {
+  const { client, store } = mockRedis();
+  __setDriftIdentityRedisForTest(client);
+  __setDriftOAuthRedisForTest(client);
+  process.env.DRIFT_OAUTH_PEPPER = PEPPER;
+  process.env.DRIFT_OAUTH_CLIENT_ID = 'cid';
+  process.env.DRIFT_OAUTH_REDIRECT_URI = 'https://example.com/callback';
+
+  const issued = (await issueIdentity(INSTALL_A))!;
+  const token = 'ok' in issued ? issued.token : '';
+  const start = await startUpgrade(INSTALL_A, token);
+  const state = new URL(start && 'url' in start ? start.url : 'http://x').searchParams.get('state')!;
+  const originalHash = await sha256hex(GH_ID + PEPPER);
+
+  assert.deepEqual(await bindGithub(state, 'valid-code', fakeTransport()), {
+    ok: true,
+    cost_class: 'github',
+  });
+
+  const newGhId = '99999';
+  const newHash = await sha256hex(newGhId + PEPPER);
+  const state2 = 'd'.repeat(64);
+  store.strings.set(`oauth:state:${state2}`, INSTALL_A);
+
+  const result = await bindGithub(state2, 'valid-code', fakeTransport(newGhId));
+  assert.deepEqual(result, { error: 'already_bound' });
+  assert.equal(store.hashes.get(`drift:identity:${INSTALL_A}`)?.github_hash, originalHash);
+  assert.equal(store.strings.get(`oauth:gh:${newHash}`), undefined);
+});
+
+test('bindGithub returns unavailable when DRIFT_OAUTH_PEPPER is empty', async () => {
+  const { client, store } = mockRedis();
+  __setDriftIdentityRedisForTest(client);
+  __setDriftOAuthRedisForTest(client);
+  delete process.env.DRIFT_OAUTH_PEPPER;
+  process.env.DRIFT_OAUTH_CLIENT_ID = 'cid';
+  process.env.DRIFT_OAUTH_REDIRECT_URI = 'https://example.com/callback';
+
+  const issued = (await issueIdentity(INSTALL_A))!;
+  const token = 'ok' in issued ? issued.token : '';
+  const start = await startUpgrade(INSTALL_A, token);
+  const state = new URL(start && 'url' in start ? start.url : 'http://x').searchParams.get('state')!;
+
+  const result = await bindGithub(state, 'valid-code', fakeTransport());
+  assert.deepEqual(result, { unavailable: true });
+  assert.equal(store.hashes.get(`drift:identity:${INSTALL_A}`)?.cost_class, 'none');
+  const expectedWeakHash = await sha256hex(GH_ID);
+  assert.equal(store.strings.get(`oauth:gh:${expectedWeakHash}`), undefined);
 });
 
 test('fail-open: Redis null returns unavailable without throwing', async () => {

@@ -18,10 +18,11 @@ const INSTALL_B = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 type Store = {
   hashes: Map<string, Record<string, string>>;
   sets: Map<string, Set<string>>;
+  strings: Map<string, string>;
 };
 
 function mockRedis(): { client: Redis; store: Store; calls: { method: string; args: unknown[] }[] } {
-  const store: Store = { hashes: new Map(), sets: new Map() };
+  const store: Store = { hashes: new Map(), sets: new Map(), strings: new Map() };
   const calls: { method: string; args: unknown[] }[] = [];
 
   const client = {
@@ -40,6 +41,11 @@ function mockRedis(): { client: Redis; store: Store; calls: { method: string; ar
       const set = store.sets.get(key) ?? new Set<string>();
       for (const m of members) set.add(m);
       store.sets.set(key, set);
+    },
+    async del(key: string) {
+      calls.push({ method: 'del', args: [key] });
+      store.strings.delete(key);
+      return 1;
     },
   } as unknown as Redis;
 
@@ -99,8 +105,46 @@ test('revokeIdentity flips status only with correct token', async () => {
   assert.equal(store.hashes.get(`drift:identity:${INSTALL_A}`)?.status, 'active');
 
   assert.equal(await revokeIdentity(INSTALL_A, token), true);
-  assert.equal(store.hashes.get(`drift:identity:${INSTALL_A}`)?.status, 'revoked');
+  const row = store.hashes.get(`drift:identity:${INSTALL_A}`);
+  assert.equal(row?.status, 'revoked');
+  assert.equal(row?.cost_class, 'none');
+  assert.equal(row?.github_hash, '');
   assert.equal(await verifyToken(INSTALL_A, token), false);
+});
+
+test('revokeIdentity on github-bound identity clears binding and deletes oauth:gh', async () => {
+  const { client, store } = mockRedis();
+  __setDriftIdentityRedisForTest(client);
+  const res = (await issueIdentity(INSTALL_A))!;
+  const token = 'ok' in res ? res.token : '';
+  const githubHash = 'abc123hash';
+
+  store.hashes.set(`drift:identity:${INSTALL_A}`, {
+    ...store.hashes.get(`drift:identity:${INSTALL_A}`)!,
+    cost_class: 'github',
+    github_hash: githubHash,
+  });
+  store.strings.set(`oauth:gh:${githubHash}`, INSTALL_A);
+
+  assert.equal(await revokeIdentity(INSTALL_A, token), true);
+  const row = store.hashes.get(`drift:identity:${INSTALL_A}`);
+  assert.equal(row?.status, 'revoked');
+  assert.equal(row?.cost_class, 'none');
+  assert.equal(row?.github_hash, '');
+  assert.equal(store.strings.get(`oauth:gh:${githubHash}`), undefined);
+});
+
+test('revokeIdentity on non-github identity does not touch oauth:gh keys', async () => {
+  const { client, store, calls } = mockRedis();
+  __setDriftIdentityRedisForTest(client);
+  const res = (await issueIdentity(INSTALL_A))!;
+  const token = 'ok' in res ? res.token : '';
+
+  store.strings.set('oauth:gh:unrelated', INSTALL_B);
+
+  assert.equal(await revokeIdentity(INSTALL_A, token), true);
+  assert.equal(store.strings.get('oauth:gh:unrelated'), INSTALL_B);
+  assert.ok(!calls.some((c) => c.method === 'del'));
 });
 
 test('re-register without current token returns conflict; hash and created_at unchanged', async () => {

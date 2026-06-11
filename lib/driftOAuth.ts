@@ -179,16 +179,26 @@ export async function bindGithub(
     if (!ghId) return { error: 'exchange_failed' };
 
     const pepper = process.env.DRIFT_OAUTH_PEPPER ?? '';
+    if (!pepper) return { unavailable: true };
+
     const githubHash = await sha256hex(ghId + pepper);
+
+    const row = await r.hgetall<IdentityRow>(identityKey(installId));
+    if (!row?.token_sha256 || row.status !== 'active') return { error: 'exchange_failed' };
+
+    if (
+      row.cost_class === 'github' &&
+      row.github_hash &&
+      row.github_hash !== githubHash
+    ) {
+      return { error: 'already_bound' };
+    }
 
     const ghSet = await r.set(ghKey(githubHash), installId, { nx: true });
     if (!ghSet) {
       const existing = await r.get<string>(ghKey(githubHash));
       if (existing && existing !== installId) return { error: 'already_bound' };
     }
-
-    const row = await r.hgetall<IdentityRow>(identityKey(installId));
-    if (!row?.token_sha256 || row.status !== 'active') return { error: 'exchange_failed' };
 
     await r.hset(identityKey(installId), {
       cost_class: 'github',
