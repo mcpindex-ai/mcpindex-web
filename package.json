@@ -8,7 +8,7 @@
     "check:honesty": "node scripts/check-graduation-honesty.mjs",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test lib/badge.test.ts lib/driftIngest.test.ts lib/driftIdentity.test.ts lib/driftQuery.test.ts lib/ledger.test.ts lib/driftStats.test.ts lib/changeKinds.test.ts lib/driftFingerprint.test.ts lib/serverDrift.test.ts lib/jsonLd.test.ts lib/kindLabels.test.ts",
+    "test": "tsx --test lib/badge.test.ts lib/driftIngest.test.ts lib/driftIdentity.test.ts lib/driftOAuth.test.ts lib/driftQuery.test.ts lib/ledger.test.ts lib/driftStats.test.ts lib/changeKinds.test.ts lib/driftFingerprint.test.ts lib/serverDrift.test.ts lib/jsonLd.test.ts lib/kindLabels.test.ts",
     "falsifier:drift": "node scripts/drift-falsifier-report.mjs"
   },
   "dependencies": {

@@ -143,7 +143,19 @@ export async function revokeIdentity(installId: string, token: string): Promise<
   if (!r) return false;
 
   try {
-    await r.hset(identityKey(installId), { status: 'revoked' });
+    const row = await r.hgetall<IdentityRow>(identityKey(installId));
+    const githubHash = row?.github_hash ?? '';
+
+    await r.hset(identityKey(installId), {
+      status: 'revoked',
+      cost_class: 'none',
+      github_hash: '',
+    });
+
+    if (githubHash) {
+      await r.del(`oauth:gh:${githubHash}`);
+    }
+
     return true;
   } catch {
     return false;
