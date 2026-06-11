@@ -72,6 +72,35 @@ function mockRedis(): { client: Redis; store: Store } {
     async expire() {
       return 1;
     },
+    async eval(_script: string, keys: string[], args: string[]) {
+      const idKey = keys[0];
+      const ghRedisKey = keys[1];
+      const githubHash = args[0];
+      const installId = args[1];
+
+      const row = store.hashes.get(idKey) ?? {};
+      const token_sha256 = row.token_sha256;
+      const status = row.status;
+      if (!token_sha256 || status !== 'active') return 'inactive';
+
+      const cost_class = row.cost_class;
+      const github_hash = row.github_hash;
+      if (
+        cost_class === 'github' &&
+        github_hash &&
+        github_hash !== '' &&
+        github_hash !== githubHash
+      ) {
+        return 'already_bound';
+      }
+
+      const existing = store.strings.get(ghRedisKey);
+      if (existing && existing !== installId) return 'already_bound';
+
+      store.strings.set(ghRedisKey, installId);
+      store.hashes.set(idKey, { ...row, cost_class: 'github', github_hash: githubHash });
+      return 'ok';
+    },
   } as unknown as Redis;
 
   return { client, store };
@@ -383,4 +412,76 @@ test('oauthEnabled is true only when DRIFT_OAUTH_UPGRADE is 1', () => {
   assert.equal(oauthEnabled(), true);
   process.env.DRIFT_OAUTH_UPGRADE = '0';
   assert.equal(oauthEnabled(), false);
+});
+
+function snapshotIdentity(store: Store, installId: string): Record<string, string> | undefined {
+  const row = store.hashes.get(`drift:identity:${installId}`);
+  return row ? { ...row } : undefined;
+}
+
+test('bindGithub atomicity: non-ok outcomes write nothing', async () => {
+  const { client, store } = mockRedis();
+  __setDriftIdentityRedisForTest(client);
+  __setDriftOAuthRedisForTest(client);
+  process.env.DRIFT_OAUTH_PEPPER = PEPPER;
+  process.env.DRIFT_OAUTH_CLIENT_ID = 'cid';
+  process.env.DRIFT_OAUTH_REDIRECT_URI = 'https://example.com/callback';
+
+  const expectedHash = await sha256hex(GH_ID + PEPPER);
+
+  // inactive: revoked identity
+  await issueIdentity(INSTALL_A);
+  store.hashes.set(`drift:identity:${INSTALL_A}`, {
+    ...store.hashes.get(`drift:identity:${INSTALL_A}`)!,
+    status: 'revoked',
+  });
+  const stateInactive = 'e'.repeat(64);
+  store.strings.set(`oauth:state:${stateInactive}`, INSTALL_A);
+  const beforeInactive = snapshotIdentity(store, INSTALL_A);
+  const inactive = await bindGithub(stateInactive, 'valid-code', fakeTransport());
+  assert.deepEqual(inactive, { error: 'exchange_failed' });
+  assert.deepEqual(snapshotIdentity(store, INSTALL_A), beforeInactive);
+  assert.equal(store.strings.get(`oauth:gh:${expectedHash}`), undefined);
+
+  // already_bound: different-GH rebind on github identity
+  const INSTALL_D = 'dddddddddddddddddddddddddddddddd';
+  const initialGhId = '55555';
+  const issuedD = (await issueIdentity(INSTALL_D))!;
+  const tokenD = 'ok' in issuedD ? issuedD.token : '';
+  const startD = await startUpgrade(INSTALL_D, tokenD);
+  const stateD = new URL(startD && 'url' in startD ? startD.url : 'http://x').searchParams.get('state')!;
+  assert.deepEqual(await bindGithub(stateD, 'valid-code', fakeTransport(initialGhId)), {
+    ok: true,
+    cost_class: 'github',
+  });
+  const newGhId = '88888';
+  const newHash = await sha256hex(newGhId + PEPPER);
+  const stateRebind = 'f'.repeat(64);
+  store.strings.set(`oauth:state:${stateRebind}`, INSTALL_D);
+  const beforeRebind = snapshotIdentity(store, INSTALL_D);
+  const rebind = await bindGithub(stateRebind, 'valid-code', fakeTransport(newGhId));
+  assert.deepEqual(rebind, { error: 'already_bound' });
+  assert.deepEqual(snapshotIdentity(store, INSTALL_D), beforeRebind);
+  assert.equal(store.strings.get(`oauth:gh:${newHash}`), undefined);
+
+  // already_bound: one-per-GH (ghKey owned by another install)
+  const a = (await issueIdentity(INSTALL_B))!;
+  const tokenB = 'ok' in a ? a.token : '';
+  const startB = await startUpgrade(INSTALL_B, tokenB);
+  const stateB = new URL(startB && 'url' in startB ? startB.url : 'http://x').searchParams.get('state')!;
+  assert.deepEqual(await bindGithub(stateB, 'valid-code', fakeTransport()), {
+    ok: true,
+    cost_class: 'github',
+  });
+
+  const INSTALL_C = 'cccccccccccccccccccccccccccccccc';
+  const issuedC = (await issueIdentity(INSTALL_C))!;
+  const tokenC = 'ok' in issuedC ? issuedC.token : '';
+  const startC = await startUpgrade(INSTALL_C, tokenC);
+  const stateC = new URL(startC && 'url' in startC ? startC.url : 'http://x').searchParams.get('state')!;
+  const beforeOnePerGh = snapshotIdentity(store, INSTALL_C);
+  const onePerGh = await bindGithub(stateC, 'valid-code', fakeTransport());
+  assert.deepEqual(onePerGh, { error: 'already_bound' });
+  assert.deepEqual(snapshotIdentity(store, INSTALL_C), beforeOnePerGh);
+  assert.equal(store.strings.get(`oauth:gh:${expectedHash}`), INSTALL_B);
 });
