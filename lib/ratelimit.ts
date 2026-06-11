@@ -97,6 +97,32 @@ export async function checkDriftLimit(ip: string, now: Date): Promise<DriftLimit
 const DRIFT_READ_PER_IP_PER_MIN = 600;
 const DRIFT_READ_GLOBAL_PER_DAY = 5_000_000;
 
+// Drift identity register limit (/api/v1/drift/register). Tighter than ingest — registration
+// is an abuse vector (identity minting). Fail-open on Redis error.
+const REGISTER_PER_IP_PER_MIN = 10;
+const REGISTER_GLOBAL_PER_DAY = 10_000;
+
+export async function checkRegisterLimit(ip: string, now: Date): Promise<DriftLimit> {
+  const r = redis();
+  if (!r) return { ok: true };
+
+  const min = now.toISOString().slice(0, 16);
+  const day = now.toISOString().slice(0, 10);
+  try {
+    const ipKey = `drift:register:ip:${ip}:${min}`;
+    const c = await r.incr(ipKey);
+    if (c === 1) await r.expire(ipKey, 70);
+    if (c > REGISTER_PER_IP_PER_MIN) return { ok: false };
+
+    const gKey = `drift:register:global:${day}`;
+    const g = await r.incr(gKey);
+    if (g === 1) await r.expire(gKey, 90_000);
+    return g > REGISTER_GLOBAL_PER_DAY ? { ok: false } : { ok: true };
+  } catch {
+    return { ok: true };
+  }
+}
+
 export async function checkDriftReadLimit(ip: string, now: Date): Promise<DriftLimit> {
   const r = redis();
   if (!r) return { ok: true }; // fail-open
