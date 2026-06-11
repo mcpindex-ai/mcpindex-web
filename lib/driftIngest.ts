@@ -31,6 +31,11 @@ const EXEC_TIMEOUT_MS = 2_000;
 // SAME closed, already-validated signal — no new field, no raw tool data.
 const STREAM_KEY = 'drift:stream';
 const STREAM_MAXLEN = 100_000;
+// Hints are best-effort tips for the mini32 recrawl worker. SET semantics dedup by fp.
+// A lost hint self-heals at the next daily crawl. fps are already-public-salt material
+// (no new data class leaves).
+const RECRAWL_HINTS_KEY = 'drift:recrawl:hints';
+const RECRAWL_HINTS_TTL_S = 24 * 60 * 60;
 
 export const DriftSignalSchema = z
   .object({
@@ -55,6 +60,12 @@ export const DriftBatchSchema = z
 export type DriftSignal = z.infer<typeof DriftSignalSchema>;
 
 let _redis: Redis | null | undefined;
+
+/** @internal test seam: inject Redis (or null); pass undefined to reset lazy init. */
+export function __setDriftIngestRedisForTest(client: Redis | null | undefined): void {
+  _redis = client;
+}
+
 function redis(): Redis | null {
   if (_redis !== undefined) return _redis;
   const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
@@ -100,6 +111,12 @@ export async function recordDriftBatch(signals: DriftSignal[], now: Date): Promi
       p.xadd(STREAM_KEY, '*', { d: JSON.stringify(s) }, {
         trim: { type: 'MAXLEN', threshold: STREAM_MAXLEN, comparison: '~' },
       });
+    }
+
+    if (process.env.DRIFT_RECRAWL_HINTS === '1' && drifts.length) {
+      const fps = [...new Set(drifts.map((s) => s.tool_fp))];
+      p.sadd(RECRAWL_HINTS_KEY, ...(fps as [string, ...string[]]));
+      p.expire(RECRAWL_HINTS_KEY, RECRAWL_HINTS_TTL_S);
     }
 
     // Bound how long the counter write can hold the ingest response. The route awaits this
