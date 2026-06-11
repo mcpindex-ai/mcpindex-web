@@ -36,6 +36,17 @@ function identityKey(installId: string): string {
   return `drift:identity:${installId}`;
 }
 
+// Atomic revoke: clear identity binding and free oauth:gh reservation in one EVAL.
+const REVOKE_SCRIPT = `
+local identityKey = KEYS[1]
+local github_hash = redis.call('HGET', identityKey, 'github_hash')
+redis.call('HSET', identityKey, 'status', 'revoked', 'cost_class', 'none', 'github_hash', '')
+if github_hash and github_hash ~= '' then
+  redis.call('DEL', 'oauth:gh:' .. github_hash)
+end
+return 'ok'
+`;
+
 export async function sha256hex(s: string): Promise<string> {
   const data = new TextEncoder().encode(s);
   const hash = await crypto.subtle.digest('SHA-256', data);
@@ -143,19 +154,7 @@ export async function revokeIdentity(installId: string, token: string): Promise<
   if (!r) return false;
 
   try {
-    const row = await r.hgetall<IdentityRow>(identityKey(installId));
-    const githubHash = row?.github_hash ?? '';
-
-    await r.hset(identityKey(installId), {
-      status: 'revoked',
-      cost_class: 'none',
-      github_hash: '',
-    });
-
-    if (githubHash) {
-      await r.del(`oauth:gh:${githubHash}`);
-    }
-
+    await r.eval(REVOKE_SCRIPT, [identityKey(installId)], []);
     return true;
   } catch {
     return false;

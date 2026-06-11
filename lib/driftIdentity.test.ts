@@ -47,6 +47,26 @@ function mockRedis(): { client: Redis; store: Store; calls: { method: string; ar
       store.strings.delete(key);
       return 1;
     },
+    async eval(script: string, keys: string[], args: string[]) {
+      void script;
+      void args;
+      calls.push({ method: 'eval', args: [keys] });
+      const identityKey = keys[0];
+      const row = store.hashes.get(identityKey);
+      const githubHash = row?.github_hash ?? '';
+      if (row) {
+        store.hashes.set(identityKey, {
+          ...row,
+          status: 'revoked',
+          cost_class: 'none',
+          github_hash: '',
+        });
+      }
+      if (githubHash) {
+        store.strings.delete(`oauth:gh:${githubHash}`);
+      }
+      return 'ok';
+    },
   } as unknown as Redis;
 
   return { client, store, calls };
@@ -144,7 +164,32 @@ test('revokeIdentity on non-github identity does not touch oauth:gh keys', async
 
   assert.equal(await revokeIdentity(INSTALL_A, token), true);
   assert.equal(store.strings.get('oauth:gh:unrelated'), INSTALL_B);
-  assert.ok(!calls.some((c) => c.method === 'del'));
+  const evalCalls = calls.filter((c) => c.method === 'eval');
+  assert.equal(evalCalls.length, 1);
+});
+
+test('revokeIdentity clear and oauth:gh delete happen together in one eval', async () => {
+  const { client, store, calls } = mockRedis();
+  __setDriftIdentityRedisForTest(client);
+  const res = (await issueIdentity(INSTALL_A))!;
+  const token = 'ok' in res ? res.token : '';
+  const githubHash = 'deadbeef';
+
+  store.hashes.set(`drift:identity:${INSTALL_A}`, {
+    ...store.hashes.get(`drift:identity:${INSTALL_A}`)!,
+    cost_class: 'github',
+    github_hash: githubHash,
+  });
+  store.strings.set(`oauth:gh:${githubHash}`, INSTALL_A);
+
+  calls.length = 0;
+  assert.equal(await revokeIdentity(INSTALL_A, token), true);
+  assert.equal(calls.filter((c) => c.method === 'eval').length, 1);
+  const row = store.hashes.get(`drift:identity:${INSTALL_A}`);
+  assert.equal(row?.status, 'revoked');
+  assert.equal(row?.cost_class, 'none');
+  assert.equal(row?.github_hash, '');
+  assert.equal(store.strings.get(`oauth:gh:${githubHash}`), undefined);
 });
 
 test('re-register without current token returns conflict; hash and created_at unchanged', async () => {

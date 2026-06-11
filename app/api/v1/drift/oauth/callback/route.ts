@@ -40,5 +40,15 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: result.error }, { status: 400 });
   }
 
-  return Response.json({ bound: true, cost_class: 'github' });
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GitHub linked</title>
+</head>
+<body>
+<p>Your GitHub account is linked and the install is verified (cost class: github). You can close this tab.</p>
+</body>
+</html>`;
+  return new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
 }
