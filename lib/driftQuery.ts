@@ -109,7 +109,13 @@ export async function lookupCorroborated(fps: string[]): Promise<Record<string, 
         out[fp] = metaToResult(metas[i]);
       });
     }
-    if (nonCrawl.length) {
+    // Read-side gate mirroring the drain's write-side DRIFT_DARK_CORROBORATION flag: the dark
+    // installs plane is served ONLY at go-live. Default OFF -> non-crawl members are "not observed
+    // drifting" (the pre-installs-plane behavior), so the web never serves the installs plane on
+    // the honor system that the drain did not write it (defense-in-depth, not honor-system).
+    if (nonCrawl.length && process.env.DRIFT_DARK_CORROBORATION !== '1') {
+      for (const fp of nonCrawl) out[fp] = { drifted: false };
+    } else if (nonCrawl.length) {
       const installMembers = await Promise.all(
         nonCrawl.map((fp) => r.sismember('drift:corroborated:installs', fp)),
       );

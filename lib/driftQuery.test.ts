@@ -64,6 +64,7 @@ afterEach(() => {
   delete process.env.UPSTASH_REDIS_REST_TOKEN;
   delete process.env.KV_REST_API_URL;
   delete process.env.KV_REST_API_TOKEN;
+  delete process.env.DRIFT_DARK_CORROBORATION;
 });
 
 test('FP_RE accepts exactly 32 lowercase hex, rejects everything else', () => {
@@ -132,6 +133,7 @@ test('crawl-member fp returns provenance:crawl and does not consult installs pla
 });
 
 test('installs-only fp returns drifted:true provenance:installs with installs-meta sources', async () => {
+  process.env.DRIFT_DARK_CORROBORATION = '1';
   const { client, store } = mockRedis();
   __setDriftQueryRedisForTest(client);
   seedInstallsHit(store, FP_INSTALLS, {
@@ -151,6 +153,21 @@ test('installs-only fp returns drifted:true provenance:installs with installs-me
     last_seen: '2026-02-01',
     change_kinds: ['type-changed'],
   });
+});
+
+test('read-side gate: installs plane is NOT served when DRIFT_DARK_CORROBORATION is off', async () => {
+  // Flag default OFF (afterEach deletes it). An fp present in the installs SET must resolve
+  // drifted:false (the pre-installs-plane behavior) and the installs SET must NOT be consulted.
+  const { client, store, calls } = mockRedis();
+  __setDriftQueryRedisForTest(client);
+  seedInstallsHit(store, FP_INSTALLS, { sources: 3, safety_relevant: 1, provenance: 'installs' });
+
+  const res = await lookupCorroborated([FP_INSTALLS]);
+  assert.deepEqual(res[FP_INSTALLS], { drifted: false });
+  assert.equal(
+    calls.filter((c) => c.method === 'sismember' && c.args[0] === 'drift:corroborated:installs').length,
+    0,
+  );
 });
 
 test('fp absent from both crawl and installs returns drifted:false', async () => {
@@ -179,6 +196,7 @@ test('Redis error on crawl pass yields drifted:null for all fps (fail-open)', as
 });
 
 test('Redis error on installs pass yields drifted:null for all fps (fail-open)', async () => {
+  process.env.DRIFT_DARK_CORROBORATION = '1';
   const { store } = mockRedis();
   let installPass = false;
   const client = {
@@ -205,6 +223,7 @@ test('Redis error on installs pass yields drifted:null for all fps (fail-open)',
 });
 
 test('batch mixing crawl hit, installs hit, and miss returns three distinct verdicts', async () => {
+  process.env.DRIFT_DARK_CORROBORATION = '1';
   const { client, store } = mockRedis();
   __setDriftQueryRedisForTest(client);
   seedCrawlHit(store, FP, { sources: 1, safety_relevant: false });
@@ -231,6 +250,7 @@ test('batch mixing crawl hit, installs hit, and miss returns three distinct verd
 });
 
 test('installs set member with missing meta returns drifted:true provenance:installs sources floor', async () => {
+  process.env.DRIFT_DARK_CORROBORATION = '1';
   const { client, store } = mockRedis();
   __setDriftQueryRedisForTest(client);
   seedInstallsHit(store, FP_INSTALLS);
