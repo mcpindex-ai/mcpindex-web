@@ -82,13 +82,13 @@ const PIN = {
   install_id: 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6',
 } as const;
 
-const DRIFT = {
+const DRIFT: DriftSignal = {
   ...PIN,
   event: 'drift',
   prev_hash: 'sha256:077fa7e7823cffdf3372a607f5f1ad0a46c1a79ee58795307f9d8ba686e4a184',
   change_kinds: ['added-required-param', 'description-only'],
   safety_relevant: true,
-} as const;
+};
 
 test('valid pin + drift batch parses', () => {
   const r = DriftBatchSchema.safeParse({ signals: [PIN, DRIFT] });
