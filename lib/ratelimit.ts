@@ -124,6 +124,31 @@ export async function checkRegisterLimit(ip: string, now: Date): Promise<DriftLi
   }
 }
 
+// Drift OAuth upgrade limit (/api/v1/drift/oauth/*). Tighter than ingest - OAuth is an abuse vector.
+const OAUTH_PER_IP_PER_MIN = 10;
+const OAUTH_GLOBAL_PER_DAY = 100_000;
+
+export async function checkOAuthLimit(ip: string, now: Date): Promise<DriftLimit> {
+  const r = redis();
+  if (!r) return { ok: true };
+
+  const min = now.toISOString().slice(0, 16);
+  const day = now.toISOString().slice(0, 10);
+  try {
+    const ipKey = `drift:oauth:ip:${ip}:${min}`;
+    const c = await r.incr(ipKey);
+    if (c === 1) await r.expire(ipKey, 70);
+    if (c > OAUTH_PER_IP_PER_MIN) return { ok: false };
+
+    const gKey = `drift:oauth:global:${day}`;
+    const g = await r.incr(gKey);
+    if (g === 1) await r.expire(gKey, 90_000);
+    return g > OAUTH_GLOBAL_PER_DAY ? { ok: false } : { ok: true };
+  } catch {
+    return { ok: true };
+  }
+}
+
 export async function checkDriftReadLimit(ip: string, now: Date): Promise<DriftLimit> {
   const r = redis();
   if (!r) return { ok: true }; // fail-open
