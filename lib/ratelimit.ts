@@ -149,6 +149,38 @@ export async function checkOAuthLimit(ip: string, now: Date): Promise<DriftLimit
   }
 }
 
+// Receipt-plane ingest limit (/api/v1/receipts). A SEPARATE budget from drift so a receipt
+// flood can't 429-starve drift telemetry (and vice-versa) — the two opt-in planes share the
+// Upstash instance but never share a counter. Same shape/posture as checkDriftLimit: batched,
+// free (no LLM spend), generous per-IP ceiling that only bounds an abusive flood, a global
+// daily cap to bound metric/HLL poisoning under x-forwarded-for spoofing, and fail-OPEN on a
+// Redis error (a dropped receipt batch is acceptable — the plane is lossy by design).
+const RECEIPT_BATCH_PER_IP_PER_MIN = 120;
+const RECEIPT_GLOBAL_BATCH_PER_DAY = 200_000;
+
+export async function checkReceiptLimit(ip: string, now: Date): Promise<DriftLimit> {
+  const r = redis();
+  if (!r) return { ok: true }; // fail-open: drop-on-overflow is acceptable for telemetry
+
+  const min = now.toISOString().slice(0, 16); // yyyy-mm-ddThh:mm
+  const day = now.toISOString().slice(0, 10); // yyyy-mm-dd
+  try {
+    // Per-IP first; an IP-blocked request must NOT count toward the global ceiling.
+    const ipKey = `receipt:ip:${ip}:${min}`;
+    const c = await r.incr(ipKey);
+    if (c === 1) await r.expire(ipKey, 70);
+    if (c > RECEIPT_BATCH_PER_IP_PER_MIN) return { ok: false };
+
+    // Global daily circuit-breaker — bounds metric/HLL poisoning under IP spoofing.
+    const gKey = `receipt:global:${day}`;
+    const g = await r.incr(gKey);
+    if (g === 1) await r.expire(gKey, 90_000); // ~25h
+    return g > RECEIPT_GLOBAL_BATCH_PER_DAY ? { ok: false } : { ok: true };
+  } catch {
+    return { ok: true }; // fail-open on Redis error
+  }
+}
+
 export async function checkDriftReadLimit(ip: string, now: Date): Promise<DriftLimit> {
   const r = redis();
   if (!r) return { ok: true }; // fail-open
