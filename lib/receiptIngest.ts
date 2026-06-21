@@ -142,7 +142,7 @@ const Framework = z.enum([
   'custom',
   'other',
 ]);
-const OutcomeStatus = z.enum(['ok', 'error', 'denied_by_framework', 'rolled_back']);
+const OutcomeStatus = z.enum(['ok', 'error', 'denied_by_framework', 'rolled_back', 'held']);
 const SideEffectObserved = z.enum(['none', 'local-write', 'outbound', 'destructive']);
 const LatencyBucket = z.enum(['sub-100ms', '100ms-1s', '1-2s', '2-5s', '5s+']);
 const CallVerdict = z.enum(['ALLOW', 'REVIEW', 'DENY']);
