@@ -37,14 +37,17 @@ export default function TrustPage() {
 
       <Section label="How a verdict is produced">
         <p>
-          Today every published screen verdict is semantic-only: an adversarial
-          LLM judge reads the description for hidden instructions, exfiltration,
-          or overclaims, bound to the exact tool definition seen. The output is a
-          per-tool REVIEW or UNVERIFIED with dimension verdicts and severity. The
-          deterministic conformance probe (does observed behavior match the
-          declared schema) is built but has not yet run on the public corpus, so
-          no published verdict carries a conformance result &mdash; and a clearing
-          ALLOW, which the probe would have to earn, is not produced at v1.
+          Every published screen verdict is semantic: an adversarial LLM judge
+          reads the description for hidden instructions, exfiltration, or
+          overclaims, bound to the exact tool definition seen. The screener runs
+          continuously &mdash; a priority lane processes new or requested servers
+          within minutes; a backfill lane scans the full registry hourly. The
+          output is a per-tool REVIEW or UNVERIFIED with dimension verdicts and
+          severity. The deterministic conformance probe (does observed behavior
+          match the declared schema) is built but has not run on the public
+          corpus; no published verdict carries a conformance result, and a
+          clearing ALLOW &mdash; which the probe would have to earn &mdash; is
+          not produced at v1.
         </p>
         <p className="mt-4">
           The full method, the four-state model, and the graduation gate are
@@ -229,10 +232,10 @@ export default function TrustPage() {
       <Section label="Honest limits">
         <p>
           A trust product earns trust by stating its edges, on every verdict:
-          the screen is semantic-only today (the conformance probe is built but
-          has not yet run on the public corpus; when it runs it is monitored, not
-          enforced); confidences are reported but not yet calibrated
-          (calibrated=false at v1); coverage rolls out as the corpus expands
+          the screen is semantic (the conformance probe is built but has not run
+          on the public corpus; when it runs it is monitored, not enforced);
+          confidences are reported but not yet calibrated (calibrated=false at
+          v1); coverage expands continuously as the backfill scanner runs
           ({D3_CONFORMING_LABELS} of {D3_REQUIRED_LABELS} labels to graduation, adversarial cases
           first). The full contract lives on{' '}
           <TLink href="/methodology">/methodology</TLink> - and it changes there
