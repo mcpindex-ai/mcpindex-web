@@ -4,7 +4,7 @@ import { ArchDiagram } from '@/components/ArchDiagram';
 export const metadata: Metadata = {
   title: 'How it works',
   description:
-    'Wire trust verdicts into your agent. The verdict API and drop-in MCP server, client wiring for Claude Desktop / Cursor / Cline / Zed, and the response anatomy. A recommendation endpoint also covers discovery.',
+    'Install the in-path drift gate: it HOLDs a call the moment an MCP tool’s contract silently changes, before your agent acts. Plus the free advisory directory — verdict API, drop-in MCP server, and recommend endpoint for discovery.',
   alternates: { canonical: 'https://mcpindex.ai/docs' },
 };
 
@@ -26,8 +26,7 @@ export default function DocsPage() {
         <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)]">
           The wedge is the in-path drift gate: one command pins every MCP tool&rsquo;s contract
           and HOLDs a call the moment that contract silently changes, before your agent acts. No
-          key, zero credential custody. Start at{' '}
-          <Ext href="#install-the-gate">§3b &mdash; Install the gate</Ext>.
+          key, zero credential custody. Install it below.
         </p>
         <p className="mt-3 text-[14px] leading-[1.55] text-[var(--color-mute)]">
           The rest of this page documents the advisory directory the gate queries: an MCP-native
@@ -37,172 +36,19 @@ export default function DocsPage() {
         </p>
       </header>
 
-      {/* §01 - The shape */}
-      <Section number="01" title="The shape">
-        <p>
-          Five components in the request path; a refresh job keeps the catalog current.
-        </p>
-        <ArchDiagram />
-        <p>
-          Top-down: a request originates in your agent client and passes through an
-          adapter into the API. The trust path returns a verdict for a given tool (does
-          it do what its description claims); the discovery path ranks an indexed catalog
-          of MCP servers and returns picks with install commands. The catalog is rebuilt
-          daily from an upstream source.
-        </p>
-        <p>
-          What you don&rsquo;t need to care about as a caller: which storage layer
-          backs the catalog, where the refresh worker runs, what compute hosts the API.
-          The contracts are the verdict endpoint (trust) and the recommendation endpoint
-          (discovery); everything else is internal.
-        </p>
-      </Section>
-
-      {/* §02 - Three ways to use it */}
-      <Section number="02" title="Ways to use it">
-        <p>Pick the shape that matches where the agent lives.</p>
-
-        <UseCase
-          letter="A"
-          title="Direct HTTP API"
-          who="For server-side agents, custom orchestrators, anything outside an MCP client."
-          codeLines={[
-            `# trust: does this tool do what it claims? (per-server or per-tool)`,
-            `curl "https://mcpindex.ai/api/v1/trust/server/<slug>"`,
-            ``,
-            `# screen: paste a description, get a live verdict (POST)`,
-            `curl -X POST "https://mcpindex.ai/api/v1/screen" \\`,
-            `  -H "content-type: application/json" \\`,
-            `  -d '{"description":"Reads a file and returns its contents."}'`,
-            ``,
-            `# discovery: find a tool for a task`,
-            `curl "https://mcpindex.ai/api/v1/recommend?task=read+pdf+to+s3"`,
-            ``,
-            `# pre-flight: discovery + the rank-1 server's verdict in one call`,
-            `curl "https://mcpindex.ai/api/v1/preflight?task=read+pdf+to+s3"`,
-            ``,
-            `# search: full-text registry search (?q= required; &category= &limit= optional)`,
-            `curl "https://mcpindex.ai/api/v1/search?q=postgres&limit=10"`,
-            ``,
-            `# diff: what changed in the registry since a date`,
-            `curl "https://mcpindex.ai/api/v1/diff?since=2026-06-01"`,
-            ``,
-            `# server: the full record for one server by slug`,
-            `curl "https://mcpindex.ai/api/v1/server/<slug>"`,
-            ``,
-            `# fleet drift query: has this tool's contract drifted? (crawler-corroborated)`,
-            `curl "https://mcpindex.ai/api/v1/drift/any?fp=<tool_fingerprint>"`,
-            ``,
-            `# drift ledger: contract changes the crawler observed (fingerprint-only)`,
-            `curl "https://mcpindex.ai/api/v1/ledger"`,
-          ]}
-          notes="trust returns a stored verdict (REVIEW or UNVERIFIED today; ALLOW / DENY are reserved in the contract); screen runs the live LLM judge on a pasted description and returns a fresh PARTIAL verdict; recommend returns ranked picks; preflight composes the two - the top servers plus the rank-1 server's advisory verdict in one round trip (verdict is null when that server is not yet screened - treat as not-cleared); search and diff query the registry; server returns one full record; drift/any answers whether a tool's contract drifted (crawler-corroborated; powers warns-you-on-call-1) and ledger lists the public drift record. All JSON, same shapes an MCP client gets."
-        />
-        <UseCase
-          letter="B"
-          title="Drop-in MCP server"
-          who="For Claude Desktop, Cursor, Cline, Zed. Install once, the agent finds the rest from inside the loop."
-          codeLines={[`npm install -g mcp-server-mcpindex`]}
-          notes="The package is a thin client to the same API. Zero config in most clients - see the wiring step below."
-        />
-        <UseCase
-          letter="C"
-          title="Embedded in your platform"
-          who="For platforms (Composio, Mastra, Toolhouse, IDE plays) that want MCP discovery as a feature."
-          codeLines={[
-            `// Server-side, your code:`,
-            `const res = await fetch("https://mcpindex.ai/api/v1/recommend?task=" +`,
-            `  encodeURIComponent(userTask));`,
-            `const { recommendations } = await res.json();`,
-          ]}
-          notes="Attribution appreciated. Email hello@mcpindex.ai if you want a higher rate limit."
-        />
-        <UseCase
-          letter="D"
-          title="Embeddable verdict badge"
-          who="For READMEs and server listings - a live SVG that always agrees with the verdict page."
-          codeLines={[
-            `<!-- Markdown (GitHub-style; extension-less, keys off Content-Type) -->`,
-            `[![mcpindex](https://mcpindex.ai/api/v1/badge/<slug>)](https://mcpindex.ai/server/<slug>)`,
-          ]}
-          notes="The badge reads the same verdict the site pages and the trust API use, so the three never disagree. States are screened / flagged / review / re-check due, and a fail-closed gray not screened for an unknown slug - never green, never a fake pass, never a broken image."
-        />
-      </Section>
-
-      {/* §03 - Wire it to your client */}
-      <Section number="03" title="Wire it to your client">
-        <p>
-          The server is identical across clients. Only the config-file location and
-          shape differ. Restart the client after editing.
-        </p>
-
-        <ClientConfig
-          client="Claude Desktop"
-          path="~/Library/Application Support/Claude/claude_desktop_config.json"
-          json={`{
-  "mcpServers": {
-    "mcpindex": {
-      "command": "npx",
-      "args": ["-y", "mcp-server-mcpindex@latest"]
-    }
-  }
-}`}
-        />
-
-        <ClientConfig
-          client="Cursor"
-          path=".cursor/mcp.json (project) or ~/.cursor/mcp.json (global)"
-          json={`{
-  "mcpServers": {
-    "mcpindex": {
-      "command": "npx",
-      "args": ["-y", "mcp-server-mcpindex@latest"]
-    }
-  }
-}`}
-        />
-
-        <ClientConfig
-          client="Cline (VS Code)"
-          path="Cline settings panel → MCP Servers → Add"
-          json={`Command:  npx
-Args:     -y mcp-server-mcpindex@latest`}
-        />
-
-        <ClientConfig
-          client="Zed"
-          path="~/.config/zed/settings.json"
-          json={`{
-  "context_servers": {
-    "mcpindex": {
-      "command": "npx",
-      "args": ["-y", "mcp-server-mcpindex@latest"]
-    }
-  }
-}`}
-        />
-
-        <p>
-          Once installed, the six tools are available in any agent loop:{' '}
-          <Mono>recommend_mcp_for_task</Mono>, <Mono>search_mcp_servers</Mono>,{' '}
-          <Mono>get_install_command</Mono>, <Mono>compare_servers</Mono>,{' '}
-          <Mono>check_tool_trust</Mono>, <Mono>assess_server</Mono>. Ask your agent
-          something like &ldquo;find me an MCP server that can read PDFs and write to
-          S3&rdquo; and watch it call <Mono>recommend_mcp_for_task</Mono> automatically.
-        </p>
-      </Section>
-
-      {/* §3b - Install the gate */}
+      {/* §01 - Install the gate */}
       <div id="install-the-gate" className="scroll-mt-20" />
-      <Section number="3b" title="Install the gate">
+      <Section number="01" title="Install the gate">
         <p>
-          The directory tools above answer &ldquo;which tool, and is it
-          screened&rdquo; before you wire it. The drift gate is the live,
-          in-path check during use: it pins each MCP tool&rsquo;s contract on
-          first sight and HOLDs a call the moment that contract silently changes,
-          before your agent acts. It is a contract-diff, not a safety verdict
-          (see <Ext href="/methodology">/methodology</Ext>), and it never
-          receives your credentials.
+          This is the live, in-path check during use: it pins each MCP
+          tool&rsquo;s contract on first sight and HOLDs a call the moment
+          that contract silently changes, before your agent acts. It is a
+          contract-diff, not a safety verdict (see{' '}
+          <Ext href="/methodology">/methodology</Ext>), and it never
+          receives your credentials. (The advisory directory further down
+          this page is a separate, optional surface: it answers
+          &ldquo;which tool, and is it screened&rdquo; before you wire
+          anything in.)
         </p>
 
         <div
@@ -504,8 +350,168 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
         </div>
       </Section>
 
-      {/* §04 - Anatomy of a response */}
-      <Section number="04" title="Anatomy of a response">
+      {/* §02 - The shape */}
+      <p className="mt-14 text-[14px] leading-[1.55]" style={{ color: 'var(--color-mute)' }}>
+        The rest of this page documents the advisory directory the gate above can optionally
+        query &mdash; a separate, free surface: search, recommend, and trust-verdict lookups
+        over HTTP or as its own MCP server.
+      </p>
+      <Section number="02" title="The shape">
+        <p>
+          Five components in the request path; a refresh job keeps the catalog current.
+        </p>
+        <ArchDiagram />
+        <p>
+          Top-down: a request originates in your agent client and passes through an
+          adapter into the API. The trust path returns a verdict for a given tool (does
+          it do what its description claims); the discovery path ranks an indexed catalog
+          of MCP servers and returns picks with install commands. The catalog is rebuilt
+          daily from an upstream source.
+        </p>
+        <p>
+          What you don&rsquo;t need to care about as a caller: which storage layer
+          backs the catalog, where the refresh worker runs, what compute hosts the API.
+          The contracts are the verdict endpoint (trust) and the recommendation endpoint
+          (discovery); everything else is internal.
+        </p>
+      </Section>
+
+      {/* §03 - Three ways to use it */}
+      <Section number="03" title="Ways to use it">
+        <p>Pick the shape that matches where the agent lives.</p>
+
+        <UseCase
+          letter="A"
+          title="Direct HTTP API"
+          who="For server-side agents, custom orchestrators, anything outside an MCP client."
+          codeLines={[
+            `# trust: does this tool do what it claims? (per-server or per-tool)`,
+            `curl "https://mcpindex.ai/api/v1/trust/server/<slug>"`,
+            ``,
+            `# screen: paste a description, get a live verdict (POST)`,
+            `curl -X POST "https://mcpindex.ai/api/v1/screen" \\`,
+            `  -H "content-type: application/json" \\`,
+            `  -d '{"description":"Reads a file and returns its contents."}'`,
+            ``,
+            `# discovery: find a tool for a task`,
+            `curl "https://mcpindex.ai/api/v1/recommend?task=read+pdf+to+s3"`,
+            ``,
+            `# pre-flight: discovery + the rank-1 server's verdict in one call`,
+            `curl "https://mcpindex.ai/api/v1/preflight?task=read+pdf+to+s3"`,
+            ``,
+            `# search: full-text registry search (?q= required; &category= &limit= optional)`,
+            `curl "https://mcpindex.ai/api/v1/search?q=postgres&limit=10"`,
+            ``,
+            `# diff: what changed in the registry since a date`,
+            `curl "https://mcpindex.ai/api/v1/diff?since=2026-06-01"`,
+            ``,
+            `# server: the full record for one server by slug`,
+            `curl "https://mcpindex.ai/api/v1/server/<slug>"`,
+            ``,
+            `# fleet drift query: has this tool's contract drifted? (crawler-corroborated)`,
+            `curl "https://mcpindex.ai/api/v1/drift/any?fp=<tool_fingerprint>"`,
+            ``,
+            `# drift ledger: contract changes the crawler observed (fingerprint-only)`,
+            `curl "https://mcpindex.ai/api/v1/ledger"`,
+          ]}
+          notes="trust returns a stored verdict (REVIEW or UNVERIFIED today; ALLOW / DENY are reserved in the contract); screen runs the live LLM judge on a pasted description and returns a fresh PARTIAL verdict; recommend returns ranked picks; preflight composes the two - the top servers plus the rank-1 server's advisory verdict in one round trip (verdict is null when that server is not yet screened - treat as not-cleared); search and diff query the registry; server returns one full record; drift/any answers whether a tool's contract drifted (crawler-corroborated; powers warns-you-on-call-1) and ledger lists the public drift record. All JSON, same shapes an MCP client gets."
+        />
+        <UseCase
+          letter="B"
+          title="Drop-in MCP server"
+          who="For Claude Desktop, Cursor, Cline, Zed. Install once, the agent finds the rest from inside the loop."
+          codeLines={[`npm install -g mcp-server-mcpindex`]}
+          notes="The package is a thin client to the same API. Zero config in most clients - see the wiring step below."
+        />
+        <UseCase
+          letter="C"
+          title="Embedded in your platform"
+          who="For platforms (Composio, Mastra, Toolhouse, IDE plays) that want MCP discovery as a feature."
+          codeLines={[
+            `// Server-side, your code:`,
+            `const res = await fetch("https://mcpindex.ai/api/v1/recommend?task=" +`,
+            `  encodeURIComponent(userTask));`,
+            `const { recommendations } = await res.json();`,
+          ]}
+          notes="Attribution appreciated. Email hello@mcpindex.ai if you want a higher rate limit."
+        />
+        <UseCase
+          letter="D"
+          title="Embeddable verdict badge"
+          who="For READMEs and server listings - a live SVG that always agrees with the verdict page."
+          codeLines={[
+            `<!-- Markdown (GitHub-style; extension-less, keys off Content-Type) -->`,
+            `[![mcpindex](https://mcpindex.ai/api/v1/badge/<slug>)](https://mcpindex.ai/server/<slug>)`,
+          ]}
+          notes="The badge reads the same verdict the site pages and the trust API use, so the three never disagree. States are screened / flagged / review / re-check due, and a fail-closed gray not screened for an unknown slug - never green, never a fake pass, never a broken image."
+        />
+      </Section>
+
+      {/* §04 - Wire it to your client */}
+      <Section number="04" title="Wire it to your client">
+        <p>
+          The server is identical across clients. Only the config-file location and
+          shape differ. Restart the client after editing.
+        </p>
+
+        <ClientConfig
+          client="Claude Desktop"
+          path="~/Library/Application Support/Claude/claude_desktop_config.json"
+          json={`{
+  "mcpServers": {
+    "mcpindex": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-mcpindex@latest"]
+    }
+  }
+}`}
+        />
+
+        <ClientConfig
+          client="Cursor"
+          path=".cursor/mcp.json (project) or ~/.cursor/mcp.json (global)"
+          json={`{
+  "mcpServers": {
+    "mcpindex": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-mcpindex@latest"]
+    }
+  }
+}`}
+        />
+
+        <ClientConfig
+          client="Cline (VS Code)"
+          path="Cline settings panel → MCP Servers → Add"
+          json={`Command:  npx
+Args:     -y mcp-server-mcpindex@latest`}
+        />
+
+        <ClientConfig
+          client="Zed"
+          path="~/.config/zed/settings.json"
+          json={`{
+  "context_servers": {
+    "mcpindex": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-mcpindex@latest"]
+    }
+  }
+}`}
+        />
+
+        <p>
+          Once installed, the six tools are available in any agent loop:{' '}
+          <Mono>recommend_mcp_for_task</Mono>, <Mono>search_mcp_servers</Mono>,{' '}
+          <Mono>get_install_command</Mono>, <Mono>compare_servers</Mono>,{' '}
+          <Mono>check_tool_trust</Mono>, <Mono>assess_server</Mono>. Ask your agent
+          something like &ldquo;find me an MCP server that can read PDFs and write to
+          S3&rdquo; and watch it call <Mono>recommend_mcp_for_task</Mono> automatically.
+        </p>
+      </Section>
+
+      {/* §05 - Anatomy of a response */}
+      <Section number="05" title="Anatomy of a response">
         <p>
           The trust endpoints (<Mono>/api/v1/trust/server/…</Mono> and{' '}
           <Mono>/api/v1/trust/tool/…</Mono>) return the free-tier verdict: a decision
@@ -582,12 +588,12 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
         </pre>
       </Section>
 
-      {/* §05 - Limits + API guarantees */}
-      <Section number="05" title="Limits + API guarantees">
+      {/* §06 - Limits + API guarantees */}
+      <Section number="06" title="Limits + API guarantees">
         <ul className="space-y-3">
           <Limit
             label="Rate"
-            body="60 requests / minute / IP across /api/v1/* on the free tier. The live screen endpoint (/api/v1/screen) is tighter - 10 / minute / IP plus a global daily ceiling, since each call runs an LLM. No key required. 429 with Retry-After when exceeded. Email hello@mcpindex.ai for higher limits or for a Pro key."
+            body="60 requests / minute / IP across /api/v1/*, free, no key, same limit for everyone. The live screen endpoint (/api/v1/screen) is tighter - 10 / minute / IP plus a global daily ceiling, since each call runs an LLM. 429 with Retry-After when exceeded. Email hello@mcpindex.ai if a real integration needs more."
           />
           <Limit
             label="Schema stability"
@@ -620,13 +626,13 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
           />
           <Limit
             label="Authentication"
-            body="None on free tier - public endpoints. CORS open. The Pro tier uses bearer tokens for higher limits and multi-tenant/enterprise use; existing free endpoints stay open."
+            body="None - every endpoint is public and free, same rate limit for everyone. Enterprise multi-tenant deployments have their own tenant-identity mechanism (see /whitepaper), unrelated to API rate limits."
           />
         </ul>
       </Section>
 
-      {/* §06 - How this compares */}
-      <Section number="06" title="How this compares">
+      {/* §07 - How this compares */}
+      <Section number="07" title="How this compares">
         <p>
           Five common ways an agent (or developer) finds an MCP server today. mcpindex.ai
           is the only one that hits all four traits an agent at inference time actually
@@ -723,8 +729,8 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
         </p>
       </Section>
 
-      {/* §07 - Where to next */}
-      <Section number="07" title="Where to next">
+      {/* §08 - Where to next */}
+      <Section number="08" title="Where to next">
         <ul className="space-y-1.5 text-sm">
           <li>
             <Ext href="/api/v1/recommend?task=postgres+with+read+only+mode">

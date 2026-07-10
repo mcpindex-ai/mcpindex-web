@@ -11,7 +11,7 @@ export default function Image() {
       <BrandOg
         eyebrow="Pricing"
         title="Free for the open web."
-        sub="The verdict API and the screener are free, no key required. Paid tiers ship as coverage and the Pro tier land."
+        sub="The gate, the SDK, the drift network, and the trust API are all free, no key required. Enterprise is the only paid tier."
       />
     ),
     size,

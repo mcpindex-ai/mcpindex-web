@@ -3,16 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Shared in-browser contact modal. Replaces mailto: CTAs (which launch the OS
-// mail app and dead-end webmail users) across the site: pricing Pro/Enterprise
-// tiers and the footer "Contact". Submits to /api/waitlist, which routes the
+// mail app and dead-end webmail users) across the site: the pricing Enterprise
+// tier and the footer "Contact". Submits to /api/waitlist, which routes the
 // lead into Brevo (contact + welcome email + operator notification).
-export type ContactVariant = 'pro' | 'enterprise' | 'contact';
+export type ContactVariant = 'enterprise' | 'contact';
 
 const COPY: Record<ContactVariant, { title: string; blurb: string }> = {
-  pro: {
-    title: 'Get Pro access',
-    blurb: 'Tell us where to reach you and we will set up your Pro key.',
-  },
   enterprise: {
     title: 'Contact sales',
     blurb: 'Tell us about your use case and we will be in touch.',

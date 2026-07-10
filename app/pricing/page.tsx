@@ -5,7 +5,7 @@ import { EnterpriseCTA } from '@/components/EnterpriseCTA';
 export const metadata: Metadata = {
   title: 'Pricing',
   description:
-    'The in-path gate is free, local, and open-core. Pro adds the cloud tier-1 corpus lookup and a higher-rate trust API. Enterprise is the multi-tenant in-path gateway.',
+    'The entire platform is free: the in-path gate, the SDK, the drift network, and the directory & trust API. Enterprise is a custom-deployed, multi-tenant gateway, priced by request.',
   alternates: { canonical: 'https://mcpindex.ai/pricing' },
 };
 
@@ -18,40 +18,30 @@ type Tier = {
   cta: Cta;
 };
 
-// Structured around the PLATFORM, gate-first (the wedge). Free = the gate itself
-// (local, open-core, all postures, zero custody). Pro = the optional cloud tier-1
-// corpus lookup + a higher-rate trust API. Enterprise = the multi-tenant in-path
-// gateway (built but held off by default behind an explicit flag — so it is sold
-// "on request", not advertised as a flipped-on default). Directory/trust API
-// limits are a secondary block below.
+// Structured around the PLATFORM, gate-first (the wedge). Free = everything a
+// developer can install or call: the gate (local, open-core, all postures, zero
+// custody), the opt-in cloud tier-1 corpus lookup, and the directory & trust API
+// — no key, no tier. There was a Pro tier; it is gone, not renamed. Its bearer-
+// key/600-req-min mechanism was never implemented in code, so folding it into
+// Free costs nothing real and removes a stale claim. Enterprise stays a genuine
+// contact tier: the multi-tenant in-path gateway is real infra + support work
+// (self-host or managed, SLA, DPA), not a feature we were holding back.
 const TIERS: Tier[] = [
   {
     name: 'Free',
     price: '$0',
-    rate: 'local · open-core',
-    blurb: 'The in-path gate, for every developer.',
+    rate: '60 req/min/IP',
+    blurb: 'The whole platform, for every developer.',
     bullets: [
       'One-click install (Claude Desktop / Cursor / Cline / Zed)',
       'TS + Python SDK (wrap an authenticated session)',
       'All postures: Monitor / Guard / Strict',
       'Deterministic tier-0 contract-diff, runs locally',
+      'Opt-in cloud tier-1 corpus lookup, the drift network, and the public ledger',
+      'Directory & trust API — search, recommend, screen, diff — no key required',
       'Zero credential custody · default build egresses nothing',
     ],
     cta: { label: 'Install the gate', href: '/docs#install-the-gate' },
-  },
-  {
-    name: 'Pro',
-    price: '$49 / mo',
-    rate: '600 req/min/key',
-    blurb: 'For teams shipping agents in production.',
-    bullets: [
-      'Everything in Free',
-      'Opt-in cloud tier-1 corpus lookup (sends only a contract hash)',
-      'Trust API at 600 req/min per key',
-      'Webhook on registry diff',
-      'Email support',
-    ],
-    cta: { label: 'Get Pro access', contact: 'pro' },
   },
   {
     name: 'Enterprise',
@@ -77,25 +67,27 @@ export default function PricingPage() {
           Pricing
         </div>
         <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
-          The gate is free. The corpus is paid.
+          The gate is free. So is everything else.
         </h1>
         <p className="mt-4 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
           The in-path gate you install is free, local, and open-core &mdash; all postures, the SDK,
           zero credential custody, and the opt-in drift network: crawler-corroborated advisories
-          that warn you on call 1, plus the public drift ledger. Paid tiers add the optional cloud
-          tier-1 corpus lookup (a contract judged once clears or condemns it everywhere), a
-          higher-rate trust API, and the multi-tenant gateway.
+          that warn you on call 1, plus the public drift ledger. The optional cloud tier-1 corpus
+          lookup (a contract judged once clears or condemns it everywhere) and the directory &amp;
+          trust API are free too, no key, no tier. Enterprise is the one thing you contact us for
+          &mdash; a custom-deployed, multi-tenant gateway with an SLA &mdash; because that is real
+          hosting and support work, not a feature we were holding back.
         </p>
         <p className="mt-3 text-[14px] leading-[1.55] text-[var(--color-mute)]">
-          To be clear about what is paywalled: the gate&rsquo;s protection &mdash; the
-          deterministic tier-0 contract-diff &mdash; is fully functional on Free, runs locally, and
-          is unmetered. The cloud tier-1 corpus lookup is held off by default and opt-in; Pro is
-          how you turn it on, plus a higher-rate trust API (600 req/min/key; the free directory API
-          is 60 req/min/IP). Protection is never behind the paywall.
+          The only ceiling is abuse protection, not payment. The public API is capped at 60
+          requests/min per IP; the LLM-backed screener carries its own tighter, cost-bounded limit
+          (10/min/IP, 5,000 calls/day globally) so a flood can&rsquo;t run up our bill &mdash; a
+          circuit breaker, not a paywall. If a real integration genuinely needs more than that,
+          email hello@mcpindex.ai.
         </p>
       </header>
 
-      <div className="mt-12 grid sm:grid-cols-3 rule-t rule-b rule-l rule-r">
+      <div className="mt-12 grid sm:grid-cols-2 rule-t rule-b rule-l rule-r">
         {TIERS.map((t, i) => (
           <div
             key={t.name}
@@ -133,14 +125,14 @@ export default function PricingPage() {
           <code className="font-mono text-[13px] text-[var(--color-ink)]">mcp-server-mcpindex</code>{' '}
           npm package are free at 60 req/min/IP, no key required: trust verdicts
           (/api/v1/trust), live screening (/api/v1/screen), search, recommend, and diff, plus
-          /llms.txt and /.well-known/mcp-index.json. Higher rate limits ride the Pro key above.
+          /llms.txt and /.well-known/mcp-index.json. Same limit, same terms, for everyone.
         </p>
       </div>
 
       <p className="mt-10 font-mono text-[11.5px] text-[var(--color-mute)]">
-        Free covers everything you can call, no key required. Pro and Enterprise provisioning is
-        manual today &mdash; request access above and we set you up. Enterprise multi-tenant is
-        available on request (it is built but not the default deployment).
+        Free covers everything on this page, no key required. Enterprise provisioning is manual
+        today &mdash; request access above and we set you up. Enterprise multi-tenant is built but
+        not the default deployment, which is why it&rsquo;s on request rather than self-serve.
       </p>
 
       <div className="mt-14">

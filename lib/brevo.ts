@@ -12,7 +12,7 @@ const API = 'https://api.brevo.com/v3';
 const TIMEOUT_MS = 5_000;
 
 export type LeadSource = 'waitlist' | 'pricing' | 'contact' | 'enterprise_procurement';
-export type LeadTier = 'pro' | 'enterprise';
+export type LeadTier = 'enterprise';
 
 export interface Lead {
   email: string;
@@ -129,12 +129,9 @@ export async function sendWelcomeEmail(lead: Lead): Promise<BrevoResult> {
   let intro: string;
   if (lead.source === 'waitlist') {
     intro =
-      'Thanks for joining the mcpindex waitlist. We will email you when v1 ships and ' +
-      'the Pro tier opens - nothing else.';
+      'Thanks for joining the mcpindex waitlist. We will email you when v1 ships - nothing else.';
   } else if (lead.source === 'pricing') {
-    intro =
-      `Thanks for reaching out about ${lead.tier === 'enterprise' ? 'Enterprise' : 'Pro'}. ` +
-      'We have your note and will be in touch shortly.';
+    intro = 'Thanks for reaching out about Enterprise. We have your note and will be in touch shortly.';
   } else {
     intro = 'Thanks for reaching out. We have your message and will get back to you shortly.';
   }
