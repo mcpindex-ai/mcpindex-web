@@ -181,13 +181,31 @@ export default async function BestCategory(
 // The filesystem evidence directory: the seed category. Defined by the verdict
 // store (what we screened), not the keyword categorizer. Includes a clearly
 // labeled adversarial-fixtures showcase so the FLAG state is visible.
+// Hard cap on the rendered evidence list. listScreened() returns every
+// screened server site-wide (not just filesystem ones - see the category
+// filter below), and each row embeds full verdict JSON (dimensions,
+// evidence quotes). Unbounded, this page has already once blown past
+// Vercel's 19.07MB ISR response-size ceiling (FALLBACK_BODY_TOO_LARGE) as
+// the verdict store grew past 10k entries. Mirrors the sibling category
+// page's `.slice(0, 20)` pattern, sized up since this page's whole point
+// is showing evidence breadth, not just a top-N ranking.
+const FILESYSTEM_EVIDENCE_CAP = 200;
+
 async function FilesystemEvidence() {
-  const [screened, fixtures, servers] = await Promise.all([
+  const [allScreened, fixtures, servers] = await Promise.all([
     listScreened(),
     listFixtures(),
     loadServers(),
   ]);
   const bySlug = new Map(servers.map((s) => [s.slug, s]));
+  // CORRECTNESS FIX: listScreened() is category-agnostic (every screened
+  // server site-wide), but this page's copy claims "filesystem servers
+  // screened". Filter to the actual filesystem category - same `.category`
+  // field the sibling BestCategory() function already filters on - so the
+  // count and list stop silently including every other category's servers.
+  const screened = allScreened
+    .filter(({ slug }) => bySlug.get(slug)?.category === 'filesystem')
+    .slice(0, FILESYSTEM_EVIDENCE_CAP);
   // Public surfaces honor the accusation gate (same computeBadgeState the badge
   // uses - one source of truth): only a human-confirmed flag is "flagged"; a raw
   // screen flag is "held for review", never publicly accused or counted as flagged.
