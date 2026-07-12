@@ -84,10 +84,10 @@ npm install -g mcp-server-mcpindex
 
 Add to Claude Desktop / Claude Code / Cursor / Gemini CLI / Cline / Zed. Prefer CLI one-liners when available:
 
-```bash
+\`\`\`bash
 claude mcp add --scope user mcpindex -- npx -y mcp-server-mcpindex@latest
 gemini mcp add -s user mcpindex npx -y mcp-server-mcpindex@latest
-```
+\`\`\`
 
 Three primary calls:
 
