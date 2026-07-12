@@ -103,11 +103,14 @@ export default async function Home() {
               </span>
             </h1>
             <p className="hero-rise hero-rise-3 mt-6 text-[16px] sm:text-[17.5px] leading-[1.5] text-[var(--color-cite)]">
-              It pins every MCP tool&rsquo;s contract on first sight and HOLDs the call the
-              instant that contract drifts, before your agent acts on it. It now also grades
-              each call&rsquo;s blast radius &mdash; what it would do (read, write, delete, send)
-              and whether it can be undone &mdash; so an irreversible action never runs unseen.
-              Zero credentials. One-click in Claude Desktop, Cursor, Cline, Zed.
+              It pins every MCP tool contract on first sight and HOLDs the call the instant
+              that contract drifts&mdash;before your agent acts. Zero credentials. One-click in
+              Claude Desktop, Cursor, Cline, or Zed.
+            </p>
+            <p className="hero-rise hero-rise-3 mt-3 text-[15px] sm:text-[16px] leading-[1.5] text-[var(--color-cite)]">
+              It also grades each call&rsquo;s blast radius&mdash;what it would do (read, write,
+              delete, send) and whether it can be undone&mdash;so an irreversible action never
+              runs unseen.
             </p>
 
             {/* High-level trust-properties callout (not a single-test brag — the
@@ -177,10 +180,9 @@ export default async function Home() {
             Pin the contract. HOLD the change.
           </h2>
           <p className="mt-3 mb-8 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            Agents act on a tool&rsquo;s description the way they act on a system prompt. MCP
-            tools are remote and updatable with no version bump. The description your agent
-            trusted can change underneath it. The gate is the in-path check that catches that
-            change before the call goes through.
+            Agents trust tool descriptions like system prompts. MCP tools can change remotely
+            with no version bump. The gate catches that change in-path before the call goes
+            through.
           </p>
           <GateLoop />
         </div>
@@ -195,12 +197,15 @@ export default async function Home() {
           <h2 className="t-h3 font-medium text-[var(--color-ink)]">
             See the blast radius of a call before your agent makes it.
           </h2>
-          <p className="mt-3 mb-8 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            A read and an irreversible delete leave your agent looking identical: both are just
-            &ldquo;a tool call.&rdquo; The gate now labels each one in the call path &mdash; its
-            action (read, write, delete, send, execute), what it touches, whether it can be
-            undone, and whether it leaves your org. A call you can&rsquo;t reverse is never
-            indistinguishable from one that only reads.
+          <p className="mt-3 mb-3 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+            A read and an irreversible delete look identical to your agent&mdash;both are
+            &ldquo;a tool call.&rdquo; The gate labels each call&rsquo;s blast radius in the
+            path before it runs.
+          </p>
+          <p className="mb-8 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+            Action (read, write, delete, send, execute), what it touches, whether it can be
+            undone, and whether it leaves your org&mdash;so a call you can&rsquo;t reverse is
+            never indistinguishable from one that only reads.
           </p>
           <p className="font-mono text-[12.5px] leading-[1.55] text-[var(--color-mute)]">
             Deterministic and advisory. The grade describes what a call <em>would do</em>,
@@ -224,8 +229,7 @@ export default async function Home() {
           </h2>
           <p className="mt-3 mb-10 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
             The same deterministic gate that runs in your agent: a contract-diff, not a safety
-            verdict. Pick a drift. A breaking or dangerous change is HELD with the exact
-            ChangeKind; a benign added-optional proceeds silently.
+            verdict. Breaking changes are HELD; benign added-optional proceeds silently.
           </p>
           <DriftGateDemo />
           <p className="mt-10 font-mono text-[12px] text-[var(--color-mute)]">
@@ -267,11 +271,13 @@ export default async function Home() {
           <h2 className="t-h3 font-medium text-[var(--color-ink)]">
             What the gate claims — and what it doesn&apos;t.
           </h2>
-          <p className="mt-3 mb-10 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            A trust product earns trust by stating its edges. The gate&rsquo;s verdict is
-            &ldquo;this contract changed&rdquo;, never &ldquo;this is safe&rdquo;; the
-            blast-radius grade is advisory and static &mdash; what a call would do, read from its
-            contract, not a safety call.{' '}
+          <p className="mt-3 mb-3 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+            A trust product earns trust by stating its edges. The gate says &ldquo;this contract
+            changed,&rdquo; never &ldquo;this is safe.&rdquo; The blast-radius grade is advisory,
+            not a safety call.
+          </p>
+          <p className="mb-10 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+            The grade is static&mdash;what a call would do, read from its contract.{' '}
             <Link
               href="/methodology"
               className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] hover:decoration-[var(--color-accent)]"
@@ -331,14 +337,15 @@ export default async function Home() {
           <h2 className="t-h3 font-medium text-[var(--color-ink)]">
             One question, two moments.
           </h2>
-          <p className="mt-3 mb-6 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            Different verdict, same question. Before you wire a tool, the public directory
-            screens it and says REVIEW or UNVERIFIED &mdash; a prior on whether a tool does what
-            it claims. While you use it, the gate says HELD or PROCEED in the call path. Every
-            screen verdict is semantic-only and advisory: a prior, not a guarantee, and never an
+          <p className="mt-3 mb-3 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+            Before you wire a tool, the directory screens it (REVIEW or UNVERIFIED). In the call
+            path, the gate says HELD or PROCEED. Screen verdicts are semantic-only and advisory.
+          </p>
+          <p className="mb-3 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+            A prior on whether a tool does what it claims&mdash;not a guarantee, and never an
             ALLOW or DENY (those unlock with the behavioral corpus).
           </p>
-          <p className="mt-3 mb-8 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+          <p className="mb-8 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
             And the gate no longer works alone. mcpindex crawls the public MCP registry every day
             and records which tool contracts silently change. When you pin a tool, the gate asks
             the network one question: has the crawler already caught this contract drifting? If it
@@ -390,18 +397,21 @@ export default async function Home() {
           <h2 className="t-h3 font-medium text-[var(--color-ink)]">
             One command. Claude Desktop, Cursor, Cline, or Zed.
           </h2>
-          <p className="mt-3 mb-10 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            The gate is what you install. It rides the MCP session your agent already opens, no
-            key required. Prefer to read before you run? The auditable path is{' '}
+          <p className="mt-3 mb-3 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+            The gate rides the MCP session your agent already opens&mdash;no key required. Prefer
+            to audit first? Use{' '}
             <code className="font-mono text-[13px] text-[var(--color-ink)]">uv tool install</code>{' '}
-            plus a manual wire &mdash; both in the{' '}
+            plus a manual wire in the{' '}
             <Link
               href="/docs#install-the-gate"
               className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
             >
               docs
             </Link>
-            . The one command below is the convenience path.
+            .
+          </p>
+          <p className="mb-10 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+            The one command below is the convenience path.
           </p>
           <div className=" space-y-5">
             <div className="rule-t rule-b rule-l rule-r border-[var(--color-accent)] bg-[var(--color-accent-soft)] p-2">
