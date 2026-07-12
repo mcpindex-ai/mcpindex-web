@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: 'Search MCP servers',
   description:
     'Search the mcpindex directory of MCP servers by name, category, or keyword, and open any server to see its trust verdict and maturity score.',
+  alternates: { canonical: 'https://mcpindex.ai/search' },
 };
 
 export default async function SearchPage({

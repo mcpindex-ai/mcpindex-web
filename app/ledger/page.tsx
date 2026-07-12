@@ -15,6 +15,7 @@ export const metadata: Metadata = {
   title: 'Drift ledger',
   description:
     'Contract changes observed by the mcpindex crawler between daily registry snapshots. A contract diff, not a safety verdict.',
+  alternates: { canonical: 'https://mcpindex.ai/ledger' },
 };
 
 function truncateFp(fp: string): string {

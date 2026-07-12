@@ -26,7 +26,7 @@ export function MobileMenu({ items }: { items: { href: string; label: string }[]
         aria-label={open ? 'Close menu' : 'Open menu'}
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex h-9 w-9 -mr-2 items-center justify-center text-[var(--color-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+        className="inline-flex h-11 w-11 items-center justify-center text-[var(--color-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
       >
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
           {open ? (

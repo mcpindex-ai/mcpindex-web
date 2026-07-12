@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: 'Status',
   description:
     'mcpindex system status: data freshness, coverage, sync cadence, checkable live endpoints, and incident log. Real figures, revalidated hourly; authoritative uptime is monitored externally.',
+  alternates: { canonical: 'https://mcpindex.ai/status' },
 };
 
 // Revalidate hourly so the freshness figures stay live without rebuilding.

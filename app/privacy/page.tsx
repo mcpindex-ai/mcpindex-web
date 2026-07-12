@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
+import { ObfuscatedEmail } from '@/components/ObfuscatedEmail';
 
 export const metadata: Metadata = {
   title: 'Privacy',
   description: 'Privacy policy for mcpindex.ai.',
+  alternates: { canonical: 'https://mcpindex.ai/privacy' },
 };
 
 export default function PrivacyPage() {
@@ -15,7 +17,7 @@ export default function PrivacyPage() {
         Privacy.
       </h1>
       <p className="mt-2 font-mono text-[11.5px] text-[var(--color-mute)]">
-        Last updated: 2026-06-09
+        Last updated: 2026-07-12
       </p>
 
       <div className="mt-10 space-y-6 text-[14.5px] leading-[1.65] text-[var(--color-cite)]">
@@ -27,9 +29,11 @@ export default function PrivacyPage() {
         <p>
           The waitlist form stores your email and submission timestamp. We use it to
           notify you when v1 ships and nothing else. Unsubscribe at any time by emailing{' '}
-          <a href="mailto:hello@mcpindex.ai" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
-            hello@mcpindex.ai
-          </a>
+          <ObfuscatedEmail
+            user="hello"
+            domain="mcpindex.ai"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+          />
           .
         </p>
         <p>
@@ -65,14 +69,29 @@ export default function PrivacyPage() {
           a future richer tier and behaves identically today.) Unset the variable to stop.
         </p>
         <p>
-          Cookies: none are set by the site itself. Vercel may set a single platform cookie
-          for routing.
+          Cookies and similar storage: the site itself does not set first-party advertising
+          cookies. Hosting on Vercel may set a platform routing cookie. We also load{' '}
+          <strong>Vercel Analytics</strong> and <strong>Vercel Speed Insights</strong>, which
+          may use cookies or local storage for aggregated, privacy-oriented traffic and
+          performance metrics (no advertising profile). See{' '}
+          <a
+            href="https://vercel.com/docs/analytics/privacy-policy"
+            target="_blank"
+            rel="noreferrer"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+          >
+            Vercel Analytics privacy
+          </a>
+          . This is our cookie notice for launch; we do not run a separate consent banner
+          because we do not use advertising trackers.
         </p>
         <p>
           GDPR / CCPA: email{' '}
-          <a href="mailto:hello@mcpindex.ai" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
-            hello@mcpindex.ai
-          </a>{' '}
+          <ObfuscatedEmail
+            user="hello"
+            domain="mcpindex.ai"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+          />{' '}
           to request deletion of any personal data tied to you.
         </p>
       </div>

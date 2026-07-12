@@ -3,7 +3,13 @@
 // the gate reports a CONTRACT-DIFF ("this changed vs what you pinned"), not a
 // safety verdict.
 
-const STEPS: { n: string; title: string; body: string; detail?: string; note?: string }[] = [
+export const GATE_LOOP_STEPS: {
+  n: string;
+  title: string;
+  body: string;
+  detail?: string;
+  note?: string;
+}[] = [
   {
     n: '01',
     title: 'Install once, rides your agent',
@@ -34,13 +40,13 @@ const STEPS: { n: string; title: string; body: string; detail?: string; note?: s
 
 export function GateLoop() {
   return (
-    <div className="rule-t">
-      {STEPS.map((s) => (
-        <div
+    <ol className="rule-t m-0 list-none p-0">
+      {GATE_LOOP_STEPS.map((s) => (
+        <li
           key={s.n}
           className="rule-b grid grid-cols-[48px_1fr] sm:grid-cols-[72px_1fr_minmax(180px,220px)] gap-5 sm:gap-10 py-9 px-2 group hover:bg-[var(--color-accent-soft)]/30 transition-colors"
         >
-          <div className="font-mono text-[12px] text-[var(--color-accent)] tabular-nums pt-1">
+          <div className="font-mono text-[12px] text-[var(--color-accent)] tabular-nums pt-1" aria-hidden="true">
             {s.n}
           </div>
           <div>
@@ -61,8 +67,8 @@ export function GateLoop() {
               </span>
             </div>
           )}
-        </div>
+        </li>
       ))}
-    </div>
+    </ol>
   );
 }

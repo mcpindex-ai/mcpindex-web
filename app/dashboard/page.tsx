@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   title: 'Drift dashboard',
   description:
     'Opt-in drift telemetry and public-registry crawl coverage. Counts reflect opted-in installs and crawler observations only, not total adoption.',
+  alternates: { canonical: 'https://mcpindex.ai/dashboard' },
 };
 
 export default async function DashboardPage() {

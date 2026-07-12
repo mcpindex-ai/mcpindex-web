@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: 'Brand',
   description:
     'The mcpindex brand kit: the bracket-verdict mark, the seal, the color and type system, and downloadable logo, avatar, and social assets.',
+  alternates: { canonical: 'https://mcpindex.ai/brand' },
 };
 
 const DL =

@@ -8,6 +8,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: 'Best of · curated MCP server picks by category',
   description: 'Browse curated MCP server picks across dozens of categories - databases, browsers, devtools, productivity, and more.',
+  alternates: { canonical: 'https://mcpindex.ai/best' },
 };
 
 export default async function BestIndex() {

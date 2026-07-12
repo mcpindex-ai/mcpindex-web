@@ -9,6 +9,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: 'Stats',
   description: 'Public dashboard. Servers indexed, categories tracked, snapshot freshness, all derived from public data.',
+  alternates: { canonical: 'https://mcpindex.ai/stats' },
 };
 
 export default async function StatsPage() {

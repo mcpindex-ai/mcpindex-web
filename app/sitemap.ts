@@ -40,6 +40,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { url: `${base}/best`, priority: 0.7, changeFrequency: 'weekly' },
       { url: `${base}/privacy`, priority: 0.3, changeFrequency: 'yearly' },
       { url: `${base}/terms`, priority: 0.3, changeFrequency: 'yearly' },
+      { url: `${base}/accessibility`, priority: 0.3, changeFrequency: 'yearly' },
     ];
     const categoryRoutes: MetadataRoute.Sitemap = ALL_CATEGORIES.map((c) => ({
       url: `${base}/best/${c}`,

@@ -29,7 +29,7 @@
   }
 }
 
-html, body { background: #ffffff; }
+html, body { background: #ffffff; overflow-x: clip; }
 @media (prefers-reduced-motion: no-preference) {
   html { scroll-behavior: smooth; }
 }
@@ -37,6 +37,29 @@ html, body { background: #ffffff; }
 body {
   font-family: var(--font-sans);
   font-feature-settings: "ss01", "cv11", "cv09";
+}
+
+/* First focusable control — visually hidden until keyboard focus */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: 0;
+  z-index: 100;
+  padding: 0.65rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  background: #fff;
+  border: 1px solid var(--color-rule);
+  transform: translateY(-120%);
+  transition: transform 0.15s ease;
+}
+.skip-link:focus {
+  transform: translateY(0.75rem);
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 ::selection { background: #fde68a; color: #0a0a0a; }

@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: 'Maturity Rankings',
   description:
     'Top MCP servers ranked by listing maturity (Quality Score from public registry signals). Trust verdict shown separately — not used for sort order.',
+  alternates: { canonical: 'https://mcpindex.ai/leaderboard' },
 };
 
 const VERDICT_CHIP: Record<string, string> = {

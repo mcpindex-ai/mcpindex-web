@@ -8,7 +8,7 @@ import DriftGateDemo from '@/components/DriftGateDemo';
 import { PromoVideos } from '@/components/PromoVideos';
 import { InstallCtaButton } from '@/components/InstallCtaButton';
 import { INSTALL_SHELL_COMMAND } from '@/lib/install-command';
-import { GateLoop } from '@/components/home/GateLoop';
+import { GateLoop, GATE_LOOP_STEPS } from '@/components/home/GateLoop';
 import { GateEdges } from '@/components/home/GateEdges';
 import { Mark } from '@/components/Mark';
 import { Seal } from '@/components/Seal';
@@ -79,6 +79,57 @@ export default async function Home() {
         offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
         publisher: { '@id': 'https://mcpindex.ai/#org' },
       },
+      {
+        '@type': 'HowTo',
+        '@id': 'https://mcpindex.ai/#how-the-gate-works',
+        name: 'How the mcpindex gate works',
+        description:
+          'Pin each MCP tool contract on first sight and HOLD the call when the contract silently changes—before your agent acts.',
+        step: GATE_LOOP_STEPS.map((s, i) => ({
+          '@type': 'HowToStep',
+          position: i + 1,
+          name: s.title,
+          text: s.detail ? `${s.body} ${s.detail}` : s.body,
+        })),
+      },
+      {
+        '@type': 'FAQPage',
+        '@id': 'https://mcpindex.ai/#faq',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'What happens when an MCP tool contract silently changes?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'mcpindex pins every MCP tool contract on first sight and HOLDs the call the instant that contract drifts—before your agent acts. Zero credentials. One-click in Claude Desktop, Cursor, Cline, or Zed.',
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'Does the gate hold my credentials?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'No. The gate is in-path, deterministic, and holds no custody of your credentials. It diffs a tool’s live contract against what you pinned and fails closed to a HOLD on doubt.',
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'What is the blast-radius grade?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'The gate labels each call’s blast radius in the path before it runs—action (read, write, delete, send, execute), what it touches, whether it can be undone, and whether it leaves your org. The grade is deterministic and advisory; it never overrides the gate’s HOLD/PROCEED decision.',
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'What does the gate claim — and what doesn’t it?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'The gate says “this contract changed,” never “this is safe.” The blast-radius grade is advisory, not a safety call. The grade is static—what a call would do, read from its contract.',
+            },
+          },
+        ],
+      },
     ],
   };
 
@@ -103,14 +154,14 @@ export default async function Home() {
               </span>
             </h1>
             <p className="hero-rise hero-rise-3 mt-6 text-[16px] sm:text-[17.5px] leading-[1.5] text-[var(--color-cite)]">
-              It pins every MCP tool contract on first sight and HOLDs the call the instant
-              that contract drifts&mdash;before your agent acts. Zero credentials. One-click in
-              Claude Desktop, Cursor, Cline, or Zed.
+              It <strong>pins every MCP tool contract</strong> on first sight and{' '}
+              <strong>HOLDs the call</strong> the instant that contract drifts&mdash;before your
+              agent acts. Zero credentials. One-click in Claude Desktop, Cursor, Cline, or Zed.
             </p>
             <p className="hero-rise hero-rise-3 mt-3 text-[15px] sm:text-[16px] leading-[1.5] text-[var(--color-cite)]">
-              It also grades each call&rsquo;s blast radius&mdash;what it would do (read, write,
-              delete, send) and whether it can be undone&mdash;so an irreversible action never
-              runs unseen.
+              It also grades each call&rsquo;s <strong>blast radius</strong>&mdash;what it would
+              do (read, write, delete, send) and whether it can be undone&mdash;so an irreversible
+              action never runs unseen.
             </p>
 
             {/* High-level trust-properties callout (not a single-test brag — the
@@ -177,12 +228,12 @@ export default async function Home() {
             How the gate works
           </div>
           <h2 className="t-h3 font-medium text-[var(--color-ink)]">
-            Pin the contract. HOLD the change.
+            How does the gate catch a silent contract change?
           </h2>
           <p className="mt-3 mb-8 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
             Agents trust tool descriptions like system prompts. MCP tools can change remotely
-            with no version bump. The gate catches that change in-path before the call goes
-            through.
+            with no version bump. The gate <strong>catches that change in-path</strong> before
+            the call goes through.
           </p>
           <GateLoop />
         </div>
@@ -195,12 +246,12 @@ export default async function Home() {
             Grade the move, not just the tool
           </div>
           <h2 className="t-h3 font-medium text-[var(--color-ink)]">
-            See the blast radius of a call before your agent makes it.
+            What is the blast radius of a call before your agent makes it?
           </h2>
           <p className="mt-3 mb-3 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
             A read and an irreversible delete look identical to your agent&mdash;both are
-            &ldquo;a tool call.&rdquo; The gate labels each call&rsquo;s blast radius in the
-            path before it runs.
+            &ldquo;a tool call.&rdquo; The gate labels each call&rsquo;s{' '}
+            <strong>blast radius in the path</strong> before it runs.
           </p>
           <p className="mb-8 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
             Action (read, write, delete, send, execute), what it touches, whether it can be
@@ -269,12 +320,12 @@ export default async function Home() {
             Honest about the edges
           </div>
           <h2 className="t-h3 font-medium text-[var(--color-ink)]">
-            What the gate claims — and what it doesn&apos;t.
+            What does the gate claim — and what doesn&apos;t it?
           </h2>
           <p className="mt-3 mb-3 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            A trust product earns trust by stating its edges. The gate says &ldquo;this contract
-            changed,&rdquo; never &ldquo;this is safe.&rdquo; The blast-radius grade is advisory,
-            not a safety call.
+            A trust product earns trust by stating its edges. The gate says{' '}
+            <strong>&ldquo;this contract changed,&rdquo;</strong> never &ldquo;this is safe.&rdquo;
+            The blast-radius grade is advisory, not a safety call.
           </p>
           <p className="mb-10 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
             The grade is static&mdash;what a call would do, read from its contract.{' '}
@@ -297,12 +348,12 @@ export default async function Home() {
             Trust, stated plainly
           </div>
           <h2 className="t-h3 font-medium text-white">
-            In-path, deterministic, and no custody of your credentials.
+            Does the gate hold your credentials?
           </h2>
           <p className="mt-3 mb-8 text-[14.5px] leading-[1.55] text-zinc-400">
-            The gate diffs a tool&rsquo;s live contract against what you pinned, fails closed to
-            a HOLD on doubt, and never holds your keys. We state where it stops as plainly as
-            what it catches.
+            No. The gate diffs a tool&rsquo;s live contract against what you pinned, fails closed
+            to a HOLD on doubt, and <strong className="text-zinc-300">never holds your keys</strong>.
+            We state where it stops as plainly as what it catches.
           </p>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
             <Link
@@ -335,23 +386,26 @@ export default async function Home() {
             The corpus the gate queries
           </div>
           <h2 className="t-h3 font-medium text-[var(--color-ink)]">
-            One question, two moments.
+            What does the directory screen before the gate HOLDs?
           </h2>
           <p className="mt-3 mb-3 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
             Before you wire a tool, the directory screens it (REVIEW or UNVERIFIED). In the call
-            path, the gate says HELD or PROCEED. Screen verdicts are semantic-only and advisory.
+            path, the gate says <strong>HELD or PROCEED</strong>. Screen verdicts are
+            semantic-only and advisory.
           </p>
           <p className="mb-3 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
             A prior on whether a tool does what it claims&mdash;not a guarantee, and never an
             ALLOW or DENY (those unlock with the behavioral corpus).
           </p>
+          <p className="mb-3 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+            mcpindex also crawls the public MCP registry daily and records which tool contracts
+            silently change. When you pin a tool, the gate asks: has the crawler already caught
+            this drift?
+          </p>
           <p className="mb-8 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            And the gate no longer works alone. mcpindex crawls the public MCP registry every day
-            and records which tool contracts silently change. When you pin a tool, the gate asks
-            the network one question: has the crawler already caught this contract drifting? If it
-            has, you are warned on the first call &mdash; before a change you never saw burns you.
-            Opt-in and crawler-corroborated: a contract-diff advisory that rides alongside the
-            verdict and never moves the decision. Every drift the crawler catches is public in the{' '}
+            If yes, you are warned on the first call&mdash;before a change you never saw burns
+            you. Opt-in and crawler-corroborated; it never moves the decision. Every catch is
+            public in the{' '}
             <Link href="/ledger" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">live drift ledger</Link>.
           </p>
 
@@ -395,11 +449,11 @@ export default async function Home() {
             Install Now
           </div>
           <h2 className="t-h3 font-medium text-[var(--color-ink)]">
-            One command. Claude Desktop, Cursor, Cline, or Zed.
+            How do I install the gate in Claude Desktop, Cursor, Cline, or Zed?
           </h2>
           <p className="mt-3 mb-3 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            The gate rides the MCP session your agent already opens&mdash;no key required. Prefer
-            to audit first? Use{' '}
+            The gate rides the MCP session your agent already opens&mdash;
+            <strong>no key required</strong>. Prefer to audit first? Use{' '}
             <code className="font-mono text-[13px] text-[var(--color-ink)]">uv tool install</code>{' '}
             plus a manual wire in the{' '}
             <Link

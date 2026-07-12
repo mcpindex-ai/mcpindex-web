@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
+import { ObfuscatedEmail } from '@/components/ObfuscatedEmail';
 
 export const metadata: Metadata = {
   title: 'Terms',
   description: 'Terms of use for mcpindex.ai.',
+  alternates: { canonical: 'https://mcpindex.ai/terms' },
 };
 
 export default function TermsPage() {
@@ -46,9 +48,11 @@ export default function TermsPage() {
         <p>
           Excessive use that disrupts service for others may be rate-limited, blocked, or
           throttled without notice. Email{' '}
-          <a href="mailto:hello@mcpindex.ai" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
-            hello@mcpindex.ai
-          </a>{' '}
+          <ObfuscatedEmail
+            user="hello"
+            domain="mcpindex.ai"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+          />{' '}
           if you need higher limits.
         </p>
         <p>
