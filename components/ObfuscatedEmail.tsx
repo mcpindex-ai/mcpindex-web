@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
+
+const emptySubscribe = () => () => {};
 
 /** Assembles mailto at runtime so scrapers don't get a static mailto: in HTML. */
 export function ObfuscatedEmail({
@@ -15,11 +17,9 @@ export function ObfuscatedEmail({
   children?: React.ReactNode;
 }) {
   const address = `${user}@${domain}`;
-  const [href, setHref] = useState<string | undefined>(undefined);
-
-  useEffect(() => {
-    setHref(`mailto:${user}@${domain}`);
-  }, [user, domain]);
+  // Client-only href: server snapshot is false so SSR HTML has no mailto:.
+  const isClient = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const href = isClient ? `mailto:${address}` : undefined;
 
   return (
     <a
@@ -27,7 +27,7 @@ export function ObfuscatedEmail({
       onClick={(e) => {
         if (!href) {
           e.preventDefault();
-          window.location.href = `mailto:${user}@${domain}`;
+          window.location.href = `mailto:${address}`;
         }
       }}
       className={className}
