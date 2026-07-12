@@ -15,7 +15,7 @@
 # Usage: sh uninstall.sh [--remove-tool] [--dry-run]
 set -eu
 
-PKG="mcpindex-preflight"
+PKG="mcpindex-gate"
 REMOVE_TOOL=0
 DRY_RUN=0
 

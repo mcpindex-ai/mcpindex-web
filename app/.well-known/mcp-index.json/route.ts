@@ -145,7 +145,7 @@ export async function GET() {
       ambiguity_posture: 'grades_up_assumes_more_dangerous_class',
       privacy: 'deny_by_construction - every field is a typed enum/hash/bool; no raw argument value is carried',
       default: 'on_by_default_in_published_clients',
-      clients: ['@mcp-index/sdk (typescript)', 'mcpindex-preflight (python)'],
+      clients: ['@mcp-index/sdk (typescript)', 'mcpindex-gate (python)'],
       honest_limits: [
         'blast_radius_is_static_not_a_safety_verdict',
         'reads_what_a_call_would_do_not_runtime_arguments',

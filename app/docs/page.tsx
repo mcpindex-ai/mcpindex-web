@@ -75,7 +75,7 @@ export default function DocsPage() {
           </p>
           <pre className="mt-3 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
             <code>{`# auditable path — install the package, then run the wiring wizard
-uv tool install mcpindex-preflight
+uv tool install mcpindex-gate
 
 # convenience: the same install + host-config rewrite in one command.
 # inspect it before you run it — it only rewrites your MCP host config,
@@ -113,7 +113,7 @@ curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
 // arg like -y does not survive a bare passthrough).
 "filesystem": {
   "command": "uvx",
-  "args": ["--from", "mcpindex-preflight", "python", "-m", "tooling.cse.proxy",
+  "args": ["--from", "mcpindex-gate", "python", "-m", "tooling.cse.proxy",
            "--mcpindex-stdio",
            "--upstream-command", "npx",
            "--upstream-arg=-y",
@@ -278,7 +278,7 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
             static autonomy ceiling. A read and an irreversible delete look
             identical to an agent until something labels them; this is that label.
             It is on by default in <Mono>@mcp-index/sdk</Mono> and{' '}
-            <Mono>mcpindex-preflight</Mono>.
+            <Mono>mcpindex-gate</Mono>.
           </p>
           <p
             className="mt-2 text-[13px] leading-[1.5]"

@@ -8,7 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ### Changed
 
-- **Recommended install now rides `@latest`.** The docs wire `npx -y mcp-server-mcpindex@latest` so the host fetches the newest discovery server on each restart — no manual upgrade step. This server is the *advisory* recommender (`recommend_mcp_for_task` / `check_tool_trust` / `assess_server`), **not** the in-path drift gate, so it carries no version pin (the gate, `mcpindex-preflight`, stays pinned + notify-only on purpose). The startup update notice already prints the exact `npm i -g …@latest` command for anyone who pins.
+- **Recommended install now rides `@latest`.** The docs wire `npx -y mcp-server-mcpindex@latest` so the host fetches the newest discovery server on each restart — no manual upgrade step. This server is the *advisory* recommender (`recommend_mcp_for_task` / `check_tool_trust` / `assess_server`), **not** the in-path drift gate, so it carries no version pin (the gate, `mcpindex-gate`, stays pinned + notify-only on purpose). The startup update notice already prints the exact `npm i -g …@latest` command for anyone who pins.
 
 ## [0.3.2] - 2026-06-08
 

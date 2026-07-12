@@ -18,7 +18,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
-$Pkg      = 'mcpindex-preflight'
+$Pkg      = 'mcpindex-gate'
 $TaskName = 'mcpindex-watcher'
 
 function Say($m) { Write-Host "mcpindex: $m" }

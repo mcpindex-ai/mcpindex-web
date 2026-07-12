@@ -2,7 +2,7 @@
 # mcpindex one-click installer (macOS / Linux) — the `curl -fsSL … | sh` shape.
 #
 # WHAT IT DOES (end-user terms, in order):
-#   1. Install the mcpindex proxy via the $0 path: `uv tool install mcpindex-preflight`
+#   1. Install the mcpindex proxy via the $0 path: `uv tool install mcpindex-gate`
 #      (uv provisions Python + the package; no source tree, no signing for a terminal/PM
 #      install). A self-contained binary is a DEFERRED follow-up (documented below).
 #   2. Auto-DETECT every installed host on this machine (which known MCP-config paths exist)
@@ -22,7 +22,7 @@
 #   curl --proto '=https' --tlsv1.2 -fsSL https://mcpindex.ai/install.sh | sh -s -- --yes
 set -eu
 
-PKG="mcpindex-preflight"
+PKG="mcpindex-gate"
 PROXY_MODULE="tooling.cse.proxy"
 WATCHER_MODULE="tooling.cse.watcher"
 ASSUME_YES=0

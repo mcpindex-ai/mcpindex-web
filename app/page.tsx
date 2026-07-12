@@ -267,7 +267,7 @@ export default async function Home() {
           <p className="mt-3 mb-6 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
             <strong>Job 1 — gate</strong> (hero above): pins contracts and HOLDs drift in-path
             for {GATE_HOSTS_SHORT}. Ships as{' '}
-            <code className="font-mono text-[13px] text-[var(--color-ink)]">mcpindex-preflight</code>{' '}
+            <code className="font-mono text-[13px] text-[var(--color-ink)]">mcpindex-gate</code>{' '}
             via uv; audit before you pipe:{' '}
             <code className="font-mono text-[12.5px] text-[var(--color-ink)]">
               curl -fsSL https://mcpindex.ai/install.sh | less
@@ -368,7 +368,7 @@ export default async function Home() {
             <p className="font-mono text-[12.5px] leading-[1.55] text-[var(--color-mute)]">
               Deterministic and advisory. On by default in{' '}
               <code className="text-[var(--color-ink)]">@mcp-index/sdk</code> and{' '}
-              <code className="text-[var(--color-ink)]">mcpindex-preflight</code>. It never
+              <code className="text-[var(--color-ink)]">mcpindex-gate</code>. It never
               overrides the gate&rsquo;s HOLD/PROCEED decision.
             </p>
           </Disclose>

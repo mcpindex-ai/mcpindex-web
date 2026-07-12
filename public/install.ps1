@@ -1,7 +1,7 @@
 # mcpindex one-click installer (Windows) — the `irm … | iex` shape.
 #
 # WHAT IT DOES (in order), mirroring install.sh:
-#   1. Install the proxy via the $0 uv path: `uv tool install mcpindex-preflight`.
+#   1. Install the proxy via the $0 uv path: `uv tool install mcpindex-gate`.
 #   2. Auto-DETECT installed hosts (config paths that exist) + WIRE each unrouted server
 #      through the proxy (reuses the audited config_wire — atomic, backed up, reversible).
 #      Affirmative consent: echoes the plan + prompts unless -Yes is passed.
@@ -22,7 +22,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
-$Pkg          = 'mcpindex-preflight'
+$Pkg          = 'mcpindex-gate'
 $ProxyModule  = 'tooling.cse.proxy'
 $WatcherModule= 'tooling.cse.watcher'
 $TaskName     = 'mcpindex-watcher'

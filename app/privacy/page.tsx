@@ -52,7 +52,7 @@ export default function PrivacyPage() {
         </p>
         <p>
           Drift telemetry (the <span className="inline-code">@mcp-index/sdk</span> /{' '}
-          <span className="inline-code">mcpindex-preflight</span> clients): <strong>off by
+          <span className="inline-code">mcpindex-gate</span> clients): <strong>off by
           default</strong>. The SDK sends <strong>nothing</strong> unless you set{' '}
           <span className="inline-code">MCPINDEX_DRIFT_TELEMETRY=detection</span>. When enabled,
           a tool-pin or a contract drift sends one one-way signal to{' '}
