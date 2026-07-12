@@ -5,7 +5,7 @@ import { Mark } from '@/components/Mark';
 
 /**
  * Converts directory landings (/server/*) into gate installs.
- * Distinct from the rail "Install" block, which installs THIS server.
+ * Distinct from the rail "Install" block, which installs THIS server only.
  */
 export function GateInstallBridge({ serverTitle }: { serverTitle: string }) {
   return (
@@ -26,7 +26,8 @@ export function GateInstallBridge({ serverTitle }: { serverTitle: string }) {
       <p className="mt-2 text-[13.5px] leading-[1.55] text-[var(--color-cite)]">
         MCP tool contracts can change remotely with no version bump. The mcpindex gate pins
         each contract and <strong>HOLDs the call</strong> when it drifts—before your agent acts.
-        Zero credentials. Separate from installing this server below.
+        Zero credentials. This is not the package install for this server itself
+        (use the <strong>Install</strong> commands for that).
       </p>
       <div className="mt-4">
         <CopyField
@@ -50,32 +51,5 @@ export function GateInstallBridge({ serverTitle }: { serverTitle: string }) {
         </Link>
       </div>
     </section>
-  );
-}
-
-/** Compact sticky-rail cue; full command lives in GateInstallBridge. */
-export function GateInstallRailCue() {
-  return (
-    <div>
-      <div className="font-mono text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-mute)] mb-3">
-        Protect every tool
-      </div>
-      <p className="text-[12.5px] leading-[1.5] text-[var(--color-cite)]">
-        Install this server above. Then put the{' '}
-        <Link
-          href="/#install"
-          className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
-        >
-          mcpindex gate
-        </Link>{' '}
-        in front of it so a silent contract change cannot run unseen.
-      </p>
-      <Link
-        href="/docs#install-the-gate"
-        className="mt-3 inline-block font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-accent)] hover:opacity-80"
-      >
-        Install the gate →
-      </Link>
-    </div>
   );
 }

@@ -16,10 +16,7 @@ import {
 } from '@/lib/verdicts';
 import { splitFlags } from '@/lib/badge';
 import { ContractDrift } from '@/components/ContractDrift';
-import {
-  GateInstallBridge,
-  GateInstallRailCue,
-} from '@/components/GateInstallBridge';
+import { GateInstallBridge } from '@/components/GateInstallBridge';
 import { jsonLdSafe } from '@/lib/jsonLd';
 
 // Trust verdict shape (free-tier projection of the v1.0.0 verdict contract).
@@ -343,8 +340,6 @@ export default async function ServerPage(
                 ))
               )}
             </div>
-
-            <GateInstallRailCue />
 
             {/* Verdict API */}
             <div>
