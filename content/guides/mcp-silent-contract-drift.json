@@ -1,0 +1,13 @@
+{
+  "slug": "mcp-silent-contract-drift",
+  "title": "Silent MCP tool contract drift — what it is and how to HOLD it",
+  "meta_description": "MCP tools can change remotely with no version bump. How silent contract drift works, why agents miss it, and how an in-path gate HOLDs the call before your agent acts.",
+  "h1": "Silent MCP tool contract drift — and how to catch it before your agent acts",
+  "body": "Model Context Protocol tools are described to your agent the way a system prompt is: a name, parameters, constraints, and annotations. That description is a contract. Unlike a pinned npm version, many MCP servers can change that contract on the remote side with no release tag your client notices.\n\nWhen the contract drifts — a new required parameter, a narrowed enum, an annotation flip to destructive — the agent still calls the tool with Monday’s assumptions. The failure mode is quiet. You see a weird tool result, a wrong side effect, or a hold-up much later in the chain.\n\nA directory listing or a one-time “screen” of the description helps before you wire a tool. It does not help on Tuesday when the live schema changed. That is an in-path problem: something has to compare the live contract to what you pinned on first sight and stop the call when they disagree.\n\nmcpindex’s drift gate does that locally. It pins each tool contract on first sight (TOFU), diffs on every later call, and HOLDs when the change is breaking. Benign added-optional fields can proceed. The verdict is a contract-diff — “this changed” — not a claim that the tool is safe. Zero credentials; the default build egresses nothing.\n\nIf you only need discovery or an advisory REVIEW/UNVERIFIED screen before install, use the directory and /screen. If you already run tools in Claude Desktop, Cursor, Cline, or Zed, install the gate so silent drift cannot run unseen: https://mcpindex.ai/#install",
+  "citation_ids": [
+    "mcpindex-snapshot:io-github-microsoft-playwright-mcp",
+    "mcpindex-snapshot:io-github-domdomegg-gmail-mcp"
+  ],
+  "project": "mcpindex",
+  "updated": "2026-07-12"
+}
