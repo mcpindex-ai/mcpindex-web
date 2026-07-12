@@ -36,9 +36,9 @@ export const metadata: Metadata = {
     siteName: 'mcpindex.ai',
     type: 'website',
   },
-  // No verified public @handle in-repo — omit twitter:site rather than invent one.
   twitter: {
     card: 'summary_large_image',
+    site: '@mcpindex',
     title: 'mcpindex - the in-path trust gate for agent tool calls',
     description:
       'The tool your agent trusted on Monday can change on Tuesday - silently. mcpindex holds the call before your agent acts on the change.',
