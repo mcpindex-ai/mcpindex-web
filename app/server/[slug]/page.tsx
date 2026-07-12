@@ -16,6 +16,10 @@ import {
 } from '@/lib/verdicts';
 import { splitFlags } from '@/lib/badge';
 import { ContractDrift } from '@/components/ContractDrift';
+import {
+  GateInstallBridge,
+  GateInstallRailCue,
+} from '@/components/GateInstallBridge';
 import { jsonLdSafe } from '@/lib/jsonLd';
 
 // Trust verdict shape (free-tier projection of the v1.0.0 verdict contract).
@@ -194,6 +198,9 @@ export default async function ServerPage(
               {server.description}
             </p>
 
+            {/* Directory → gate: ~90% of Analytics landings are /server/* exits. */}
+            <GateInstallBridge serverTitle={server.title} />
+
             {/* Verdict = the hero metric (npm puts downloads here; we put trust). */}
             <section className="mt-10">
               <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
@@ -336,6 +343,8 @@ export default async function ServerPage(
                 ))
               )}
             </div>
+
+            <GateInstallRailCue />
 
             {/* Verdict API */}
             <div>

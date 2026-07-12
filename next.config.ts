@@ -47,6 +47,13 @@ const embedSecurityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Ghost paths seen in Analytics (bots/typos) — send humans to real surfaces.
+  async redirects() {
+    return [
+      { source: "/products", destination: "/", permanent: true },
+      { source: "/method", destination: "/methodology", permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

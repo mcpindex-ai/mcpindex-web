@@ -1,0 +1,15 @@
+# Defense-in-depth: keep real secrets out of the local code-memory index.
+# (.env etc. are usually gitignored already; this is belt-and-suspenders.)
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.pkcs12
+id_rsa*
+id_ed25519*
+*.token
+.netrc
+.npmrc
+.pypirc
