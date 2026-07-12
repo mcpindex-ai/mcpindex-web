@@ -50,7 +50,7 @@ export function formatUpdateMessage(current, latest) {
     `mcp-server-mcpindex ${current} -> ${latest} available. ` +
     `Update: npm i -g mcp-server-mcpindex@latest ` +
     `(or npx fetches it on next launch), then restart your MCP host ` +
-    `(Claude Desktop / Cursor / Cline / Zed) to load it.`
+    `(Claude Desktop / Claude Code / Cursor / Gemini CLI / Cline / Zed) to load it.`
   );
 }
 

@@ -107,6 +107,6 @@ $script:UvxBin = Resolve-Uvx     # pin absolute uvx (FIX H2) for both wiring + t
 Wire-Hosts
 Register-Watcher
 Say "done. Newly-added servers will be auto-wired within seconds (active on next config"
-Say "reload on VS Code/Cursor/Windsurf/Cline; after a restart on Claude Desktop/Code/Zed)."
+Say "reload on VS Code/Cursor/Windsurf/Cline; after a restart on Claude Desktop/Code/Zed/Gemini CLI)."
 Say "Continue (~/.continue/config.yaml) is YAML and is NOT auto-onboarded — wire it"
 Say "explicitly with wrap() / manual wiring. Reverse everything with: uninstall.ps1"

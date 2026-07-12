@@ -4,7 +4,7 @@
 import type { IndexedServer } from './types';
 
 export type InstallTarget = {
-  client: 'claude-desktop' | 'cursor' | 'cline' | 'zed' | 'remote';
+  client: 'claude-desktop' | 'claude-code' | 'cursor' | 'gemini-cli' | 'cline' | 'zed' | 'remote';
   label: string;
   command?: string;
   json?: string;
@@ -74,6 +74,17 @@ export function buildInstalls(s: IndexedServer): InstallTarget[] {
       client: 'cline',
       label: 'Cline (cline_mcp_settings.json)',
       command: `npx -y ${s.npmPackage}`,
+    });
+    const name = shortName(s);
+    out.push({
+      client: 'claude-code',
+      label: 'Claude Code (claude mcp add)',
+      command: `claude mcp add --scope user ${name} -- npx -y ${s.npmPackage}`,
+    });
+    out.push({
+      client: 'gemini-cli',
+      label: 'Gemini CLI (gemini mcp add)',
+      command: `gemini mcp add -s user ${name} npx -y ${s.npmPackage}`,
     });
   }
 

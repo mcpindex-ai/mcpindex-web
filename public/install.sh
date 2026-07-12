@@ -252,6 +252,6 @@ resolve_uvx      # pin the absolute uvx path (FIX H2) — used by both wiring + 
 wire_hosts
 register_watcher
 say "done. Newly-added servers will be auto-wired within seconds (active on next config"
-say "reload on VS Code/Cursor/Windsurf/Cline; after a restart on Claude Desktop/Code/Zed)."
+say "reload on VS Code/Cursor/Windsurf/Cline; after a restart on Claude Desktop/Code/Zed/Gemini CLI)."
 say "Continue (~/.continue/config.yaml) is YAML and is NOT auto-onboarded — wire it"
 say "explicitly with wrap() / manual wiring. Reverse everything with: uninstall.sh"

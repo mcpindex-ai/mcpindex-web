@@ -10,6 +10,20 @@ A drop-in MCP server that lets your agent discover, compare, install, and pre-fl
 npm install -g mcp-server-mcpindex
 ```
 
+This is the **directory / advisory** client (recommend, search, trust). It does **not** install the in-path drift gate — that is `curl -fsSL https://mcpindex.ai/install.sh | sh`.
+
+### Claude Code
+
+```bash
+claude mcp add --scope user mcpindex -- npx -y mcp-server-mcpindex@latest
+```
+
+### Gemini CLI
+
+```bash
+gemini mcp add -s user mcpindex npx -y mcp-server-mcpindex@latest
+```
+
 ## Use it from Claude Desktop
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
@@ -64,7 +78,7 @@ npx -y mcp-server-mcpindex@latest
 | --- | --- |
 | `recommend_mcp_for_task` | Pass a natural-language task. Returns top 3 servers with reasoning, install commands, quality scores. |
 | `search_mcp_servers` | Keyword + semantic search across the full registry. Optional category filter. |
-| `get_install_command` | Get the exact install JSON for a server + a target client (Claude Desktop, Cursor, Cline, Zed). |
+| `get_install_command` | Get the exact install JSON/CLI for a server + client (Claude Desktop, Claude Code, Cursor, Gemini CLI, Cline, Zed). |
 | `compare_servers` | Side-by-side comparison of 2-5 servers - quality scores, install paths, env vars. |
 | `check_tool_trust` | Pre-invocation advisory verdict for a specific tool on a server. Fail-CLOSED: returns UNVERIFIED when no verdict on file. |
 | `assess_server` | Aggregated pre-flight verdict across all tools on a server. Same shape as `check_tool_trust`. |

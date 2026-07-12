@@ -33,7 +33,7 @@ const TIERS: Tier[] = [
     rate: '60 req/min/IP',
     blurb: 'The whole platform, for every developer.',
     bullets: [
-      'One-click install (Claude Desktop / Cursor / Cline / Zed)',
+      'One-click install (Claude Desktop / Claude Code / Cursor / Gemini CLI / Cline / Zed)',
       'TS + Python SDK (wrap an authenticated session)',
       'All postures: Monitor / Guard / Strict',
       'Deterministic tier-0 contract-diff, runs locally',

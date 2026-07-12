@@ -78,7 +78,7 @@ const TOOLS = [
         },
         client: {
           type: 'string',
-          enum: ['claude-desktop', 'cursor', 'cline', 'zed'],
+          enum: ['claude-desktop', 'claude-code', 'cursor', 'gemini-cli', 'cline', 'zed'],
           description: 'Target client.',
         },
       },

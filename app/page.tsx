@@ -7,6 +7,12 @@ import { ProvenanceBadge } from '@/components/ProvenanceBadge';
 import DriftGateDemo from '@/components/DriftGateDemo';
 import { InstallCtaButton } from '@/components/InstallCtaButton';
 import { INSTALL_SHELL_COMMAND } from '@/lib/install-command';
+import {
+  DISCOVERY_CLAUDE_MCP_ADD,
+  DISCOVERY_GEMINI_MCP_ADD,
+  DISCOVERY_NPM_GLOBAL,
+  GATE_HOSTS_SHORT,
+} from '@/lib/client-install';
 import { GateLoop, GATE_LOOP_STEPS } from '@/components/home/GateLoop';
 import { GateEdges } from '@/components/home/GateEdges';
 import { Disclose } from '@/components/Disclose';
@@ -96,7 +102,7 @@ export default async function Home() {
             name: 'What happens when an MCP tool contract silently changes?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: 'mcpindex pins every MCP tool contract on first sight and HOLDs the call the instant that contract drifts—before your agent acts. Zero credentials. One-click in Claude Desktop, Cursor, Cline, or Zed.',
+              text: `mcpindex pins every MCP tool contract on first sight and HOLDs the call the instant that contract drifts—before your agent acts. Zero credentials. One-click gate install in ${GATE_HOSTS_SHORT}.`,
             },
           },
           {
@@ -152,7 +158,7 @@ export default async function Home() {
           <p className="hero-rise hero-rise-3 mt-6 text-[16px] sm:text-[17.5px] leading-[1.5] text-[var(--color-cite)]">
             It <strong>pins every MCP tool contract</strong> on first sight and{' '}
             <strong>HOLDs the call</strong> the instant that contract drifts&mdash;before your
-            agent acts. Zero credentials. One-click in Claude Desktop, Cursor, Cline, or Zed.
+            agent acts. Zero credentials. One-click gate install in {GATE_HOSTS_SHORT}.
           </p>
 
           <div className="hero-rise hero-rise-3 mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -182,7 +188,15 @@ export default async function Home() {
               />
             </div>
             <p className="mt-3 font-mono text-[12px] leading-[1.5] text-[var(--color-mute)]">
-              Runs locally · default build egresses nothing ·{' '}
+              This is the <strong className="text-[var(--color-cite)]">gate</strong> (in-path
+              HOLD) — not the directory MCP client.{' '}
+              <Link
+                href="#install-paths"
+                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+              >
+                Discovery one-liners ↓
+              </Link>
+              {' · '}
               <Link
                 href="/docs#install-the-gate"
                 className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
@@ -240,20 +254,25 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* §install-paths — audit path + directory client (command lives in #install hero). */}
+      {/* §install-paths — gate audit path + directory client (two jobs, labeled). */}
       <section id="install-paths" className="rule-t scroll-mt-20">
         <div className="site-container py-16 sm:py-20">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3 flex items-center gap-2">
             <Mark size={13} />
-            Install paths
+            Two install jobs
           </div>
           <h2 className="t-h3 font-medium text-[var(--color-ink)]">
-            Prefer to audit the install first?
+            Gate first. Directory client only if you want discovery in-chat.
           </h2>
           <p className="mt-3 mb-6 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            The one-liner above is the convenience path. The gate ships as{' '}
+            <strong>Job 1 — gate</strong> (hero above): pins contracts and HOLDs drift in-path
+            for {GATE_HOSTS_SHORT}. Ships as{' '}
             <code className="font-mono text-[13px] text-[var(--color-ink)]">mcpindex-preflight</code>{' '}
-            via uv; full per-client wiring is in the docs.
+            via uv; audit before you pipe:{' '}
+            <code className="font-mono text-[12.5px] text-[var(--color-ink)]">
+              curl -fsSL https://mcpindex.ai/install.sh | less
+            </code>
+            .
           </p>
           <div className="flex items-start gap-3 mb-8">
             <Seal size={34} ring="var(--color-rule)" bracket="var(--color-ink)" />
@@ -270,13 +289,28 @@ export default async function Home() {
               .
             </p>
           </div>
-          <Disclose summary="Also available: the directory client (recommend, search, compare, trust)">
+          <div className="mb-4 font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-mute)]">
+            Job 2 — directory MCP client (advisory; does not install the gate)
+          </div>
+          <div className="space-y-4">
             <CopyField
-              label="Directory MCP client: discovery + advisory trust lookups"
-              value="npm install -g mcp-server-mcpindex"
-              notes="Separate from the in-path gate. Tools: recommend_mcp_for_task, search_mcp_servers, compare_servers, check_tool_trust, assess_server, get_install_command."
+              label="Claude Code"
+              value={DISCOVERY_CLAUDE_MCP_ADD}
+              notes="Adds mcp-server-mcpindex to Claude Code (user scope). Restart/reload MCP after."
             />
-          </Disclose>
+            <CopyField
+              label="Gemini CLI"
+              value={DISCOVERY_GEMINI_MCP_ADD}
+              notes="Adds mcp-server-mcpindex to Gemini CLI (user scope). Restart gemini after."
+            />
+            <Disclose summary="npm global / JSON config (Cursor, Claude Desktop, Cline, Zed)">
+              <CopyField
+                label="npm global (then paste JSON from docs)"
+                value={DISCOVERY_NPM_GLOBAL}
+                notes="Separate from the in-path gate. Tools: recommend_mcp_for_task, search_mcp_servers, compare_servers, check_tool_trust, assess_server, get_install_command. Per-client JSON: /docs#wire-it-to-your-client"
+              />
+            </Disclose>
+          </div>
         </div>
       </section>
 

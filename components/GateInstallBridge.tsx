@@ -21,7 +21,7 @@ export function GateInstallBridge({ serverTitle }: { serverTitle: string }) {
         id="gate-install-bridge-heading"
         className="text-[16px] sm:text-[17px] font-medium tracking-tight text-[var(--color-ink)] leading-snug"
       >
-        Using {serverTitle} in Claude, Cursor, Cline, or Zed?
+        Using {serverTitle} in Claude, Cursor, Gemini CLI, Cline, or Zed?
       </h2>
       <p className="mt-2 text-[13.5px] leading-[1.55] text-[var(--color-cite)]">
         MCP tool contracts can change remotely with no version bump. The mcpindex gate pins

@@ -60,7 +60,7 @@ export default function DocsPage() {
             className="text-[16px] tracking-tight font-semibold"
             style={{ color: 'var(--color-ink)' }}
           >
-            Install (Claude Desktop / Cursor / Cline / Zed)
+            Install (Claude Desktop / Claude Code / Cursor / Gemini CLI / Cline / Zed)
           </h3>
           <p
             className="mt-1 text-[14px] leading-[1.55]"
@@ -68,6 +68,8 @@ export default function DocsPage() {
           >
             The auditable path: install the package, then let the wizard rewrite
             your host config so each MCP server launches <em>behind</em> the gate.
+            Auto-wire covers Claude Desktop, Claude Code, Cursor, Gemini CLI
+            (<Mono>~/.gemini/settings.json</Mono>), Cline, Zed, Windsurf, and VS Code.
             The <Mono>curl | sh</Mono> one-liner does the same thing in one step
             &mdash; inspect it first if you prefer:
           </p>
@@ -471,10 +473,25 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
       </Section>
 
       {/* §04 - Wire it to your client */}
-      <Section number="04" title="Wire it to your client">
+      <div id="wire-it-to-your-client" className="scroll-mt-20" />
+      <Section number="04" title="Wire the directory client to your host">
         <p>
-          The server is identical across clients. Only the config-file location and
-          shape differ. Restart the client after editing.
+          This section installs the <strong>directory MCP client</strong> (
+          <Mono>mcp-server-mcpindex</Mono>) — discovery + advisory trust. It does{' '}
+          <em>not</em> install the in-path gate; use §01 for that. Prefer the
+          CLI one-liners when your host ships <Mono>mcp add</Mono>.
+        </p>
+
+        <pre className="mt-3 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
+          <code>{`# Claude Code (user scope)
+claude mcp add --scope user mcpindex -- npx -y mcp-server-mcpindex@latest
+
+# Gemini CLI (user scope)
+gemini mcp add -s user mcpindex npx -y mcp-server-mcpindex@latest`}</code>
+        </pre>
+
+        <p className="mt-4">
+          Or paste JSON into the host config. Restart the client after editing.
         </p>
 
         <ClientConfig
@@ -491,6 +508,12 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
         />
 
         <ClientConfig
+          client="Claude Code"
+          path="claude mcp add (preferred) or ~/.claude.json"
+          json={`claude mcp add --scope user mcpindex -- npx -y mcp-server-mcpindex@latest`}
+        />
+
+        <ClientConfig
           client="Cursor"
           path=".cursor/mcp.json (project) or ~/.cursor/mcp.json (global)"
           json={`{
@@ -501,6 +524,12 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
     }
   }
 }`}
+        />
+
+        <ClientConfig
+          client="Gemini CLI"
+          path="gemini mcp add (preferred) or ~/.gemini/settings.json"
+          json={`gemini mcp add -s user mcpindex npx -y mcp-server-mcpindex@latest`}
         />
 
         <ClientConfig

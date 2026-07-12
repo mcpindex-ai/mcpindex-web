@@ -101,7 +101,16 @@ export async function GET() {
       fail_mode: 'fail_closed',
       credential_custody: 'none - reuses the session the client already authenticated; reads only public tool contracts',
       install: {
-        config_wire: ['claude_desktop', 'cursor', 'cline', 'zed'],
+        config_wire: [
+          'claude_desktop',
+          'claude_code',
+          'cursor',
+          'gemini_cli',
+          'cline',
+          'zed',
+          'windsurf',
+          'vscode',
+        ],
         sdk: ['typescript_wrap', 'python_wrap'],
         docs: 'https://mcpindex.ai/docs',
       },
