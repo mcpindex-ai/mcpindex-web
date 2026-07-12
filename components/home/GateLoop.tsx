@@ -38,7 +38,8 @@ export const GATE_LOOP_STEPS: {
   },
 ];
 
-export function GateLoop() {
+/** @param compact — titles + notes always visible; body/detail behind <details>. */
+export function GateLoop({ compact = false }: { compact?: boolean }) {
   return (
     <ol className="rule-t m-0 list-none p-0">
       {GATE_LOOP_STEPS.map((s) => (
@@ -51,13 +52,23 @@ export function GateLoop() {
           </div>
           <div>
             <h3 className="t-h4 font-medium text-[var(--color-ink)]">{s.title}</h3>
-            <p className="mt-2 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-              {s.body}
-            </p>
-            {s.detail && (
-              <p className="mt-2 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-                {s.detail}
-              </p>
+            {compact ? (
+              <details className="mt-2">
+                <summary className="cursor-pointer font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--color-mute)] hover:text-[var(--color-ink)]">
+                  How this step works
+                </summary>
+                <p className="mt-2 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">{s.body}</p>
+                {s.detail && (
+                  <p className="mt-2 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">{s.detail}</p>
+                )}
+              </details>
+            ) : (
+              <>
+                <p className="mt-2 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">{s.body}</p>
+                {s.detail && (
+                  <p className="mt-2 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">{s.detail}</p>
+                )}
+              </>
             )}
           </div>
           {s.note && (

@@ -31,15 +31,17 @@ export function Footer() {
 
           <div>
             <div className={COLUMN_LABEL}>Product</div>
-            <Link href="/#demo" className={LINK}>Try the gate</Link>
             <Link href="/#install" className={LINK}>Install</Link>
+            <Link href="/#demo" className={LINK}>Try the gate</Link>
             <Link href="/demo" className={LINK}>Videos &amp; embed</Link>
             <Link href="/docs" className={LINK}>Docs</Link>
             <Link href="/pricing" className={LINK}>Pricing</Link>
-            <Link href="/screen" className={LINK}>Screen a tool</Link>
+            <Link href="/search" className={LINK}>Search</Link>
+            <Link href="/screen" className={LINK}>Screen</Link>
             <Link href="/leaderboard" className={LINK}>Maturity Rankings</Link>
             <Link href="/best" className={LINK}>Best of</Link>
             <Link href="/changelog" className={LINK}>Changelog</Link>
+            <Link href="/guides" className={LINK}>Guides</Link>
           </div>
 
           <div>

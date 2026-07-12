@@ -321,9 +321,9 @@ export default async function ServerPage(
 
           {/* ───────────────── STICKY RIGHT RAIL ───────────────── */}
           <aside className="lg:sticky lg:top-20 space-y-9">
-            {/* Install */}
+            {/* Install this MCP server (not the gate — see GateInstallBridge). */}
             <div>
-              <div className={RAIL_LABEL}>Install</div>
+              <div className={RAIL_LABEL}>Install this server</div>
               {installs.length === 0 ? (
                 <p className="text-[13px] text-[var(--color-mute)]">
                   No runnable package or remote endpoint in the registry. Check the repo for manual

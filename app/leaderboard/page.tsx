@@ -15,17 +15,24 @@ export const metadata: Metadata = {
 };
 
 const VERDICT_CHIP: Record<string, string> = {
-  ALLOW: 'border-emerald-300 text-emerald-700 bg-emerald-50',
-  DENY: 'border-red-300 text-red-700 bg-red-50',
+  // ALLOW/DENY reserved at v1 screen — muted, not green/red clearance styling
+  ALLOW: 'border-stone-300 text-stone-600 bg-stone-50',
+  DENY: 'border-stone-300 text-stone-600 bg-stone-50',
   REVIEW: 'border-amber-300 text-amber-700 bg-amber-50',
 };
 
 function VerdictTag({ dec }: { dec?: string }) {
+  const reserved = dec === 'ALLOW' || dec === 'DENY';
   return dec ? (
     <span
+      title={
+        reserved
+          ? 'Reserved in the verdict contract — v1 public screen emits REVIEW or UNVERIFIED'
+          : 'Advisory semantic screen — not a safety clearance'
+      }
       className={`font-mono text-[10px] uppercase tracking-[0.12em] border px-1.5 py-0.5 ${VERDICT_CHIP[dec] ?? ''}`}
     >
-      {dec.toLowerCase()}
+      {reserved ? `${dec.toLowerCase()}*` : dec.toLowerCase()}
     </span>
   ) : (
     <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-mute)]">

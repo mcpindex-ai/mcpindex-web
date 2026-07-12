@@ -3,10 +3,9 @@
 import { useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { INSTALL_SHELL_COMMAND } from '@/lib/install-command';
+import { trackGateInstallCopy } from '@/lib/track-gate-install';
 
-const INSTALL_SECTION_ID = 'install';
-
-/** Hero primary CTA: scroll to #install, then copy the install command + toast. */
+/** Hero primary CTA: copy install command immediately (no scroll tax). */
 export function InstallCtaButton() {
   const [toast, setToast] = useState(false);
 
@@ -19,60 +18,29 @@ export function InstallCtaButton() {
     window.setTimeout(dismissToast, 3200);
   }, [dismissToast]);
 
-  const copyCommand = useCallback(async () => {
+  const handleClick = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(INSTALL_SHELL_COMMAND);
+      trackGateInstallCopy('homepage_hero_cta');
       showToast();
     } catch {
-      /* clipboard blocked — user can copy from the install block */
+      /* clipboard blocked — hero CopyField remains as fallback */
+      const field = document.getElementById('install');
+      field?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [showToast]);
 
-  const handleClick = useCallback(() => {
-    const section = document.getElementById(INSTALL_SECTION_ID);
-    if (!section) {
-      void copyCommand();
-      return;
-    }
-
-    const rect = section.getBoundingClientRect();
-    const alreadyVisible = rect.top >= 0 && rect.top < window.innerHeight * 0.45;
-
-    if (alreadyVisible) {
-      void copyCommand();
-      return;
-    }
-
-    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const hit = entries.some((e) => e.isIntersecting && e.intersectionRatio >= 0.12);
-        if (!hit) return;
-        observer.disconnect();
-        void copyCommand();
-      },
-      { threshold: [0.12, 0.25] },
-    );
-    observer.observe(section);
-
-    window.setTimeout(() => observer.disconnect(), 5000);
-  }, [copyCommand]);
-
-  // toast only flips true from a user click (always post-hydration), so
-  // document.body is guaranteed present — no mount guard needed.
-  const toastNode =
-    toast ? (
-      <div
-        role="status"
-        aria-live="polite"
-        className="fixed bottom-6 left-1/2 z-[200] -translate-x-1/2 max-w-[min(92vw,28rem)] border border-[var(--color-rule)] bg-[var(--color-ink)] px-4 py-3 shadow-lg pointer-events-none"
-      >
-        <p className="font-mono text-[12.5px] leading-snug text-zinc-100 text-center">
-          Install command copied — paste in your terminal
-        </p>
-      </div>
-    ) : null;
+  const toastNode = toast ? (
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed bottom-6 left-1/2 z-[200] -translate-x-1/2 max-w-[min(92vw,28rem)] border border-[var(--color-rule)] bg-[var(--color-ink)] px-4 py-3 shadow-lg pointer-events-none"
+    >
+      <p className="font-mono text-[12.5px] leading-snug text-zinc-100 text-center">
+        Install command copied — paste in your terminal
+      </p>
+    </div>
+  ) : null;
 
   return (
     <>

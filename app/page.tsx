@@ -5,11 +5,11 @@ import { VerdictReveal } from '@/components/VerdictReveal';
 import { CopyField } from '@/components/CopyField';
 import { ProvenanceBadge } from '@/components/ProvenanceBadge';
 import DriftGateDemo from '@/components/DriftGateDemo';
-import { PromoVideos } from '@/components/PromoVideos';
 import { InstallCtaButton } from '@/components/InstallCtaButton';
 import { INSTALL_SHELL_COMMAND } from '@/lib/install-command';
 import { GateLoop, GATE_LOOP_STEPS } from '@/components/home/GateLoop';
 import { GateEdges } from '@/components/home/GateEdges';
+import { Disclose } from '@/components/Disclose';
 import { Mark } from '@/components/Mark';
 import { Seal } from '@/components/Seal';
 import { listScreened } from '@/lib/verdicts';
@@ -19,19 +19,17 @@ export const revalidate = 3600;
 export default async function Home() {
   const screened = await listScreened();
 
-  // Real verdicts (never fabricated) for the cycling reveal in §the-network.
-  // Varied set: a DENY, an ALLOW, a REVIEW where present, then fill to four.
+  // Prefer REVIEW for the public homepage (v1 screen emits REVIEW/UNVERIFIED;
+  // ALLOW/DENY are reserved). Fill with other decisions only if needed.
   const DIM_LABEL: Record<string, string> = {
     'mcpindex.integrity.description': 'integrity',
     'mcpindex.conformance.schema': 'conformance',
   };
   const withRationale = screened.filter((s) => s.verdict.directive.rationale);
   const picks: typeof withRationale = [];
-  for (const dec of ['DENY', 'ALLOW', 'REVIEW'] as const) {
-    const m = withRationale.find(
-      (s) => s.verdict.directive.decision === dec && !picks.includes(s),
-    );
-    if (m) picks.push(m);
+  for (const s of withRationale) {
+    if (picks.length >= 4) break;
+    if (s.verdict.directive.decision === 'REVIEW') picks.push(s);
   }
   for (const s of withRationale) {
     if (picks.length >= 4) break;
@@ -47,9 +45,6 @@ export default async function Home() {
       .map((dm) => ({ label: DIM_LABEL[dm.id] ?? dm.id, verdict: dm.verdict })),
   }));
 
-  // Primary entity signal for a 0->1 launch: Organization + WebSite +
-  // SoftwareApplication. Claims stay (A)-launch-state and (B)-honest - the gate
-  // is the product; no safety/graduation assertion lives here.
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -139,137 +134,69 @@ export default async function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }}
       />
-      {/* §00 HERO — the gate: the silent-change pain, then the HOLD. */}
+
+      {/* §00 HERO — install in-fold (no scroll tax). */}
       <section className="rule-b bg-[var(--color-accent-soft)]">
         <div className="site-container pt-14 pb-16 sm:pt-20 sm:pb-24">
-            <div className="hero-rise hero-rise-1 font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-accent)] mb-6">
-              In-path trust gate for agent tool calls
-            </div>
-            <h1 className="hero-rise hero-rise-2 font-medium text-[var(--color-ink)] leading-[1.06] tracking-[-0.02em] text-[clamp(2.2rem,1.2rem+3.4vw,3.4rem)]">
-              The tool your agent trusted on Monday can change on Tuesday —{' '}
-              <span className="italic font-normal">silently</span>.
-              <br />
-              <span className="font-semibold text-[var(--color-accent)]">
-                mcpindex holds the call before your agent acts on the change.
-              </span>
-            </h1>
-            <p className="hero-rise hero-rise-3 mt-6 text-[16px] sm:text-[17.5px] leading-[1.5] text-[var(--color-cite)]">
-              It <strong>pins every MCP tool contract</strong> on first sight and{' '}
-              <strong>HOLDs the call</strong> the instant that contract drifts&mdash;before your
-              agent acts. Zero credentials. One-click in Claude Desktop, Cursor, Cline, or Zed.
-            </p>
-            <p className="hero-rise hero-rise-3 mt-3 text-[15px] sm:text-[16px] leading-[1.5] text-[var(--color-cite)]">
-              It also grades each call&rsquo;s <strong>blast radius</strong>&mdash;what it would
-              do (read, write, delete, send) and whether it can be undone&mdash;so an irreversible
-              action never runs unseen.
-            </p>
+          <div className="hero-rise hero-rise-1 font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-accent)] mb-6">
+            In-path trust gate for agent tool calls
+          </div>
+          <h1 className="hero-rise hero-rise-2 font-medium text-[var(--color-ink)] leading-[1.06] tracking-[-0.02em] text-[clamp(2.2rem,1.2rem+3.4vw,3.4rem)]">
+            The tool your agent trusted on Monday can change on Tuesday —{' '}
+            <span className="italic font-normal">silently</span>.
+            <br />
+            <span className="font-semibold text-[var(--color-accent)]">
+              mcpindex holds the call before your agent acts on the change.
+            </span>
+          </h1>
+          <p className="hero-rise hero-rise-3 mt-6 text-[16px] sm:text-[17.5px] leading-[1.5] text-[var(--color-cite)]">
+            It <strong>pins every MCP tool contract</strong> on first sight and{' '}
+            <strong>HOLDs the call</strong> the instant that contract drifts&mdash;before your
+            agent acts. Zero credentials. One-click in Claude Desktop, Cursor, Cline, or Zed.
+          </p>
 
-            {/* High-level trust-properties callout (not a single-test brag — the
-                reproducible proof lives in the whitepaper §7). */}
-            <div className="hero-rise hero-rise-3 mt-6 rule-t rule-b rule-l rule-r bg-white px-4 py-3">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-mute)] mb-1.5">
-                In-path · deterministic · on your host
-              </div>
-              <p className="font-mono text-[12.5px] leading-[1.55] text-[var(--color-cite)]">
-                The gate makes a deterministic contract-diff in the call path and HOLDs before
-                your agent acts — no model in the loop, nothing leaves your machine. Open-source,
-                so you can audit exactly what runs.
-              </p>
-            </div>
+          <div className="hero-rise hero-rise-3 mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <ProvenanceBadge />
+            <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--color-mute)]">
+              Deterministic contract-diff · fails closed · not a safety verdict
+            </span>
+          </div>
 
-            <div className="hero-rise hero-rise-4 mt-8 flex flex-wrap items-center gap-3">
-              <InstallCtaButton />
-              <a
-                href="#demo"
-                className="font-mono text-[12.5px] uppercase tracking-[0.14em] text-[var(--color-ink)] border border-[var(--color-rule)] px-6 py-3.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
-              >
-                Watch it hold a drift →
-              </a>
+          <div className="hero-rise hero-rise-4 mt-8 flex flex-wrap items-center gap-3">
+            <InstallCtaButton />
+            <a
+              href="#demo"
+              className="font-mono text-[12.5px] uppercase tracking-[0.14em] text-[var(--color-ink)] border border-[var(--color-rule)] px-6 py-3.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
+            >
+              Watch it hold a drift →
+            </a>
+          </div>
+
+          <div id="install" className="hero-rise hero-rise-4 mt-8 scroll-mt-20">
+            <div className="rule-t rule-b rule-l rule-r border-[var(--color-accent)] bg-white p-2">
+              <CopyField
+                label="Install the mcpindex gate (one command)"
+                value={INSTALL_SHELL_COMMAND}
+                trackSource="homepage_hero"
+                notes="Inspect first: curl -fsSL https://mcpindex.ai/install.sh | less — then run the command. Restarts your host after wiring."
+              />
+            </div>
+            <p className="mt-3 font-mono text-[12px] leading-[1.5] text-[var(--color-mute)]">
+              Runs locally · default build egresses nothing ·{' '}
               <Link
-                href="/methodology"
-                className="font-mono text-[12px] text-[var(--color-mute)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] transition-colors"
+                href="/docs#install-the-gate"
+                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
               >
-                Read the methodology →
+                auditable uv path
               </Link>
-              <Link
-                href="/whitepaper"
-                className="font-mono text-[12px] text-[var(--color-mute)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] transition-colors"
-              >
-                Read the whitepaper →
-              </Link>
-            </div>
-
-            <div className="hero-rise hero-rise-4 mt-8 font-mono text-[12px] leading-[1.5] text-[var(--color-mute)]">
-              Runs locally · works in Claude Desktop, Cursor, Cline, Zed · the default build
-              egresses nothing
-            </div>
-            <div className="hero-rise hero-rise-4 mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
-              <ProvenanceBadge />
-              <span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--color-mute)]">
-                Deterministic diff · contract-diff, not a safety verdict
-              </span>
-            </div>
-        </div>
-      </section>
-
-      {/* §concept — narrated proof immediately after the hero promise. */}
-      <section id="concept" className="rule-t scroll-mt-20">
-        <div className="site-container py-16 sm:py-20">
-          <PromoVideos variant="concept" />
+            </p>
+          </div>
         </div>
       </section>
 
       <LiveTicker />
 
-      {/* §how-it-works — the gate loop, four concrete steps. */}
-      <section id="how-it-works" className="rule-t scroll-mt-20">
-        <div className="reveal site-container py-20 sm:py-28">
-          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
-            How the gate works
-          </div>
-          <h2 className="t-h3 font-medium text-[var(--color-ink)]">
-            How does the gate catch a silent contract change?
-          </h2>
-          <p className="mt-3 mb-8 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            Agents trust tool descriptions like system prompts. MCP tools can change remotely
-            with no version bump. The gate <strong>catches that change in-path</strong> before
-            the call goes through.
-          </p>
-          <GateLoop />
-        </div>
-      </section>
-
-      {/* §grade-the-move — the blast-radius grade, the now-live second check. */}
-      <section id="grade-the-move" className="rule-t scroll-mt-20">
-        <div className="reveal site-container py-20 sm:py-28">
-          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
-            Grade the move, not just the tool
-          </div>
-          <h2 className="t-h3 font-medium text-[var(--color-ink)]">
-            What is the blast radius of a call before your agent makes it?
-          </h2>
-          <p className="mt-3 mb-3 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            A read and an irreversible delete look identical to your agent&mdash;both are
-            &ldquo;a tool call.&rdquo; The gate labels each call&rsquo;s{' '}
-            <strong>blast radius in the path</strong> before it runs.
-          </p>
-          <p className="mb-8 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            Action (read, write, delete, send, execute), what it touches, whether it can be
-            undone, and whether it leaves your org&mdash;so a call you can&rsquo;t reverse is
-            never indistinguishable from one that only reads.
-          </p>
-          <p className="font-mono text-[12.5px] leading-[1.55] text-[var(--color-mute)]">
-            Deterministic and advisory. The grade describes what a call <em>would do</em>,
-            derived from the tool&rsquo;s own contract; it rides alongside the gate&rsquo;s
-            decision and never overrides it. It says &ldquo;this is an irreversible delete,&rdquo;
-            not &ldquo;this is safe.&rdquo; On by default in the{' '}
-            <code className="text-[var(--color-ink)]">@mcp-index/sdk</code> and{' '}
-            <code className="text-[var(--color-ink)]">mcpindex-preflight</code> clients.
-          </p>
-        </div>
-      </section>
-
-      {/* §demo — the real deterministic gate, client-side. */}
+      {/* §demo — product proof immediately after hero install. */}
       <section id="demo" className="rule-t scroll-mt-20">
         <div className="site-container py-20 sm:py-28">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
@@ -295,55 +222,67 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* §persona — how to use it, by persona (the demo film). Restored to the homepage
-          below the interactive demo (reverts the dedupe that left only a /demo link). */}
-      <section id="persona" className="rule-t scroll-mt-20">
-        <div className="site-container py-20 sm:py-28">
-          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
-            How to use it
-          </div>
-          <h2 className="t-h3 font-medium text-[var(--color-ink)]">
-            One gate. Three ways to run it.
-          </h2>
-          <p className="mt-3 mb-10 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            By persona: the MCP-client user, the SDK builder, the enterprise fleet. One install,
-            one line, or one policy. The model never sees the gate; your host or your code does.
-          </p>
-          <PromoVideos variant="persona" />
-        </div>
-      </section>
-
-      {/* §honest-edges — updated for the gate. */}
-      <section className="rule-t">
+      {/* §how-it-works — compact titles; bodies on reveal. */}
+      <section id="how-it-works" className="rule-t scroll-mt-20">
         <div className="reveal site-container py-20 sm:py-28">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
-            Honest about the edges
+            How the gate works
           </div>
           <h2 className="t-h3 font-medium text-[var(--color-ink)]">
-            What does the gate claim — and what doesn&apos;t it?
+            How does the gate catch a silent contract change?
           </h2>
-          <p className="mt-3 mb-3 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            A trust product earns trust by stating its edges. The gate says{' '}
-            <strong>&ldquo;this contract changed,&rdquo;</strong> never &ldquo;this is safe.&rdquo;
-            The blast-radius grade is advisory, not a safety call.
+          <p className="mt-3 mb-8 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+            Agents trust tool descriptions like system prompts. MCP tools can change remotely
+            with no version bump. The gate <strong>catches that change in-path</strong> before
+            the call goes through.
           </p>
-          <p className="mb-10 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            The grade is static&mdash;what a call would do, read from its contract.{' '}
-            <Link
-              href="/methodology"
-              className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] hover:decoration-[var(--color-accent)]"
-            >
-              Read the methodology
-            </Link>
-            .
-          </p>
-          <GateEdges />
+          <GateLoop compact />
         </div>
       </section>
 
-      {/* Dark proof band — the trust posture, in context. */}
+      {/* §install-paths — audit path + directory client (command lives in #install hero). */}
+      <section id="install-paths" className="rule-t scroll-mt-20">
+        <div className="site-container py-16 sm:py-20">
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3 flex items-center gap-2">
+            <Mark size={13} />
+            Install paths
+          </div>
+          <h2 className="t-h3 font-medium text-[var(--color-ink)]">
+            Prefer to audit the install first?
+          </h2>
+          <p className="mt-3 mb-6 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
+            The one-liner above is the convenience path. The gate ships as{' '}
+            <code className="font-mono text-[13px] text-[var(--color-ink)]">mcpindex-preflight</code>{' '}
+            via uv; full per-client wiring is in the docs.
+          </p>
+          <div className="flex items-start gap-3 mb-8">
+            <Seal size={34} ring="var(--color-rule)" bracket="var(--color-ink)" />
+            <p className="text-[12.5px] leading-[1.55] text-[var(--color-mute)]">
+              Pinned, in-path, zero custody. Full wiring — including the auditable{' '}
+              <code className="font-mono text-[12.5px] text-[var(--color-ink)]">uv tool install</code>{' '}
+              path — is in the{' '}
+              <Link
+                href="/docs#install-the-gate"
+                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+              >
+                docs
+              </Link>
+              .
+            </p>
+          </div>
+          <Disclose summary="Also available: the directory client (recommend, search, compare, trust)">
+            <CopyField
+              label="Directory MCP client: discovery + advisory trust lookups"
+              value="npm install -g mcp-server-mcpindex"
+              notes="Separate from the in-path gate. Tools: recommend_mcp_for_task, search_mcp_servers, compare_servers, check_tool_trust, assess_server, get_install_command."
+            />
+          </Disclose>
+        </div>
+      </section>
+
+      {/* Dark trust band — short. */}
       <section className="rule-t bg-[var(--color-ink)]">
-        <div className="reveal site-container py-20 sm:py-24">
+        <div className="reveal site-container py-16 sm:py-20">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-500 mb-3">
             Trust, stated plainly
           </div>
@@ -351,9 +290,8 @@ export default async function Home() {
             Does the gate hold your credentials?
           </h2>
           <p className="mt-3 mb-8 text-[14.5px] leading-[1.55] text-zinc-400">
-            No. The gate diffs a tool&rsquo;s live contract against what you pinned, fails closed
-            to a HOLD on doubt, and <strong className="text-zinc-300">never holds your keys</strong>.
-            We state where it stops as plainly as what it catches.
+            No. It diffs a tool&rsquo;s live contract against what you pinned, fails closed to a
+            HOLD on doubt, and <strong className="text-zinc-300">never holds your keys</strong>.
           </p>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
             <Link
@@ -378,134 +316,108 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* §the-network — the directory, the corpus the gate queries. Below the
-          dark trust band so the gate proof + install own the fold (R2-M2). */}
+      {/* Tier-3 depth — collapsed, content preserved. */}
       <section className="rule-t">
-        <div className="reveal site-container py-20 sm:py-28">
-          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
-            The corpus the gate queries
+        <div className="site-container py-16 sm:py-20 space-y-8">
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
+            Dig deeper
           </div>
-          <h2 className="t-h3 font-medium text-[var(--color-ink)]">
-            What does the directory screen before the gate HOLDs?
-          </h2>
-          <p className="mt-3 mb-3 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            Before you wire a tool, the directory screens it (REVIEW or UNVERIFIED). In the call
-            path, the gate says <strong>HELD or PROCEED</strong>. Screen verdicts are
-            semantic-only and advisory.
-          </p>
-          <p className="mb-3 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            A prior on whether a tool does what it claims&mdash;not a guarantee, and never an
-            ALLOW or DENY (those unlock with the behavioral corpus).
-          </p>
-          <p className="mb-3 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            mcpindex also crawls the public MCP registry daily and records which tool contracts
-            silently change. When you pin a tool, the gate asks: has the crawler already caught
-            this drift?
-          </p>
-          <p className="mb-8 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            If yes, you are warned on the first call&mdash;before a change you never saw burns
-            you. Opt-in and crawler-corroborated; it never moves the decision. Every catch is
-            public in the{' '}
-            <Link href="/ledger" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">live drift ledger</Link>.
-          </p>
 
-          {reveals.length > 0 && (
-            <div className=" mb-8">
-              <VerdictReveal items={reveals} />
+          <Disclose summary="Blast radius — grade the move, not just the tool">
+            <p className="mb-3">
+              A read and an irreversible delete look identical to your agent&mdash;both are
+              &ldquo;a tool call.&rdquo; The gate labels each call&rsquo;s{' '}
+              <strong>blast radius in the path</strong> before it runs: action (read, write,
+              delete, send, execute), what it touches, whether it can be undone, and whether it
+              leaves your org.
+            </p>
+            <p className="font-mono text-[12.5px] leading-[1.55] text-[var(--color-mute)]">
+              Deterministic and advisory. On by default in{' '}
+              <code className="text-[var(--color-ink)]">@mcp-index/sdk</code> and{' '}
+              <code className="text-[var(--color-ink)]">mcpindex-preflight</code>. It never
+              overrides the gate&rsquo;s HOLD/PROCEED decision.
+            </p>
+          </Disclose>
+
+          <Disclose summary="Honest edges — what the gate claims and doesn’t">
+            <p className="mb-6">
+              A trust product earns trust by stating its edges. The gate says{' '}
+              <strong>&ldquo;this contract changed,&rdquo;</strong> never &ldquo;this is safe.&rdquo;{' '}
+              <Link
+                href="/methodology"
+                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+              >
+                Read the methodology
+              </Link>
+              .
+            </p>
+            <GateEdges />
+          </Disclose>
+
+          <Disclose summary="Directory corpus — screen verdicts and the drift ledger">
+            <p className="mb-3">
+              Before you wire a tool, the directory screens it (REVIEW or UNVERIFIED at v1). In
+              the call path, the gate says <strong>HELD or PROCEED</strong>. Screen verdicts are
+              semantic-only and advisory — never an ALLOW or DENY clearance (those unlock with
+              the behavioral corpus).
+            </p>
+            <p className="mb-6">
+              mcpindex also crawls the public MCP registry daily. Opt-in and
+              crawler-corroborated drift never moves the decision. Every catch is public in the{' '}
+              <Link
+                href="/ledger"
+                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+              >
+                live drift ledger
+              </Link>
+              .
+            </p>
+            {reveals.length > 0 && (
+              <div className="mb-6">
+                <VerdictReveal items={reveals} />
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+              <Link
+                href="/leaderboard"
+                className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-cite)] hover:text-[var(--color-accent)]"
+              >
+                Maturity Rankings →
+              </Link>
+              <Link
+                href="/screen"
+                className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-cite)] hover:text-[var(--color-accent)]"
+              >
+                Screen →
+              </Link>
+              <Link
+                href="/search"
+                className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-cite)] hover:text-[var(--color-accent)]"
+              >
+                Search →
+              </Link>
+              <span className="font-mono text-[11.5px] text-[var(--color-mute)]">
+                {screened.length} tools screened · advisory, semantic-only
+              </span>
             </div>
-          )}
+          </Disclose>
 
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+          <p className="font-mono text-[12px] text-[var(--color-mute)]">
+            Overview films:{' '}
             <Link
-              href="/leaderboard"
-              className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-cite)] hover:text-[var(--color-accent)]"
-            >
-              Maturity Rankings →
-            </Link>
-            <Link
-              href="/screen"
-              className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-cite)] hover:text-[var(--color-accent)]"
-            >
-              Screen a tool →
-            </Link>
-            <Link
-              href="/ledger"
-              className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-cite)] hover:text-[var(--color-accent)]"
-            >
-              Drift ledger →
-            </Link>
-            <span className="font-mono text-[11.5px] text-[var(--color-mute)]">
-              {screened.length} tools screened so far · advisory, semantic-only
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* §install + API */}
-      <section id="install" className="rule-t scroll-mt-20">
-        <div className="site-container py-20 sm:py-24">
-          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3 flex items-center gap-2">
-            <Mark size={13} />
-            Install Now
-          </div>
-          <h2 className="t-h3 font-medium text-[var(--color-ink)]">
-            How do I install the gate in Claude Desktop, Cursor, Cline, or Zed?
-          </h2>
-          <p className="mt-3 mb-3 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            The gate rides the MCP session your agent already opens&mdash;
-            <strong>no key required</strong>. Prefer to audit first? Use{' '}
-            <code className="font-mono text-[13px] text-[var(--color-ink)]">uv tool install</code>{' '}
-            plus a manual wire in the{' '}
-            <Link
-              href="/docs#install-the-gate"
+              href="/demo"
               className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
             >
-              docs
+              Concept &amp; persona videos →
             </Link>
-            .
+            {' · '}
+            <Link
+              href="/whitepaper"
+              className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            >
+              Whitepaper →
+            </Link>
           </p>
-          <p className="mb-10 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            The one command below is the convenience path.
-          </p>
-          <div className=" space-y-5">
-            <div className="rule-t rule-b rule-l rule-r border-[var(--color-accent)] bg-[var(--color-accent-soft)] p-2">
-              <CopyField
-                label="Install the gate: one command (Claude Desktop / Cursor / Cline / Zed)"
-                value={INSTALL_SHELL_COMMAND}
-                notes="Wires the in-path gate into your host config: each MCP server launches behind the gate, which checks every tool's contract in-path and HOLDs on a silent change. Inspect it first with `curl -fsSL https://mcpindex.ai/install.sh | less` — it only rewrites your MCP host config; uninstall.sh restores it. Zero credentials change hands; the gate reuses the session you already authenticated. The auditable uv install, per-client manual wiring, and the SDK one-liner are in the docs."
-              />
-              <div className="flex items-start gap-3 px-4 pb-3 pt-1">
-                <Seal size={34} ring="var(--color-rule)" bracket="var(--color-ink)" />
-                <p className="text-[12.5px] leading-[1.55] text-[var(--color-mute)]">
-                  Pinned, in-path, zero custody. The gate ships as the{' '}
-                  <code className="font-mono text-[12.5px] text-[var(--color-ink)]">mcpindex-preflight</code>{' '}
-                  package (via uv); it reads only public tool contracts, never your tokens. Full
-                  wiring &mdash; including the auditable{' '}
-                  <code className="font-mono text-[12.5px] text-[var(--color-ink)]">uv tool install</code>{' '}
-                  path &mdash; is in the{' '}
-                  <Link
-                    href="/docs#install-the-gate"
-                    className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
-                  >
-                    docs
-                  </Link>
-                  .
-                </p>
-              </div>
-            </div>
-            <details className="text-[13px] leading-[1.55] text-[var(--color-mute)]">
-              <summary className="cursor-pointer font-mono text-[11.5px] uppercase tracking-[0.12em] hover:text-[var(--color-ink)]">
-                Also available: the directory client
-              </summary>
-              <div className="mt-3">
-                <CopyField
-                  label="The directory client: discovery + advisory trust lookups (published)"
-                  value="npm install -g mcp-server-mcpindex"
-                  notes="A separate, published MCP client for the directory: recommend, search, and check_tool_trust. This is the advisory network the gate queries, not the in-path gate itself."
-                />
-              </div>
-            </details>
-          </div>
         </div>
       </section>
     </>

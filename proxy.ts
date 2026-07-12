@@ -53,7 +53,7 @@ export function proxy(req: NextRequest) {
   // line per submit, otherwise floodable); and /api/health/* (makes outbound Groq
   // liveness calls, so cap per-IP spray on top of the route's own memo throttle).
   const p = req.nextUrl.pathname;
-  if (!p.startsWith('/api/v1/') && p !== '/api/waitlist' && !p.startsWith('/api/health/')) {
+  if (!p.startsWith('/api/v1/') && p !== '/api/waitlist' && p !== '/api/beacon' && !p.startsWith('/api/health/')) {
     return NextResponse.next();
   }
   // Vercel signs x-vercel-forwarded-for; raw x-forwarded-for is attacker-
@@ -92,5 +92,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/v1/:path*', '/api/waitlist', '/api/health/:path*'],
+  matcher: ['/api/v1/:path*', '/api/waitlist', '/api/beacon', '/api/health/:path*'],
 };

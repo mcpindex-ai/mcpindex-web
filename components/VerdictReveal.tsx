@@ -16,10 +16,24 @@ export type RevealItem = {
   dims: { label: string; verdict: DimensionVerdict }[];
 };
 
-const DECISION: Record<Decision, { cls: string; label: string }> = {
-  ALLOW: { cls: 'text-emerald-700 bg-emerald-50 border-emerald-300', label: 'ALLOW' },
-  DENY: { cls: 'text-red-700 bg-red-50 border-red-300', label: 'DENY' },
-  REVIEW: { cls: 'text-amber-700 bg-amber-50 border-amber-300', label: 'REVIEW' },
+// Public UI: ALLOW/DENY are contract states but not produced by the v1 screen.
+// Style them as reserved (stone), not as green clearance / red block.
+const DECISION: Record<Decision, { cls: string; label: string; title: string }> = {
+  ALLOW: {
+    cls: 'text-stone-600 bg-stone-50 border-stone-300',
+    label: 'ALLOW*',
+    title: 'Reserved in the verdict contract — not produced by the v1 public screen (REVIEW/UNVERIFIED only)',
+  },
+  DENY: {
+    cls: 'text-stone-600 bg-stone-50 border-stone-300',
+    label: 'DENY*',
+    title: 'Reserved in the verdict contract — not produced by the v1 public screen (REVIEW/UNVERIFIED only)',
+  },
+  REVIEW: {
+    cls: 'text-amber-700 bg-amber-50 border-amber-300',
+    label: 'REVIEW',
+    title: 'Advisory semantic screen — not a safety clearance',
+  },
 };
 const DIM: Record<DimensionVerdict, string> = {
   PASS: 'text-emerald-700 border-emerald-300',
@@ -114,6 +128,7 @@ export function VerdictReveal({ items }: { items: RevealItem[] }) {
           </Link>
         </div>
         <span
+          title={d.title}
           className={`shrink-0 font-mono text-[14px] uppercase tracking-[0.14em] border px-3 py-1.5 transition-all duration-300 ${
             scanning ? 'opacity-0 scale-90 text-stone-400 border-stone-200' : `opacity-100 scale-100 ${d.cls}`
           }`}

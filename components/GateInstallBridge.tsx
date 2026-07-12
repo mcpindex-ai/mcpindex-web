@@ -27,12 +27,13 @@ export function GateInstallBridge({ serverTitle }: { serverTitle: string }) {
         MCP tool contracts can change remotely with no version bump. The mcpindex gate pins
         each contract and <strong>HOLDs the call</strong> when it drifts—before your agent acts.
         Zero credentials. This is not the package install for this server itself
-        (use the <strong>Install</strong> commands for that).
+        (use <strong>Install this server</strong> for that).
       </p>
       <div className="mt-4">
         <CopyField
-          label="Install the gate (one command)"
+          label="Install the mcpindex gate (one command)"
           value={INSTALL_SHELL_COMMAND}
+          trackSource="server_bridge"
           notes="Rewrites your MCP host config so each server launches behind the gate. Inspect first: curl -fsSL https://mcpindex.ai/install.sh | less"
         />
       </div>

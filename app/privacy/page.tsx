@@ -27,8 +27,9 @@ export default function PrivacyPage() {
           operational and security purposes only. Logs are not sold or shared.
         </p>
         <p>
-          The waitlist form stores your email and submission timestamp. We use it to
-          notify you when v1 ships and nothing else. Unsubscribe at any time by emailing{' '}
+          The waitlist and contact forms store your email and submission timestamp. We use
+          them to reply about mcpindex (product updates, answers to your message) and nothing
+          else. Unsubscribe at any time by emailing{' '}
           <ObfuscatedEmail
             user="hello"
             domain="mcpindex.ai"

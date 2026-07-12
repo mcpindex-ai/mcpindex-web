@@ -129,7 +129,7 @@ export async function sendWelcomeEmail(lead: Lead): Promise<BrevoResult> {
   let intro: string;
   if (lead.source === 'waitlist') {
     intro =
-      'Thanks for joining the mcpindex waitlist. We will email you when v1 ships - nothing else.';
+      'Thanks for joining the mcpindex list. We will email product updates only — nothing else.';
   } else if (lead.source === 'pricing') {
     intro = 'Thanks for reaching out about Enterprise. We have your note and will be in touch shortly.';
   } else {

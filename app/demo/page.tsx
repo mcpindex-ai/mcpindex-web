@@ -8,7 +8,7 @@ const EMBED_URL = 'https://mcpindex.ai/embed.html';
 export const metadata: Metadata = {
   title: 'Videos & embed',
   description:
-    'Persona walkthrough for the in-path drift gate, plus embed and share links. Interactive demo and overview film live on the homepage.',
+    'Overview and persona walkthrough for the in-path drift gate, plus embed and share links. Interactive demo lives on the homepage.',
   alternates: { canonical: '/demo' },
   openGraph: {
     title: 'mcpindex - watch the gate hold a silent tool-contract change',
@@ -44,23 +44,23 @@ export default function DemoPage() {
         How to use it — and share it.
       </h1>
       <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)]">
-        Persona walkthrough below. For the ~70s overview and the interactive drift gate, use the{' '}
+        Overview and persona films below. For the interactive drift gate, use the{' '}
         <Link
-          href="/#concept"
+          href="/#demo"
           className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
         >
-          homepage films &amp; demo
+          homepage demo
         </Link>
         .
       </p>
 
       <div className="mt-10 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[12px]">
-        <Link
-          href="/#concept"
+        <a
+          href="#overview"
           className="text-[var(--color-cite)] hover:text-[var(--color-accent)] underline decoration-[var(--color-rule)] underline-offset-4"
         >
           Overview film (~70s) →
-        </Link>
+        </a>
         <Link
           href="/#demo"
           className="text-[var(--color-cite)] hover:text-[var(--color-accent)] underline decoration-[var(--color-rule)] underline-offset-4"
@@ -73,6 +73,10 @@ export default function DemoPage() {
         >
           Install now →
         </Link>
+      </div>
+
+      <div id="overview" className="mt-14 scroll-mt-20">
+        <PromoVideos variant="concept" />
       </div>
 
       <div className="mt-14">

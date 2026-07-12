@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { ArchDiagram } from '@/components/ArchDiagram';
+import { Disclose } from '@/components/Disclose';
 
 export const metadata: Metadata = {
-  title: 'How it works',
+  title: 'Documentation',
   description:
     'Install the in-path drift gate: it HOLDs a call the moment an MCP tool’s contract silently changes, before your agent acts. Plus the free advisory directory — verdict API, drop-in MCP server, and recommend endpoint for discovery.',
   alternates: { canonical: 'https://mcpindex.ai/docs' },
@@ -380,6 +381,28 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
       <Section number="03" title="Ways to use it">
         <p>Pick the shape that matches where the agent lives.</p>
 
+        <div
+          className="rule-t rule-b rule-l rule-r border-[var(--color-accent)] bg-[var(--color-accent-soft)] px-4 py-3"
+          style={{ borderColor: 'var(--color-accent)' }}
+        >
+          <div
+            className="font-mono text-[10.5px] uppercase tracking-[0.16em]"
+            style={{ color: 'var(--color-accent)' }}
+          >
+            One call · pick + trust
+          </div>
+          <p className="mt-1.5 text-[14px] leading-[1.55]" style={{ color: 'var(--color-cite)' }}>
+            <Mono>/api/v1/preflight?task=…</Mono> returns ranked recommendations plus the
+            rank-1 server&rsquo;s advisory verdict in one round trip. Prefer that over
+            separate recommend + trust calls when your agent is choosing a tool.
+            Compare two servers via the MCP tool <Mono>compare_servers</Mono> (or multiple{' '}
+            <Mono>/api/v1/server/…</Mono> fetches).
+          </p>
+          <pre className="mt-3 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
+            <code>{`curl "https://mcpindex.ai/api/v1/preflight?task=read+pdf+to+s3"`}</code>
+          </pre>
+        </div>
+
         <UseCase
           letter="A"
           title="Direct HTTP API"
@@ -510,8 +533,10 @@ Args:     -y mcp-server-mcpindex@latest`}
         </p>
       </Section>
 
-      {/* §05 - Anatomy of a response */}
-      <Section number="05" title="Anatomy of a response">
+      {/* §05–06 — Tier-3 API depth; collapsed for scanability */}
+      <div className="mt-14 space-y-6">
+        <Disclose summary="05 · Anatomy of a response (JSON shapes)">
+          <div className="space-y-4 text-[15px] leading-[1.6]">
         <p>
           The trust endpoints (<Mono>/api/v1/trust/server/…</Mono> and{' '}
           <Mono>/api/v1/trust/tool/…</Mono>) return the free-tier verdict: a decision
@@ -586,11 +611,11 @@ Args:     -y mcp-server-mcpindex@latest`}
   "note": "v0 ranker - heuristic score blends keyword match (70%) with MCP Quality Score (30%). See /methodology."
 }`}</code>
         </pre>
-      </Section>
+          </div>
+        </Disclose>
 
-      {/* §06 - Limits + API guarantees */}
-      <Section number="06" title="Limits + API guarantees">
-        <ul className="space-y-3">
+        <Disclose summary="06 · Limits + API guarantees">
+          <ul className="space-y-3 text-[15px] leading-[1.6]">
           <Limit
             label="Rate"
             body="60 requests / minute / IP across /api/v1/*, free, no key, same limit for everyone. The live screen endpoint (/api/v1/screen) is tighter - 10 / minute / IP plus a global daily ceiling, since each call runs an LLM. 429 with Retry-After when exceeded. Email hello@mcpindex.ai if a real integration needs more."
@@ -628,8 +653,9 @@ Args:     -y mcp-server-mcpindex@latest`}
             label="Authentication"
             body="None - every endpoint is public and free, same rate limit for everyone. Enterprise multi-tenant deployments have their own tenant-identity mechanism (see /whitepaper), unrelated to API rate limits."
           />
-        </ul>
-      </Section>
+          </ul>
+        </Disclose>
+      </div>
 
       {/* §07 - How this compares */}
       <Section number="07" title="How this compares">
