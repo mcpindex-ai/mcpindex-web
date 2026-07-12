@@ -5,8 +5,9 @@ import type { NextConfig } from "next";
 // va.vercel-scripts.com / vitals.vercel-insights.com).
 //
 // /embed.html is the public iframe surface (see app/demo) — it must remain
-// frameable, so it gets CSP without frame-ancestors 'none' and without
-// X-Frame-Options. Everything else is DENY / frame-ancestors 'none'.
+// frameable, so it is excluded from the site-wide source (overlapping sources
+// merge; you cannot unset X-Frame-Options once set) and gets its own CSP
+// without frame-ancestors 'none' / X-Frame-Options.
 const cspDirectives = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -49,12 +50,13 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/embed.html",
-        headers: embedSecurityHeaders,
+        // Everything except the public iframe embed surface.
+        source: "/((?!embed\\.html$).*)",
+        headers: siteSecurityHeaders,
       },
       {
-        source: "/:path*",
-        headers: siteSecurityHeaders,
+        source: "/embed.html",
+        headers: embedSecurityHeaders,
       },
     ];
   },
