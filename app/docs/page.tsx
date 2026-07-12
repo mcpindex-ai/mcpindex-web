@@ -89,12 +89,15 @@ curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
             className="mt-3 text-[14px] leading-[1.55]"
             style={{ color: 'var(--color-mute)' }}
           >
-            Prefer to wire it by hand? Rewrite each MCP server entry so the agent
-            launches that server <em>behind</em> the gate: keep the
-            server&rsquo;s original command as the gate&rsquo;s argument. The
-            example below wraps a stdio server (<Mono>before</Mono> &rarr;{' '}
-            <Mono>after</Mono>); the same shape works in Cursor{' '}
-            (<Mono>.cursor/mcp.json</Mono>) and Zed{' '}
+            The PyPI package is <Mono>mcpindex-gate</Mono>. The older name{' '}
+            <Mono>mcpindex-preflight</Mono> still resolves as a deprecated alias that
+            depends on <Mono>mcpindex-gate</Mono> at the same version &mdash; new
+            installs should use <Mono>mcpindex-gate</Mono>. Prefer to wire it by hand?
+            Rewrite each MCP server entry so the agent launches that server{' '}
+            <em>behind</em> the gate: keep the server&rsquo;s original command as the
+            gate&rsquo;s argument. The example below wraps a stdio server (
+            <Mono>before</Mono> &rarr; <Mono>after</Mono>); the same shape works in
+            Cursor (<Mono>.cursor/mcp.json</Mono>) and Zed{' '}
             (<Mono>~/.config/zed/settings.json</Mono>). Restart the client after
             editing.
           </p>
@@ -199,9 +202,8 @@ import { wrap, PreflightPin } from "@mcp-index/sdk";
 const guarded = wrap(session, { pin: new PreflightPin(), serverId: "your-server" });
 // use guarded.list_tools() / guarded.call_tool(...) exactly as before
 
-# Python
-from tooling.cse.preflight_intercept import wrap
-from tooling.cse.preflight import PreflightPin
+# Python — pip/uv: mcpindex-gate
+from mcpindex_gate import wrap, PreflightPin
 
 session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
           </pre>

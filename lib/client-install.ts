@@ -1,7 +1,15 @@
 /**
- * Cold-install copy for the advisory directory MCP client (not the in-path gate).
- * Gate remains INSTALL_SHELL_COMMAND in lib/install-command.ts.
+ * Cold-install copy constants.
+ * Gate one-liner shell remains INSTALL_SHELL_COMMAND in lib/install-command.ts.
  */
+
+/** Canonical PyPI package for the in-path gate. */
+export const GATE_PACKAGE = 'mcpindex-gate';
+
+/** Deprecated PyPI alias — still resolves; do not use as the primary name in new copy. */
+export const GATE_PACKAGE_ALIAS = 'mcpindex-preflight';
+
+export const GATE_UV_INSTALL = `uv tool install ${GATE_PACKAGE}`;
 
 export const DISCOVERY_PACKAGE = 'mcp-server-mcpindex';
 

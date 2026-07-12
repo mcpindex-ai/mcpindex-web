@@ -189,7 +189,8 @@ export default async function Home() {
             </div>
             <p className="mt-3 font-mono text-[12px] leading-[1.5] text-[var(--color-mute)]">
               This is the <strong className="text-[var(--color-cite)]">gate</strong> (in-path
-              HOLD) — not the directory MCP client.{' '}
+              HOLD) — PyPI <code className="text-[var(--color-ink)]">mcpindex-gate</code>, not
+              the directory MCP client.{' '}
               <Link
                 href="#install-paths"
                 className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"

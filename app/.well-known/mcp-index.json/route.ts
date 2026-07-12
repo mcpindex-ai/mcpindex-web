@@ -101,6 +101,8 @@ export async function GET() {
       fail_mode: 'fail_closed',
       credential_custody: 'none - reuses the session the client already authenticated; reads only public tool contracts',
       install: {
+        package: 'mcpindex-gate',
+        package_alias_deprecated: 'mcpindex-preflight',
         config_wire: [
           'claude_desktop',
           'claude_code',
