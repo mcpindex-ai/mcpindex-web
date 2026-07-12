@@ -1,20 +1,23 @@
 <p align="center">
-  <a href="https://mcpindex.ai"><img src="public/brand/github-readme.png" alt="mcpindex.ai - the trust layer for MCP tools" width="840"></a>
+  <a href="https://mcpindex.ai"><img src="public/brand/github-readme.png" alt="mcpindex.ai — the in-path trust gate for agent tool calls" width="840"></a>
 </p>
 
 # mcpindex.ai
 
-> The trust layer for MCP tools.
+> The in-path trust gate for agent tool calls.
 
-A verdict (ALLOW / DENY / REVIEW) on whether an MCP tool does what it claims, before your agent acts. Your agent trusts every tool it is handed; mcpindex doesn't.
+MCP tool contracts can change remotely with no version bump. mcpindex **pins each contract** and **HOLDs the call** when it drifts — before your agent acts. Deterministic contract-diff on your host. Zero credential custody. Not a safety oracle.
 
-[Live site](https://mcpindex.ai) · [Trust](https://mcpindex.ai/trust) · [Methodology](https://mcpindex.ai/methodology) · [Brand](https://mcpindex.ai/brand) · [npm: mcp-server-mcpindex](https://www.npmjs.com/package/mcp-server-mcpindex)
+[Live site](https://mcpindex.ai) · [Install](https://mcpindex.ai/#install) · [Docs](https://mcpindex.ai/docs) · [Trust](https://mcpindex.ai/trust) · [Methodology](https://mcpindex.ai/methodology) · [npm: mcp-server-mcpindex](https://www.npmjs.com/package/mcp-server-mcpindex)
 
-## Three primitives
+## What you get
 
-1. **Trust verdict API** - `GET /api/v1/trust/tool/<server_id>/<tool_name>` returns a per-tool verdict: decision + dimensions + severity. Fail-closed; advisory at v1.
-2. **Drop-in MCP server** - `npm install -g mcp-server-mcpindex`. Add to Claude Desktop / Cursor / Cline / Zed; ask `check_tool_trust` before invoking a tool it just discovered.
-3. **Agent-readable surfaces** - indexed directory plus `/llms.txt`, `/.well-known/mcp-index.json`, and JSON-LD on every page.
+1. **In-path drift gate** — one command wires Claude Desktop / Cursor / Cline / Zed so each MCP server launches behind the gate. Local, fail-closed, default build egresses nothing.  
+   `curl -fsSL https://mcpindex.ai/install.sh | sh` (inspect first with `| less`)
+2. **Advisory directory** — search, recommend, preflight, and trust lookups over HTTP or as a drop-in MCP server (`mcp-server-mcpindex`). Screen verdicts are REVIEW / UNVERIFIED at v1; ALLOW / DENY are reserved in the contract.
+3. **Agent-readable surfaces** — `/llms.txt`, `/.well-known/mcp-index.json`, JSON-LD, and 3,500+ per-server pages.
+
+The gate is the wedge. The directory is the corpus the gate can query — also free.
 
 ## Develop
 
@@ -41,16 +44,15 @@ mcpindex/
 ├── app/                    # Next.js routes
 │   ├── api/v1/             # Versioned public API
 │   ├── api/cron/           # Vercel-cron-driven endpoints
-│   ├── server/[slug]/      # 3,500+ per-server pages (generateStaticParams)
-│   ├── best/[category]/    # 28 curated category pages
-│   └── ...                 # leaderboard, changelog, methodology, about, pricing, terms, privacy, stats
-├── components/             # Header, Footer, AgentDemo (live demo), LiveTicker
-├── lib/                    # registry, quality, search, categorize, installs, types
-├── scripts/                # sync-registry.mjs, fetch-snapshot.mjs (one-shot)
+│   ├── server/[slug]/      # per-server pages (top-N SSG + ISR)
+│   ├── best/[category]/    # curated category pages
+│   └── ...                 # docs, trust, methodology, pricing, ledger, …
+├── components/             # Header, Footer, DriftGateDemo, LiveTicker, …
+├── lib/                    # registry, quality, search, verdicts, installs, …
+├── scripts/                # sync-registry.mjs, fetch-snapshot.mjs, honesty guard
 ├── data/                   # snapshot.json (committed) + snapshots/ (cron-written)
-├── launch/                 # all launch-day copy: Show HN, Reddit, cold emails, pitches
-├── mcp-server-mcpindex/    # the npm-distributed MCP server
-└── READY_TO_LAUNCH.md      # ops checklist for going live
+├── mcp-server-mcpindex/    # the npm-distributed MCP directory client
+└── …
 ```
 
 ## License

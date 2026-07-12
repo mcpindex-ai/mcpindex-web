@@ -2,10 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-// Shared in-browser contact modal. Replaces mailto: CTAs (which launch the OS
-// mail app and dead-end webmail users) across the site: the pricing Enterprise
-// tier and the footer "Contact". Submits to /api/waitlist, which routes the
-// lead into Brevo (contact + welcome email + operator notification).
+// Shared in-browser contact modal. Pricing Enterprise tier + footer Contact.
+// Routes by variant: enterprise → /api/enterprise (Brevo procurement leads);
+// contact → /api/waitlist with source=contact (Brevo contact + welcome).
 export type ContactVariant = 'enterprise' | 'contact';
 
 const COPY: Record<ContactVariant, { title: string; blurb: string }> = {
@@ -72,15 +71,16 @@ function ContactModal({ variant, onClose }: { variant: ContactVariant; onClose: 
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     setState('submitting');
+    const endpoint = variant === 'enterprise' ? '/api/enterprise' : '/api/waitlist';
     try {
-      const res = await fetch('/api/waitlist', {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           email: fd.get('email'),
           company: fd.get('company'),
           message: fd.get('message'),
-          variant,
+          ...(variant === 'contact' ? { source: 'contact' } : {}),
         }),
       });
       setState(res.ok ? 'success' : 'error');
@@ -123,7 +123,9 @@ function ContactModal({ variant, onClose }: { variant: ContactVariant; onClose: 
 
         {state === 'success' ? (
           <p className="mt-6 text-[14px] leading-[1.55] text-[var(--color-cite)]">
-            {'Thanks - we will be in touch shortly. Check your inbox for a confirmation.'}
+            {variant === 'enterprise'
+              ? 'Thanks — we have your note and will be in touch shortly.'
+              : 'Thanks — we will be in touch shortly. Check your inbox for a confirmation.'}
           </p>
         ) : (
           <>

@@ -1,5 +1,11 @@
 import { NextRequest } from 'next/server';
-import { isBrevoConfigured, upsertLeadContact, notifyOperator, type Lead } from '@/lib/brevo';
+import {
+  isBrevoConfigured,
+  upsertLeadContact,
+  notifyOperator,
+  sendWelcomeEmail,
+  type Lead,
+} from '@/lib/brevo';
 
 // Enterprise / procurement lead capture. This is the ONE gated conversation the
 // (public, ungated) whitepaper earns: "request the security & procurement pack".
@@ -42,14 +48,16 @@ export async function POST(req: NextRequest) {
     return Response.json({ ok: true, delivery: 'logged' });
   }
 
-  // Best-effort: contact upsert + operator notification. Both fail-soft (the
-  // brevo module never throws), so a degraded Brevo does not fail the visitor.
-  const [contact, notify] = await Promise.all([
+  // Best-effort: contact upsert + welcome + operator notification. All fail-soft
+  // (the brevo module never throws), so a degraded Brevo does not fail the visitor.
+  const [contact, welcome, notify] = await Promise.all([
     upsertLeadContact(lead),
+    sendWelcomeEmail(lead),
     notifyOperator(lead),
   ]);
 
   if (!contact.ok) console.warn(`[enterprise] brevo contact upsert failed: ${contact.error}`);
+  if (!welcome.ok) console.warn(`[enterprise] brevo welcome failed: ${welcome.error}`);
   if (!notify.ok) console.warn(`[enterprise] brevo operator notify failed: ${notify.error}`);
 
   return Response.json({ ok: true, delivery: 'sent' });

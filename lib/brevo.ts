@@ -130,7 +130,7 @@ export async function sendWelcomeEmail(lead: Lead): Promise<BrevoResult> {
   if (lead.source === 'waitlist') {
     intro =
       'Thanks for joining the mcpindex list. We will email product updates only — nothing else.';
-  } else if (lead.source === 'pricing') {
+  } else if (lead.source === 'pricing' || lead.source === 'enterprise_procurement') {
     intro = 'Thanks for reaching out about Enterprise. We have your note and will be in touch shortly.';
   } else {
     intro = 'Thanks for reaching out. We have your message and will get back to you shortly.';

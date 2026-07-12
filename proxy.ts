@@ -49,11 +49,16 @@ export function proxy(req: NextRequest) {
   // proxy.md, "Execution order"). This in-function path check guarantees we
   // only rate-limit the intended surfaces even if the matcher is later widened -
   // per Next's "verify inside, don't rely on the matcher alone" guidance. Keep it.
-  // Rate-limited surfaces: the public /api/v1/* API; /api/waitlist (writes a log
-  // line per submit, otherwise floodable); and /api/health/* (makes outbound Groq
-  // liveness calls, so cap per-IP spray on top of the route's own memo throttle).
+  // Rate-limited surfaces: public /api/v1/*; lead forms (/api/waitlist,
+  // /api/enterprise); /api/beacon; /api/health/* (outbound liveness).
   const p = req.nextUrl.pathname;
-  if (!p.startsWith('/api/v1/') && p !== '/api/waitlist' && p !== '/api/beacon' && !p.startsWith('/api/health/')) {
+  if (
+    !p.startsWith('/api/v1/') &&
+    p !== '/api/waitlist' &&
+    p !== '/api/enterprise' &&
+    p !== '/api/beacon' &&
+    !p.startsWith('/api/health/')
+  ) {
     return NextResponse.next();
   }
   // Vercel signs x-vercel-forwarded-for; raw x-forwarded-for is attacker-
@@ -92,5 +97,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/v1/:path*', '/api/waitlist', '/api/beacon', '/api/health/:path*'],
+  matcher: ['/api/v1/:path*', '/api/waitlist', '/api/enterprise', '/api/beacon', '/api/health/:path*'],
 };
