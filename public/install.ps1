@@ -18,7 +18,10 @@
 [CmdletBinding()]
 param(
   [switch]$Yes = ($env:MCPINDEX_YES -eq '1'),
-  [switch]$DryRun
+  [switch]$DryRun,
+  # uv is a HARD prerequisite (the proxy is a `uv tool`); default is to bootstrap it. Opt out
+  # with -NoBootstrap / MCPINDEX_NO_BOOTSTRAP=1 to get the print-instructions-and-stop path.
+  [switch]$NoBootstrap = ($env:MCPINDEX_NO_BOOTSTRAP -eq '1')
 )
 $ErrorActionPreference = 'Stop'
 
@@ -27,19 +30,55 @@ $ProxyModule  = 'tooling.cse.proxy'
 $WatcherModule= 'tooling.cse.watcher'
 $TaskName     = 'mcpindex-watcher'
 $LogDir       = Join-Path $env:LOCALAPPDATA 'mcpindex'
+$UvInstallerUrl = 'https://astral.sh/uv/install.ps1'
 
 function Say($m) { Write-Host "mcpindex: $m" }
 function Errw($m) { Write-Error "mcpindex: $m" }
 
+# --- step 0: ensure uv is present (cold-start fix) ----------------------------------------
+# The official uv installer drops uv.exe under %USERPROFILE%\.local\bin (or $env:UV_INSTALL_DIR)
+# and updates the user PATH in the registry, NOT this process's $env:PATH. Prepend the dir that
+# holds uv so the rest of THIS run can exec it.
+function Add-UvDirToPath {
+  foreach ($d in @($env:UV_INSTALL_DIR, (Join-Path $env:USERPROFILE '.local\bin'), (Join-Path $env:USERPROFILE '.cargo\bin'))) {
+    if ($d -and (Test-Path (Join-Path $d 'uv.exe'))) {
+      if (($env:PATH -split ';') -notcontains $d) { $env:PATH = "$d;$env:PATH" }
+      return $true
+    }
+  }
+  return $false
+}
+
+function Ensure-Uv {
+  if (Get-Command uv -ErrorAction SilentlyContinue) { return }
+  if ((Add-UvDirToPath) -and (Get-Command uv -ErrorAction SilentlyContinue)) { return }  # off-PATH
+
+  if ($NoBootstrap) {
+    Errw "uv not found and auto-bootstrap is disabled (-NoBootstrap / MCPINDEX_NO_BOOTSTRAP=1).`n  Install uv, then re-run mcpindex:  irm $UvInstallerUrl | iex"
+    exit 1
+  }
+  if ($DryRun) {
+    Say "[dry-run] uv not found; would install it from the official source ($UvInstallerUrl)"
+    return
+  }
+
+  Say "uv not found; installing it from the official source ($UvInstallerUrl) ..."
+  # Ensure TLS >=1.2 before the fetch: stock Windows PowerShell 5.1 can otherwise default to
+  # TLS 1.0/1.1. OR into the existing set (do not clear it); Tls13 enum is absent on old .NET.
+  try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch { }
+  try { Invoke-RestMethod -Uri $UvInstallerUrl | Invoke-Expression }
+  catch { Errw "uv installer failed (check network / $UvInstallerUrl)"; exit 1 }
+  Add-UvDirToPath | Out-Null
+  if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
+    Errw "uv installed but is not on PATH in this session. Open a new terminal, then re-run the mcpindex installer."
+    exit 1
+  }
+  Say "uv installed."
+}
+
 # --- step 1: install the proxy ------------------------------------------------------------
 function Install-Proxy {
   if ($DryRun) { Say "[dry-run] would run: uv tool install $Pkg"; return }
-  if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
-    Errw "uv not found. Install uv first (the `$0 path):"
-    Errw "  irm https://astral.sh/uv/install.ps1 | iex"
-    Errw "(A self-contained mcpindex binary is a deferred follow-up; uv is the current path.)"
-    exit 1
-  }
   Say "installing the proxy: uv tool install $Pkg"
   uv tool install $Pkg
 }
@@ -102,6 +141,7 @@ function Register-Watcher {
 }
 
 # --- run ----------------------------------------------------------------------------------
+Ensure-Uv                        # cold-start fix: bootstrap uv if missing (the proxy is a `uv tool`)
 Install-Proxy
 $script:UvxBin = Resolve-Uvx     # pin absolute uvx (FIX H2) for both wiring + the scheduled task
 Wire-Hosts

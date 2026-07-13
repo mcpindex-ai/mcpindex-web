@@ -31,14 +31,23 @@ DRY_RUN=0
 # every network/daemon op (uv tool install, host wiring, launchctl/systemctl). NOT a user flag.
 INSTALL_TEST="${MCPINDEX_INSTALL_TEST:-0}"
 
+# uv is a HARD prerequisite: the proxy is a `uv tool`, so a machine without uv can't install at
+# all. Rather than stop with instructions (friction for a cold user), we bootstrap uv from the
+# OFFICIAL installer over pinned TLS, announced. Security-conscious users opt out with
+# --no-bootstrap / MCPINDEX_NO_BOOTSTRAP=1 to get the old print-instructions-and-stop path.
+UV_INSTALLER_URL="https://astral.sh/uv/install.sh"
+NO_BOOTSTRAP="${MCPINDEX_NO_BOOTSTRAP:-0}"
+
 for arg in "$@"; do
   case "$arg" in
     --yes|-y) ASSUME_YES=1 ;;
     --dry-run) DRY_RUN=1 ;;
+    --no-bootstrap) NO_BOOTSTRAP=1 ;;
     --help|-h)
-      echo "mcpindex install: [--yes] [--dry-run]"
-      echo "  --yes      skip the wiring confirmation (affirmative consent assumed)"
-      echo "  --dry-run  show what would happen; write nothing, register nothing"
+      echo "mcpindex install: [--yes] [--dry-run] [--no-bootstrap]"
+      echo "  --yes           skip the wiring confirmation (affirmative consent assumed)"
+      echo "  --dry-run       show what would happen; write nothing, register nothing"
+      echo "  --no-bootstrap  do not auto-install uv; print instructions and stop if it is missing"
       exit 0
       ;;
     *) echo "mcpindex install: unknown arg '$arg' (try --help)" >&2; exit 2 ;;
@@ -65,18 +74,68 @@ else
   LOG_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/mcpindex"
 fi
 
+# --- step 0: ensure uv is present (cold-start fix) ----------------------------------------
+# The official uv installer drops the binary in ~/.local/bin (or XDG_BIN_HOME / CARGO_HOME) and
+# updates shell PROFILES, not the running process PATH. Prepend the dir that actually holds uv so
+# the rest of THIS run can exec it.
+_prepend_uv_dir_to_path() {
+  for d in "${XDG_BIN_HOME:-}" "$HOME/.local/bin" "${CARGO_HOME:-$HOME/.cargo}/bin"; do
+    if [ -n "$d" ] && [ -x "$d/uv" ]; then
+      case ":$PATH:" in
+        *":$d:"*) : ;;
+        *) PATH="$d:$PATH"; export PATH ;;
+      esac
+      return 0
+    fi
+  done
+  return 1
+}
+
+ensure_uv() {
+  if [ "$INSTALL_TEST" = "1" ]; then return 0; fi           # self-test: unit-gen only, no network
+  if command -v uv >/dev/null 2>&1; then return 0; fi
+  if _prepend_uv_dir_to_path && command -v uv >/dev/null 2>&1; then return 0; fi  # installed, off-PATH
+
+  if [ "$NO_BOOTSTRAP" = "1" ]; then
+    err "uv not found and auto-bootstrap is disabled (--no-bootstrap / MCPINDEX_NO_BOOTSTRAP=1)."
+    err "Install uv, then re-run mcpindex:"
+    err "  curl --proto '=https' --tlsv1.2 -fsSL $UV_INSTALLER_URL | sh"
+    exit 1
+  fi
+  if [ "$DRY_RUN" = "1" ]; then
+    say "[dry-run] uv not found; would install it from the official source ($UV_INSTALLER_URL, pinned TLS)"
+    return 0
+  fi
+
+  say "uv not found; installing it from the official source ($UV_INSTALLER_URL) ..."
+  if command -v curl >/dev/null 2>&1; then
+    curl --proto '=https' --tlsv1.2 -fsSL "$UV_INSTALLER_URL" | sh \
+      || { err "uv installer failed (check network / $UV_INSTALLER_URL)"; exit 1; }
+  elif command -v wget >/dev/null 2>&1; then
+    # Pin https-only + TLS >=1.2 to match the curl path (GNU wget flags; a minimal wget that
+    # lacks them fails closed via the || below rather than fetching over a downgraded channel).
+    wget --https-only --secure-protocol=TLSv1_2 -qO- "$UV_INSTALLER_URL" | sh \
+      || { err "uv installer failed (check network / $UV_INSTALLER_URL)"; exit 1; }
+  else
+    err "neither curl nor wget is available to fetch the uv installer."
+    err "Install uv manually ($UV_INSTALLER_URL), then re-run mcpindex."
+    exit 1
+  fi
+  _prepend_uv_dir_to_path || true
+  if ! command -v uv >/dev/null 2>&1; then
+    err "uv installed but is not on PATH in this shell. Open a new terminal (or add"
+    err "  $HOME/.local/bin to PATH), then re-run the mcpindex installer."
+    exit 1
+  fi
+  say "uv installed ($(command -v uv))."
+}
+
 # --- step 1: install the proxy via the $0 uv path ----------------------------------------
 install_proxy() {
   if [ "$INSTALL_TEST" = "1" ]; then say "[self-test] skipping uv tool install"; return 0; fi
   if [ "$DRY_RUN" = "1" ]; then
     say "[dry-run] would run: uv tool install $PKG"
     return 0
-  fi
-  if ! command -v uv >/dev/null 2>&1; then
-    err "uv not found. Install uv first (the \$0 cross-platform path):"
-    err "  curl --proto '=https' --tlsv1.2 -fsSL https://astral.sh/uv/install.sh | sh"
-    err "(A self-contained mcpindex binary is a deferred follow-up; uv is the current path.)"
-    exit 1
   fi
   say "installing the proxy: uv tool install $PKG"
   uv tool install "$PKG"
@@ -247,8 +306,9 @@ register_watcher() {
 }
 
 # --- run ----------------------------------------------------------------------------------
+ensure_uv        # cold-start fix: bootstrap uv if missing (the proxy is a `uv tool`)
 install_proxy
-resolve_uvx      # pin the absolute uvx path (FIX H2) — used by both wiring + the watcher unit
+resolve_uvx      # pin the absolute uvx path (FIX H2), used by both wiring + the watcher unit
 wire_hosts
 register_watcher
 say "done. Newly-added servers will be auto-wired within seconds (active on next config"
