@@ -691,7 +691,7 @@ Args:     -y mcp-server-mcpindex@latest`}
           />
           <Limit
             label="Authentication"
-            body="None - every endpoint is public and free, same rate limit for everyone. Enterprise multi-tenant deployments have their own tenant-identity mechanism (see /whitepaper), unrelated to API rate limits."
+            body="None - every endpoint is public and free, same rate limit for everyone. Multi-tenant deployments have their own tenant-identity mechanism (see /whitepaper), unrelated to API rate limits."
           />
           </ul>
         </Disclose>

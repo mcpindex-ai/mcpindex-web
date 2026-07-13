@@ -5,7 +5,6 @@ import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Mark } from '@/components/Mark';
-import { EnterpriseCTA } from '@/components/EnterpriseCTA';
 
 export const metadata: Metadata = {
   title: 'Whitepaper',
@@ -170,10 +169,6 @@ export default function WhitepaperPage() {
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={md}>
           {content}
         </ReactMarkdown>
-      </div>
-
-      <div className="mt-16">
-        <EnterpriseCTA />
       </div>
     </article>
   );

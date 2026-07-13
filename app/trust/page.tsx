@@ -213,8 +213,8 @@ export default function TrustPage() {
           Direct and current: mcpindex is pre-SOC 2. We are not going to imply
           otherwise. The interim posture is the one above - advisory deployment,
           no call-time data, public method, Bitcoin-anchored history. Formal
-          attestation (SOC 2 Type 2) is on the roadmap when enterprise demand
-          warrants the audit, not before. If you have a specific compliance
+          attestation (SOC 2 Type 2) is on the roadmap, not something we claim
+          today. If you have a specific compliance
           requirement,{' '}
           <a
             href="mailto:hello@mcpindex.ai"
