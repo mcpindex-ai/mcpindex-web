@@ -5,7 +5,11 @@ import Link from 'next/link';
 
 // Mobile navigation disclosure. The desktop nav is `hidden md:flex`; without
 // this the site had NO navigation below the md breakpoint (logo + GitHub only).
-export function MobileMenu({ items }: { items: { href: string; label: string }[] }) {
+export function MobileMenu({
+  items,
+}: {
+  items: { href: string; label: string; cta?: boolean }[];
+}) {
   const [open, setOpen] = useState(false);
 
   // Keyboard dismiss (WCAG 2.1.2): Escape closes the panel. Per-link onClick
@@ -47,16 +51,27 @@ export function MobileMenu({ items }: { items: { href: string; label: string }[]
       {open && (
         <div className="fixed inset-x-0 top-14 z-50 bg-white border-b border-[var(--color-rule)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.18)]">
           <nav className="site-container flex flex-col py-2">
-            {items.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className="border-b border-[var(--color-rule)] py-3.5 font-mono text-[14px] tracking-tight text-[var(--color-ink)] last:border-b-0 hover:text-[var(--color-accent)]"
-              >
-                {item.label}
-              </Link>
-            ))}
+            {items.map((item) =>
+              item.cta ? (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className="my-2 py-3 text-center font-mono text-[13px] uppercase tracking-[0.14em] text-white bg-[var(--color-accent)] hover:opacity-90"
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className="border-b border-[var(--color-rule)] py-3.5 font-mono text-[14px] tracking-tight text-[var(--color-ink)] last:border-b-0 hover:text-[var(--color-accent)]"
+                >
+                  {item.label}
+                </Link>
+              )
+            )}
           </nav>
         </div>
       )}

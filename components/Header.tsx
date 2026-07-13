@@ -24,15 +24,25 @@ export function Header() {
             aria-label="Primary"
             className="hidden md:flex items-center gap-6 lg:gap-7"
           >
-            {PRIMARY_NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="font-mono text-[12.5px] tracking-tight text-[var(--color-mute)] transition-colors hover:text-[var(--color-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-accent)]"
-              >
-                {item.label}
-              </Link>
-            ))}
+            {PRIMARY_NAV.map((item) =>
+              'cta' in item && item.cta ? (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="font-mono text-[12px] uppercase tracking-[0.14em] text-white bg-[var(--color-accent)] px-4 py-2 transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="font-mono text-[12.5px] tracking-tight text-[var(--color-mute)] transition-colors hover:text-[var(--color-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-accent)]"
+                >
+                  {item.label}
+                </Link>
+              )
+            )}
           </nav>
 
           <div className="flex items-center gap-2">
