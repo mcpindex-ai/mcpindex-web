@@ -37,6 +37,7 @@ export function Footer() {
             <Link href="/docs" className={LINK}>Docs</Link>
             <Link href="/search" className={LINK}>Search</Link>
             <Link href="/screen" className={LINK}>Screen</Link>
+            <Link href="/scan" className={LINK}>Scan</Link>
             <Link href="/leaderboard" className={LINK}>Maturity Rankings</Link>
             <Link href="/best" className={LINK}>Best of</Link>
             <Link href="/changelog" className={LINK}>Changelog</Link>
