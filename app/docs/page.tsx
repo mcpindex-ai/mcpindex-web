@@ -365,12 +365,17 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
           Five components in the request path; a refresh job keeps the catalog current.
         </p>
         <ArchDiagram />
+        <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-mute)]">
+          Diagram = advisory directory path (secondary). The in-path gate is Job 1 — see §00–§01.
+        </p>
         <p>
           Top-down: a request originates in your agent client and passes through an
-          adapter into the API. The trust path returns a verdict for a given tool (does
-          it do what its description claims); the discovery path ranks an indexed catalog
-          of MCP servers and returns picks with install commands. The catalog is rebuilt
-          daily from an upstream source.
+          adapter into the API. The trust path returns an advisory screen verdict for a
+          given tool (v1: REVIEW or UNVERIFIED — a semantic integrity check, not a safety
+          clearance); the discovery path ranks an indexed catalog of MCP servers and
+          returns picks with install commands. The catalog is rebuilt daily from an
+          upstream source. The in-path gate (install via mcpindex-gate) is a separate
+          path: it sits between host and server and can HOLD on contract drift.
         </p>
         <p>
           What you don&rsquo;t need to care about as a caller: which storage layer
@@ -411,7 +416,7 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
           title="Direct HTTP API"
           who="For server-side agents, custom orchestrators, anything outside an MCP client."
           codeLines={[
-            `# trust: does this tool do what it claims? (per-server or per-tool)`,
+            `# trust: advisory screen verdict (REVIEW/UNVERIFIED at v1)`,
             `curl "https://mcpindex.ai/api/v1/trust/server/<slug>"`,
             ``,
             `# screen: paste a description, get a live verdict (POST)`,
@@ -772,8 +777,9 @@ Args:     -y mcp-server-mcpindex@latest`}
           The honest framing: the table above is the discovery axis. mcpindex.ai sits on
           top of the Anthropic registry for discovery, not as a replacement; the registry
           is the canonical source of truth. The reason mcpindex exists is the second axis
-          these tools don&rsquo;t have at all: a trust verdict on whether a tool does what
-          it claims, before your agent acts on it.
+          these tools don&rsquo;t have at all: an in-path gate that pins each tool contract
+          and HOLDs the call when it silently drifts — plus an advisory screen so you can
+          check a description before you wire the server.
         </p>
 
         <p className="text-[13.5px]" style={{ color: 'var(--color-mute)' }}>

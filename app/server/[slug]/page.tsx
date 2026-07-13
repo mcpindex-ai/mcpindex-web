@@ -428,8 +428,9 @@ function RailRow({ k, v, href }: { k: string; v: string; href?: string }) {
 // Decision -> visible chip styling. Light-palette only (per site palette).
 // Keys match the AD-B contract directive values (UPPERCASE).
 const DECISION_STYLE: Record<Decision, { label: string; chip: string; ring: string }> = {
-  ALLOW: { label: 'ALLOW', chip: 'bg-emerald-50 text-emerald-900', ring: 'border-emerald-300' },
-  DENY: { label: 'DENY', chip: 'bg-rose-50 text-rose-900', ring: 'border-rose-300' },
+  // ALLOW/DENY are contract states but not produced by the v1 screen — stone, not clearance chrome.
+  ALLOW: { label: 'ALLOW*', chip: 'bg-stone-50 text-stone-700', ring: 'border-stone-300' },
+  DENY: { label: 'DENY*', chip: 'bg-stone-50 text-stone-700', ring: 'border-stone-300' },
   REVIEW: { label: 'REVIEW', chip: 'bg-amber-50 text-amber-900', ring: 'border-amber-300' },
 };
 

@@ -11,10 +11,11 @@ export const OG_CONTENT_TYPE = 'image/png';
 
 // Per-server verdict card for share images. decision = null renders the
 // fail-closed "not yet screened" state (never a fake green).
-const DECISION_OG: Record<string, { bg: string; fg: string; bd: string }> = {
-  ALLOW: { bg: '#ecfdf5', fg: '#047857', bd: '#6ee7b7' },
-  DENY: { bg: '#fef2f2', fg: '#b91c1c', bd: '#fca5a5' },
-  REVIEW: { bg: '#fffbeb', fg: '#b45309', bd: '#fcd34d' },
+const DECISION_OG: Record<string, { bg: string; fg: string; bd: string; label: string }> = {
+  // Reserved contract states — stone, not green/red clearance.
+  ALLOW: { bg: '#fafaf9', fg: '#57534e', bd: '#d6d3d1', label: 'ALLOW*' },
+  DENY: { bg: '#fafaf9', fg: '#57534e', bd: '#d6d3d1', label: 'DENY*' },
+  REVIEW: { bg: '#fffbeb', fg: '#b45309', bd: '#fcd34d', label: 'REVIEW' },
 };
 
 export function VerdictOg({
@@ -29,8 +30,10 @@ export function VerdictOg({
   rationale: string;
 }) {
   const screened = decision !== null;
-  const d = screened ? DECISION_OG[decision] : { bg: '#fafaf9', fg: '#57534e', bd: RULE };
-  const chip = screened ? decision : 'NOT YET SCREENED';
+  const d = screened
+    ? DECISION_OG[decision]
+    : { bg: '#fafaf9', fg: '#57534e', bd: RULE, label: 'NOT YET SCREENED' };
+  const chip = d.label;
   const body = screened
     ? rationale
     : 'No verdict on file yet. An agent should treat this tool as not-yet-cleared and fall back to its own checks. Coverage rolls out adversarial-first.';
@@ -62,7 +65,7 @@ export function VerdictOg({
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', borderTop: `1px solid ${RULE}`, paddingTop: '20px' }}>
         <div style={{ display: 'flex', width: '34px', height: '8px', borderRadius: '3px', background: AMBER }} />
-        <div style={{ display: 'flex', fontSize: '18px', color: ZINC }}>A verdict before your agent acts · mcpindex.ai</div>
+        <div style={{ display: 'flex', fontSize: '18px', color: ZINC }}>Advisory screen · not a clearance · mcpindex.ai</div>
       </div>
     </div>
   );

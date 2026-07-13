@@ -5,7 +5,7 @@ import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
 export const metadata: Metadata = {
   title: 'About',
   description:
-    'mcpindex.ai is the trust-to-act layer for agent tool use. Why it exists: the gap between a tool existing and an agent being clear to call it without you watching. Independent; unaffiliated with Anthropic.',
+    'mcpindex.ai is the in-path trust gate for agent tool calls. Why it exists: MCP tool contracts can change silently after an agent trusts them. Independent; unaffiliated with Anthropic.',
   alternates: { canonical: 'https://mcpindex.ai/about' },
 };
 
@@ -19,10 +19,11 @@ export default function AboutPage() {
         Why the gate exists.
       </h1>
       <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)]">
-        mcpindex is the trust-to-act layer for agent tool use. Agents discover
-        tools at runtime, read the descriptions their authors wrote, and call
-        them. mcpindex sits in the gap between &ldquo;the tool exists&rdquo; and
-        &ldquo;the agent may invoke it without me watching.&rdquo;
+        mcpindex is the in-path trust gate for agent tool calls. Agents discover tools at
+        runtime, read the descriptions their authors wrote, and call them. The Monday
+        contract can change on Tuesday with no version bump. mcpindex pins each contract
+        and HOLDs the call when it drifts — before the agent acts — and screens the
+        directory so you can check a tool before you wire it.
       </p>
 
       <div className="mt-10 space-y-6 text-[15.5px] leading-[1.65] text-[var(--color-cite)]">

@@ -26,9 +26,10 @@ export default function TrustPage() {
         Trust, stated plainly.
       </h1>
       <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)]">
-        mcpindex is the layer an agent consults before it acts on a tool. A
-        trust product has to earn the word: by being legible about how it
-        works, what it anchors, and exactly where it stops. This page is that
+        mcpindex is the in-path trust gate an agent (or host) runs before a tool call
+        executes — pin the contract, HOLD on silent drift — plus an advisory directory
+        screen for what you wire. A trust product has to earn the word: by being legible
+        about how it works, what it anchors, and exactly where it stops. This page is that
         account.
       </p>
       <div className="mt-6">

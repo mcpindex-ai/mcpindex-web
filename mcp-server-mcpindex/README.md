@@ -83,9 +83,9 @@ npx -y mcp-server-mcpindex@latest
 | `check_tool_trust` | Pre-invocation advisory verdict for a specific tool on a server. Fail-CLOSED: returns UNVERIFIED when no verdict on file. |
 | `assess_server` | Aggregated pre-flight verdict across all tools on a server. Same shape as `check_tool_trust`. |
 
-## Agent-framework integration: pre-invocation trust gate
+## Agent-framework integration: advisory pre-invocation screen
 
-`check_tool_trust` is the integration surface that lets agent frameworks (Composio, Mastra, LangChain, DSPy, raw LLM-tool-call loops) ask "is this tool safe to invoke right now?" before dispatching the call.
+`check_tool_trust` is the **directory client** integration surface (not the in-path `mcpindex-gate`). It lets agent frameworks (Composio, Mastra, LangChain, DSPy, raw LLM-tool-call loops) ask for an advisory screen verdict before dispatching a call. At v1 you will see REVIEW or UNVERIFIED — not a safety clearance.
 
 ### Verdict contract (v1)
 
@@ -146,16 +146,9 @@ async function gateToolCall({ serverId, toolName, invoke, askHuman }) {
   audit.log({ verdict, caveats: verdict.honest_limits });
 
   switch (verdict.directive) {
-    case 'ALLOW':
-      return invoke();
-
-    case 'DENY':
-      throw new Error(
-        `mcpindex denied ${serverId}/${toolName}: ${JSON.stringify(verdict.dimensions)}`,
-      );
-
     case 'REVIEW':
       // Fail-CLOSED to human. Do NOT auto-execute on REVIEW.
+      // At v1 this is the common screened outcome (semantic-only).
       return askHuman({ verdict, action: `${serverId}/${toolName}` });
 
     case 'UNVERIFIED':
@@ -166,6 +159,17 @@ async function gateToolCall({ serverId, toolName, invoke, askHuman }) {
         action: `${serverId}/${toolName}`,
         note: 'No trust verdict on file. Human review required before first use.',
       });
+
+    case 'ALLOW':
+      // Reserved in the contract — not produced by the v1 public screen.
+      // Keep the branch for future conformance-earned ALLOW; do not expect it today.
+      return invoke();
+
+    case 'DENY':
+      // Reserved in the contract — not produced by the v1 public screen.
+      throw new Error(
+        `mcpindex denied ${serverId}/${toolName}: ${JSON.stringify(verdict.dimensions)}`,
+      );
 
     default:
       // Unknown directive. Fail-CLOSED.

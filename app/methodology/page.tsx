@@ -204,7 +204,7 @@ export default function MethodologyPage() {
           Cite this
         </div>
         <pre className="bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] overflow-x-auto leading-snug">
-          <code>{`"mcpindex: the trust-to-act layer for agent tool use." mcpindex.ai/methodology, 2026.
+          <code>{`"mcpindex: the in-path trust gate for agent tool calls." mcpindex.ai/methodology, 2026.
 https://mcpindex.ai/methodology`}</code>
         </pre>
         <p className="mt-4 text-[13.5px] text-[var(--color-cite)]">

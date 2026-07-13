@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { BrandOg, OG_SIZE, OG_CONTENT_TYPE } from '@/lib/og';
 
-export const alt = 'mcpindex Docs - call the verdict from your agent';
+export const alt = 'mcpindex Docs - install the in-path trust gate';
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
 
@@ -10,8 +10,8 @@ export default function Image() {
     (
       <BrandOg
         eyebrow="Docs"
-        title="Call the verdict from your agent."
-        sub="The gate pattern, the verdict contract, and integration for LangChain, DSPy, Cursor, Cline, and Zed."
+        title="Install the gate. Or call the directory."
+        sub="Pin contracts and HOLD silent drift in-path — then the advisory screen API, verdict contract, and host wiring for Claude, Cursor, Gemini, Cline, and Zed."
       />
     ),
     size,

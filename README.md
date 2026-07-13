@@ -21,6 +21,9 @@ The gate is the wedge. The directory is the corpus the gate can query — also f
 
 ## Develop
 
+> Canonical local path: `/Volumes/GB990Pro/GBCode/mcpindex-web`.  
+> If you also have `mcpindex-STALE-DO-NOT-DEPLOY/` (or an old `mcpindex/` clone), ignore it — it is a blocked backup, not the live site.
+
 ```bash
 npm install
 node scripts/fetch-snapshot.mjs    # one-time: pull current registry snapshot

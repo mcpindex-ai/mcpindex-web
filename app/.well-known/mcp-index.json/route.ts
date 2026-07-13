@@ -7,13 +7,13 @@ export async function GET() {
   const [count, screened] = await Promise.all([getServerCount(), listScreened()]);
   // Derive the verdict-coverage note from the SAME getVerdict layer the live
   // /api/v1/trust route uses, so the machine descriptor can never drift from
-  // the machine response. Screened servers return their real ALLOW/DENY/REVIEW;
-  // everything else returns UNVERIFIED (fail-closed).
+  // the machine response. At v1 a screened server returns REVIEW (semantic-only);
+  // everything else returns UNVERIFIED (fail-closed). ALLOW/DENY are reserved.
   const screenedCount = screened.length;
   const body = {
     name: 'mcpindex.ai',
     description:
-      'Trust-to-act layer for agent tool use. An in-path gate pins each MCP tool contract (TOFU) and HOLDs a call before the agent acts when the contract silently changes (a deterministic contract-diff, not a safety verdict), and grades each call\'s blast radius — what it would do (read, write, delete, send) and whether it can be undone — read from the tool\'s declared contract (advisory and static, on by default in the clients); a public directory indexes MCP servers and publishes per-tool screening verdicts so an agent can check a tool before it wires it.',
+      'In-path trust gate for agent tool calls. Pins each MCP tool contract (TOFU) and HOLDs a call before the agent acts when the contract silently changes (a deterministic contract-diff, not a safety verdict), and grades each call\'s blast radius — what it would do (read, write, delete, send) and whether it can be undone — read from the tool\'s declared contract (advisory and static, on by default in the clients). Secondary: a public directory indexes MCP servers and publishes per-tool advisory screening verdicts (REVIEW/UNVERIFIED at v1) so an agent can check a tool before it wires it.',
     version: '1',
     serversIndexed: count,
     upstream: 'https://registry.modelcontextprotocol.io',
@@ -22,10 +22,10 @@ export async function GET() {
       capability: 'check_tool_trust',
       version: 'v1-advisory',
       verdict_contract_version: '1.0.0',
-      // UPPERCASE per the AD-B contract (contract-schema.md S3). A screened
-      // server returns its real ALLOW/DENY/REVIEW; a server not on file returns
-      // UNVERIFIED (fail-closed). Coverage is advisory + semantic-only (15 of 150
-      // labels to D3 graduation).
+      // UPPERCASE per the AD-B contract (contract-schema.md S3). At v1 a screened
+      // server returns REVIEW (semantic-only); a server not on file returns
+      // UNVERIFIED (fail-closed). ALLOW/DENY are reserved in the contract.
+      // Coverage is advisory + semantic-only (labels to D3 graduation).
       verdict_states: ['ALLOW', 'DENY', 'REVIEW', 'UNVERIFIED'],
       verdict_coverage: {
         screened_servers: screenedCount,

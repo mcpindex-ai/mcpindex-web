@@ -106,7 +106,7 @@ const TOOLS = [
   {
     name: 'check_tool_trust',
     description:
-      'Pre-invocation trust check for a specific tool on an MCP server. Returns an advisory verdict object (directive ALLOW | DENY | REVIEW | UNVERIFIED, dimensions, freshness). v1 advisory; conformance monitored not enforced; verdicts may be UNVERIFIED if not yet probed. Agents SHOULD treat UNVERIFIED as "human review required", never as ALLOW.',
+      'Pre-invocation advisory screen for a specific tool on an MCP server. Returns an advisory verdict object (directive ALLOW | DENY | REVIEW | UNVERIFIED, dimensions, freshness). At v1 the public screen produces REVIEW or UNVERIFIED only — ALLOW/DENY are reserved. Not the in-path gate (mcpindex-gate). Agents SHOULD treat UNVERIFIED as "human review required", never as ALLOW.',
     inputSchema: {
       type: 'object',
       properties: {
