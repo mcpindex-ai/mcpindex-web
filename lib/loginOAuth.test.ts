@@ -1,9 +1,10 @@
 import { strict as assert } from 'node:assert';
-import test from 'node:test';
+import test, { afterEach } from 'node:test';
 import {
   buildAuthorizeUrl,
   completeLogin,
   isLoopbackCallback,
+  loginEnabled,
   startLogin,
   type IssueFn,
   type LoginTransport,
@@ -38,11 +39,26 @@ const goodTransport: LoginTransport = {
   },
 };
 
+const ENV_KEYS = [
+  'DRIFT_OAUTH_CLIENT_ID',
+  'DRIFT_OAUTH_CLIENT_SECRET',
+  'MCPINDEX_LOGIN_REDIRECT_URI',
+  'MCPINDEX_LOGIN_PEPPER',
+  'DRIFT_OAUTH_PEPPER',
+  'MCPINDEX_LOGIN_ENABLED',
+];
+
+// Isolate env between tests (some delete keys mid-test); prevents order-dependent flakes.
+afterEach(() => {
+  for (const k of ENV_KEYS) delete process.env[k];
+});
+
 function setEnv() {
   process.env.DRIFT_OAUTH_CLIENT_ID = 'cid';
   process.env.DRIFT_OAUTH_CLIENT_SECRET = 'csec';
   process.env.MCPINDEX_LOGIN_REDIRECT_URI = 'https://mcpindex.ai/api/auth/login/callback';
   process.env.MCPINDEX_LOGIN_PEPPER = 'pep';
+  process.env.MCPINDEX_LOGIN_ENABLED = '1';
 }
 
 test('loopback callback guard - only 127.0.0.1 / localhost allowed', () => {
@@ -52,6 +68,37 @@ test('loopback callback guard - only 127.0.0.1 / localhost allowed', () => {
   assert.ok(!isLoopbackCallback('https://127.0.0.1/cb'), 'https/non-http rejected');
   assert.ok(!isLoopbackCallback('http://127.0.0.1.evil.com/cb'), 'suffix-host rejected');
   assert.ok(!isLoopbackCallback('http://[::1]/cb'), 'ipv6-literal not matched (kept simple)');
+  assert.ok(!isLoopbackCallback('http://127.0.0.1/' + 'a'.repeat(130)), 'over-128-char callback rejected');
+  assert.ok(!isLoopbackCallback('http://127.0.0.1\n'), 'trailing newline rejected (JS $ anchor hardening)');
+  assert.ok(!isLoopbackCallback('http://127.0.0.1/cb\r\n'), 'CRLF rejected');
+});
+
+test('loginEnabled is true only for the exact string "1"', () => {
+  process.env.MCPINDEX_LOGIN_ENABLED = '1';
+  assert.ok(loginEnabled());
+  process.env.MCPINDEX_LOGIN_ENABLED = 'true';
+  assert.ok(!loginEnabled(), 'only "1" enables; "true" does not');
+  delete process.env.MCPINDEX_LOGIN_ENABLED;
+  assert.ok(!loginEnabled(), 'absent -> disabled');
+});
+
+test('start is inert (unavailable) when the feature flag is off, even with good config', async () => {
+  setEnv();
+  delete process.env.MCPINDEX_LOGIN_ENABLED;
+  const store = memStore();
+  const r = await startLogin(CB, store);
+  assert.deepEqual(r, { error: 'unavailable' });
+  assert.equal(store.data.size, 0, 'no state written when the feature is disabled');
+});
+
+test('start fails fast (no state burned) when the pepper is missing', async () => {
+  setEnv();
+  delete process.env.MCPINDEX_LOGIN_PEPPER;
+  delete process.env.DRIFT_OAUTH_PEPPER;
+  const store = memStore();
+  const r = await startLogin(CB, store);
+  assert.deepEqual(r, { error: 'unavailable' });
+  assert.equal(store.data.size, 0, 'must not consume/write state on a misconfigured deploy');
 });
 
 test('start rejects a non-loopback callback (SSRF)', async () => {

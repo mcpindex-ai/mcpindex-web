@@ -149,6 +149,37 @@ export async function checkOAuthLimit(ip: string, now: Date): Promise<DriftLimit
   }
 }
 
+// Self-serve login limit (/api/auth/login/start). Each start writes a state key to the shared
+// Upstash BEFORE any GitHub call and ultimately mints a free api_key, so it's a pre-auth cost/abuse
+// vector against the shared datastore. Tight per-IP like the other minting endpoints; a global
+// daily cap bounds blast radius under x-forwarded-for spoofing. Own `login:*` counters so it never
+// shares (or 429-starves) the drift oauth budget. Fail-OPEN on a Redis error is safe here: if
+// Upstash is down the state store (same instance) can't write either, so login is unavailable
+// regardless — the limiter failing open adds no exposure.
+const LOGIN_PER_IP_PER_MIN = 10;
+const LOGIN_GLOBAL_PER_DAY = 50_000;
+
+export async function checkLoginLimit(ip: string, now: Date): Promise<DriftLimit> {
+  const r = redis();
+  if (!r) return { ok: true };
+
+  const min = now.toISOString().slice(0, 16);
+  const day = now.toISOString().slice(0, 10);
+  try {
+    const ipKey = `login:ip:${ip}:${min}`;
+    const c = await r.incr(ipKey);
+    if (c === 1) await r.expire(ipKey, 70);
+    if (c > LOGIN_PER_IP_PER_MIN) return { ok: false };
+
+    const gKey = `login:global:${day}`;
+    const g = await r.incr(gKey);
+    if (g === 1) await r.expire(gKey, 90_000);
+    return g > LOGIN_GLOBAL_PER_DAY ? { ok: false } : { ok: true };
+  } catch {
+    return { ok: true };
+  }
+}
+
 // Receipt-plane ingest limit (/api/v1/receipts). A SEPARATE budget from drift so a receipt
 // flood can't 429-starve drift telemetry (and vice-versa) — the two opt-in planes share the
 // Upstash instance but never share a counter. Same shape/posture as checkDriftLimit: batched,

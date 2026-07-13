@@ -40,8 +40,25 @@ function esc(s: string): string {
 function html(status: number, body: string): Response {
   return new Response(
     `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>mcpindex</title><style>body{font:16px system-ui,sans-serif;max-width:34rem;margin:4rem auto;padding:0 1rem;color:#111}code{background:#f3f3f3;padding:.15rem .35rem;border-radius:4px}</style></head><body>${body}</body></html>`,
-    { status, headers: { 'content-type': 'text/html; charset=utf-8' } },
+    {
+      status,
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+        // The success page body carries the live api_key; keep it out of caches, referrers, frames.
+        'cache-control': 'no-store, max-age=0',
+        'referrer-policy': 'no-referrer',
+        'x-frame-options': 'DENY',
+      },
+    },
   );
+}
+
+/** Encode a string for safe embedding inside a <script> as a JS string literal. */
+function jsString(s: string): string {
+  // Safe inside <script> as a JS string literal: JSON.stringify handles quotes/backslashes;
+  // then neutralize `<` (blocks </script> and <!--) and the U+2028/U+2029 line separators
+  // (invalid inside a JS string) so the sink is safe on its own terms, not via upstream regex.
+  return JSON.stringify(s).replace(/[<\u2028\u2029]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
 }
 
 function page(title: string, msg: string, status: number): Response {
@@ -56,6 +73,6 @@ function successPage(target: string): Response {
     200,
     `<h1>You are signed in</h1><p>Returning to your terminal&hellip;</p>` +
       `<p>If nothing happens, <a href="${t}">click here</a> to finish, then return to your terminal.</p>` +
-      `<script>location.replace(${JSON.stringify(target)});</script>`,
+      `<script>location.replace(${jsString(target)});</script>`,
   );
 }

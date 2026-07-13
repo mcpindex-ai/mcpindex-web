@@ -17,8 +17,11 @@ import { createHash, randomBytes } from 'node:crypto';
 import { issueApiKey } from './issueKey';
 
 const STATE_TTL_SEC = 600;
-export const LOGIN_STATE = /^[0-9a-f]{64}$/;
+const LOGIN_STATE = /^[0-9a-f]{64}$/;
 // Loopback only: http://127.0.0.1 or http://localhost, optional :port, optional path. No other host.
+// LOAD-BEARING for BOTH SSRF *and* CSRF: the entire CSRF guarantee rests on the minted key being
+// delivered only to the user's own loopback (an attacker can't reach the victim's 127.0.0.1).
+// Never widen this to a LAN host or a custom scheme without adding a second line of defense.
 const LOOPBACK_CB = /^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d{1,5})?(?:\/[A-Za-z0-9._~\-/]*)?$/;
 
 export function loginEnabled(): boolean {
@@ -26,7 +29,13 @@ export function loginEnabled(): boolean {
 }
 
 export function isLoopbackCallback(cb: string): boolean {
-  return typeof cb === 'string' && cb.length <= 128 && LOOPBACK_CB.test(cb);
+  // Reject CR/LF explicitly: JS `$` (no `m` flag) also matches just before a single trailing newline.
+  return typeof cb === 'string' && cb.length <= 128 && !/[\r\n]/.test(cb) && LOOPBACK_CB.test(cb);
+}
+
+/** The owner-hash pepper (login-specific, falls back to the drift pepper). Empty = misconfigured. */
+function loginPepper(): string {
+  return process.env.MCPINDEX_LOGIN_PEPPER ?? process.env.DRIFT_OAUTH_PEPPER ?? '';
 }
 
 export interface StateStore {
@@ -72,7 +81,9 @@ export function buildAuthorizeUrl(state: string): string | null {
 export type StartResult = { url: string } | { error: 'bad_callback' | 'unavailable' };
 
 export async function startLogin(cliCallback: string, store: StateStore): Promise<StartResult> {
-  if (!isLoopbackCallback(cliCallback)) return { error: 'bad_callback' }; // SSRF: loopback only
+  if (!loginEnabled()) return { error: 'unavailable' }; // defense in depth: the route also gates this
+  if (!isLoopbackCallback(cliCallback)) return { error: 'bad_callback' }; // SSRF/CSRF: loopback only
+  if (!loginPepper()) return { error: 'unavailable' }; // fail fast: don't burn state on a misconfigured deploy
   const state = genState();
   const url = buildAuthorizeUrl(state);
   if (!url) return { error: 'unavailable' };
@@ -133,7 +144,7 @@ async function githubUserId(accessToken: string): Promise<string | null> {
   }
 }
 
-export const defaultLoginTransport: LoginTransport = {
+const defaultLoginTransport: LoginTransport = {
   exchangeCode: githubExchange,
   fetchUserId: githubUserId,
 };
@@ -145,6 +156,7 @@ export async function completeLogin(
   transport: LoginTransport = defaultLoginTransport,
   issue: IssueFn = issueApiKey,
 ): Promise<CompleteResult> {
+  if (!loginEnabled()) return { error: 'unavailable' }; // defense in depth: the route also gates this
   if (!LOGIN_STATE.test(state)) return { error: 'invalid_state' };
   if (!code || typeof code !== 'string') return { error: 'invalid_request' };
 
@@ -161,7 +173,7 @@ export async function completeLogin(
   const ghId = await transport.fetchUserId(token);
   if (!ghId) return { error: 'exchange_failed' };
 
-  const pepper = process.env.MCPINDEX_LOGIN_PEPPER ?? process.env.DRIFT_OAUTH_PEPPER ?? '';
+  const pepper = loginPepper();
   if (!pepper) return { error: 'unavailable' }; // never an unsalted owner hash
 
   const ownerHash = sha256hex(`github:${ghId}:${pepper}`);
