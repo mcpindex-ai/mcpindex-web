@@ -42,6 +42,9 @@ const STREAM_KEY = 'receipts:stream';
 const STREAM_MAXLEN = 100_000;
 // Distinct-install HyperLogLog (O(1) space): the publish-OFF cardinality metric.
 const INSTALLS_HLL_KEY = 'receipts:installs';
+const RI_KEY_PREFIX = 'ri:';
+const RI_MAX_ENTRIES = 500;
+const RI_TTL_S = 7_776_000;
 // Hard ceiling on how long the (best-effort) write may hold the ingest response.
 const EXEC_TIMEOUT_MS = 2_000;
 
@@ -194,6 +197,15 @@ export const ReceiptBatchSchema = z
 export type Receipt = z.infer<typeof ReceiptSchema>;
 export type ReceiptBatch = z.infer<typeof ReceiptBatchSchema>;
 
+/** Compact per-install Redis list entry (short names to minimize Upstash storage). */
+export interface StoredReceipt {
+  rid: string;
+  th: string;
+  v: string;
+  a: string;
+  ts: string;
+}
+
 let _redis: Redis | null | undefined;
 
 /** @internal test seam: inject Redis (or null); pass undefined to reset lazy init. */
@@ -241,6 +253,20 @@ export async function recordReceiptBatch(
       );
     }
 
+    // Per-install compact receipt index for the dark gate-activity view (ri:{install_id}).
+    const entries = receipts.map((rec) =>
+      JSON.stringify({
+        rid: rec.receipt_id,
+        th: rec.tool_hash,
+        v: rec.verdict_at_call,
+        a: rec.action_classification.effective_action_type,
+        ts: rec.ts,
+      }),
+    );
+    p.lpush(RI_KEY_PREFIX + installId, ...entries);
+    p.ltrim(RI_KEY_PREFIX + installId, 0, RI_MAX_ENTRIES - 1);
+    p.expire(RI_KEY_PREFIX + installId, RI_TTL_S);
+
     // Bound how long the write can hold the ingest response. The route awaits this before its
     // 204, so a hung Upstash must not stall the request: race the pipeline against a timeout
     // (the pipeline pre-swallows its own late rejection so it can lose harmlessly).
@@ -256,5 +282,19 @@ export async function recordReceiptBatch(
     clearTimeout(timer);
   } catch {
     // fail-open: the write is best-effort; never surface a Redis hiccup to the client
+  }
+}
+
+/** Newest compact receipts for an install. Fail-open: [] on any Redis error. Never logs installId. */
+export async function getInstallReceipts(installId: string): Promise<StoredReceipt[]> {
+  const r = redis();
+  if (!r) return [];
+  try {
+    const items = await r.lrange(RI_KEY_PREFIX + installId, 0, 199);
+    return items
+      .map((s) => (typeof s === 'string' ? (JSON.parse(s) as StoredReceipt) : (s as StoredReceipt)))
+      .filter(Boolean);
+  } catch {
+    return [];
   }
 }
