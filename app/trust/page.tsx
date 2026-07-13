@@ -41,8 +41,8 @@ export default function TrustPage() {
           Every published screen verdict is semantic: an adversarial LLM judge
           reads the description for hidden instructions, exfiltration, or
           overclaims, bound to the exact tool definition seen. The screener runs
-          continuously &mdash; a priority lane processes new or requested servers
-          within minutes; a backfill lane scans the full registry hourly. The
+          on a recurring schedule, prioritizing new or requested servers;
+          coverage expands across the registry as the corpus grows. The
           output is a per-tool REVIEW or UNVERIFIED with dimension verdicts and
           severity. The deterministic conformance probe (does observed behavior
           match the declared schema) is built but has not run on the public

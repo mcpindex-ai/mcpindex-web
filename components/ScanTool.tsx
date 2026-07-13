@@ -358,7 +358,7 @@ export function ScanTool() {
               <code>tools/list</code> dump above.{' '}
               <button
                 type="button"
-                onClick={() => copy('uvx --from mcpindex-preflight mcpindex-report --json', 'dump')}
+                onClick={() => copy('uvx --from mcpindex-gate mcpindex-report --json', 'dump')}
                 className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
               >
                 {copyLabel('dump', 'copy the one-liner')}

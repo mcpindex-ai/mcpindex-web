@@ -169,8 +169,8 @@ mcpindex answers one question — *should my agent act on this tool call, right 
 
 | Verdict | Kind | Meaning |
 |---|---|---|
-| **ALLOW** | decision | The published contract was screened and no finding crossed a deny threshold at the recorded evidence level; advisory, not a safety warranty; advisory until `expires_at`; the in-path gate, not the screen, enforces. |
-| **DENY** | decision | The eval ran and a finding crossed the deny threshold (high-severity intent flag, conformance regression, poisoned description). The agent should not invoke. |
+| **ALLOW** | decision | The published contract was screened and no finding crossed a deny threshold at the recorded evidence level; advisory, not a safety warranty; advisory until `expires_at`; the in-path gate, not the screen, enforces. **Reserved in the contract; not produced at v1**: a clearing ALLOW requires the conformance probe (§5.6), which has not run on the public corpus. |
+| **DENY** | decision | The eval ran and a finding crossed the deny threshold (high-severity intent flag, conformance regression, poisoned description). The agent should not invoke. **Reserved in the contract; not produced at v1** (no automatic public DENY today; a high-severity finding surfaces as REVIEW). |
 | **REVIEW** | decision | The eval ran but produced ambiguous or partial findings. The agent should defer to a human or fall back to its own checks. |
 | **UNVERIFIED** | status | No verdict on file yet. Treat as not-yet-cleared (fail-closed). At launch, with the corpus at 15/150 (directory conformance labels, not the gate's drift corpus — see §5.6), this is the common live response. |
 
@@ -188,7 +188,7 @@ For the modal launch buyer — wiring an unowned third-party MCP server they alr
 > | **Small team** | **LIVE**, all postures, any seat count, free | most likely **UNVERIFIED** | held; activate the network later, opt-in | same; plus the per-server daily digest (empty = healthy) |
 > | **Unowned third-party server** | **LIVE** — drift-after-install caught going forward | **UNVERIFIED** (you do not own it) | tier-3 **DECLINED** (you cannot wire a verifier on a server you do not own) → flat HOLD | the pinned-inventory card; the first banner fires the first time the vendor's contract moves |
 >
-> Installing commits you to **nothing** about the network: the local gate is free forever, the network is opt-in later, and you lose nothing by installing now and activating the corpus when it has coverage you care about. On day one you get a **change-tripwire and a watched inventory**, not a clearance — and "nothing happened" is the gate working, quietly.
+> Installing commits you to **nothing** about the network: the local gate is free, the network is opt-in later, and you lose nothing by installing now and activating the corpus when it has coverage you care about. On day one you get a **change-tripwire and a watched inventory**, not a clearance — and "nothing happened" is the gate working, quietly.
 
 > **⬡ Why the tier-0 floor alone is worth the install — the affirmative case.** The day-one floor is "just" a deterministic contract-diff, and a sharp buyer will ask whether that justifies an in-path proxy. It does, and here is the asymmetry in plain terms. The floor catches, *before* an irreversible call, the exact change classes that turn a trusted tool hostile: a silently-added **required** parameter, a flip to **destructive**, a **removed** parameter your agent relied on, a **narrowed** constraint or **reduced** enum. The cost of the floor is a free, always-on, zero-egress watcher; the cost of *not* having it is one un-caught destructive flip on a tool your agent already trusts — and your agent acting on it. That trade is lopsided. And in-path enforcement is not a diff you could comfortably hand-roll: it **persists the baseline across restarts** (Monday-to-Tuesday, §4.2), it **HOLDs the call before it leaves the client** rather than reporting after the fact (a passive sniffer can only alert), it **scans the output schema and description for injection/exfil markers** the structural diff alone would miss, and it runs through **one shared gate** reused verbatim across proxy and SDK so there is no second copy to drift. The floor is the product on day one; the network is what it grows into.
 
@@ -423,13 +423,13 @@ Where tamper-evidence *is* real today is the published directory verdict history
 
 | Tier | What you get | Price at launch |
 |---|---|---|
-| **Local gate** | Unlimited local gating, all postures, all hosts, zero egress: the full tier-0 contract-diff | **Free, and stays free** for individual and team use under the stated license |
+| **Local gate** | Unlimited local gating, all postures, all hosts, zero egress: the full tier-0 contract-diff | **Free** for individual and team use under the stated license |
 | **Directory API & Network** | Directory/screen verdict API at the public rate limit; the cross-install corpus / cloud tier-1 lookup + contribute | **Free.** No key, no per-seat charge. The cloud seam still ships held by default (opt-in, §5.2) — free removes the price barrier to opting in, not the opt-in step itself |
 | **Enterprise** | Multi-tenancy* + the §10 provisioning bucket (real OIDC/JWKS, KMS-signed receipts, durable SIEM export, HA) | **Provisioning engagement:** buyer-funded; not flip-on-deploy |
 
 \* **Multi-tenancy** at launch = cooperative, same-trust-domain tenants only (header-trust + logical isolation, ships OFF by default); spoof-resistant OIDC/JWKS identity + per-tenant process/VM separation is buyer-funded §10. See the §8.2 operating rule.
 
-**You only pay if you need the enterprise tier; everything else is free at any seat count, including the cross-install network.** The local gate — the day-one value — is and stays free, and so is the network that compounds around it. **Enterprise remains engagement-priced** — a provisioning conversation, not a list price, because it is buyer-specific infrastructure and support, not a feature.
+**You only pay if you need the enterprise tier; everything else is free at any seat count, including the cross-install network.** The local gate — the day-one value — is free today, and so is the network that compounds around it. **Enterprise remains engagement-priced** — a provisioning conversation, not a list price, because it is buyer-specific infrastructure and support, not a feature.
 
 > **⬡ The cold start, owned.** A new entrant starts with an empty corpus and a cold flywheel; the network's value to install N+1 is the verdicts accumulated across installs 1..N. The defensible asset is the *slope*, not the day-one size, and install #1 already gets the full local tier-0 gate (zero-egress, standalone) on day one. The network adds resolution only on the tier-0 INCONCLUSIVE minority, and only once an operator activates the seam. The gate earns the install; the network keeps it.
 
@@ -605,14 +605,14 @@ So a buyer reads the *proxy* boundary as persistent-pin + subprocess upstream (n
 
   ```jsonc
   GET /api/v1/trust/tool/{server_id}/{tool_name}
-  // screened tool (the response contract shape):
+  // screened tool at v1 (response contract shape; v1 emits REVIEW, ALLOW is reserved):
   → {
       "subject": { "server_id": "uptimerobot", "tool_name": "get_monitors" },
       "status": "OK",
-      "directive": "ALLOW",
+      "directive": "REVIEW",
       "granularity": "description",
       "dimensions": [ /* per-dimension findings */ ],
-      "expires_at": "2026-07-01T00:00:00Z",
+      "expires_at": "2027-01-01T00:00:00Z",
       "honest_limits": [ "advisory", "description_granularity" ],
       "verdict_contract_version": "1.0.0"
     }

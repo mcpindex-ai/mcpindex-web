@@ -40,7 +40,7 @@ export async function GET() {
         note: 'A screened server returns its real REVIEW (semantic-only) from the same getVerdict layer the website renders; an unscreened server returns UNVERIFIED (fail-closed). ALLOW/DENY are reserved in the contract but not produced at v1 — a conforming ALLOW requires the behavioral probe (D3 milestone). Coverage is advisory and semantic-only.',
       },
       severity_scale: ['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
-      exposure_tier: 'free_tier_is_definition_only_history_is_paid',
+      exposure_tier: 'free_no_key_required',
       methodology: 'https://mcpindex.ai/methodology',
       // v1 honest_limits floor. Endpoint adds `no_verdict_data_in_v1_advisory`
       // per-response while the corpus is empty; npm package may add an
@@ -169,9 +169,9 @@ export async function GET() {
       detail: 'https://mcpindex.ai/server/{slug}',
       llmsTxt: 'https://mcpindex.ai/llms.txt',
       llmsFullTxt: 'https://mcpindex.ai/llms-full.txt',
-      // Trust verdict endpoints. A screened server returns its real
-      // ALLOW/DENY/REVIEW; an unscreened server returns UNVERIFIED (fail-closed).
-      // Advisory + semantic-only.
+      // Trust verdict endpoints. A screened server returns REVIEW (semantic-only)
+      // at v1; an unscreened server returns UNVERIFIED (fail-closed). ALLOW/DENY
+      // are reserved in the contract, not produced at v1. Advisory + semantic-only.
       verdictTool: 'https://mcpindex.ai/api/v1/trust/tool/{server_id}/{tool_name}',
       verdictServer: 'https://mcpindex.ai/api/v1/trust/server/{server_id}',
     },
@@ -180,7 +180,7 @@ export async function GET() {
 
     mcpServer: {
       package: 'mcp-server-mcpindex',
-      version: '0.3.3',
+      version: '0.3.5',
       registry: 'npm',
       tools: [
         'recommend_mcp_for_task',

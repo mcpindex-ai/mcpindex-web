@@ -24,7 +24,7 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 
 - What it is: an in-path trust gate for agent tool calls. It pins each MCP tool's contract trust-on-first-use (TOFU) and, before your agent acts, HOLDs the call the moment that contract silently changes. Unlike the advisory screen below, it sits in the call path, so it can HOLD, not merely alert.
 - Method: a deterministic contract-diff (ChangeKind taxonomy: added-required-param, required-set-expanded, constraint-narrowed, type-changed, enum-values-removed, removed-param, annotation-flip-to-destructive, output-schema-added/changed, tool-added/removed), plus an injection/exfil marker scan over the input and output schema and description. Postures: Monitor (notify+proceed) / Guard (default; hold dangerous, auto-accept proven-benign) / Strict (hold any drift). Fail-closed.
-- Install: one-click config-wire across Claude Desktop / Claude Code / Cursor / Gemini CLI / Cline / Zed via \`uv tool install mcpindex-gate\` or \`curl -fsSL https://mcpindex.ai/install.sh | sh\` (rewrites the host config to route each server through the gate; zero credentials change hands), or the SDK wrap() one-liner (TS + Python) around an already-authenticated session. Deprecated alias: \`mcpindex-preflight\` still resolves to the same package. See /docs.
+- Install: one-click config-wire across Claude Desktop / Claude Code / Cursor / Gemini CLI / Cline / Zed via \`uv tool install mcpindex-gate\` or \`curl -fsSL https://mcpindex.ai/install.sh | sh\` (rewrites the host config to route each server through the gate; zero credentials change hands), or the SDK wrap() one-liner (TS + Python) around an already-authenticated session. Legacy \`mcpindex-preflight\` is EOL (frozen 0.7.0); install \`mcpindex-gate\`, not preflight. See /docs.
 - Tiered ladder: tier-0 deterministic contract-diff is the live, deterministic leg and runs first. Above it the ladder is built as in-path seams — a cloud tier-1 corpus lookup (a contract judged once clears or condemns it everywhere), a tier-2 LLM consult on the ambiguous, and a tier-3 behavioral verifier that exercises a changed tool to clear or refute the change — but each is held off by default and requires explicit opt-in; the default build egresses nothing and stays fail-closed.
 - Honest limits: contract_diff_not_safety_verdict (a HOLD means the contract CHANGED vs your pin, not that the new contract is unsafe; when enabled, the behavioral tier clears or refutes a change, it does not prove a tool safe); tiers1to3_held_off_by_default_opt_in; default_build_egresses_nothing_fail_closed; calibrated_false_v1 (confidence reported but not yet calibrated against a held-out corpus).
 - Status: tier-0 deterministic contract-diff is live and verified end-to-end against the live gate; tiers 1-3 are built but held off by default (opt-in).
@@ -98,6 +98,8 @@ This is the advisory directory client — not the in-path gate (\`mcpindex-gate\
 ## Project pages
 
 - /docs                     How it works, how to wire it into Claude/Cursor/Gemini/Cline/Zed, response anatomy.
+- /scan                     Paste your mcp.json; see each tool's blast radius (action, reversibility, off-machine egress) in the browser. Nothing uploaded.
+- /screen                   Paste a tool description; the live LLM judge returns an advisory REVIEW/UNVERIFIED verdict.
 - /server/<slug>            Per-server detail (${servers} pages, JSON-LD typed, verdict surfaced when available).
 - /guides                   Practical guides: trust/security reviews, comparisons, integration how-tos.
 - /guides/<slug>            Individual guide (intent pages grounded in registry + trust data).
@@ -107,6 +109,7 @@ This is the advisory directory client — not the in-path gate (\`mcpindex-gate\
 - /dashboard                Drift network coverage + opt-in telemetry adoption (honest: opt-in counts are not all users).
 - /changelog                Daily diff of registry changes.
 - /changelog.rss            RSS 2.0 feed of the above.
+- /trust                    Trust model + honest limits: contract-diff, not a safety verdict; where the gate runs, what leaves the machine.
 - /methodology              The eval (semantic-only today; conformance probe built but not yet run), four-state verdict, honest limits.
 - /whitepaper               Architecture whitepaper: gate, threat model, methodology, honest limits. Public; free PDF, no email wall.
 - /about                    Why this exists.

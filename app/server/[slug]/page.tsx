@@ -19,9 +19,9 @@ import { ContractDrift } from '@/components/ContractDrift';
 import { GateInstallBridge } from '@/components/GateInstallBridge';
 import { jsonLdSafe } from '@/lib/jsonLd';
 
-// Trust verdict shape (free-tier projection of the v1.0.0 verdict contract).
-// History and Provenance are deliberately omitted: anonymous surfaces never
-// return back-history (the un-backfillable moat; authenticated tier only).
+// Trust verdict shape (public projection of the v1.0.0 verdict contract).
+// Full back-history is not surfaced on this public page; the current verdict
+// and its publicly recomputable OTS anchor are what render here.
 //
 // Two rendering states for the trust panel, both FAIL-CLOSED (no ALLOW, no
 // green unless a real EVALUATED verdict says so):
@@ -368,13 +368,13 @@ export default async function ServerPage(
             </div>
 
             {/* Provenance - the OTS / Bitcoin-anchored history signal (npm's
-                provenance badge analog). Free tier returns the current verdict
-                only; the anchored record lives on the authenticated tier. */}
+                provenance badge analog). The current verdict renders here; the
+                OTS anchor proof is public and recomputable offline. */}
             <div>
               <div className={RAIL_LABEL}>Provenance</div>
               <p className="text-[12px] leading-[1.55] text-[var(--color-cite)]">
-                Verdict history is anchored to Bitcoin via OpenTimestamps. The free tier returns the
-                current verdict only; the anchored record is served on the authenticated tier.
+                Verdict history is anchored to Bitcoin via OpenTimestamps. The anchor proof is
+                public and any skeptic can recompute it offline.
               </p>
             </div>
 
@@ -661,7 +661,7 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
         description still warrants caution. The deterministic conformance probe
         has not been run on this server yet, so the screen here is semantic-only.
         Posture: advisory. Confidences are reported but not yet calibrated
-        (calibrated=false at v1). History is paid-tier and not shown here.
+        (calibrated=false at v1). Full verdict history is not shown on this page.
       </p>
     </div>
   );

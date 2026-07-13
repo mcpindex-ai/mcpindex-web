@@ -52,7 +52,7 @@ export function EnterpriseCTA({
       {state === 'success' ? (
         <p className="mt-4 text-[14px] leading-[1.6] text-[var(--color-cite)]">
           Thanks. We have your request and will be in touch with the security &amp; procurement
-          pack shortly. The whitepaper itself stays free above &mdash; no wall.
+          pack shortly. The whitepaper itself is free above &mdash; no wall.
         </p>
       ) : (
         <>
