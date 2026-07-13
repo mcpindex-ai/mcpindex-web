@@ -386,8 +386,13 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
       </Section>
 
       {/* §03 - Three ways to use it */}
-      <Section number="03" title="Ways to use it">
-        <p>Pick the shape that matches where the agent lives.</p>
+      <Section number="03" title="Ways to use the directory">
+        <p>
+          Everything in this section is the <strong>advisory directory</strong> (discovery and
+          trust lookups), <em>not</em> the in-path gate. If you came to install the gate, that is
+          §01 above; <Mono>npm install -g mcp-server-mcpindex</Mono> below installs the directory
+          client, not the gate. Pick the shape that matches where your agent lives.
+        </p>
 
         <div
           className="rule-t rule-b rule-l rule-r border-[var(--color-accent)] bg-[var(--color-accent-soft)] px-4 py-3"
