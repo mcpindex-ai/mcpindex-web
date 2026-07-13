@@ -4,6 +4,12 @@ All notable changes to `mcp-server-mcpindex` are recorded here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.5] - 2026-07-12
+
+### Changed
+
+- **Honesty copy for the advisory screen vs in-path gate.** `check_tool_trust` tool description now states v1 produces REVIEW/UNVERIFIED only (ALLOW/DENY reserved) and that this package is the directory client — not `mcpindex-gate`. Package description and README integration example match: REVIEW/UNVERIFIED first; ALLOW/DENY kept as reserved contract branches.
+
 ## [0.3.3] - 2026-06-08
 
 ### Changed
