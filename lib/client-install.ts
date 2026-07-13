@@ -6,9 +6,6 @@
 /** Canonical PyPI package for the in-path gate. */
 export const GATE_PACKAGE = 'mcpindex-gate';
 
-/** Deprecated PyPI alias — still resolves; do not use as the primary name in new copy. */
-export const GATE_PACKAGE_ALIAS = 'mcpindex-preflight';
-
 export const GATE_UV_INSTALL = `uv tool install ${GATE_PACKAGE}`;
 
 export const DISCOVERY_PACKAGE = 'mcp-server-mcpindex';
