@@ -2,31 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-// Shared in-browser contact modal. Pricing Enterprise tier + footer Contact.
-// Routes by variant: enterprise → /api/enterprise (Brevo procurement leads);
-// contact → /api/waitlist with source=contact (Brevo contact + welcome).
-export type ContactVariant = 'enterprise' | 'contact';
-
-const COPY: Record<ContactVariant, { title: string; blurb: string }> = {
-  enterprise: {
-    title: 'Contact sales',
-    blurb: 'Tell us about your use case and we will be in touch.',
-  },
-  contact: {
-    title: 'Contact us',
-    blurb: 'Tell us what you need and we will get back to you.',
-  },
-};
+// Shared in-browser contact modal (footer Contact). Submits to /api/waitlist
+// with source=contact (Brevo contact + welcome). Enterprise / procurement
+// stays on /whitepaper via EnterpriseCTA → /api/enterprise.
 
 // A trigger button that owns the modal's open state. className lets callers style
-// it as a pricing button or a plain footer link. The modal is mounted only while
-// open, so each open starts from fresh state.
+// it as a button or a plain footer link. The modal is mounted only while open,
+// so each open starts from fresh state.
 export function ContactTrigger({
-  variant,
   className,
   children,
 }: {
-  variant: ContactVariant;
   className?: string;
   children: React.ReactNode;
 }) {
@@ -42,16 +28,15 @@ export function ContactTrigger({
       <button ref={triggerRef} type="button" className={className} onClick={() => setOpen(true)}>
         {children}
       </button>
-      {open && <ContactModal variant={variant} onClose={close} />}
+      {open && <ContactModal onClose={close} />}
     </>
   );
 }
 
-function ContactModal({ variant, onClose }: { variant: ContactVariant; onClose: () => void }) {
+function ContactModal({ onClose }: { onClose: () => void }) {
   const [state, setState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const emailRef = useRef<HTMLInputElement>(null);
-  const titleId = `contact-${variant}-title`;
-  const { title, blurb } = COPY[variant];
+  const titleId = 'contact-modal-title';
 
   useEffect(() => {
     const t = setTimeout(() => emailRef.current?.focus(), 0);
@@ -71,16 +56,15 @@ function ContactModal({ variant, onClose }: { variant: ContactVariant; onClose: 
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     setState('submitting');
-    const endpoint = variant === 'enterprise' ? '/api/enterprise' : '/api/waitlist';
     try {
-      const res = await fetch(endpoint, {
+      const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           email: fd.get('email'),
           company: fd.get('company'),
           message: fd.get('message'),
-          ...(variant === 'contact' ? { source: 'contact' } : {}),
+          source: 'contact',
         }),
       });
       setState(res.ok ? 'success' : 'error');
@@ -105,10 +89,10 @@ function ContactModal({ variant, onClose }: { variant: ContactVariant; onClose: 
         <div className="flex items-start justify-between">
           <div>
             <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
-              {variant}
+              contact
             </div>
             <h2 id={titleId} className="mt-2 t-h4 font-medium text-[var(--color-ink)]">
-              {title}
+              Contact us
             </h2>
           </div>
           <button
@@ -123,13 +107,13 @@ function ContactModal({ variant, onClose }: { variant: ContactVariant; onClose: 
 
         {state === 'success' ? (
           <p className="mt-6 text-[14px] leading-[1.55] text-[var(--color-cite)]">
-            {variant === 'enterprise'
-              ? 'Thanks — we have your note and will be in touch shortly.'
-              : 'Thanks — we will be in touch shortly. Check your inbox for a confirmation.'}
+            Thanks — we will be in touch shortly. Check your inbox for a confirmation.
           </p>
         ) : (
           <>
-            <p className="mt-2 text-[13px] leading-[1.5] text-[var(--color-cite)]">{blurb}</p>
+            <p className="mt-2 text-[13px] leading-[1.5] text-[var(--color-cite)]">
+              Tell us what you need and we will get back to you.
+            </p>
             <form onSubmit={onSubmit} className="mt-5 space-y-3">
               <Field
                 label="Email"

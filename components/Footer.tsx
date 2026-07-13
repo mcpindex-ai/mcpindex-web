@@ -35,7 +35,6 @@ export function Footer() {
             <Link href="/#demo" className={LINK}>Try the gate</Link>
             <Link href="/demo" className={LINK}>Videos &amp; embed</Link>
             <Link href="/docs" className={LINK}>Docs</Link>
-            <Link href="/pricing" className={LINK}>Pricing</Link>
             <Link href="/search" className={LINK}>Search</Link>
             <Link href="/screen" className={LINK}>Screen</Link>
             <Link href="/leaderboard" className={LINK}>Maturity Rankings</Link>
@@ -76,7 +75,7 @@ export function Footer() {
             <Link href="/terms" className={LINK}>Terms</Link>
             <Link href="/privacy" className={LINK}>Privacy</Link>
             <Link href="/accessibility" className={LINK}>Accessibility</Link>
-            <ContactTrigger variant="contact" className={`${LINK} text-left w-full`}>
+            <ContactTrigger className={`${LINK} text-left w-full`}>
               Contact
             </ContactTrigger>
           </div>

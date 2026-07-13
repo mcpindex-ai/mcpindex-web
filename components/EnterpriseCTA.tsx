@@ -3,10 +3,10 @@
 import { useState } from 'react';
 
 // The ONE gated conversation the (ungated, public) whitepaper earns: an
-// enterprise / procurement CTA. Sits at the bottom of /whitepaper and on
-// /pricing. Submits to /api/enterprise, which reuses the Brevo lead plumbing
-// (tagged source `enterprise_procurement`) and is fail-soft - a degraded Brevo
-// degrades to "logged", never an error to the visitor.
+// enterprise / procurement CTA. Sits at the bottom of /whitepaper. Submits to
+// /api/enterprise, which reuses the Brevo lead plumbing (tagged source
+// `enterprise_procurement`) and is fail-soft - a degraded Brevo degrades to
+// "logged", never an error to the visitor.
 //
 // Amber discipline: this is a neutral block carrying the brand via a single
 // amber accent dot. The form is plain Ink/Rule; no amber fill/flood.
@@ -91,7 +91,7 @@ export function EnterpriseCTA({
                 </p>
               )}
               <span className="font-mono text-[11px] text-[var(--color-mute)]">
-                No email wall on the paper &mdash; this is only for the sales conversation.
+                No email wall on the paper &mdash; this is only for procurement / design-partner access.
               </span>
             </div>
           </form>

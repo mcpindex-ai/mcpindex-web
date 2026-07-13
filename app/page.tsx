@@ -188,7 +188,8 @@ export default async function Home() {
               />
             </div>
             <p className="mt-3 font-mono text-[12px] leading-[1.5] text-[var(--color-mute)]">
-              This is the <strong className="text-[var(--color-cite)]">gate</strong> (in-path
+              Free · no account · runs locally. This is the{' '}
+              <strong className="text-[var(--color-cite)]">gate</strong> (in-path
               HOLD) — PyPI <code className="text-[var(--color-ink)]">mcpindex-gate</code>, not
               the directory MCP client.{' '}
               <Link

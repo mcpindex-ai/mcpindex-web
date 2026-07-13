@@ -784,7 +784,7 @@ The gate is deterministic, in-path, credential-storage-free, and honest about wh
 
 > **⬡ Start here — two asks, by reader.**
 > - **Developer:** `curl -fsSL https://mcpindex.ai/install.sh | sh` · browse verdicts at **mcpindex.ai** · watch a drift HOLD in the demo.
-> - **Enterprise / security buyer:** request the **security & procurement pack** (the CAIQ-Lite/SIG-Lite self-assessment, DPA + sub-processor template, SBOM, and the design-partner provisioning scope) at **mcpindex.ai** or on `/pricing`.
+> - **Enterprise / security buyer:** request the **security & procurement pack** (the CAIQ-Lite/SIG-Lite self-assessment, DPA + sub-processor template, SBOM, and the design-partner provisioning scope) at **mcpindex.ai** (whitepaper CTA) or via hello@mcpindex.ai.
 
 > `⬡ mcpindex — the in-path drift gate, building the trust-to-act layer for agent tool calls.`
 

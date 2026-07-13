@@ -52,6 +52,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/products", destination: "/", permanent: true },
       { source: "/method", destination: "/methodology", permanent: true },
+      // Pricing page retired while we are not charging — keep old links alive.
+      { source: "/pricing", destination: "/", permanent: true },
     ];
   },
   async headers() {

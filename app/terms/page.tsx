@@ -25,8 +25,8 @@ export default function TermsPage() {
           mcpindex.ai (&quot;the site&quot;) provides an in-path trust gate for Model Context
           Protocol (MCP) tool calls (pin contracts, HOLD on silent drift), plus an advisory
           screen, an index of public MCP servers, and a recommendation API on top of that
-          index. Use is free for the public tier subject to the rate limit published at{' '}
-          <a href="/pricing" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">/pricing</a>.
+          index. Use is free subject to the rate limit published at{' '}
+          <a href="/docs" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">/docs</a>.
         </p>
         <p>
           Server metadata is sourced from{' '}
