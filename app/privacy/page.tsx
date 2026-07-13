@@ -70,6 +70,18 @@ export default function PrivacyPage() {
           a future richer tier and behaves identically today.) Unset the variable to stop.
         </p>
         <p>
+          Call receipts (the <span className="inline-code">mcpindex-gate</span> client,{' '}
+          <span className="inline-code">emit_receipts=True</span>): the gate emits a compact,
+          credential-blind receipt for each gated tool call - a hash of the tool identity, the
+          gate verdict, and the action class (read / write / execute). It{' '}
+          <strong>never</strong> includes tool arguments, result content, server names, or
+          URLs. Receipts are linked by a random per-install token generated on first run and
+          stored locally; the token is not tied to any account or identity and is not joined to
+          your IP. Set{' '}
+          <span className="inline-code">MCPINDEX_RECEIPT_INGEST_ENABLED=0</span> to suppress
+          receipt egress entirely.
+        </p>
+        <p>
           Cookies and similar storage: the site itself does not set first-party advertising
           cookies. Hosting on Vercel may set a platform routing cookie. We also load{' '}
           <strong>Vercel Analytics</strong> and <strong>Vercel Speed Insights</strong>, which
