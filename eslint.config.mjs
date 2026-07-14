@@ -13,6 +13,13 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  // Route-test harness: generic request/response + mock-backend plumbing legitimately needs `any`
+  // (varied handler ctx signatures, an Upstash-shaped mock). Scope the allowance to test/ only —
+  // production code keeps the strict no-any bar.
+  {
+    files: ["test/**/*.ts"],
+    rules: { "@typescript-eslint/no-explicit-any": "off" },
+  },
 ]);
 
 export default eslintConfig;
