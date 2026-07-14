@@ -279,13 +279,22 @@ const defaultLoginTransport: LoginTransport = {
   fetchUserId: (provider, token) => (provider === 'google' ? googleSubject(token) : githubUserId(token)),
 };
 
+// TEST-ONLY seams: override the GitHub transport + key-issuer the callback route relies on (it calls
+// completeLogin with only state/code/store, so both fall to their defaults). Inert in production.
+let _loginTransport: LoginTransport | undefined;
+let _loginIssue: IssueFn | undefined;
+export function __setLoginTransportForTest(t: LoginTransport | undefined): void { _loginTransport = t; }
+export function __setLoginIssueForTest(i: IssueFn | undefined): void { _loginIssue = i; }
+
 export async function completeLogin(
   state: string,
   code: string,
   store: StateStore,
-  transport: LoginTransport = defaultLoginTransport,
-  issue: IssueFn = issueApiKey,
+  transport?: LoginTransport,
+  issue?: IssueFn,
 ): Promise<CompleteResult> {
+  transport = transport ?? _loginTransport ?? defaultLoginTransport;
+  issue = issue ?? _loginIssue ?? issueApiKey;
   if (!loginEnabled()) return { error: 'unavailable' }; // defense in depth: the route also gates this
   if (!LOGIN_STATE.test(state)) return { error: 'invalid_state' };
   if (!code || typeof code !== 'string') return { error: 'invalid_request' };

@@ -177,11 +177,19 @@ export type BindGithubResult =
   | { error: 'invalid_state' | 'exchange_failed' | 'already_bound' }
   | { unavailable: true };
 
+// TEST-ONLY seam: override the default GitHub transport the callback route uses (it calls
+// bindGithub without a transport arg). Inert in production. Mirrors the fetch/redis seams.
+let _oauthTransport: OAuthTransport | undefined;
+export function __setOAuthTransportForTest(t: OAuthTransport | undefined): void {
+  _oauthTransport = t;
+}
+
 export async function bindGithub(
   state: string,
   code: string,
-  transport: OAuthTransport = defaultTransport,
+  transport?: OAuthTransport,
 ): Promise<BindGithubResult> {
+  transport = transport ?? _oauthTransport ?? defaultTransport;
   if (!OAUTH_STATE.test(state)) return { error: 'invalid_state' };
   if (!code || typeof code !== 'string') return { error: 'exchange_failed' };
 

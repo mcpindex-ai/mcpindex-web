@@ -105,6 +105,7 @@ export function mockRedis(): any {
     async sismember(key: string, m: string) { return S.get(key)?.has(m) ? 1 : 0; },
     async get(key: string) { return K.get(key) ?? null; },
     async set(key: string, v: string) { K.set(key, String(v)); return 'OK'; },
+    async getdel(key: string) { const v = K.get(key) ?? null; K.delete(key); return v; },
     async setnx(key: string, v: string) { if (K.has(key)) return 0; K.set(key, String(v)); return 1; },
     async del(key: string) { H.delete(key); S.delete(key); K.delete(key); Z.delete(key); return 1; },
     async incr(key: string) { const n = Number(K.get(key) ?? '0') + 1; K.set(key, String(n)); return n; },
@@ -136,6 +137,34 @@ export function overLimitRedis(): any {
     async set() { return 'OK'; },
     async eval() { return HUGE; },
     async pipeline() { const self: any = {}; ['zremrangebyscore', 'zadd', 'zcard', 'expire', 'incr'].forEach((m) => { self[m] = () => self; }); self.exec = async () => [0, 1, HUGE, 1]; return self; },
+  };
+}
+
+// A Redis mock that actually STORES list entries so a POST→GET round-trip reads its own writes.
+// Backs lpush/lrange + a pipeline whose lpush appends on exec() (how recordReceiptBatch writes).
+// Everything else no-ops. Inject via a module's __set*RedisForTest seam.
+export function storingRedis(): any {
+  const lists = new Map<string, string[]>();
+  const doLpush = (k: string, vals: string[]) => { const l = lists.get(k) ?? []; l.unshift(...vals); lists.set(k, l); return l.length; };
+  const pipeline = () => {
+    const ops: Array<() => void> = [];
+    const p: any = { exec: async () => { ops.forEach((o) => o()); return ops.map(() => 'OK'); } };
+    p.lpush = (k: string, ...v: string[]) => { ops.push(() => doLpush(k, v)); return p; };
+    ['xadd', 'expire', 'hset', 'sadd', 'set', 'incr', 'zadd', 'pfadd', 'rpush', 'ltrim', 'del', 'zremrangebyscore', 'pfmerge'].forEach((m) => { p[m] = () => p; });
+    return p;
+  };
+  return {
+    pipeline,
+    async lrange(k: string, start: number, stop: number) { const l = lists.get(k) ?? []; return l.slice(start, stop === -1 ? undefined : stop + 1); },
+    async lpush(k: string, ...v: string[]) { return doLpush(k, v); },
+    async xadd() { return '1-0'; },
+    async expire() { return 1; },
+    async incr() { return 1; },
+    async hgetall() { return null; },
+    async smembers() { return []; },
+    async sismember() { return 0; },
+    async get() { return null; },
+    async set() { return 'OK'; },
   };
 }
 
