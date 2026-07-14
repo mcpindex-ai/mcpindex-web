@@ -8,7 +8,8 @@
     "check:honesty": "node scripts/check-graduation-honesty.mjs",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test lib/badge.test.ts lib/driftIngest.test.ts lib/driftIdentity.test.ts lib/driftOAuth.test.ts lib/driftQuery.test.ts lib/ledger.test.ts lib/driftStats.test.ts lib/changeKinds.test.ts lib/driftFingerprint.test.ts lib/serverDrift.test.ts lib/jsonLd.test.ts lib/kindLabels.test.ts lib/scan/scan.test.ts",
+    "test": "tsx --test lib/badge.test.ts lib/driftIngest.test.ts lib/driftIdentity.test.ts lib/driftOAuth.test.ts lib/driftQuery.test.ts lib/ledger.test.ts lib/driftStats.test.ts lib/changeKinds.test.ts lib/driftFingerprint.test.ts lib/serverDrift.test.ts lib/jsonLd.test.ts lib/kindLabels.test.ts lib/issueKey.test.ts lib/loginOAuth.test.ts lib/scan/scan.test.ts",
+    "test:coverage": "c8 --all --src lib --reporter=text --reporter=text-summary npm test",
     "falsifier:drift": "node scripts/drift-falsifier-report.mjs"
   },
   "dependencies": {
@@ -30,6 +31,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "c8": "^10.1.3",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
