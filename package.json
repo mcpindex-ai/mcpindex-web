@@ -13,7 +13,7 @@
     "test:routes": "[ $(find test/routes -name '*.test.ts' | wc -l) -ge 8 ] || { echo 'ERROR: found <8 route test files — a suite was likely renamed/moved (glob dropped it). If you intentionally consolidated, lower this floor.'; exit 1; }; tsx --conditions=react-server --test $(find test/routes -name '*.test.ts')",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:coverage": "c8 --all --src lib --src app/api --reporter=text --reporter=text-summary npm test",
+    "test:coverage": "c8 --all --src lib --src app/api --check-coverage --lines 75 --reporter=text --reporter=text-summary npm test",
     "falsifier:drift": "node scripts/drift-falsifier-report.mjs"
   },
   "dependencies": {
