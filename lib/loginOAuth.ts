@@ -21,6 +21,7 @@
 // - I/O (state store, OAuth transport, issue fn) is injected, so the logic is unit-tested with
 //   no network / no Redis.
 
+import 'server-only';
 import { createHash, randomBytes } from 'node:crypto';
 import { issueApiKey } from './issueKey';
 

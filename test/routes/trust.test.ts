@@ -16,7 +16,9 @@ test('trust/server: known server → 200 verdict, contract v1.0.0', async () => 
   assert.equal(b.verdict_contract_version, '1.0.0');
   assert.equal(b.subject.server_id, FIX.SCREENED);
   assert.equal(b.subject.tool_name, null);
-  assert.ok(['ALLOW', 'DENY', 'REVIEW'].includes(b.directive));
+  // Pin the invariant: advisory-only, never ALLOW/DENY (no calibrated conformance). A verdict-engine
+  // regression that fabricated an ALLOW for a known server would red this.
+  assert.equal(b.directive, 'REVIEW');
 });
 
 test('trust/server: unknown slug → 200 UNVERIFIED (fail-closed, not 404)', async () => {

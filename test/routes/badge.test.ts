@@ -10,9 +10,13 @@ const svg = (r: { status: number; headers: Headers; text: string }) => {
   assert.match(r.text, /^<svg[\s>]/);
 };
 
-test('badge: screened slug renders a badge SVG (200)', async () => {
+test('badge: screened slug renders the SCREENED badge (not the gray fail-closed one)', async () => {
   const r = await callRoute(GET, `/api/v1/badge/${FIX.SCREENED}`, { params: { slug: FIX.SCREENED } });
   svg(r);
+  // Bite on a regression that flips a real screened server to the fail-closed gray badge:
+  // the gray badge says "not screened"; the screened one must not.
+  assert.match(r.text, /screened/i);
+  assert.doesNotMatch(r.text, /not[\s-]*screened/i);
 });
 
 test('badge: unknown slug is fail-closed gray "not screened" (200, never a broken image)', async () => {
@@ -27,15 +31,17 @@ test('badge: fixture slug is excluded → gray not-screened (never a fake pass)'
   assert.match(r.text, /not screened/i);
 });
 
-test('badge: empty slug → gray (decodeSlug null)', async () => {
+test('badge: empty slug → gray "not screened" (decodeSlug null)', async () => {
   const r = await callRoute(GET, '/api/v1/badge/', { params: { slug: '' } });
   svg(r);
+  assert.match(r.text, /not[\s-]*screened/i);
 });
 
-test('badge: over-long slug (>256) → gray (cap defends edge cache)', async () => {
+test('badge: over-long slug (>256) → gray "not screened" (cap defends edge cache)', async () => {
   const long = 'a'.repeat(300);
   const r = await callRoute(GET, `/api/v1/badge/${long}`, { params: { slug: long } });
   svg(r);
+  assert.match(r.text, /not[\s-]*screened/i);
 });
 
 test('badge: sets a 300s cache-control', async () => {

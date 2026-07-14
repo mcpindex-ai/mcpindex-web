@@ -19,6 +19,8 @@
 // ceiling lives in lib/ratelimit.ts (invocation-keyed), so failover serves the
 // same already-capped call and cannot widen spend.
 
+import 'server-only'; // holds the Groq API key path; hard-fail any accidental client import
+
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 // TEST-ONLY seam: override the Groq HTTP call so a suite can drive the clean/flagged/parse-fail

@@ -8,6 +8,8 @@
 // Credential: BREVO_API_KEY is the REST API key (Brevo -> SMTP & API -> "API
 // Keys"), NOT the SMTP key. Read from env, never logged or returned.
 
+import 'server-only'; // holds BREVO_API_KEY; hard-fail any accidental client import
+
 const API = 'https://api.brevo.com/v3';
 const TIMEOUT_MS = 5_000;
 

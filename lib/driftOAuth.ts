@@ -1,6 +1,7 @@
 // Drift OAuth upgrade (WS-C) - GitHub cost-class binding via one-way github_hash.
 // Stores ONLY github_hash (never token, raw id, username, or code). Fail-open on Redis errors.
 
+import 'server-only';
 import { Redis } from '@upstash/redis';
 import { INSTALL_ID, sha256hex, verifyToken } from './driftIdentity';
 

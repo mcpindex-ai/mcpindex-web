@@ -22,6 +22,7 @@ afterEach(() => {
   delete process.env.MCPINDEX_LOGIN_PEPPER;
   delete process.env.MCPINDEX_LOGIN_CLIENT_ID;
   delete process.env.MCPINDEX_LOGIN_REDIRECT_URI;
+  delete process.env.DRIFT_OAUTH_PEPPER; // else it leaks to later tests in this file (not a GATE_FLAG)
 });
 
 // ---- B6 drift/oauth/callback ----

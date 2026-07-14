@@ -17,16 +17,20 @@ test('search returns results for a real query', async ({ page }) => {
   await expect(page.locator('a[href^="/server/"]').first()).toBeVisible();
 });
 
-test('a real server trust page renders', async ({ page }) => {
-  const resp = await page.goto('/server/ac-inference-sh-mcp');
+test('search → open a real result renders its trust page (no hardcoded slug)', async ({ page }) => {
+  // derive a live slug from search results instead of hardcoding one that a data refresh could drop
+  await page.goto('/search?q=github');
+  const first = page.locator('a[href^="/server/"]').first();
+  await expect(first).toBeVisible();
+  const href = await first.getAttribute('href');
+  const resp = await page.goto(href!);
   expect(resp?.status()).toBeLessThan(400);
-  // the slug appears somewhere on its own page
-  await expect(page.locator('body')).toContainText(/ac-inference-sh-mcp|inference/i);
+  await expect(page.locator('body')).not.toContainText(/Application error/i);
 });
 
 test('unknown server slug is a clean 404, not a crash', async ({ page }) => {
   const resp = await page.goto('/server/this-slug-does-not-exist-xyz');
-  // Next renders the not-found UI; must not be a 500 / error boundary
-  expect(resp?.status()).not.toBe(500);
+  // the route calls notFound() → a real HTTP 404, not a soft-404 or a 500 crash
+  expect(resp?.status()).toBe(404);
   await expect(page.locator('body')).not.toContainText(/Application error/i);
 });

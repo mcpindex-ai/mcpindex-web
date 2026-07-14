@@ -39,10 +39,15 @@ test('search: q=github → 200 with results envelope', async () => {
   assert.equal(typeof b.total, 'number');
 });
 
-test('search: garbage limit does not 500 (NaN edge)', async () => {
+test('search: garbage limit does not 500 AND still returns a well-formed envelope (NaN edge)', async () => {
   const r = await callRoute(search, '/api/v1/search', { query: { q: 'github', limit: 'abc' } });
-  assert.ok(r.status === 200 || r.status === 400); // must not throw/500
-  assert.ok(r.status < 500);
+  assert.ok(r.status < 500); // must not throw/500 on a NaN limit
+  if (r.status === 200) {
+    const b = obj(r);
+    // a NaN limit must not silently dump the whole corpus / return a malformed shape
+    assert.ok(Array.isArray(b.results));
+    assert.ok(b.results.length <= 50); // the route caps at min(50, ...)
+  }
 });
 
 // ---- A6 recommend ----

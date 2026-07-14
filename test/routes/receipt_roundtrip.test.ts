@@ -1,9 +1,15 @@
 // Cross-repo receipt round-trip (the highest-risk seam from the coverage analysis): the web ingest
 // must accept a receipt in the EXACT shape the trust engine emits, store it, and read it back.
 // TRUST_RECEIPT below was generated verbatim from mcpindex-trust's build_receipt_wire (the emitter's
-// real output) — so this test fails if the web ReceiptSchema ever drifts from the emitter, AND if
-// the ingest→store→read path breaks. (The cross-LANGUAGE constant contract is separately guarded by
-// mcpindex-trust smoke_cloud_contract; this guards the runtime ingest behavior on the web side.)
+// real output). This test catches WEB-SIDE drift (if the web ReceiptSchema stops accepting the trust
+// shape, the safeParse test reds) and verifies the ingest→store→read path.
+//
+// COVERAGE LIMIT (do not over-claim): TRUST_RECEIPT is a FROZEN hand-copied snapshot. It is NOT an
+// executable cross-language guard — if the trust emitter changes the receipt shape, this fixture goes
+// stale silently (web CI has no trust checkout to regenerate it). smoke_cloud_contract does NOT cover
+// receipts (it guards the DRIFT pipeline: deploy/cloud/lib/validate.ts). The receipt shape's only
+// live cross-language tripwire would be a trust-side smoke running this schema against build_receipt_wire
+// — see tasks/todo.md "receipt executable guard". Re-sync this fixture when build_receipt_wire changes.
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { callRoute, FIX, storingRedis } from './_harness';

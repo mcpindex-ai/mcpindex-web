@@ -21,7 +21,9 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev -- --port 3100',
     url: 'http://localhost:3100',
-    reuseExistingServer: true,
+    // false: always start a fresh server for the release gate. A leftover/stale server on :3100
+    // then surfaces as a loud EADDRINUSE instead of silently validating the wrong code.
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 });

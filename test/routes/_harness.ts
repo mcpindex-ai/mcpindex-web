@@ -39,7 +39,12 @@ export async function callRoute(handler: Handler, path: string, opts: CallOpts =
   for (const [k, v] of Object.entries(opts.query ?? {})) url.searchParams.set(k, v);
 
   const headers = new Headers(opts.headers ?? {});
-  if (opts.ip) headers.set('x-forwarded-for', opts.ip);
+  // Set the PRIMARY header the routes read first (x-vercel-forwarded-for) + the fallback, so the
+  // production IP-extraction path is exercised, not just the fallback branch.
+  if (opts.ip) {
+    headers.set('x-vercel-forwarded-for', opts.ip);
+    headers.set('x-forwarded-for', opts.ip);
+  }
 
   let body: BodyInit | undefined;
   if (method !== 'GET' && method !== 'HEAD') {
