@@ -42,6 +42,8 @@ const goodTransport: LoginTransport = {
 const ENV_KEYS = [
   'DRIFT_OAUTH_CLIENT_ID',
   'DRIFT_OAUTH_CLIENT_SECRET',
+  'MCPINDEX_LOGIN_CLIENT_ID',
+  'MCPINDEX_LOGIN_CLIENT_SECRET',
   'MCPINDEX_LOGIN_REDIRECT_URI',
   'MCPINDEX_LOGIN_PEPPER',
   'DRIFT_OAUTH_PEPPER',
@@ -165,6 +167,16 @@ test('complete requires a pepper (never an unsalted owner hash)', async () => {
   const store = memStore({ [`login:state:${STATE}`]: CB });
   const r = await completeLogin(STATE, 'code', store, goodTransport, async () => 'x');
   assert.deepEqual(r, { error: 'unavailable' });
+});
+
+test('a dedicated login client id takes precedence over the drift client id', () => {
+  setEnv();
+  process.env.MCPINDEX_LOGIN_CLIENT_ID = 'login-cid';
+  const url = buildAuthorizeUrl('a'.repeat(64))!;
+  assert.ok(url.includes('client_id=login-cid'), 'uses the dedicated login app when set');
+  delete process.env.MCPINDEX_LOGIN_CLIENT_ID;
+  const url2 = buildAuthorizeUrl('a'.repeat(64))!;
+  assert.ok(url2.includes('client_id=cid'), 'falls back to the drift client id when unset');
 });
 
 test('buildAuthorizeUrl requests only read:user (never repo scope)', () => {

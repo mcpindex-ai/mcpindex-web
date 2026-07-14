@@ -1,7 +1,8 @@
 // Self-serve login: GitHub OAuth -> mint a free api_key bound to the account -> hand it to the
-// gate CLI's localhost listener. Reuses the EXISTING GitHub OAuth app (DRIFT_OAUTH_CLIENT_ID/
-// SECRET) with a login-specific redirect_uri (MCPINDEX_LOGIN_REDIRECT_URI). Inert until
-// MCPINDEX_LOGIN_ENABLED=1.
+// gate CLI's localhost listener. Uses a dedicated GitHub OAuth app when MCPINDEX_LOGIN_CLIENT_ID/
+// SECRET are set (isolated from drift's credentials), else falls back to the drift app
+// (DRIFT_OAUTH_CLIENT_ID/SECRET). Login-specific redirect_uri (MCPINDEX_LOGIN_REDIRECT_URI).
+// Inert until MCPINDEX_LOGIN_ENABLED=1.
 //
 // SECURITY (load-bearing):
 // - The CLI callback URL is LOOPBACK-ONLY (http://127.0.0.1|localhost[:port]). The minted key is
@@ -38,6 +39,14 @@ function loginPepper(): string {
   return process.env.MCPINDEX_LOGIN_PEPPER ?? process.env.DRIFT_OAUTH_PEPPER ?? '';
 }
 
+// GitHub OAuth client credentials: prefer a dedicated login app; fall back to the drift app.
+function loginClientId(): string | undefined {
+  return process.env.MCPINDEX_LOGIN_CLIENT_ID ?? process.env.DRIFT_OAUTH_CLIENT_ID;
+}
+function loginClientSecret(): string | undefined {
+  return process.env.MCPINDEX_LOGIN_CLIENT_SECRET ?? process.env.DRIFT_OAUTH_CLIENT_SECRET;
+}
+
 export interface StateStore {
   set(key: string, value: string, ttlSec: number): Promise<boolean>;
   getdel(key: string): Promise<string | null>;
@@ -66,7 +75,7 @@ function stateKey(state: string): string {
 }
 
 export function buildAuthorizeUrl(state: string): string | null {
-  const clientId = process.env.DRIFT_OAUTH_CLIENT_ID; // reuse the existing GitHub app
+  const clientId = loginClientId();
   const redirectUri = process.env.MCPINDEX_LOGIN_REDIRECT_URI;
   if (!clientId || !redirectUri) return null;
   const params = new URLSearchParams({
@@ -101,8 +110,8 @@ export type CompleteResult =
   | { error: 'invalid_state' | 'invalid_request' | 'exchange_failed' | 'issue_failed' | 'unavailable' };
 
 async function githubExchange(code: string): Promise<string | null> {
-  const clientId = process.env.DRIFT_OAUTH_CLIENT_ID;
-  const clientSecret = process.env.DRIFT_OAUTH_CLIENT_SECRET;
+  const clientId = loginClientId();
+  const clientSecret = loginClientSecret();
   const redirectUri = process.env.MCPINDEX_LOGIN_REDIRECT_URI;
   if (!clientId || !clientSecret || !redirectUri) return null;
   const controller = new AbortController();
