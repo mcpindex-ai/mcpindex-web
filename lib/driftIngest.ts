@@ -10,6 +10,7 @@
 // tallies. Counters are fail-OPEN on a Redis hiccup — we never reject a valid batch over our
 // own infra, but we also never persist a signal we could not validate.
 
+import 'server-only';
 import { z } from 'zod';
 import { Redis } from '@upstash/redis';
 

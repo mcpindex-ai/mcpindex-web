@@ -12,7 +12,7 @@ test('scan page renders the scan tool', async ({ page }) => {
 test('screen demo page renders', async ({ page }) => {
   const resp = await page.goto('/screen');
   expect(resp?.status()).toBeLessThan(400);
-  await expect(page.locator('body')).not.toContainText(/Application error/i);
+  await expect(page.locator('body')).not.toContainText(/Application error|Runtime Error|Unhandled|Build Error|Server Error/i);
 });
 
 test('badge embed endpoint serves an SVG for a real server', async ({ request }) => {

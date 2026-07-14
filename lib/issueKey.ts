@@ -11,6 +11,7 @@
 // error, non-2xx, or malformed owner_hash/tier -> null ("could not issue"). Never return a key
 // that was not persisted; the caller surfaces a retry.
 
+import 'server-only';
 import { createHash, randomBytes } from 'node:crypto';
 
 const ISSUE_RPC_PATH = '/rest/v1/rpc/issue_api_key';

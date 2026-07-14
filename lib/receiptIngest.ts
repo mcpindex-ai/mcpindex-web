@@ -22,6 +22,7 @@
 //     (publishing a multi-party signal is a gated one-way door handled elsewhere). Best-effort,
 //     fail-OPEN on a Redis hiccup — same resilience as recordDriftBatch.
 
+import 'server-only';
 import { z } from 'zod';
 import { Redis } from '@upstash/redis';
 

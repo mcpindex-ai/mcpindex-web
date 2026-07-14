@@ -21,8 +21,10 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev -- --port 3100',
     url: 'http://localhost:3100',
-    // false: always start a fresh server for the release gate. A leftover/stale server on :3100
-    // then surfaces as a loud EADDRINUSE instead of silently validating the wrong code.
+    // false: always start a fresh server for the release gate, so a leftover/stale HTTP server on
+    // :3100 fails loudly ("port already used") instead of silently validating the wrong code. (A
+    // NON-http process holding :3100 would instead make next dev hop to :3101 and Playwright poll
+    // :3100 until webServer.timeout — kill anything on :3100 first: `lsof -ti tcp:3100 | xargs kill`.)
     reuseExistingServer: false,
     timeout: 120_000,
   },

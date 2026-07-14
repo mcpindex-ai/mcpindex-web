@@ -16,9 +16,12 @@ test('trust/server: known server → 200 verdict, contract v1.0.0', async () => 
   assert.equal(b.verdict_contract_version, '1.0.0');
   assert.equal(b.subject.server_id, FIX.SCREENED);
   assert.equal(b.subject.tool_name, null);
-  // Pin the invariant: advisory-only, never ALLOW/DENY (no calibrated conformance). A verdict-engine
-  // regression that fabricated an ALLOW for a known server would red this.
-  assert.equal(b.directive, 'REVIEW');
+  assert.equal(b.status, 'PARTIAL'); // advisory, conformance not run
+  // the dimension that drives the badge/page must survive to the API
+  assert.ok(Array.isArray(b.dimensions) && b.dimensions.some((d: any) => d.id === 'mcpindex.integrity.description'));
+  // Load-bearing safety invariant: never a fabricated pass. Durable across conformance graduation
+  // (a human-confirmed DENY becomes legitimate then); only a fake ALLOW is the fatal bug.
+  assert.notEqual(b.directive, 'ALLOW');
 });
 
 test('trust/server: unknown slug → 200 UNVERIFIED (fail-closed, not 404)', async () => {

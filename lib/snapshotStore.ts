@@ -1,3 +1,4 @@
+import 'server-only';
 import { Redis } from '@upstash/redis';
 import { createHash } from 'node:crypto';
 import type { RegistryEntry, Snapshot } from './types';

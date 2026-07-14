@@ -25,12 +25,14 @@ test('search → open a real result renders its trust page (no hardcoded slug)',
   const href = await first.getAttribute('href');
   const resp = await page.goto(href!);
   expect(resp?.status()).toBeLessThan(400);
-  await expect(page.locator('body')).not.toContainText(/Application error/i);
+  // positive render check: a 200-but-blank page (data-load regression, silent catch) must NOT pass
+  await expect(page.locator('h1')).toBeVisible();
+  await expect(page.locator('body')).not.toContainText(/Application error|Runtime Error|Unhandled|Build Error|Server Error/i);
 });
 
 test('unknown server slug is a clean 404, not a crash', async ({ page }) => {
   const resp = await page.goto('/server/this-slug-does-not-exist-xyz');
   // the route calls notFound() → a real HTTP 404, not a soft-404 or a 500 crash
   expect(resp?.status()).toBe(404);
-  await expect(page.locator('body')).not.toContainText(/Application error/i);
+  await expect(page.locator('body')).not.toContainText(/Application error|Runtime Error|Unhandled|Build Error|Server Error/i);
 });

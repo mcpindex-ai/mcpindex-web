@@ -90,12 +90,24 @@ const GATE_FLAGS = [
   'NEXT_PUBLIC_DRIFT_LEDGER',
   'MCPINDEX_LOGIN_ENABLED',
   'CRON_SECRET',
+  'DRIFT_RECRAWL_HINTS', // read on the ingest path (driftIngest)
+  'DRIFT_DARK_CORROBORATION', // read on the drift-read path (driftQuery)
 ] as const;
+
+// Models @upstash/redis's DEFAULT automaticDeserialization=true: every read JSON.parses the stored
+// value (falling back to the raw string when it isn't JSON), so tests exercise the same object-return
+// branch production sees — not a string-only branch the real client never hits.
+function _deser(v: unknown): unknown {
+  if (typeof v !== 'string') return v;
+  try { return JSON.parse(v); } catch { return v; }
+}
 
 // Minimal Upstash-Redis-shaped mock covering the methods the drift/receipt/login libs call.
 // Lifted from lib/driftIdentity.test.ts and extended (incr/expire/zadd/pfadd/xadd) so it can back
 // more than one module. Methods no-op-return sensible defaults; unimplemented calls throw loudly
 // (better a clear failure than a silent wrong branch). Inject via the lib __set*RedisForTest seams.
+// NOTE: node:test runs one process per file, so module-global seams/env can't bleed ACROSS files;
+// within a file, each suite's afterEach must reset its seams (they do).
 export function mockRedis(): any {
   const H = new Map<string, Record<string, string>>();
   const S = new Map<string, Set<string>>();
@@ -104,13 +116,13 @@ export function mockRedis(): any {
   return {
     async hset(key: string, fields: Record<string, string>) { H.set(key, { ...(H.get(key) ?? {}), ...fields }); return 1; },
     async hgetall(key: string) { const r = H.get(key); return r ? { ...r } : null; },
-    async hget(key: string, f: string) { return H.get(key)?.[f] ?? null; },
+    async hget(key: string, f: string) { return _deser(H.get(key)?.[f] ?? null); },
     async sadd(key: string, ...m: string[]) { const s = S.get(key) ?? new Set(); m.forEach((x) => s.add(x)); S.set(key, s); return m.length; },
     async smembers(key: string) { return [...(S.get(key) ?? [])]; },
     async sismember(key: string, m: string) { return S.get(key)?.has(m) ? 1 : 0; },
-    async get(key: string) { return K.get(key) ?? null; },
+    async get(key: string) { return _deser(K.get(key) ?? null); },
     async set(key: string, v: string) { K.set(key, String(v)); return 'OK'; },
-    async getdel(key: string) { const v = K.get(key) ?? null; K.delete(key); return v; },
+    async getdel(key: string) { const v = K.get(key) ?? null; K.delete(key); return _deser(v); },
     async setnx(key: string, v: string) { if (K.has(key)) return 0; K.set(key, String(v)); return 1; },
     async del(key: string) { H.delete(key); S.delete(key); K.delete(key); Z.delete(key); return 1; },
     async incr(key: string) { const n = Number(K.get(key) ?? '0') + 1; K.set(key, String(n)); return n; },
@@ -121,7 +133,10 @@ export function mockRedis(): any {
     async pfcount() { return 0; },
     async xadd() { return '1-0'; },
     async xrange() { return []; },
-    async eval(_s: string, keys: string[]) { const k = keys[0]; const row = H.get(k); if (row) H.set(k, { ...row, status: 'revoked', github_hash: '' }); return 'ok'; },
+    // Non-mutating: return the success sentinel only. (The old default unconditionally revoked the
+    // identity row for ANY eval — a green-for-wrong-reason trap if a test drove the oauth BIND script
+    // through the default mock. revoke ignores the return; bind needs 'ok'; nothing needs the mutation.)
+    async eval() { return 'ok'; },
     async pipeline() { const ops: any[] = []; const self: any = { }; ['hset','sadd','set','incr','expire','zadd','pfadd','xadd'].forEach((m) => { self[m] = () => { ops.push(m); return self; }; }); self.exec = async () => ops.map(() => 'OK'); return self; },
   };
 }
@@ -160,7 +175,7 @@ export function storingRedis(): any {
   };
   return {
     pipeline,
-    async lrange(k: string, start: number, stop: number) { const l = lists.get(k) ?? []; return l.slice(start, stop === -1 ? undefined : stop + 1); },
+    async lrange(k: string, start: number, stop: number) { const l = lists.get(k) ?? []; return l.slice(start, stop === -1 ? undefined : stop + 1).map(_deser); },
     async lpush(k: string, ...v: string[]) { return doLpush(k, v); },
     async xadd() { return '1-0'; },
     async expire() { return 1; },

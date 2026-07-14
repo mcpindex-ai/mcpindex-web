@@ -12,6 +12,7 @@
 // (AD-6-safe: it never moves PROCEED/HOLD). No tool data here -- a tool_fp is the same salted
 // fingerprint the SDK already emits under opt-in telemetry.
 
+import 'server-only';
 import { Redis } from '@upstash/redis';
 import { coerceChangeKinds } from './changeKinds';
 

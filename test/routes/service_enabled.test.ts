@@ -36,6 +36,11 @@ test('drift/register: enabled + fresh Redis → 200 with install_token', async (
   const b = obj(r);
   assert.equal(b.install_id, FIX.ID32_OK);
   assert.match(String(b.install_token), /^[0-9a-f]{64}$/);
+  // a second install must mint a DIFFERENT token (catches a broken/constant token derivation)
+  const other = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+  const r2 = await callRoute(driftRegister, '/api/v1/drift/register', { method: 'POST', body: { install_id: other } });
+  assert.equal(r2.status, 200);
+  assert.notEqual((obj(r2) as any).install_token, b.install_token);
 });
 
 test('drift/register: enabled + Redis down (null) → 503 identity_store_unavailable', async () => {

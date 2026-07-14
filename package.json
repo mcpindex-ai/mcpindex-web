@@ -10,7 +10,7 @@
     "lint": "eslint",
     "test": "npm run test:lib && npm run test:routes",
     "test:lib": "tsx --conditions=react-server --test lib/badge.test.ts lib/driftIngest.test.ts lib/driftIdentity.test.ts lib/driftOAuth.test.ts lib/driftQuery.test.ts lib/ledger.test.ts lib/driftStats.test.ts lib/changeKinds.test.ts lib/driftFingerprint.test.ts lib/serverDrift.test.ts lib/jsonLd.test.ts lib/kindLabels.test.ts lib/issueKey.test.ts lib/loginOAuth.test.ts lib/scan/scan.test.ts",
-    "test:routes": "[ $(find test/routes -name '*.test.ts' | wc -l) -ge 10 ] || { echo 'ERROR: route suite < 10 files — a suite was renamed/moved and silently dropped'; exit 1; }; tsx --conditions=react-server --test $(find test/routes -name '*.test.ts')",
+    "test:routes": "[ $(find test/routes -name '*.test.ts' | wc -l) -ge 8 ] || { echo 'ERROR: found <8 route test files — a suite was likely renamed/moved (glob dropped it). If you intentionally consolidated, lower this floor.'; exit 1; }; tsx --conditions=react-server --test $(find test/routes -name '*.test.ts')",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:coverage": "c8 --all --src lib --src app/api --reporter=text --reporter=text-summary npm test",

@@ -1,6 +1,7 @@
 // Upstash-backed StateStore for the self-serve login OAuth state (one-time, TTL'd). Mirrors the
 // driftOAuth Redis pattern. Returns null when Redis is unconfigured (caller -> unavailable).
 
+import 'server-only';
 import { Redis } from '@upstash/redis';
 import type { StateStore } from './loginOAuth';
 

@@ -7,9 +7,9 @@
 // COVERAGE LIMIT (do not over-claim): TRUST_RECEIPT is a FROZEN hand-copied snapshot. It is NOT an
 // executable cross-language guard — if the trust emitter changes the receipt shape, this fixture goes
 // stale silently (web CI has no trust checkout to regenerate it). smoke_cloud_contract does NOT cover
-// receipts (it guards the DRIFT pipeline: deploy/cloud/lib/validate.ts). The receipt shape's only
-// live cross-language tripwire would be a trust-side smoke running this schema against build_receipt_wire
-// — see tasks/todo.md "receipt executable guard". Re-sync this fixture when build_receipt_wire changes.
+// receipts (it guards the DRIFT pipeline: deploy/cloud/lib/validate.ts). The receipt shape's only live
+// cross-language tripwire would be a trust-side smoke running this schema against build_receipt_wire.
+// RE-SYNC this TRUST_RECEIPT literal whenever mcpindex-trust build_receipt_wire changes.
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { callRoute, FIX, storingRedis } from './_harness';
@@ -57,6 +57,12 @@ test('round-trip: POST a trust-emitted receipt → 204, then GET reads it back',
   const b = get.json() as any;
   assert.ok(b.count >= 1, `expected >=1 receipt read back, got ${b.count}`);
   assert.ok(Array.isArray(b.receipts) && b.receipts.length >= 1);
+  // content fidelity, not just cardinality: the trust receipt's fields must survive ingest→store→read
+  // (compact index stores {rid, th, v, a, ts}). Catches a stub/corrupted store that still bumps count.
+  const rec = b.receipts[0];
+  assert.equal(rec.rid, 'rcpt_feedface');
+  assert.equal(rec.v, 'REVIEW'); // verdict_at_call
+  assert.equal(rec.a, 'read'); // effective action class
 });
 
 test('round-trip: a receipt for a DIFFERENT install is not read back (install isolation)', async () => {

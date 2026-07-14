@@ -13,9 +13,12 @@ import { GET as registryCount } from '../../app/api/registry-count/route';
 const obj = (r: { json: () => unknown }) => r.json() as Record<string, any>;
 
 // ---- A4 server/[slug] ----
-test('server/[slug]: known slug → 200 detail', async () => {
+test('server/[slug]: known slug → 200 with the right, full detail body', async () => {
   const r = await callRoute(server, `/api/v1/server/${FIX.SCREENED}`, { params: { slug: FIX.SCREENED } });
   assert.equal(r.status, 200);
+  const b = obj(r);
+  assert.equal(b.slug, FIX.SCREENED); // right server, not a 200 with the wrong/blank one
+  assert.ok(Object.keys(b).length > 3); // a full detail object, not a truncated stub
 });
 
 test('server/[slug]: unknown slug → 404 not_found', async () => {
@@ -44,9 +47,11 @@ test('search: garbage limit does not 500 AND still returns a well-formed envelop
   assert.ok(r.status < 500); // must not throw/500 on a NaN limit
   if (r.status === 200) {
     const b = obj(r);
-    // a NaN limit must not silently dump the whole corpus / return a malformed shape
+    // a NaN limit must not silently dump the whole corpus / return a malformed shape.
+    // (Mechanism: `?? 20` keeps NaN through, then search's slice(0, NaN) -> [] — NOT the 50-cap,
+    // which is Math.min(50, NaN)=NaN and doesn't fire. Either way results.length must stay bounded.)
     assert.ok(Array.isArray(b.results));
-    assert.ok(b.results.length <= 50); // the route caps at min(50, ...)
+    assert.ok(b.results.length <= 50);
   }
 });
 
@@ -56,9 +61,11 @@ test('recommend: missing task → 400', async () => {
   assert.equal(r.status, 400);
 });
 
-test('recommend: task → 200 with recommendations', async () => {
+test('recommend: task → 200 with a bounded recommendations array', async () => {
   const r = await callRoute(recommend, '/api/v1/recommend', { query: { task: 'read a file' } });
   assert.equal(r.status, 200);
+  const b = obj(r);
+  assert.ok(Array.isArray(b.recommendations) && b.recommendations.length <= 3); // route caps at top-3
 });
 
 // ---- A7 preflight ----
@@ -73,12 +80,16 @@ test('preflight: task too long (>256) → 400', async () => {
   assert.match(String(obj(r).error), /too long/i);
 });
 
-test('preflight: valid task → 200, contract v1.0.0', async () => {
+test('preflight: valid task → 200 with the advisory contract fields', async () => {
   const r = await callRoute(preflight, '/api/v1/preflight', { query: { task: 'read a file' } });
   assert.equal(r.status, 200);
   const b = obj(r);
   assert.equal(b.task, 'read a file');
   assert.ok(Array.isArray(b.recommendations));
+  // the load-bearing advisory-boundary fields (the whole point of preflight)
+  assert.equal(b.verdict_contract_version, '1.0.0');
+  assert.ok('honest_limits' in b);
+  assert.ok(b.verdict === null || typeof b.verdict === 'object');
 });
 
 // ---- A8 diff ----
@@ -107,6 +118,7 @@ test('registry-count: 200 shape', async () => {
   const r = await callRoute(registryCount, '/api/registry-count');
   assert.equal(r.status, 200);
   const b = obj(r);
-  assert.equal(typeof b.servers, 'number');
-  assert.equal(typeof b.categories, 'number');
+  // > 0, not just numeric: {servers:0,categories:0} is exactly the shape a registry-load FAILURE returns
+  assert.ok(b.servers > 0, `servers should be > 0, got ${b.servers}`);
+  assert.ok(b.categories > 0, `categories should be > 0, got ${b.categories}`);
 });
