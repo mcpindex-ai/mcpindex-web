@@ -29,7 +29,13 @@ export function loginStore(): StateStore | null {
       return ok !== null;
     },
     async getdel(key: string): Promise<string | null> {
-      return (await r.getdel<string>(key)) ?? null;
+      // @upstash/redis defaults to automaticDeserialization: a value we stored as a JSON STRING
+      // (the encoded {cb,provider} state) is JSON.parse'd back into an OBJECT on read. Re-stringify
+      // any non-string so this honors the StateStore contract (always a string) and decodeState can
+      // parse it. A legacy bare-callback string passes through unchanged.
+      const v = await r.getdel(key);
+      if (v === null || v === undefined) return null;
+      return typeof v === 'string' ? v : JSON.stringify(v);
     },
   };
 }
