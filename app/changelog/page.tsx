@@ -105,10 +105,10 @@ export default async function Changelog() {
 
       <section className="mt-16 rule-t pt-10">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
-          Daily counts · last 28 days
+          Daily counts · last 30 days
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-1 font-mono text-[12px]">
-          {buckets.slice(0, 28).map(([day, count]) => (
+          {buckets.slice(0, 30).map(([day, count]) => (
             <div key={day} className="flex justify-between text-[var(--color-cite)]">
               <span>{day}</span>
               <span className="tabular-nums text-[var(--color-mute)]">{count}</span>

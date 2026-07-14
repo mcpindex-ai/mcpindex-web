@@ -152,9 +152,10 @@ export default function TrustPage() {
         <ul className="mt-4 space-y-3">
           <Edge head="Where it runs.">
             In-path on the developer / agent host, single-tenant by default. The
-            multi-tenant gateway (per-tenant isolation, posture, and audit) is
-            built but held off by default behind an explicit flag &mdash; it is not
-            the default deployment.
+            multi-tenant gateway (logical, in-process isolation, posture, and
+            audit) is built but held off by default behind an explicit flag;
+            spoof-resistant identity and process/VM separation are roadmap, and it
+            is not the default deployment.
           </Edge>
           <Edge head="What leaves by default: nothing.">
             The deterministic tier-0 contract-diff runs locally; the default build

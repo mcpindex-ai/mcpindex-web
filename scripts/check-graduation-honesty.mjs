@@ -81,6 +81,9 @@ function walk(dir) {
   }
 }
 walk(path.join(root, 'app'));
+// content/ (whitepaper.md + guide JSONs) is public long-form copy with no build
+// guard of its own - the exact gap that let the whitepaper drift into overclaiming.
+walk(path.join(root, 'content'));
 
 // 3b) GATE OVER-CLAIM GUARD. The drift gate's cardinal honesty rule: it produces
 //     a CONTRACT-DIFF ("this tool's contract CHANGED vs your pin"), NOT a safety
@@ -221,6 +224,7 @@ function gateScan(dir) {
 }
 gateScan(path.join(root, 'app'));
 gateScan(path.join(root, 'components'));
+gateScan(path.join(root, 'content'));
 
 // 3c) SCREEN-SCOPE CONFORMANCE-PROBE GUARD (R2-B3 / R2-B4). Mirror of the GATE
 //     tier-liveness check, for the OTHER maturity surface: the directory SCREEN.
@@ -269,6 +273,7 @@ function screenProbeScan(dir) {
 }
 screenProbeScan(path.join(root, 'app'));
 screenProbeScan(path.join(root, 'components'));
+screenProbeScan(path.join(root, 'content'));
 
 // 3d) INSTALL-ARTIFACT LINK CHECK (R2-B1) + GATE PACKAGE-NAME COHERENCE (R2-B2).
 //     The wedge's own install must not 404 and must not name an unresolvable

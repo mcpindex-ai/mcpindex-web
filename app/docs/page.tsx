@@ -199,9 +199,10 @@ curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
 import { wrap, PreflightPin } from "@mcp-index/sdk";
 
 const guarded = wrap(session, { pin: new PreflightPin(), serverId: "your-server" });
-// use guarded.list_tools() / guarded.call_tool(...) exactly as before
-
-# Python — pip/uv: mcpindex-gate
+// use guarded.list_tools() / guarded.call_tool(...) exactly as before`}</code>
+          </pre>
+          <pre className="mt-2 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
+            <code>{`# Python — pip/uv: mcpindex-gate
 from mcpindex_gate import wrap, PreflightPin
 
 session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
@@ -579,8 +580,8 @@ Args:     -y mcp-server-mcpindex@latest`}
           <div className="space-y-4 text-[15px] leading-[1.6]">
         <p>
           The trust endpoints (<Mono>/api/v1/trust/server/…</Mono> and{' '}
-          <Mono>/api/v1/trust/tool/…</Mono>) return the free-tier verdict: a decision
-          (ALLOW / DENY / REVIEW, or UNVERIFIED when a tool has not been screened), the
+          <Mono>/api/v1/trust/tool/…</Mono>) return the verdict: a decision
+          (REVIEW or UNVERIFIED today; ALLOW / DENY are reserved in the contract, not produced at v1), the
           dimensions behind it with severity, the screen granularity (description-level
           today, tool-level for a few), a freshness window, and the honest limits shipped
           on every verdict. See one rendered on a{' '}
@@ -592,7 +593,7 @@ Args:     -y mcp-server-mcpindex@latest`}
   "verdict_contract_version": "1.0.0",
   "subject": { "server_id": "community/quickpay-mcp", "tool_name": null },
   "status": "PARTIAL",              // EVALUATED | PARTIAL | STALE | ERROR
-  "directive": "REVIEW",            // ALLOW | DENY | REVIEW
+  "directive": "REVIEW",            // REVIEW/UNVERIFIED today; ALLOW/DENY reserved
   "granularity": "description-level",   // what was screened: "description-level" | "tool-level"
   "dimensions": [
     { "id": "mcpindex.integrity.description", "verdict": "PASS", "severity": "INFO" }

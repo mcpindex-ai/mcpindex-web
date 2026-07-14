@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   citationToServerSlug,
   getGuide,
@@ -8,6 +10,7 @@ import {
 } from '@/lib/guides-content';
 import { getServer } from '@/lib/registry';
 import { jsonLdSafe } from '@/lib/jsonLd';
+import { md, escapeAnglesOutsideCode } from '@/components/proseComponents';
 
 export const revalidate = 3600;
 
@@ -60,10 +63,6 @@ export default async function GuidePage(
   const guide = await getGuide(slug);
   if (!guide) notFound();
 
-  const paragraphs = guide.body
-    .split(/\n\n+/)
-    .map((p) => p.trim())
-    .filter(Boolean);
   const servers = await referencedServers(guide.citationIds);
 
   // model-generated text goes into a dangerouslySetInnerHTML script; escape "<"
@@ -111,10 +110,10 @@ export default async function GuidePage(
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
         {guide.h1}
       </h1>
-      <div className="mt-8 space-y-5 text-[16px] leading-[1.65] text-[var(--color-cite)]">
-        {(paragraphs.length ? paragraphs : [guide.body]).map((p, i) => (
-          <p key={`${i}-${p.slice(0, 16)}`}>{p}</p>
-        ))}
+      <div className="mt-8">
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={md}>
+          {escapeAnglesOutsideCode(guide.body)}
+        </ReactMarkdown>
       </div>
 
       {servers.length > 0 && (

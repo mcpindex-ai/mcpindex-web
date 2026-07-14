@@ -238,7 +238,7 @@ export default async function LedgerPage() {
       </section>
 
       <p className="mt-10 font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
-        Refreshed from the crawler every 5 minutes
+        Page refreshed every 5 minutes; the crawler runs daily
       </p>
     </article>
   );

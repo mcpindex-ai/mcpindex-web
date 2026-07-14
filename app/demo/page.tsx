@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 const EMBED_SNIPPET = `<iframe src="${EMBED_URL}" width="720" height="405"
   style="border:0;border-radius:12px;max-width:100%" allowfullscreen
   allow="fullscreen; encrypted-media; picture-in-picture"
-  title="mcpindex - 90-second demo"></iframe>`;
+  title="mcpindex - overview demo"></iframe>`;
 
 export default function DemoPage() {
   return (
