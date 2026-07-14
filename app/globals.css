@@ -13,6 +13,11 @@
   --color-mute: #78716c;
   --color-accent: #ea580c;
   --color-accent-soft: #fff7ed;
+  /* Darker accent (orange-700, 5.18:1 on white) for white-text CTA backgrounds.
+     --color-accent (3.56:1) stays the reserved verdict amber for markers/hover/
+     bars; use -strong only where white text sits on a filled accent button so it
+     meets WCAG 2.2 AA for normal text (the /accessibility stated target). */
+  --color-accent-strong: #c2410c;
   --color-cite: #0f172a;
 }
 

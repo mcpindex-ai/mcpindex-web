@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Shared in-browser contact modal (footer Contact). Submits to /api/waitlist
-// with source=contact (Brevo contact + welcome). Enterprise / procurement
-// stays on /whitepaper via EnterpriseCTA → /api/enterprise.
+// with source=contact (Brevo contact + welcome).
 
 // A trigger button that owns the modal's open state. className lets callers style
 // it as a button or a plain footer link. The modal is mounted only while open,
@@ -133,7 +132,7 @@ function ContactModal({ onClose }: { onClose: () => void }) {
               <button
                 type="submit"
                 disabled={state === 'submitting'}
-                className="w-full font-mono text-[12px] uppercase tracking-[0.16em] text-white bg-[var(--color-ink)] px-5 py-3 hover:bg-[var(--color-accent)] transition-colors disabled:opacity-60"
+                className="w-full font-mono text-[12px] uppercase tracking-[0.16em] text-white bg-[var(--color-ink)] px-5 py-3 hover:bg-[var(--color-accent-strong)] transition-colors disabled:opacity-60"
               >
                 {state === 'submitting' ? <>Sending...</> : <>Request &rarr;</>}
               </button>

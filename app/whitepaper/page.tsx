@@ -57,7 +57,7 @@ export default function WhitepaperPage() {
           <a
             href={PDF_HREF}
             download
-            className="font-mono text-[12px] uppercase tracking-[0.14em] text-white bg-[var(--color-ink)] px-5 py-2.5 hover:bg-[var(--color-accent)] transition-colors"
+            className="font-mono text-[12px] uppercase tracking-[0.14em] text-white bg-[var(--color-ink)] px-5 py-2.5 hover:bg-[var(--color-accent-strong)] transition-colors"
           >
             Download the PDF &darr;
           </a>

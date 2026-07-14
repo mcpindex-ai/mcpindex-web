@@ -74,7 +74,7 @@ export function EnterpriseCTA({
               <button
                 type="submit"
                 disabled={state === 'submitting'}
-                className="font-mono text-[12px] uppercase tracking-[0.16em] text-white bg-[var(--color-ink)] px-6 py-3 hover:bg-[var(--color-accent)] transition-colors disabled:opacity-60"
+                className="font-mono text-[12px] uppercase tracking-[0.16em] text-white bg-[var(--color-ink)] px-6 py-3 hover:bg-[var(--color-accent-strong)] transition-colors disabled:opacity-60"
               >
                 {state === 'submitting' ? <>Sending&hellip;</> : <>Request the pack &rarr;</>}
               </button>
