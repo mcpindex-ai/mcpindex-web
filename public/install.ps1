@@ -66,6 +66,7 @@ function Ensure-Uv {
   # Ensure TLS >=1.2 before the fetch: stock Windows PowerShell 5.1 can otherwise default to
   # TLS 1.0/1.1. OR into the existing set (do not clear it); Tls13 enum is absent on old .NET.
   try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch { }
+  try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls13 } catch { }
   try { Invoke-RestMethod -Uri $UvInstallerUrl | Invoke-Expression }
   catch { Errw "uv installer failed (check network / $UvInstallerUrl)"; exit 1 }
   Add-UvDirToPath | Out-Null

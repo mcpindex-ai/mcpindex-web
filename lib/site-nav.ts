@@ -10,5 +10,3 @@ export const PRIMARY_NAV = [
   { href: '/docs', label: 'Docs' },
   { href: '/#install', label: 'Install', cta: true },
 ] as const;
-
-export type NavItem = (typeof PRIMARY_NAV)[number];

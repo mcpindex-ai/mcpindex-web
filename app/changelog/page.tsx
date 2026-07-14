@@ -40,7 +40,7 @@ export default async function Changelog() {
     byDay.get(day)!.push(s);
   }
 
-  const buckets = bucketByDay(servers);
+  const buckets = bucketByDay(recent);
 
   return (
     <article className="site-container pt-16 pb-24">

@@ -109,7 +109,7 @@ ensure_uv() {
 
   say "uv not found; installing it from the official source ($UV_INSTALLER_URL) ..."
   if command -v curl >/dev/null 2>&1; then
-    curl --proto '=https' --tlsv1.2 -fsSL "$UV_INSTALLER_URL" | sh \
+    curl --proto '=https' --proto-redir '=https' --tlsv1.2 -fsSL "$UV_INSTALLER_URL" | sh \
       || { err "uv installer failed (check network / $UV_INSTALLER_URL)"; exit 1; }
   elif command -v wget >/dev/null 2>&1; then
     # Pin https-only + TLS >=1.2 to match the curl path (GNU wget flags; a minimal wget that

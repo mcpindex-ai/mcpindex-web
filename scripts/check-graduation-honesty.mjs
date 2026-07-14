@@ -72,7 +72,7 @@ function walk(dir) {
     if (ent.name === 'node_modules' || ent.name === '.next') continue;
     const p = path.join(dir, ent.name);
     if (ent.isDirectory()) walk(p);
-    else if (/\.(tsx?|json|txt)$/.test(ent.name)) {
+    else if (/\.(tsx?|json|txt|md)$/.test(ent.name)) {
       const txt = fs.readFileSync(p, 'utf8');
       for (const re of FORBIDDEN) {
         if (re.test(txt)) errors.push(`${path.relative(root, p)} contains a forbidden enforcement/graduation claim (${re}).`);
@@ -81,6 +81,7 @@ function walk(dir) {
   }
 }
 walk(path.join(root, 'app'));
+walk(path.join(root, 'components'));
 // content/ (whitepaper.md + guide JSONs) is public long-form copy with no build
 // guard of its own - the exact gap that let the whitepaper drift into overclaiming.
 walk(path.join(root, 'content'));
@@ -175,26 +176,68 @@ function paragraphs(txt) {
   return txt.split(/\n\s*\n|<\/(?:li|p|h[1-6])>|`,\s*\n|',\s*\n/);
 }
 
+// For .json content files (e.g. content/guides/*.json), the gate/screen checks must
+// run on each STRING VALUE, not the raw file blob: a pretty-printed guide JSON has no
+// blank lines and its body's paragraph breaks are escaped `\n\n`, so paragraphs()
+// would collapse the whole file to ONE unit and the "held cue must be local" invariant
+// would leak across fields (a cue in meta_description excusing an over-claim in body,
+// or a gate mention in body exempting the whole file from screenProbeScan). Parse and
+// yield each string value with real newlines decoded so locality is per-field. Non-JSON
+// (and unparseable JSON) yield the whole text unchanged, preserving prior behavior.
+function scanUnits(p, txt) {
+  if (p.endsWith('.json')) {
+    try {
+      const out = [];
+      const collect = (v) => {
+        if (typeof v === 'string') out.push(v);
+        else if (Array.isArray(v)) v.forEach(collect);
+        else if (v && typeof v === 'object') Object.values(v).forEach(collect);
+      };
+      collect(JSON.parse(txt));
+      return out.length ? out : [txt];
+    } catch {
+      return [txt];
+    }
+  }
+  return [txt];
+}
+
 function gateScan(dir) {
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
     if (ent.name === 'node_modules' || ent.name === '.next') continue;
     const p = path.join(dir, ent.name);
-    if (ent.isDirectory()) gateScan(p);
-    else if (/\.(tsx?|json|txt)$/.test(ent.name)) {
-      const txt = fs.readFileSync(p, 'utf8');
+    if (ent.isDirectory()) { gateScan(p); continue; }
+    // .md excluded here on purpose: the per-paragraph "held cue must be local"
+    // heuristics (tier-liveness, screen-probe) are calibrated for short copy and
+    // false-positive on long-form prose like content/whitepaper.md, whose honest
+    // held-state uses domain vocab (DECLINED/UNAVAILABLE/CONDITIONAL/"only runs
+    // when wired") the cue regex does not model. The whitepaper is still guarded
+    // by the whole-file FORBIDDEN graduation/enforcement walk(); short guide JSONs
+    // keep full coverage here.
+    if (!/\.(tsx?|json|txt)$/.test(ent.name)) continue;
+    const raw = fs.readFileSync(p, 'utf8');
+    for (const txt of scanUnits(p, raw)) {
       const hasGate = GATE_CONTEXT.test(txt);
       // Safety over-claims: forbidden anywhere a gate context exists in the file.
-      // A match preceded (within ~40 chars) by a negation cue is an honest
-      // DISCLAIMER ("we do NOT claim it blocks attacks", "never verified safe")
-      // and is allowed - the lie is the AFFIRMATIVE claim, not the denial of it.
+      // Scan EVERY occurrence (matchAll, not the first only) so an affirmative
+      // over-claim later in a long file is not masked by an earlier honest
+      // disclaimer. A match preceded (within ~48 chars) by a negation cue is an
+      // honest DISCLAIMER ("we do NOT claim it blocks attacks") and is allowed -
+      // the lie is the AFFIRMATIVE claim, not the denial of it.
       if (hasGate) {
         const NEG = /\b(?:not|never|n['’]t|no|without|cannot|can['’]t|does not|do not|don['’]t|isn['’]t|aren['’]t|rather than|instead of|claim|claims|claiming)\b/i;
         for (const re of GATE_SAFETY_CLAIMS) {
-          const m = re.exec(txt);
-          if (!m) continue;
-          const before = txt.slice(Math.max(0, m.index - 48), m.index);
-          if (NEG.test(before)) continue; // honest disclaimer, not an over-claim
-          errors.push(`${path.relative(root, p)} asserts a GATE safety over-claim (${re}). The gate is a CONTRACT-DIFF, not a safety verdict - it asserts what CHANGED, never that a tool is "safe"/"verified"/"blocks attacks". Say "caught the change" / "held the call".`);
+          const gre = re.global ? re : new RegExp(re.source, re.flags + 'g');
+          for (const m of txt.matchAll(gre)) {
+            // A negation within ~48 chars before the match is an honest disclaimer
+            // (the phrase list often spans lines/JSX, so use a raw char window, not a
+            // sentence split, to catch a "never"/"don't" on the prior line). matchAll
+            // (not exec) so an affirmative over-claim later in a long file is not masked
+            // by an earlier honest disclaimer of the same phrase.
+            const before = txt.slice(Math.max(0, m.index - 48), m.index);
+            if (NEG.test(before)) continue; // honest disclaimer, not an over-claim
+            errors.push(`${path.relative(root, p)} asserts a GATE safety over-claim (${re}). The gate is a CONTRACT-DIFF, not a safety verdict - it asserts what CHANGED, never that a tool is "safe"/"verified"/"blocks attacks". Say "caught the change" / "held the call".`);
+          }
         }
       }
       // (B) MATURITY over-claims: forbidden regardless of gate context (the claim
@@ -255,9 +298,17 @@ function screenProbeScan(dir) {
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
     if (ent.name === 'node_modules' || ent.name === '.next') continue;
     const p = path.join(dir, ent.name);
-    if (ent.isDirectory()) screenProbeScan(p);
-    else if (/\.(tsx?|json|txt)$/.test(ent.name)) {
-      const txt = fs.readFileSync(p, 'utf8');
+    if (ent.isDirectory()) { screenProbeScan(p); continue; }
+    // .md excluded here on purpose: the per-paragraph "held cue must be local"
+    // heuristics (tier-liveness, screen-probe) are calibrated for short copy and
+    // false-positive on long-form prose like content/whitepaper.md, whose honest
+    // held-state uses domain vocab (DECLINED/UNAVAILABLE/CONDITIONAL/"only runs
+    // when wired") the cue regex does not model. The whitepaper is still guarded
+    // by the whole-file FORBIDDEN graduation/enforcement walk(); short guide JSONs
+    // keep full coverage here.
+    if (!/\.(tsx?|json|txt)$/.test(ent.name)) continue;
+    const raw = fs.readFileSync(p, 'utf8');
+    for (const txt of scanUnits(p, raw)) {
       for (const para of paragraphs(txt)) {
         if (!SCREEN_PROBE_SUBJECT.test(para)) continue;
         if (!SCREEN_PROBE_VERB.test(para)) continue;
@@ -293,7 +344,7 @@ try {
       if (ent.name === 'node_modules' || ent.name === '.next') continue;
       const p = path.join(dir, ent.name);
       if (ent.isDirectory()) appWalk(p);
-      else if (/\.(tsx?|json|txt)$/.test(ent.name)) {
+      else if (/\.(tsx?|json|txt|md)$/.test(ent.name)) {
         const txt = fs.readFileSync(p, 'utf8');
         for (const m of txt.matchAll(/mcpindex\.ai\/([A-Za-z0-9._-]+\.(?:sh|ps1|mcpb))\b/g)) {
           referenced.add(m[1]);
