@@ -1,17 +1,24 @@
-// Self-serve login: GitHub OAuth -> mint a free api_key bound to the account -> hand it to the
-// gate CLI's localhost listener. Uses a dedicated GitHub OAuth app when MCPINDEX_LOGIN_CLIENT_ID/
-// SECRET are set (isolated from drift's credentials), else falls back to the drift app
-// (DRIFT_OAUTH_CLIENT_ID/SECRET). Login-specific redirect_uri (MCPINDEX_LOGIN_REDIRECT_URI).
-// Inert until MCPINDEX_LOGIN_ENABLED=1.
+// Self-serve login: GitHub OR Google OAuth -> mint a free api_key bound to the account -> hand it
+// to the gate CLI's localhost listener. GitHub uses a dedicated OAuth app when
+// MCPINDEX_LOGIN_CLIENT_ID/SECRET are set (isolated from drift's credentials), else falls back to
+// the drift app (DRIFT_OAUTH_CLIENT_ID/SECRET). Google uses its own dedicated app
+// (MCPINDEX_GOOGLE_CLIENT_ID/SECRET) with NO fallback to the github/drift creds. Both share the
+// login redirect_uri (Google: MCPINDEX_GOOGLE_REDIRECT_URI, else MCPINDEX_LOGIN_REDIRECT_URI) and
+// the owner-hash pepper. Inert until MCPINDEX_LOGIN_ENABLED=1; each provider is independently inert
+// until ITS client env is configured (unconfigured provider -> unavailable, never a broken flow).
 //
 // SECURITY (load-bearing):
 // - The CLI callback URL is LOOPBACK-ONLY (http://127.0.0.1|localhost[:port]). The minted key is
 //   POSTed there, so a non-loopback callback would exfiltrate the key -> rejected at start AND
 //   re-checked at completion (defense in depth).
-// - owner_hash = SHA-256(github:<id>:pepper) - a one-way hash, never PII (drift github_hash
-//   discipline). Pepper is REQUIRED (no pepper -> unavailable, never an unsalted hash).
+// - owner_hash = SHA-256(<provider>:<subject>:pepper) - a one-way hash, never PII (drift github_hash
+//   discipline). GitHub subject = numeric user id; Google subject = OIDC `sub` (NEVER email, which
+//   is mutable/reassignable). Pepper is REQUIRED (no pepper -> unavailable, never an unsalted hash).
+// - The chosen provider is persisted WITH the loopback callback in the one-time state, so the
+//   callback leg trusts the state (not a client-supplied param) for which token/userinfo endpoints
+//   to hit. The loopback/nonce/CLI handoff is provider-agnostic and unchanged.
 // - Issuance is FAIL-CLOSED (issueKey returns null on any failure -> we do not hand back a key).
-// - I/O (state store, GitHub transport, issue fn) is injected, so the logic is unit-tested with
+// - I/O (state store, OAuth transport, issue fn) is injected, so the logic is unit-tested with
 //   no network / no Redis.
 
 import { createHash, randomBytes } from 'node:crypto';
@@ -24,6 +31,14 @@ const LOGIN_STATE = /^[0-9a-f]{64}$/;
 // delivered only to the user's own loopback (an attacker can't reach the victim's 127.0.0.1).
 // Never widen this to a LAN host or a custom scheme without adding a second line of defense.
 const LOOPBACK_CB = /^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d{1,5})?(?:\/[A-Za-z0-9._~\-/]*)?$/;
+
+// Supported self-serve identity providers. Default is 'github' everywhere for backward-compat.
+export type LoginProvider = 'github' | 'google';
+
+/** Coerce arbitrary input to a known provider; anything but the exact 'google' string -> github. */
+export function normalizeProvider(p: string | null | undefined): LoginProvider {
+  return p === 'google' ? 'google' : 'github';
+}
 
 export function loginEnabled(): boolean {
   return process.env.MCPINDEX_LOGIN_ENABLED === '1';
@@ -47,14 +62,29 @@ function loginClientSecret(): string | undefined {
   return process.env.MCPINDEX_LOGIN_CLIENT_SECRET ?? process.env.DRIFT_OAUTH_CLIENT_SECRET;
 }
 
+// Google OAuth client credentials: DEDICATED app only, NO fallback to the github/drift creds
+// (a Google `code` is meaningless to a GitHub app and vice-versa). Unset -> provider is inert.
+function googleClientId(): string | undefined {
+  return process.env.MCPINDEX_GOOGLE_CLIENT_ID;
+}
+function googleClientSecret(): string | undefined {
+  return process.env.MCPINDEX_GOOGLE_CLIENT_SECRET;
+}
+// Reuse the same callback path as GitHub; allow a Google-specific override for flexibility.
+function googleRedirectUri(): string | undefined {
+  return process.env.MCPINDEX_GOOGLE_REDIRECT_URI ?? process.env.MCPINDEX_LOGIN_REDIRECT_URI;
+}
+
 export interface StateStore {
   set(key: string, value: string, ttlSec: number): Promise<boolean>;
   getdel(key: string): Promise<string | null>;
 }
 
+// Provider-aware transport: `provider` selects the token/userinfo endpoints. `fetchUserId` returns
+// the provider's STABLE subject (GitHub numeric id, Google OIDC `sub`) - never an email.
 export interface LoginTransport {
-  exchangeCode(code: string): Promise<string | null>;
-  fetchUserId(accessToken: string): Promise<string | null>;
+  exchangeCode(provider: LoginProvider, code: string): Promise<string | null>;
+  fetchUserId(provider: LoginProvider, accessToken: string): Promise<string | null>;
 }
 
 export type IssueFn = (
@@ -74,7 +104,28 @@ function stateKey(state: string): string {
   return `login:state:${state}`;
 }
 
-export function buildAuthorizeUrl(state: string): string | null {
+// The stored state value carries BOTH the loopback callback AND the chosen provider, so the
+// callback leg (which only has the `state` handle) knows which endpoints to use. Encoded as JSON.
+// Backward-compat: a legacy bare-string value (pre-provider) decodes as a github callback, so
+// in-flight/older states and the existing tests keep working.
+function encodeState(cliCallback: string, provider: LoginProvider): string {
+  return JSON.stringify({ cb: cliCallback, provider });
+}
+
+function decodeState(raw: string): { cliCallback: string; provider: LoginProvider } {
+  try {
+    const parsed = JSON.parse(raw) as { cb?: unknown; provider?: unknown };
+    if (parsed && typeof parsed === 'object' && typeof parsed.cb === 'string') {
+      return { cliCallback: parsed.cb, provider: normalizeProvider(parsed.provider as string) };
+    }
+  } catch {
+    /* not JSON -> legacy bare callback string */
+  }
+  return { cliCallback: raw, provider: 'github' }; // legacy value is always a github callback
+}
+
+export function buildAuthorizeUrl(state: string, provider: LoginProvider = 'github'): string | null {
+  if (provider === 'google') return buildGoogleAuthorizeUrl(state);
   const clientId = loginClientId();
   const redirectUri = process.env.MCPINDEX_LOGIN_REDIRECT_URI;
   if (!clientId || !redirectUri) return null;
@@ -87,17 +138,36 @@ export function buildAuthorizeUrl(state: string): string | null {
   return `https://github.com/login/oauth/authorize?${params.toString()}`;
 }
 
+function buildGoogleAuthorizeUrl(state: string): string | null {
+  const clientId = googleClientId();
+  const redirectUri = googleRedirectUri();
+  if (!clientId || !redirectUri) return null; // unconfigured -> caller returns `unavailable` (inert)
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: 'code',
+    scope: 'openid email', // identity only - the minimal scope to obtain a stable `sub`
+    state,
+  });
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+}
+
 export type StartResult = { url: string } | { error: 'bad_callback' | 'unavailable' };
 
-export async function startLogin(cliCallback: string, store: StateStore): Promise<StartResult> {
+export async function startLogin(
+  cliCallback: string,
+  store: StateStore,
+  provider: LoginProvider = 'github',
+): Promise<StartResult> {
   if (!loginEnabled()) return { error: 'unavailable' }; // defense in depth: the route also gates this
   if (!isLoopbackCallback(cliCallback)) return { error: 'bad_callback' }; // SSRF/CSRF: loopback only
   if (!loginPepper()) return { error: 'unavailable' }; // fail fast: don't burn state on a misconfigured deploy
   const state = genState();
-  const url = buildAuthorizeUrl(state);
-  if (!url) return { error: 'unavailable' };
+  const url = buildAuthorizeUrl(state, provider);
+  if (!url) return { error: 'unavailable' }; // provider unconfigured -> inert
   try {
-    const ok = await store.set(stateKey(state), cliCallback, STATE_TTL_SEC);
+    // Persist the provider WITH the callback so the callback leg is provider-driven by trusted state.
+    const ok = await store.set(stateKey(state), encodeState(cliCallback, provider), STATE_TTL_SEC);
     if (!ok) return { error: 'unavailable' };
     return { url };
   } catch {
@@ -153,9 +223,60 @@ async function githubUserId(accessToken: string): Promise<string | null> {
   }
 }
 
+async function googleExchange(code: string): Promise<string | null> {
+  const clientId = googleClientId();
+  const clientSecret = googleClientSecret();
+  const redirectUri = googleRedirectUri();
+  if (!clientId || !clientSecret || !redirectUri) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 4000);
+  try {
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }).toString(),
+      signal: controller.signal,
+      redirect: 'manual',
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { access_token?: string };
+    return typeof data.access_token === 'string' ? data.access_token : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function googleSubject(accessToken: string): Promise<string | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 4000);
+  try {
+    const res = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+      signal: controller.signal,
+      redirect: 'manual',
+    });
+    if (!res.ok) return null;
+    // `sub` is the ONLY stable, non-reassignable identifier - never key on email.
+    const data = (await res.json()) as { sub?: string };
+    return typeof data.sub === 'string' && data.sub ? data.sub : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 const defaultLoginTransport: LoginTransport = {
-  exchangeCode: githubExchange,
-  fetchUserId: githubUserId,
+  exchangeCode: (provider, code) => (provider === 'google' ? googleExchange(code) : githubExchange(code)),
+  fetchUserId: (provider, token) => (provider === 'google' ? googleSubject(token) : githubUserId(token)),
 };
 
 export async function completeLogin(
@@ -169,24 +290,28 @@ export async function completeLogin(
   if (!LOGIN_STATE.test(state)) return { error: 'invalid_state' };
   if (!code || typeof code !== 'string') return { error: 'invalid_request' };
 
-  let cliCallback: string | null;
+  let raw: string | null;
   try {
-    cliCallback = await store.getdel(stateKey(state)); // one-time: consume the state
+    raw = await store.getdel(stateKey(state)); // one-time: consume the state
   } catch {
     return { error: 'unavailable' };
   }
-  if (!cliCallback || !isLoopbackCallback(cliCallback)) return { error: 'invalid_state' };
+  if (!raw) return { error: 'invalid_state' };
+  // Provider comes from the trusted stored state, never from a client-supplied callback param.
+  const { cliCallback, provider } = decodeState(raw);
+  if (!isLoopbackCallback(cliCallback)) return { error: 'invalid_state' };
 
-  const token = await transport.exchangeCode(code);
+  const token = await transport.exchangeCode(provider, code);
   if (!token) return { error: 'exchange_failed' };
-  const ghId = await transport.fetchUserId(token);
-  if (!ghId) return { error: 'exchange_failed' };
+  const subject = await transport.fetchUserId(provider, token);
+  if (!subject) return { error: 'exchange_failed' };
 
   const pepper = loginPepper();
   if (!pepper) return { error: 'unavailable' }; // never an unsalted owner hash
 
-  const ownerHash = sha256hex(`github:${ghId}:${pepper}`);
-  const apiKey = await issue(ownerHash, { tier: 'free', provider: 'github' });
+  // owner_hash = sha256(<provider>:<subject>:pepper) - one-way, peppered, no raw PII stored.
+  const ownerHash = sha256hex(`${provider}:${subject}:${pepper}`);
+  const apiKey = await issue(ownerHash, { tier: 'free', provider });
   if (!apiKey) return { error: 'issue_failed' }; // fail-closed: no key if not persisted
 
   return { ok: true, apiKey, cliCallback };

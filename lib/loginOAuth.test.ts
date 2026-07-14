@@ -48,6 +48,9 @@ const ENV_KEYS = [
   'MCPINDEX_LOGIN_PEPPER',
   'DRIFT_OAUTH_PEPPER',
   'MCPINDEX_LOGIN_ENABLED',
+  'MCPINDEX_GOOGLE_CLIENT_ID',
+  'MCPINDEX_GOOGLE_CLIENT_SECRET',
+  'MCPINDEX_GOOGLE_REDIRECT_URI',
 ];
 
 // Isolate env between tests (some delete keys mid-test); prevents order-dependent flakes.
@@ -184,4 +187,103 @@ test('buildAuthorizeUrl requests only read:user (never repo scope)', () => {
   const url = buildAuthorizeUrl(STATE)!;
   assert.ok(url.includes('scope=read%3Auser'));
   assert.ok(!url.includes('repo'), 'must never request repo scope');
+});
+
+// ---- Google provider (mirrors the GitHub cases; no real network) --------------------------------
+
+const GOOGLE_SUB = '110248495921238986420';
+
+const googleTransport: LoginTransport = {
+  async exchangeCode(provider) {
+    assert.equal(provider, 'google', 'transport must be told the provider is google');
+    return 'google-access-token';
+  },
+  async fetchUserId(provider) {
+    assert.equal(provider, 'google');
+    return GOOGLE_SUB;
+  },
+};
+
+/** Google client env + shared login pepper/flag; NO github/drift creds (Google must not fall back). */
+function setGoogleEnv() {
+  process.env.MCPINDEX_GOOGLE_CLIENT_ID = 'gcid';
+  process.env.MCPINDEX_GOOGLE_CLIENT_SECRET = 'gsec';
+  process.env.MCPINDEX_LOGIN_REDIRECT_URI = 'https://mcpindex.ai/api/auth/login/callback';
+  process.env.MCPINDEX_LOGIN_PEPPER = 'pep';
+  process.env.MCPINDEX_LOGIN_ENABLED = '1';
+}
+
+test('google: start builds the Google authorize url with identity-only scope', async () => {
+  setGoogleEnv();
+  const store = memStore();
+  const r = await startLogin(CB, store, 'google');
+  assert.ok('url' in r, `expected a url, got ${JSON.stringify(r)}`);
+  if ('url' in r) {
+    assert.ok(r.url.startsWith('https://accounts.google.com/o/oauth2/v2/auth?'), 'targets Google');
+    assert.ok(r.url.includes('response_type=code'));
+    assert.ok(r.url.includes('scope=openid+email'), 'identity-only scope (openid email)');
+    assert.ok(r.url.includes('client_id=gcid'), 'uses the dedicated Google client id');
+    assert.ok(!/scope=[^&]*(drive|calendar|gmail|contacts|profile\.)/.test(r.url), 'no broad scopes');
+  }
+  assert.equal(store.data.size, 1, 'one state stored');
+});
+
+test('google: buildAuthorizeUrl uses only the dedicated Google client (no github/drift fallback)', () => {
+  // Only github/drift creds present, no Google creds -> Google must NOT borrow them.
+  setEnv();
+  process.env.MCPINDEX_LOGIN_CLIENT_ID = 'login-cid';
+  assert.equal(buildAuthorizeUrl(STATE, 'google'), null, 'unconfigured Google -> null (inert)');
+  // GitHub still builds from the same env - proves the github path is unchanged.
+  assert.ok(buildAuthorizeUrl(STATE, 'github')!.startsWith('https://github.com/login/oauth/authorize?'));
+});
+
+test('google: an unconfigured Google client fails cleanly to unavailable (inert)', async () => {
+  setEnv(); // github configured, but NO google client -> provider=google is inert
+  const store = memStore();
+  const r = await startLogin(CB, store, 'google');
+  assert.deepEqual(r, { error: 'unavailable' });
+  assert.equal(store.data.size, 0, 'no state burned when the provider is unconfigured');
+});
+
+test('google: complete issues a key with provider=google and an owner hash free of the raw sub', async () => {
+  setGoogleEnv();
+  const stored = JSON.stringify({ cb: CB, provider: 'google' });
+  const store = memStore({ [`login:state:${STATE}`]: stored });
+  const issued: string[] = [];
+  const issue: IssueFn = async (ownerHash, opts) => {
+    issued.push(`${ownerHash}:${opts.provider}`);
+    return 'mcpk_google';
+  };
+  const r = await completeLogin(STATE, 'code123', store, googleTransport, issue);
+  assert.ok('ok' in r && r.ok, `expected ok, got ${JSON.stringify(r)}`);
+  if ('ok' in r) {
+    assert.equal(r.apiKey, 'mcpk_google');
+    assert.equal(r.cliCallback, CB);
+  }
+  assert.equal(issued.length, 1);
+  assert.ok(issued[0].endsWith(':google'), 'key minted with provider=google');
+  assert.ok(!issued[0].includes(GOOGLE_SUB), 'owner hash must NOT contain the raw google sub');
+  assert.equal(store.data.size, 0, 'state consumed (one-time)');
+});
+
+test('google: complete fails closed when issuance fails', async () => {
+  setGoogleEnv();
+  const stored = JSON.stringify({ cb: CB, provider: 'google' });
+  const store = memStore({ [`login:state:${STATE}`]: stored });
+  const r = await completeLogin(STATE, 'code', store, googleTransport, async () => null);
+  assert.deepEqual(r, { error: 'issue_failed' });
+});
+
+test('github path unchanged: a legacy bare-callback state still resolves to a github key', async () => {
+  // Pre-provider states stored the bare callback string; they must still decode as github.
+  setEnv();
+  const store = memStore({ [`login:state:${STATE}`]: CB });
+  const issued: string[] = [];
+  const issue: IssueFn = async (ownerHash, opts) => {
+    issued.push(`${ownerHash}:${opts.provider}`);
+    return 'mcpk_minted';
+  };
+  const r = await completeLogin(STATE, 'code123', store, goodTransport, issue);
+  assert.ok('ok' in r && r.ok);
+  assert.ok(issued[0].endsWith(':github'), 'legacy bare-string state -> github');
 });
