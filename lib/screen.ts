@@ -20,6 +20,13 @@
 // same already-capped call and cannot widen spend.
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+
+// TEST-ONLY seam: override the Groq HTTP call so a suite can drive the clean/flagged/parse-fail
+// verdicts without a live key. `undefined` resets to the real global fetch. Prod always uses fetch.
+let _fetch: typeof fetch | undefined;
+export function __setScreenFetchForTest(f: typeof fetch | undefined): void {
+  _fetch = f;
+}
 const MODEL = 'llama-3.3-70b-versatile';
 
 const SYSTEM_PROMPT =
@@ -79,7 +86,7 @@ export function quoteIsGrounded(canonicalDescription: string, quote: string): bo
 async function screenWithKey(key: string, description: string): Promise<ScreenResult> {
   let data: unknown;
   try {
-    const res = await fetch(GROQ_URL, {
+    const res = await (_fetch ?? fetch)(GROQ_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
       body: JSON.stringify({

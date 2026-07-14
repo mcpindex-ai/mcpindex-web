@@ -23,6 +23,13 @@ function redis(): Redis | null {
   return _redis;
 }
 
+/** TEST-ONLY seam (mirrors the drift/receipt/login modules): override the shared client so a suite
+ * can drive the 429 branch of every limiter. `undefined` resets to lazy env resolution, `null`
+ * forces the unconfigured (fail-open) path, a mock object drives limited/over-limit responses. */
+export function __setRatelimitRedisForTest(client: Redis | null | undefined): void {
+  _redis = client;
+}
+
 const PER_IP_PER_MIN = 10; // tighter than the general /api/v1/* 60/min — this one costs money
 const GLOBAL_PER_DAY = 5000; // hard daily ceiling on Groq calls regardless of IP
 

@@ -120,6 +120,25 @@ export function mockRedis(): any {
   };
 }
 
+// A Redis mock whose counters are always already over any limit — every ratelimit check that runs
+// `incr(key) > LIMIT` (or a zset window) returns over-limit → the route's 429 branch. Inject via
+// __setRatelimitRedisForTest. Reads return null/empty so it can't accidentally satisfy other paths.
+export function overLimitRedis(): any {
+  const HUGE = 10_000_000;
+  return {
+    async incr() { return HUGE; },
+    async expire() { return 1; },
+    async zadd() { return 1; },
+    async zcard() { return HUGE; },
+    async zcount() { return HUGE; },
+    async zremrangebyscore() { return 0; },
+    async get() { return null; },
+    async set() { return 'OK'; },
+    async eval() { return HUGE; },
+    async pipeline() { const self: any = {}; ['zremrangebyscore', 'zadd', 'zcard', 'expire', 'incr'].forEach((m) => { self[m] = () => self; }); self.exec = async () => [0, 1, HUGE, 1]; return self; },
+  };
+}
+
 /** Snapshot + restore process.env around a test so gate flags never bleed across tests.
  * Use in beforeEach/afterEach: `const restore = snapshotEnv(); ... restore();` */
 export function snapshotEnv(): () => void {

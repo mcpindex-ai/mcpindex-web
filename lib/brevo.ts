@@ -65,11 +65,18 @@ function esc(s: string): string {
     .replace(/'/g, '&#39;');
 }
 
+// TEST-ONLY seam: override the Brevo HTTP call so a suite can drive the delivery:'sent' path
+// (upsert/welcome/notify) without hitting api.brevo.com. `undefined` resets to global fetch.
+let _fetch: typeof fetch | undefined;
+export function __setBrevoFetchForTest(f: typeof fetch | undefined): void {
+  _fetch = f;
+}
+
 async function call(path: string, body: unknown): Promise<BrevoResult> {
   const key = apiKey();
   if (!key) return { ok: false, error: 'not_configured' };
   try {
-    const res = await fetch(`${API}${path}`, {
+    const res = await (_fetch ?? fetch)(`${API}${path}`, {
       method: 'POST',
       headers: { 'api-key': key, 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify(body),

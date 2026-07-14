@@ -17,6 +17,12 @@ function redis(): Redis | null {
   return _redis;
 }
 
+/** TEST-ONLY seam (mirrors the drift/receipt modules): override the client so a suite can drive the
+ * ledger 200 path (get(LEDGER_KEY) returns a valid blob) without a live Redis. */
+export function __setLedgerServerRedisForTest(client: Redis | null | undefined): void {
+  _redis = client;
+}
+
 /** Read + validate the published ledger blob. Returns null when the flag is off, the cache is
  * unavailable, or the blob is missing/malformed — the page/API treat null as "not published".
  * Fail-CLOSED on shape (a corrupt blob is not published), but never throws. The branchy parsing

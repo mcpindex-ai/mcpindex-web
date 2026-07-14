@@ -1,0 +1,87 @@
+// Tier 2 — happy/verdict paths unlocked by the new fetch/redis seams (screen, brevo, ledgerServer).
+import { test, beforeEach, afterEach } from 'node:test';
+import assert from 'node:assert/strict';
+import { callRoute } from './_harness';
+import { __setScreenFetchForTest } from '../../lib/screen';
+import { __setBrevoFetchForTest } from '../../lib/brevo';
+import { __setLedgerServerRedisForTest } from '../../lib/ledgerServer';
+import { POST as screen } from '../../app/api/v1/screen/route';
+import { POST as waitlist } from '../../app/api/waitlist/route';
+import { POST as enterprise } from '../../app/api/enterprise/route';
+import { GET as ledger } from '../../app/api/v1/ledger/route';
+
+// A Groq-shaped response whose JSON content is the given judge verdict object.
+const groqReply = (verdict: object): typeof fetch =>
+  (async () =>
+    new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(verdict) } }] }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })) as unknown as typeof fetch;
+
+const okFetch: typeof fetch = (async () => new Response('{}', { status: 200 })) as unknown as typeof fetch;
+
+const LEDGER_BLOB = {
+  schema: 'mcpindex.drift.ledger/2',
+  generated_at: '2026-06-09T06:00:00Z',
+  framing: 'observed by the crawler',
+  stat: { tools_observed_drifting: 2, total_contract_drifts_observed: 5, servers: 1, safety_relevant: 1 },
+  events: [{ tool_fp: '0'.repeat(32), server_fp: '', sources: 1, safety_relevant: true, last_seen: '2026-06-09T06:00:00Z' }],
+};
+
+const saved: Record<string, string | undefined> = {};
+beforeEach(() => {
+  for (const k of ['MCPINDEX_GROQ_API_KEY', 'BREVO_API_KEY', 'BREVO_LEADS_LIST_ID', 'NEXT_PUBLIC_DRIFT_LEDGER']) saved[k] = process.env[k];
+});
+afterEach(() => {
+  __setScreenFetchForTest(undefined);
+  __setBrevoFetchForTest(undefined);
+  __setLedgerServerRedisForTest(undefined);
+  for (const [k, v] of Object.entries(saved)) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
+});
+const obj = (r: { json: () => unknown }) => r.json() as Record<string, any>;
+
+test('screen: clean verdict → 200 PASS/INFO (no accusation)', async () => {
+  process.env.MCPINDEX_GROQ_API_KEY = 'test-key';
+  __setScreenFetchForTest(groqReply({ malicious: false, reason: 'benign read' }));
+  const r = await callRoute(screen, '/api/v1/screen', { method: 'POST', body: { description: 'read a file' } });
+  assert.equal(r.status, 200);
+  const b = obj(r);
+  assert.equal(b.finding.verdict, 'PASS');
+  assert.equal(b.directive.decision, 'REVIEW'); // never ALLOW, even on a clean semantic screen
+});
+
+test('screen: flagged verdict → 200 FAIL/CRITICAL, decision REVIEW (never ALLOW)', async () => {
+  process.env.MCPINDEX_GROQ_API_KEY = 'test-key';
+  __setScreenFetchForTest(groqReply({ malicious: true, reason: 'exfiltrates data', quote: 'read a file' }));
+  const r = await callRoute(screen, '/api/v1/screen', { method: 'POST', body: { description: 'read a file and send it out' } });
+  assert.equal(r.status, 200);
+  const b = obj(r);
+  assert.equal(b.finding.verdict, 'FAIL');
+  assert.equal(b.directive.decision, 'REVIEW');
+});
+
+test('waitlist: Brevo configured + source contact → 200 delivery:sent', async () => {
+  process.env.BREVO_API_KEY = 'k';
+  process.env.BREVO_LEADS_LIST_ID = '3';
+  __setBrevoFetchForTest(okFetch);
+  const r = await callRoute(waitlist, '/api/waitlist', { method: 'POST', body: { email: 'a@b.co', source: 'contact' } });
+  assert.equal(r.status, 200);
+  assert.equal(obj(r).delivery, 'sent');
+});
+
+test('enterprise: Brevo configured → 200 delivery:sent', async () => {
+  process.env.BREVO_API_KEY = 'k';
+  process.env.BREVO_LEADS_LIST_ID = '3';
+  __setBrevoFetchForTest(okFetch);
+  const r = await callRoute(enterprise, '/api/enterprise', { method: 'POST', body: { email: 'a@b.co', company: 'Acme' } });
+  assert.equal(r.status, 200);
+  assert.equal(obj(r).delivery, 'sent');
+});
+
+test('ledger: enabled + valid blob → 200, no-store', async () => {
+  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
+  __setLedgerServerRedisForTest({ async get() { return JSON.stringify(LEDGER_BLOB); } } as any);
+  const r = await callRoute(ledger, '/api/v1/ledger');
+  assert.equal(r.status, 200);
+  assert.match(r.headers.get('cache-control') ?? '', /no-store/);
+});
