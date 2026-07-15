@@ -1,0 +1,32 @@
+[
+  {
+    "name": "recommend_mcp_for_task",
+    "title": "Recommend MCP servers for a task",
+    "description": "Recommend the best MCP servers for a natural-language task. Returns top 3 ranked picks with reasoning, install commands, and quality scores. Use this when the user asks for the right MCP server for a task they want to do."
+  },
+  {
+    "name": "search_mcp_servers",
+    "title": "Search MCP servers",
+    "description": "Keyword + semantic search across the full MCP server registry. Use when the user knows what tool category they want but not which server."
+  },
+  {
+    "name": "get_install_command",
+    "title": "Get install command",
+    "description": "Get the exact install command for a given MCP server and client. Returns a JSON block ready to paste into the client config."
+  },
+  {
+    "name": "compare_servers",
+    "title": "Compare MCP servers",
+    "description": "Side-by-side comparison of 2-5 MCP servers - quality scores, install paths, transport types, env vars."
+  },
+  {
+    "name": "check_tool_trust",
+    "title": "Check tool trust (advisory)",
+    "description": "Pre-invocation advisory screen for a specific tool on an MCP server. Returns an advisory verdict object (directive ALLOW | DENY | REVIEW | UNVERIFIED, dimensions, freshness). At v1 the public screen produces REVIEW or UNVERIFIED only - ALLOW/DENY are reserved. Not the in-path gate (mcpindex-gate). Agents SHOULD treat UNVERIFIED as \"human review required\", never as ALLOW."
+  },
+  {
+    "name": "assess_server",
+    "title": "Assess server trust (advisory)",
+    "description": "Aggregated pre-flight trust assessment across all tools on an MCP server. Same verdict shape as check_tool_trust. Use for \"is THIS server worth integrating?\" decisions. v1 advisory; conformance monitored not enforced; verdicts may be UNVERIFIED if not yet probed."
+  }
+]

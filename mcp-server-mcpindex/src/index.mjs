@@ -19,6 +19,10 @@ const API_BASE = process.env.MCPINDEX_API_BASE || 'https://mcpindex.ai';
 // Single source of truth for the running version - read from package.json so the
 // User-Agent and the update-check can never drift from what npm actually shipped.
 const PKG_VERSION = createRequire(import.meta.url)('../package.json').version;
+// Single source of truth for tool name/description, shared with the hosted
+// remote endpoint (mcpindex-web/app/api/[transport]/route.ts) so copy can't drift.
+const TOOL_META = createRequire(import.meta.url)('./tools-meta.json');
+const TOOL_DESC = Object.fromEntries(TOOL_META.map((m) => [m.name, m.description]));
 
 const server = new Server(
   { name: 'mcp-server-mcpindex', version: PKG_VERSION },
@@ -32,7 +36,7 @@ const TOOLS = [
   {
     name: 'recommend_mcp_for_task',
     description:
-      'Recommend the best MCP servers for a natural-language task. Returns top 3 ranked picks with reasoning, install commands, and quality scores. Use this when the user asks for the right MCP server for a task they want to do.',
+      TOOL_DESC.recommend_mcp_for_task,
     inputSchema: {
       type: 'object',
       properties: {
@@ -48,7 +52,7 @@ const TOOLS = [
   {
     name: 'search_mcp_servers',
     description:
-      'Keyword + semantic search across the full MCP server registry. Use when the user knows what tool category they want but not which server.',
+      TOOL_DESC.search_mcp_servers,
     inputSchema: {
       type: 'object',
       properties: {
@@ -70,7 +74,7 @@ const TOOLS = [
   {
     name: 'get_install_command',
     description:
-      'Get the exact install command for a given MCP server and client. Returns a JSON block ready to paste into the client config.',
+      TOOL_DESC.get_install_command,
     inputSchema: {
       type: 'object',
       properties: {
@@ -91,7 +95,7 @@ const TOOLS = [
   {
     name: 'compare_servers',
     description:
-      'Side-by-side comparison of 2-5 MCP servers - quality scores, install paths, transport types, env vars.',
+      TOOL_DESC.compare_servers,
     inputSchema: {
       type: 'object',
       properties: {
@@ -109,7 +113,7 @@ const TOOLS = [
   {
     name: 'check_tool_trust',
     description:
-      'Pre-invocation advisory screen for a specific tool on an MCP server. Returns an advisory verdict object (directive ALLOW | DENY | REVIEW | UNVERIFIED, dimensions, freshness). At v1 the public screen produces REVIEW or UNVERIFIED only - ALLOW/DENY are reserved. Not the in-path gate (mcpindex-gate). Agents SHOULD treat UNVERIFIED as "human review required", never as ALLOW.',
+      TOOL_DESC.check_tool_trust,
     inputSchema: {
       type: 'object',
       properties: {
@@ -128,7 +132,7 @@ const TOOLS = [
   {
     name: 'assess_server',
     description:
-      'Aggregated pre-flight trust assessment across all tools on an MCP server. Same verdict shape as check_tool_trust. Use for "is THIS server worth integrating?" decisions. v1 advisory; conformance monitored not enforced; verdicts may be UNVERIFIED if not yet probed.',
+      TOOL_DESC.assess_server,
     inputSchema: {
       type: 'object',
       properties: {

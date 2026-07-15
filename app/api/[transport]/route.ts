@@ -12,6 +12,15 @@
 import { createMcpHandler } from 'mcp-handler';
 import { z } from 'zod';
 
+// Shared single source of truth for tool name/title/description (also used by the
+// stdio CLI, mcp-server-mcpindex/src/index.mjs) so the two can't drift.
+import TOOL_META from '../../../mcp-server-mcpindex/src/tools-meta.json';
+const tmeta = (name: string) => {
+  const m = TOOL_META.find((x) => x.name === name);
+  if (!m) throw new Error(`unknown tool ${name}`);
+  return { title: m.title, description: m.description };
+};
+
 // Same convention as the CLI: query the public API. The tools call /api/v1/*
 // only (never /api/mcp), so there is no self-recursion.
 const API_BASE = process.env.MCPINDEX_API_BASE || 'https://mcpindex.ai';
@@ -117,9 +126,7 @@ const handler = createMcpHandler(
     server.registerTool(
       'recommend_mcp_for_task',
       {
-        title: 'Recommend MCP servers for a task',
-        description:
-          'Recommend the best MCP servers for a natural-language task. Returns top 3 ranked picks with reasoning, install commands, and quality scores. Use this when the user asks for the right MCP server for a task they want to do.',
+        ...tmeta('recommend_mcp_for_task'),
         inputSchema: {
           task: z.string().describe('Natural-language description of the task, e.g. "read PDFs and write to S3".'),
         },
@@ -136,9 +143,7 @@ const handler = createMcpHandler(
     server.registerTool(
       'search_mcp_servers',
       {
-        title: 'Search MCP servers',
-        description:
-          'Keyword + semantic search across the full MCP server registry. Use when the user knows what tool category they want but not which server.',
+        ...tmeta('search_mcp_servers'),
         inputSchema: {
           query: z.string().describe('Search query.'),
           category: z.string().optional().describe('Optional category filter (e.g. database, browser, github).'),
@@ -159,9 +164,7 @@ const handler = createMcpHandler(
     server.registerTool(
       'get_install_command',
       {
-        title: 'Get install command',
-        description:
-          'Get the exact install command for a given MCP server and client. Returns a JSON block ready to paste into the client config.',
+        ...tmeta('get_install_command'),
         inputSchema: {
           server_slug: z.string().describe('Slug of the server (from search or recommend results).'),
           client: z.enum(CLIENTS).describe('Target client.'),
@@ -181,9 +184,7 @@ const handler = createMcpHandler(
     server.registerTool(
       'compare_servers',
       {
-        title: 'Compare MCP servers',
-        description:
-          'Side-by-side comparison of 2-5 MCP servers - quality scores, install paths, transport types, env vars.',
+        ...tmeta('compare_servers'),
         inputSchema: {
           slugs: z.array(z.string()).min(2).max(5).describe('Server slugs to compare.'),
         },
@@ -203,9 +204,7 @@ const handler = createMcpHandler(
     server.registerTool(
       'check_tool_trust',
       {
-        title: 'Check tool trust (advisory)',
-        description:
-          'Pre-invocation advisory screen for a specific tool on an MCP server. Returns an advisory verdict object (directive ALLOW | DENY | REVIEW | UNVERIFIED, dimensions, freshness). At v1 the public screen produces REVIEW or UNVERIFIED only - ALLOW/DENY are reserved. Not the in-path gate. Agents SHOULD treat UNVERIFIED as "human review required", never as ALLOW.',
+        ...tmeta('check_tool_trust'),
         inputSchema: {
           server_id: z.string().describe('Server slug (e.g. "github").'),
           tool_name: z.string().describe('Tool name as exposed by the server (e.g. "create_pull_request").'),
@@ -226,9 +225,7 @@ const handler = createMcpHandler(
     server.registerTool(
       'assess_server',
       {
-        title: 'Assess server trust (advisory)',
-        description:
-          'Aggregated pre-flight trust assessment across all tools on an MCP server. Same verdict shape as check_tool_trust. v1 advisory; conformance monitored not enforced; verdicts may be UNVERIFIED if not yet probed.',
+        ...tmeta('assess_server'),
         inputSchema: {
           server_id: z.string().describe('Server slug to assess.'),
         },
