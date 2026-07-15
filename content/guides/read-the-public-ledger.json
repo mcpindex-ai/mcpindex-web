@@ -1,0 +1,69 @@
+{
+  "slug": "read-the-public-ledger",
+  "kind": "walkthrough",
+  "order": 7,
+  "title": "Read the public drift ledger and dashboard",
+  "meta_description": "A walkthrough of the mcpindex drift ledger: open it, read a fingerprint-only event row, spot a safety-relevant contract change, and read the coverage dashboard. About 3 minutes.",
+  "h1": "Read the public drift ledger and dashboard",
+  "project": "mcpindex",
+  "updated": "2026-07-15",
+  "est_minutes": 3,
+  "outcome": "You can read the public drift ledger and dashboard: what the crawler saw change, how to spot a safety-relevant diff, and what the coverage numbers do (and do not) mean.",
+  "body": "The ledger is public proof of the problem the gate solves. mcpindex crawls the public MCP registry every day and records which tool contracts silently change between snapshots. No login, no per-user data, and no server pays to be listed. Here is how to read it.",
+  "steps": [
+    {
+      "id": "open-ledger",
+      "heading": "Open the drift ledger",
+      "body": "Start with the headline. The top of the ledger is a running count of how many tools changed their declared contract, across how many total changes (a tool can change more than once), plus how many servers were affected.",
+      "deep_link": {
+        "href": "/ledger",
+        "label": "Open the drift ledger",
+        "look_for": "the big count ('N tools changed their contract'), then Servers affected and Safety-relevant contract changes just below it."
+      }
+    },
+    {
+      "id": "read-event",
+      "heading": "Read an event row",
+      "body": "Each row in the Events table is one observed contract change, and it is deliberately fingerprint-only:\n\n| Column | What it means |\n| --- | --- |\n| Tool fingerprint | A content hash of the tool, not its name |\n| Server fingerprint | A content hash of the server (a dash if none was recorded) |\n| Last seen | When the crawler last saw this contract |\n| What changed | The change kinds: a new required param, an annotation flip, a narrowed constraint |\n| Safety | Tagged when the change touched a safety-relevant field |\n\nmcpindex reports that a contract changed without publicly naming a specific server."
+    },
+    {
+      "id": "safety",
+      "heading": "Spot a safety-relevant change",
+      "body": "The Safety column flags a change that touched a safety-relevant field, an annotation flipping to destructive or a new required parameter, for example. Read it as 'this one deserves a look,' not as a confirmed vulnerability. A dash means the change was not safety-relevant."
+    },
+    {
+      "id": "dashboard",
+      "heading": "See coverage on the dashboard",
+      "body": "The dashboard pairs two different populations: opt-in telemetry (installs that chose to send salted-fingerprint signals) and the public-registry crawler ledger. They count different things, so the numbers will not match. Coverage is the network growing, because every covered server is one the gate can warn you about on call 1.",
+      "deep_link": {
+        "href": "/dashboard",
+        "label": "Open the drift dashboard",
+        "look_for": "two sections, Opt-in telemetry and Crawler ledger. Telemetry is opt-in and off by default, and coverage is not endorsement."
+      }
+    },
+    {
+      "id": "limits",
+      "heading": "What the ledger is not",
+      "body": "It is a contract-diff, not a safety verdict, and not prevention, that is the in-path gate's job, holding the call. And absence is not a clean bill of health: a private or un-crawled tool never appears here at all."
+    }
+  ],
+  "next": {
+    "href": "/guides/install-the-gate-first-hold",
+    "label": "Install the gate and watch your first HOLD"
+  },
+  "depends_on": [
+    "app/ledger/page.tsx",
+    "app/dashboard/page.tsx",
+    "lib/ledger.ts"
+  ],
+  "faq": [
+    {
+      "q": "Does the mcpindex drift ledger name the servers that changed?",
+      "a": "No. Every event is fingerprint-only: a content hash of the tool and (when recorded) the server, never the name. mcpindex reports that a contract changed without publicly naming a specific server."
+    },
+    {
+      "q": "Is a safety-relevant change in the ledger a confirmed vulnerability?",
+      "a": "No. The safety-relevant tag means the change touched a safety-relevant field, like an annotation flip or a new required parameter. It flags a change worth reviewing, not a proven exploit. The ledger is a contract-diff, not a safety verdict."
+    }
+  ]
+}

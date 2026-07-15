@@ -1,0 +1,59 @@
+{
+  "slug": "tune-postures",
+  "kind": "walkthrough",
+  "order": 4,
+  "title": "Tune how strictly the gate holds (postures)",
+  "meta_description": "A walkthrough of the gate's three postures, Monitor, Guard, and Strict: toggle them on the live demo, set the one you want for your install, and confirm which is active. About 3 minutes.",
+  "h1": "Tune how strictly the gate holds",
+  "project": "mcpindex",
+  "updated": "2026-07-15",
+  "est_minutes": 3,
+  "outcome": "You understand Monitor, Guard, and Strict by toggling them on the live demo, and you know how to set the one you want for the way you installed the gate.",
+  "body": "The gate reaches a contract-diff verdict first, then a posture decides what to do with it. The verdict underneath never changes; the posture only sets how cautious the hold is. Guard is the default.",
+  "steps": [
+    {
+      "id": "meet",
+      "heading": "Meet the three postures",
+      "body": "Toggle the posture on the demo below and apply the same change to see how the decision shifts.\n\n- **Monitor** notifies and proceeds (awareness, no friction).\n- **Guard** (default) holds the unambiguously breaking and dangerous changes, and auto-accepts a proven-benign drift (an added optional param, a byte-identical description) so cosmetic churn never raises a false alarm.\n- **Strict** holds on any drift.",
+      "embed": "drift-gate-demo"
+    },
+    {
+      "id": "set",
+      "heading": "Set your posture",
+      "body": "How you set it depends on how the gate is installed:\n\n- **Claude Desktop bundle:** choose the Protection posture in the install dialog. It sets the posture for you.\n- **Standalone proxy or manual wiring:** pass a flag to the proxy: `mcpindex-proxy --posture strict` (or `monitor`), ahead of the upstream server arguments.\n- **The SDK:** pass it to `wrap()`, for example `posture: Posture.STRICT` in TypeScript or `posture=Posture.STRICT` in Python.\n- **Installed with the one-liner / config-wire:** those launch under Guard by default.\n\nPosture is per server (each wired server runs its own gate), so you can be stricter on a high-blast-radius server than on a read-only one."
+    },
+    {
+      "id": "confirm",
+      "heading": "Confirm which posture is active",
+      "body": "There is no separate 'show posture' command, but the posture surfaces where it matters. Under Monitor the gate prints a line like `- MONITOR posture: proceeding` when it lets a change through, and every gated call records the posture it ran under in your receipts.",
+      "deep_link": {
+        "href": "/receipts",
+        "label": "Check your Gate Activity",
+        "look_for": "the verdict column: under Monitor you will see changes proceed that Guard or Strict would have held."
+      }
+    },
+    {
+      "id": "pick",
+      "heading": "Which posture to pick",
+      "body": "Start on Guard, the default: it catches real breaking changes without nagging on cosmetic churn. Move to Strict when you want to review every drift yourself, for higher-stakes or production agents. Use Monitor when you want the signal but never a pause, awareness only."
+    }
+  ],
+  "next": {
+    "href": "/guides/integrate-the-gate",
+    "label": "Integrate the gate in your own code"
+  },
+  "depends_on": [
+    "app/docs/page.tsx",
+    "components/DriftGateDemo.tsx"
+  ],
+  "faq": [
+    {
+      "q": "What is the default posture for the mcpindex gate?",
+      "a": "Guard. It holds the unambiguously breaking and dangerous contract changes and auto-accepts proven-benign drift (an added optional parameter, a byte-identical description) so cosmetic churn never raises a false alarm."
+    },
+    {
+      "q": "How do I make the gate hold on every contract change?",
+      "a": "Run it in Strict posture. How you set that depends on the install: pass --posture strict to mcpindex-proxy, choose it in the Claude Desktop install dialog, or pass posture=Posture.STRICT to the SDK's wrap(). Config-wired installs run Guard by default."
+    }
+  ]
+}

@@ -77,6 +77,29 @@ export default function InstallPage() {
           want to look first, there is a zero-install path too.
         </p>
 
+        {/* Bridge to the narrated onboarding for the learner who wants the whole
+            path + the payoff (a HOLD) before committing. Reference stays below. */}
+        <Link
+          href="/guides/install-the-gate-first-hold"
+          className="group mt-6 flex items-center justify-between gap-4 rule-t rule-b rule-l rule-r p-4 transition-colors hover:bg-[var(--color-accent-soft)]"
+        >
+          <span>
+            <span className={KICKER}>New here?</span>
+            <span className="mt-1 block text-[15px] font-medium text-[var(--color-ink)]">
+              Walk through install and watch your first HOLD
+            </span>
+            <span className="mt-0.5 block text-[13px] text-[var(--color-mute)]">
+              A ~4-minute guided path, with the live drift demo, before you commit.
+            </span>
+          </span>
+          <span
+            aria-hidden
+            className="font-mono text-[16px] text-[var(--color-accent)] transition-transform group-hover:translate-x-0.5"
+          >
+            →
+          </span>
+        </Link>
+
         {/* ---- 1. The gate (the product) -------------------------------- */}
         <section className="mt-14 rule-t pt-8">
           <div className={`${KICKER} mb-2`}>1 · Install the gate</div>
@@ -119,7 +142,7 @@ export default function InstallPage() {
               <code>{SDK_SNIPPET_TS}</code>
             </pre>
             <p className="mt-2 text-[12.5px] leading-[1.55] text-[var(--color-mute)]">
-              Python and per-client wiring detail:{' '}
+              Python SDK, manual host-config wiring, and how the gate works:{' '}
               <Link href="/docs#install-the-gate" className={UNDERLINE}>
                 the gate docs
               </Link>
