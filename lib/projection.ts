@@ -4,6 +4,12 @@ import { computeQuality } from './quality';
 // Single source of truth for the public list-item shape shared by the discovery
 // routes (/api/v1/search and /api/v1/servers). Kept here so the two routes can
 // never drift on field names — search appends its own `score`/`matched`.
+//
+// PUBLISHED CONTRACT: these field names are consumed by external registry
+// aggregators that pull /api/v1/servers (e.g. Mastra's mcp-registry-registry
+// processMcpindexServers, which reads slug/name/title/description/updatedAt).
+// Renaming or dropping a field here is a BREAKING change for those consumers,
+// and their side fails silently (empty name/updatedAt). Treat additively.
 export function toListItem(s: IndexedServer) {
   return {
     slug: s.slug,
