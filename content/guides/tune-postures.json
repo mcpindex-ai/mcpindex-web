@@ -25,11 +25,11 @@
     {
       "id": "confirm",
       "heading": "Confirm which posture is active",
-      "body": "There is no separate 'show posture' command, and the posture name is not stored in your receipts. The reliable signal is its effect: under Monitor an unambiguously breaking change is logged ALLOW, where Guard or Strict would log DENY. So if a change you expected to be held shows ALLOW in your Gate Activity, you are running Monitor.",
+      "body": "There is no separate 'show posture' command, and the posture name is not stored in your receipts. The reliable signal is its effect: under Monitor an unambiguously breaking change is logged ALLOW, where Guard or Strict would hold it and log DENY (or REVIEW, for a change that needs behavioral validation). So if a change you expected to be held shows ALLOW in your Gate Activity, you are running Monitor.",
       "deep_link": {
         "href": "/receipts",
         "label": "Check your Gate Activity",
-        "look_for": "the verdict column: under Monitor an unambiguously breaking change shows as ALLOW, where Guard or Strict would show DENY."
+        "look_for": "the verdict column: under Monitor an unambiguously breaking change shows as ALLOW, where Guard or Strict would show DENY (or REVIEW)."
       }
     },
     {

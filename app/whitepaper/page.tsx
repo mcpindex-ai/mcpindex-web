@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Mark } from '@/components/Mark';
 import { md, escapeAnglesOutsideCode } from '@/components/proseComponents';
+import { safeMarkdownUrl } from '@/lib/safeUrl';
 
 export const metadata: Metadata = {
   title: 'Whitepaper',
@@ -73,7 +74,7 @@ export default function WhitepaperPage() {
       </header>
 
       <div className="mt-2">
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={md}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={md} urlTransform={safeMarkdownUrl}>
           {content}
         </ReactMarkdown>
       </div>

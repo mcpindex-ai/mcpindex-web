@@ -15,7 +15,9 @@ test('isSafeHref rejects protocol-relative, backslash, and non-http schemes', ()
 });
 
 test('isSafeHref rejects control-char-obfuscated protocol-relative (browsers strip TAB/LF/CR)', () => {
-  for (const bad of ['/\t/evil.com', '/\n/evil.com', '/\r/evil.com', '/\tevil', 'https://x\t.evil']) {
+  // TAB/LF/CR are what browsers strip; the guard rejects the whole C0 range + DEL
+  // (VT/FF/NUL) too, conservatively.
+  for (const bad of ['/\t/evil.com', '/\n/evil.com', '/\r/evil.com', '/\x0b/evil.com', '/\x0c/evil.com', '/\x00/evil', '/\tevil', 'https://x\t.evil']) {
     assert.equal(isSafeHref(bad), false, `${JSON.stringify(bad)} should be rejected`);
   }
 });

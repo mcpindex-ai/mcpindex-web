@@ -81,6 +81,19 @@ const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,99}$/;
 
 let _cache: Record<string, Guide> | null = null;
 
+// A real calendar date with an optional ISO time. Rejects trailing junk and
+// rollover dates like 2026-02-30 (Date.parse would silently roll those to Mar 2).
+// UTC construction keeps the day-validity check timezone-independent.
+function isRealIsoDate(s: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})(T[\d:.]+(Z|[+-]\d{2}:\d{2})?)?$/.exec(s);
+  if (!m) return false;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  const dt = new Date(Date.UTC(y, mo - 1, d));
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === mo - 1 && dt.getUTCDate() === d;
+}
+
 // Exported for unit tests (pure fn; the fs loader below is the only other caller).
 export function coerceGuide(raw: unknown, slugFromFile: string): Guide | null {
   if (typeof raw !== 'object' || raw === null) return null;
@@ -97,14 +110,12 @@ export function coerceGuide(raw: unknown, slugFromFile: string): Guide | null {
   // Only accept an ISO-ish date; a junk `updated` would emit invalid
   // datePublished/dateModified in the TechArticle JSON-LD and a bad sitemap lastmod.
   const updatedRaw = str(r.updated) || str(r.updated_at);
-  // Fully-anchored ISO date (optional time), so trailing junk like "2026-07-15x"
-  // can't slip a bad datePublished/dateModified into the JSON-LD. Date.parse is
-  // the secondary guard that rejects impossible dates (2026-13-40).
-  const updated =
-    /^\d{4}-\d{2}-\d{2}(T[\d:.]+(Z|[+-]\d{2}:\d{2})?)?$/.test(updatedRaw) &&
-    !Number.isNaN(Date.parse(updatedRaw))
-      ? updatedRaw
-      : '';
+  // Accept only a fully-anchored ISO date (optional time) whose Y-M-D is a REAL
+  // calendar date, so neither trailing junk ("2026-07-15x") nor a rollover
+  // ("2026-02-30", which Date.parse silently rolls to Mar 2) reaches the JSON-LD
+  // datePublished/dateModified. UTC construction keeps the day-validity check
+  // timezone-independent.
+  const updated = isRealIsoDate(updatedRaw) ? updatedRaw : '';
   const faq = coerceFaq(r.faq);
   const steps = coerceSteps(r.steps);
   const kind = str(r.kind) === 'walkthrough' ? ('walkthrough' as const) : undefined;

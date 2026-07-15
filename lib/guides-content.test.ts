@@ -167,8 +167,12 @@ test('updated accepts a real ISO date, drops trailing junk (no bad JSON-LD date)
     coerceGuide({ ...CLASSIC, updated: '2026-07-15T09:00:00Z' }, 'x')?.updated,
     '2026-07-15T09:00:00Z',
   );
-  // prefix-match junk and impossible dates must be dropped
-  for (const bad of ['2026-07-15junk', '2026-07-15<script>', '2026-13-40', 'soon', '']) {
+  assert.equal(
+    coerceGuide({ ...CLASSIC, updated: '2026-07-15T09:00:00+07:00' }, 'x')?.updated,
+    '2026-07-15T09:00:00+07:00',
+  );
+  // prefix-match junk, impossible months, AND rollover days must all be dropped
+  for (const bad of ['2026-07-15junk', '2026-07-15<script>', '2026-13-40', '2026-02-30', '2026-04-31', 'soon', '']) {
     assert.equal(coerceGuide({ ...CLASSIC, updated: bad }, 'x')?.updated, undefined, `updated ${JSON.stringify(bad)} must drop`);
   }
 });
