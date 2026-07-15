@@ -8,6 +8,7 @@ import { GET as search } from '../../app/api/v1/search/route';
 import { GET as recommend } from '../../app/api/v1/recommend/route';
 import { GET as preflight } from '../../app/api/v1/preflight/route';
 import { GET as diff } from '../../app/api/v1/diff/route';
+import { GET as servers } from '../../app/api/v1/servers/route';
 import { GET as registryCount } from '../../app/api/registry-count/route';
 
 const obj = (r: { json: () => unknown }) => r.json() as Record<string, any>;
@@ -42,17 +43,15 @@ test('search: q=github → 200 with results envelope', async () => {
   assert.equal(typeof b.total, 'number');
 });
 
-test('search: garbage limit does not 500 AND still returns a well-formed envelope (NaN edge)', async () => {
-  const r = await callRoute(search, '/api/v1/search', { query: { q: 'github', limit: 'abc' } });
-  assert.ok(r.status < 500); // must not throw/500 on a NaN limit
-  if (r.status === 200) {
-    const b = obj(r);
-    // a NaN limit must not silently dump the whole corpus / return a malformed shape.
-    // (Mechanism: `?? 20` keeps NaN through, then search's slice(0, NaN) -> [] — NOT the 50-cap,
-    // which is Math.min(50, NaN)=NaN and doesn't fire. Either way results.length must stay bounded.)
-    assert.ok(Array.isArray(b.results));
-    assert.ok(b.results.length <= 50);
-  }
+test('search: garbage/negative limit stays bounded (never 500, never leaks all-but-one)', async () => {
+  // NaN limit -> falls back to the default (10), bounded.
+  const nan = await callRoute(search, '/api/v1/search', { query: { q: 'github', limit: 'abc' } });
+  assert.ok(nan.status < 500);
+  assert.ok(Array.isArray(obj(nan).results) && obj(nan).results.length <= 50);
+  // Negative limit must clamp to >=1, NOT reach slice(0,-1) (which would return all-but-one hit).
+  const neg = await callRoute(search, '/api/v1/search', { query: { q: 'github', limit: '-1' } });
+  assert.ok(neg.status < 500);
+  assert.ok(obj(neg).results.length <= 50);
 });
 
 // ---- A6 recommend ----
@@ -121,4 +120,58 @@ test('registry-count: 200 shape', async () => {
   // > 0, not just numeric: {servers:0,categories:0} is exactly the shape a registry-load FAILURE returns
   assert.ok(b.servers > 0, `servers should be > 0, got ${b.servers}`);
   assert.ok(b.categories > 0, `categories should be > 0, got ${b.categories}`);
+});
+
+// ---- A10 servers (public browse feed for registry-of-registries consumers) ----
+test('servers: 200 with the browse envelope', async () => {
+  const r = await callRoute(servers, '/api/v1/servers');
+  assert.equal(r.status, 200);
+  const b = obj(r);
+  assert.ok(Array.isArray(b.servers) && b.servers.length > 0);
+  assert.equal(typeof b.total, 'number'); // active-corpus size
+  assert.equal(b.returned, b.servers.length); // returned == page size
+  assert.ok(b.total >= b.returned); // a page, never larger than the corpus
+  // each item carries the shared list-item fields a consumer maps from
+  for (const s of b.servers) {
+    for (const k of ['slug', 'name', 'title', 'description', 'category', 'qualityScore', 'url']) {
+      assert.ok(k in s, `missing ${k}`);
+    }
+  }
+});
+
+test('servers: default page is bounded at 100 and sorted by qualityScore desc', async () => {
+  const r = await callRoute(servers, '/api/v1/servers');
+  const b = obj(r);
+  assert.ok(b.servers.length <= 100, `default page should cap at 100, got ${b.servers.length}`);
+  for (let i = 1; i < b.servers.length; i++) {
+    assert.ok(
+      b.servers[i - 1].qualityScore >= b.servers[i].qualityScore,
+      'servers must be ranked by qualityScore descending',
+    );
+  }
+});
+
+test('servers: limit is honored and hard-capped at 250', async () => {
+  const r5 = await callRoute(servers, '/api/v1/servers', { query: { limit: '5' } });
+  assert.ok(obj(r5).servers.length <= 5);
+  const rBig = await callRoute(servers, '/api/v1/servers', { query: { limit: '99999' } });
+  assert.ok(obj(rBig).servers.length <= 250, 'limit must be hard-capped at 250');
+});
+
+test('servers: garbage limit falls back to the default, never 500s or dumps the corpus', async () => {
+  const r = await callRoute(servers, '/api/v1/servers', { query: { limit: 'abc' } });
+  assert.ok(r.status < 500);
+  const b = obj(r);
+  assert.ok(Array.isArray(b.servers) && b.servers.length <= 100);
+});
+
+test('servers: category filter narrows the pool', async () => {
+  const all = obj(await callRoute(servers, '/api/v1/servers'));
+  const cat = all.servers[0]?.category;
+  assert.ok(cat, 'need at least one categorized server to test the filter');
+  const r = await callRoute(servers, '/api/v1/servers', { query: { category: cat } });
+  const b = obj(r);
+  assert.equal(r.status, 200);
+  assert.ok(b.total <= all.total); // filtered corpus is a subset
+  for (const s of b.servers) assert.equal(s.category, cat);
 });

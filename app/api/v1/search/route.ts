@@ -1,14 +1,17 @@
 import type { NextRequest } from 'next/server';
 import { loadServers } from '@/lib/registry';
 import { search } from '@/lib/search';
-import { computeQuality } from '@/lib/quality';
+import { toListItem } from '@/lib/projection';
 
 export const revalidate = 300;
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get('q')?.trim() ?? '';
   const category = req.nextUrl.searchParams.get('category')?.trim();
-  const limit = Math.min(50, parseInt(req.nextUrl.searchParams.get('limit') ?? '10', 10));
+  // Bound the limit to [1, 50]; garbage/NaN falls back to the default. A negative or NaN
+  // limit must never reach search()'s slice() (slice(0,-1) would leak all-but-one, NaN -> []).
+  const rawLimit = parseInt(req.nextUrl.searchParams.get('limit') ?? '', 10);
+  const limit = Number.isFinite(rawLimit) ? Math.min(50, Math.max(1, rawLimit)) : 10;
 
   if (!q) {
     return Response.json(
@@ -25,20 +28,7 @@ export async function GET(req: NextRequest) {
       query: q,
       total: hits.length,
       results: hits.map((h) => ({
-        slug: h.server.slug,
-        name: h.server.name,
-        title: h.server.title,
-        description: h.server.description,
-        category: h.server.category,
-        version: h.server.version,
-        qualityScore: computeQuality(h.server).score,
-        installs: {
-          npm: h.server.npmPackage,
-          pypi: h.server.pypiPackage,
-          docker: h.server.dockerImage,
-          remote: h.server.remoteUrl,
-        },
-        url: `https://mcpindex.ai/server/${h.server.slug}`,
+        ...toListItem(h.server),
         score: h.score,
         matched: h.matchedTerms,
       })),
