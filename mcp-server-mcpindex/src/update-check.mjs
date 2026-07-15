@@ -1,12 +1,12 @@
-// update-check.mjs — best-effort "a newer mcp-server-mcpindex exists" notice.
+// update-check.mjs - best-effort "a newer mcp-server-mcpindex exists" notice.
 //
 // Why this is safe to ship in a server that already egresses:
 //   - outbound to the PINNED npm registry host only, https, no redirect-following
 //     (no SSRF pivot), time-boxed, and fail-silent on ANY error;
-//   - fire-and-forget — it never blocks or crashes startup (the caller drops it
+//   - fire-and-forget - it never blocks or crashes startup (the caller drops it
 //     onto the event loop after connect and ignores rejections);
 //   - no telemetry beyond the standard registry GET (no version of the user, no
-//     machine id — just "what's the latest published version of this package");
+//     machine id - just "what's the latest published version of this package");
 //   - opt-out via MCPINDEX_NO_UPDATE_CHECK.
 //
 // Pure + injectable (fetchImpl) so it is unit-testable with no network.
@@ -88,11 +88,11 @@ export async function fetchLatestVersion({
 }
 
 /** Orchestration: check, and if a newer version exists, emit the notice to STDERR only.
- *  stderr is the UNIVERSAL channel — every MCP host (Cursor, Claude Desktop/Code, Gemini
+ *  stderr is the UNIVERSAL channel - every MCP host (Cursor, Claude Desktop/Code, Gemini
  *  CLI, …) surfaces a spawned server's stderr in its per-server log. We deliberately do NOT
  *  emit an MCP `notifications/message`: hosts render it inconsistently (Cursor logs it as a
  *  bare ` undefined`, swallowing the text), so it only adds noise where stderr already
- *  carries the message cleanly. Returns the message it emitted (or null) — handy for
+ *  carries the message cleanly. Returns the message it emitted (or null) - handy for
  *  tests/callers. Never throws; never blocks the caller (caller fire-and-forgets). */
 export async function notifyUpdateIfAvailable({
   currentVersion,
@@ -106,7 +106,7 @@ export async function notifyUpdateIfAvailable({
     const latest = await fetchLatestVersion({ pkg, fetchImpl });
     if (!latest || !isOlder(currentVersion, latest)) return null;
     const msg = formatUpdateMessage(currentVersion, latest);
-    log(msg); // stderr — the one channel every host renders cleanly
+    log(msg); // stderr - the one channel every host renders cleanly
     return msg;
   } catch {
     return null; // belt-and-suspenders: this path must never surface an error

@@ -13,14 +13,14 @@ export { checkToolTrust, assessServer, VERDICT_CONTRACT_VERSION, V1_HONEST_LIMIT
 import { notifyUpdateIfAvailable } from './update-check.mjs';
 
 const API_BASE = process.env.MCPINDEX_API_BASE ?? 'https://mcpindex.ai';
-// Single source of truth for the running version — read from package.json so the
+// Single source of truth for the running version - read from package.json so the
 // User-Agent and the update-check can never drift from what npm actually shipped.
 const PKG_VERSION = createRequire(import.meta.url)('../package.json').version;
 
 const server = new Server(
   { name: 'mcp-server-mcpindex', version: PKG_VERSION },
   // Tools only. We do NOT advertise `logging`: the update notice goes to stderr (which
-  // every host surfaces), not via `notifications/message` (rendered inconsistently — Cursor
+  // every host surfaces), not via `notifications/message` (rendered inconsistently - Cursor
   // logs it as a bare ` undefined`). stderr is the universal, clean channel.
   { capabilities: { tools: {} } },
 );
@@ -106,7 +106,7 @@ const TOOLS = [
   {
     name: 'check_tool_trust',
     description:
-      'Pre-invocation advisory screen for a specific tool on an MCP server. Returns an advisory verdict object (directive ALLOW | DENY | REVIEW | UNVERIFIED, dimensions, freshness). At v1 the public screen produces REVIEW or UNVERIFIED only — ALLOW/DENY are reserved. Not the in-path gate (mcpindex-gate). Agents SHOULD treat UNVERIFIED as "human review required", never as ALLOW.',
+      'Pre-invocation advisory screen for a specific tool on an MCP server. Returns an advisory verdict object (directive ALLOW | DENY | REVIEW | UNVERIFIED, dimensions, freshness). At v1 the public screen produces REVIEW or UNVERIFIED only - ALLOW/DENY are reserved. Not the in-path gate (mcpindex-gate). Agents SHOULD treat UNVERIFIED as "human review required", never as ALLOW.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -292,7 +292,7 @@ const transport = new StdioServerTransport();
 await server.connect(transport);
 console.error('[mcp-server-mcpindex] connected via stdio');
 
-// Fire-and-forget: tell the user if a newer version exists (stderr only — the channel
+// Fire-and-forget: tell the user if a newer version exists (stderr only - the channel
 // every host renders cleanly). Dropped onto the event loop AFTER connect so it can never
 // delay or crash startup; all errors are swallowed inside.
 notifyUpdateIfAvailable({ currentVersion: PKG_VERSION }).catch(() => {});
