@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.gautamgb/mcp-server-mcpindex",
   "title": "mcpindex",
-  "description": "MCP directory that vets servers: search by task, get an advisory screen (not a safety verdict).",
+  "description": "The MCP directory that vets servers, not just lists them. Search by task, then get an advisory screen on a server before your agent calls its tools: whether each tool does what it claims, backed by conformance monitoring and a public drift ledger. Advisory (REVIEW / UNVERIFIED), monitored not enforced, not a safety verdict.",
   "websiteUrl": "https://mcpindex.ai",
   "repository": {
     "url": "https://github.com/mcpindex-ai/mcpindex-web",
