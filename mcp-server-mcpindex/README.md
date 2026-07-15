@@ -217,4 +217,6 @@ MIT.
 - Methodology: [mcpindex.ai/methodology](https://mcpindex.ai/methodology)
 - Source: [github.com/mcpindex-ai](https://github.com/mcpindex-ai)
 
+[![mcp-server-mcpindex MCP server](https://glama.ai/mcp/servers/mcpindex-ai/mcp-server-mcpindex/badges/score.svg)](https://glama.ai/mcp/servers/mcpindex-ai/mcp-server-mcpindex)
+
 Unofficial. Not affiliated with Anthropic.
