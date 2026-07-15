@@ -11,6 +11,7 @@ import {
 import { getServer } from '@/lib/registry';
 import { jsonLdSafe } from '@/lib/jsonLd';
 import { md, escapeAnglesOutsideCode } from '@/components/proseComponents';
+import { GuideWalkthrough } from '@/components/GuideWalkthrough';
 
 export const revalidate = 3600;
 
@@ -100,6 +101,23 @@ export default async function GuidePage(
       })),
     });
   }
+  // A walkthrough is a HowTo: emit the step list (+ totalTime) so rich results
+  // and answer engines (ChatGPT/Perplexity/Google AI) extract the ordered steps.
+  const isWalkthrough = (guide.steps?.length ?? 0) > 0;
+  if (isWalkthrough && guide.steps) {
+    graph.push({
+      '@type': 'HowTo',
+      name: guide.h1,
+      description: guide.metaDescription,
+      ...(guide.estMinutes ? { totalTime: `PT${guide.estMinutes}M` } : {}),
+      step: guide.steps.map((s, i) => ({
+        '@type': 'HowToStep',
+        position: i + 1,
+        name: s.heading,
+        url: `${url}#${s.id}`,
+      })),
+    });
+  }
   const jsonLd = jsonLdSafe({ '@context': 'https://schema.org', '@graph': graph });
 
   return (
@@ -116,11 +134,15 @@ export default async function GuidePage(
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
         {guide.h1}
       </h1>
-      <div className="mt-8">
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={md}>
-          {escapeAnglesOutsideCode(guide.body)}
-        </ReactMarkdown>
-      </div>
+      {isWalkthrough ? (
+        <GuideWalkthrough guide={guide} />
+      ) : (
+        <div className="mt-8">
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={md}>
+            {escapeAnglesOutsideCode(guide.body)}
+          </ReactMarkdown>
+        </div>
+      )}
 
       {guide.faq && guide.faq.length > 0 && (
         <section className="mt-12 rule-t pt-6">

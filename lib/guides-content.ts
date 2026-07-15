@@ -13,6 +13,45 @@ export interface FaqItem {
   a: string; // plain text (goes into FAQPage acceptedAnswer); no markdown
 }
 
+// --- Walkthrough extension (kind: "walkthrough") -----------------------------
+// An additive, optional layer over the classic guide. A guide carrying `steps`
+// renders as a numbered, in-product walkthrough (components/GuideWalkthrough);
+// a guide without them renders exactly as before (flat markdown `body`). Every
+// field is optional and fail-safe so the 8 existing SEO guides are untouched.
+
+/** "open X, look for Y" callout to a live product page (self-maintaining: the
+ *  page is always current). Used where a step needs real data/state we won't
+ *  snapshot (e.g. /ledger, /receipts, /server/[slug]). */
+export interface StepDeepLink {
+  href: string; // internal route ("/receipts") or full URL
+  label: string; // link text
+  lookFor: string; // one line: what to notice on that page
+}
+
+export interface WalkStep {
+  id: string; // stable anchor within the guide (auto-filled to "step-N" if absent)
+  heading: string;
+  body: string; // markdown (rendered with the shared `md` renderers)
+  /** EmbedKey resolved at render time against EMBED_REGISTRY (lib/guide-embeds).
+   *  Kept as a bare string here so this build-time loader stays React-free and
+   *  an unknown key degrades gracefully in the renderer, never breaks the build. */
+  embed?: string;
+  deepLink?: StepDeepLink;
+  troubleshoot?: string; // optional markdown ("If you don't see the HOLD…")
+}
+
+/** End-of-guide CTA that chains the reader into the next journey (the funnel). */
+export interface GuideNext {
+  href: string;
+  label: string;
+}
+
+/** Top-of-guide "see the payoff first" jump to an embedded demo step. */
+export interface GuideImpatient {
+  label: string; // "Watch a drift get held first"
+  targetId: string; // a step id to anchor-jump to
+}
+
 export interface Guide {
   slug: string;
   title: string;
@@ -23,6 +62,15 @@ export interface Guide {
   project: string;
   updated?: string; // ISO date, if the artifact carries one (drives sitemap lastmod)
   faq?: FaqItem[]; // optional Q&A pairs -> FAQPage JSON-LD (answer-engine extraction)
+  // --- walkthrough fields (all optional) ---
+  kind?: 'walkthrough'; // absence = classic flat-body guide
+  order?: number; // funnel position in the /guides index (lower = earlier)
+  outcome?: string; // "What you'll have at the end" (claim-first banner)
+  estMinutes?: number; // time-to-value; drives HowTo totalTime
+  impatient?: GuideImpatient; // top-of-guide jump to the aha
+  steps?: WalkStep[]; // the numbered walkthrough; empty/absent => flat-body render
+  next?: GuideNext; // funnel CTA to the next journey
+  dependsOn?: string[]; // repo-relative paths the freshness probe watches
 }
 
 const GUIDES_DIR = path.join(process.cwd(), 'content', 'guides');
@@ -32,7 +80,8 @@ const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,99}$/;
 
 let _cache: Record<string, Guide> | null = null;
 
-function coerce(raw: unknown, slugFromFile: string): Guide | null {
+// Exported for unit tests (pure fn; the fs loader below is the only other caller).
+export function coerceGuide(raw: unknown, slugFromFile: string): Guide | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const r = raw as Record<string, unknown>;
   const str = (v: unknown): string => (typeof v === 'string' ? v : '');
@@ -46,6 +95,18 @@ function coerce(raw: unknown, slugFromFile: string): Guide | null {
   if (!title || !h1 || !body) return null; // presence floor mirrors the producer
   const updated = str(r.updated) || str(r.updated_at);
   const faq = coerceFaq(r.faq);
+  const steps = coerceSteps(r.steps);
+  const kind = str(r.kind) === 'walkthrough' ? ('walkthrough' as const) : undefined;
+  const order =
+    typeof r.order === 'number' && Number.isFinite(r.order) ? r.order : undefined;
+  const outcome = str(r.outcome);
+  const estMinutes =
+    typeof r.est_minutes === 'number' && Number.isFinite(r.est_minutes) && r.est_minutes > 0
+      ? r.est_minutes
+      : undefined;
+  const impatient = coerceImpatient(r.impatient, new Set(steps.map((s) => s.id)));
+  const next = coerceNext(r.next);
+  const dependsOn = list(r.depends_on);
   return {
     slug,
     title,
@@ -56,7 +117,87 @@ function coerce(raw: unknown, slugFromFile: string): Guide | null {
     project: str(r.project),
     ...(updated ? { updated } : {}),
     ...(faq.length ? { faq } : {}),
+    ...(kind ? { kind } : {}),
+    ...(order !== undefined ? { order } : {}),
+    ...(outcome ? { outcome } : {}),
+    ...(estMinutes ? { estMinutes } : {}),
+    ...(impatient ? { impatient } : {}),
+    ...(steps.length ? { steps } : {}),
+    ...(next ? { next } : {}),
+    ...(dependsOn.length ? { dependsOn } : {}),
   };
+}
+
+// Walkthrough steps -> validated WalkStep[]; tolerant of malformed entries (skip,
+// never throw). A step needs at least a heading + body; `id` auto-fills to
+// "step-N" (1-based over surviving steps) so anchors stay stable and meaningful.
+function coerceSteps(v: unknown): WalkStep[] {
+  if (!Array.isArray(v)) return [];
+  const out: WalkStep[] = [];
+  const usedIds = new Set<string>();
+  for (const it of v) {
+    if (!it || typeof it !== 'object') continue;
+    const s = it as Record<string, unknown>;
+    const heading = typeof s.heading === 'string' ? s.heading.trim() : '';
+    const body = typeof s.body === 'string' ? s.body : '';
+    if (!heading || !body.trim()) continue; // presence floor
+    const rawId = typeof s.id === 'string' ? s.id.trim() : '';
+    // Valid, unique author id wins; otherwise (missing/invalid/duplicate) fall
+    // back to the positional id so React keys + anchors never collide.
+    const id =
+      SLUG_RE.test(rawId) && !usedIds.has(rawId) ? rawId : `step-${out.length + 1}`;
+    usedIds.add(id);
+    const embed = typeof s.embed === 'string' && s.embed.trim() ? s.embed.trim() : undefined;
+    const deepLink = coerceDeepLink(s.deep_link);
+    const troubleshoot =
+      typeof s.troubleshoot === 'string' && s.troubleshoot.trim() ? s.troubleshoot : undefined;
+    out.push({
+      id,
+      heading,
+      body,
+      ...(embed ? { embed } : {}),
+      ...(deepLink ? { deepLink } : {}),
+      ...(troubleshoot ? { troubleshoot } : {}),
+    });
+  }
+  return out;
+}
+
+// Only allow a same-origin path or an explicit http(s) URL. Rejects javascript:,
+// data:, and other schemes that React would render verbatim on an <a>/next Link
+// (React does not sanitize hrefs), closing a latent injection from guide JSON.
+function isSafeHref(href: string): boolean {
+  return href.startsWith('/') || /^https?:\/\//.test(href);
+}
+
+function coerceDeepLink(v: unknown): StepDeepLink | undefined {
+  if (!v || typeof v !== 'object') return undefined;
+  const d = v as Record<string, unknown>;
+  const href = typeof d.href === 'string' ? d.href.trim() : '';
+  const label = typeof d.label === 'string' ? d.label.trim() : '';
+  const lookFor = typeof d.look_for === 'string' ? d.look_for.trim() : '';
+  if (!href || !label || !lookFor || !isSafeHref(href)) return undefined;
+  return { href, label, lookFor };
+}
+
+function coerceNext(v: unknown): GuideNext | undefined {
+  if (!v || typeof v !== 'object') return undefined;
+  const n = v as Record<string, unknown>;
+  const href = typeof n.href === 'string' ? n.href.trim() : '';
+  const label = typeof n.label === 'string' ? n.label.trim() : '';
+  if (!href || !label || !isSafeHref(href)) return undefined;
+  return { href, label };
+}
+
+// The impatient jump must point at a real step, or the anchor goes nowhere.
+// Validate target_id against the surviving step ids and drop it otherwise.
+function coerceImpatient(v: unknown, stepIds: Set<string>): GuideImpatient | undefined {
+  if (!v || typeof v !== 'object') return undefined;
+  const i = v as Record<string, unknown>;
+  const label = typeof i.label === 'string' ? i.label.trim() : '';
+  const targetId = typeof i.target_id === 'string' ? i.target_id.trim() : '';
+  if (!label || !targetId || !stepIds.has(targetId)) return undefined;
+  return { label, targetId };
 }
 
 // Q&A pairs -> validated FaqItem[]; tolerant of malformed entries (skip, never throw).
@@ -89,7 +230,7 @@ async function loadAll(): Promise<Record<string, Guide>> {
     if (!f.endsWith('.json')) continue;
     try {
       const text = await fs.readFile(path.join(GUIDES_DIR, f), 'utf-8');
-      const guide = coerce(JSON.parse(text), f.replace(/\.json$/, ''));
+      const guide = coerceGuide(JSON.parse(text), f.replace(/\.json$/, ''));
       if (guide) out[guide.slug] = guide;
     } catch {
       // skip a malformed file; never break the build (fail-safe).

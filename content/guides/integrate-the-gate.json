@@ -1,0 +1,63 @@
+{
+  "slug": "integrate-the-gate",
+  "kind": "walkthrough",
+  "order": 5,
+  "title": "Integrate the gate in your own code (SDK)",
+  "meta_description": "A walkthrough for embedding the mcpindex contract pin inside your own MCP server: install the SDK, wrap your session, handle a HOLD, and persist the baseline correctly for TypeScript vs Python. About 3 minutes.",
+  "h1": "Integrate the gate in your own code",
+  "project": "mcpindex",
+  "updated": "2026-07-15",
+  "est_minutes": 3,
+  "outcome": "The gate's contract pin running inside your own MCP server in a few lines, with the HOLD handled and the baseline persisted correctly for your language.",
+  "body": "You do not have to run the standalone gate to get contract pinning. If you already have an authenticated MCP client session in your own code, the SDK wraps it so the pin runs in-path, with no per-server config and no token handling.",
+  "steps": [
+    {
+      "id": "install",
+      "heading": "Install the SDK",
+      "body": "Pick your runtime:\n\n```bash\n# TypeScript\nnpm i @mcp-index/sdk\n\n# Python\npip install mcpindex-gate   # or: uv add mcpindex-gate\n```"
+    },
+    {
+      "id": "wrap",
+      "heading": "Wrap your session",
+      "body": "Wrap the session you already authenticated. The wrapper reuses its transport, so `list_tools` / `call_tool` stay drop-in and no credentials pass through mcpindex.\n\n```ts\n// TypeScript\nimport { wrap, PreflightPin } from \"@mcp-index/sdk\";\n\nconst guarded = wrap(session, { pin: new PreflightPin(), serverId: \"your-server\" });\n// use guarded.list_tools() / guarded.call_tool(...) exactly as before\n```\n\n```python\n# Python\nfrom mcpindex_gate import wrap, PreflightPin\n\nsession = wrap(session, pin=PreflightPin(), server_id=\"your-server\")\n```"
+    },
+    {
+      "id": "hold",
+      "heading": "Handle a HOLD",
+      "body": "On a breaking contract change the gate holds before the tool runs, so the wrapped tool is never called on a hold. By default it surfaces the hold; pass a handler if you would rather intercept it.\n\n```ts\n// TypeScript - the guarded call REJECTS with a PreflightHold by default,\n// or route it to a handler:\nconst guarded = wrap(session, {\n  pin: new PreflightPin(),\n  serverId: \"your-server\",\n  onHold: (verdict) => { /* log, prompt a human, or re-pin */ },\n});\n```\n\n```python\n# Python - raises PreflightHold by default, or pass on_hold:\nsession = wrap(session, pin=PreflightPin(), server_id=\"your-server\",\n               on_hold=lambda verdict: ...)\n```"
+    },
+    {
+      "id": "persist",
+      "heading": "Persist the baseline (this differs by language)",
+      "body": "A persisted baseline means drift that lands while your agent is offline is still caught on the next call. How you persist depends on the runtime, and this is the one place the two SDKs differ:\n\n- **Python:** pass a path. `PreflightPin(path=\"~/.mcpindex/pins/your-server.json\")` loads a prior baseline on start and writes updates atomically.\n- **TypeScript:** `PreflightPin` is in-memory only, it takes no path, so a fresh process re-pins from scratch. For durable pins in a TypeScript setup, run the tool behind the standalone gate/proxy instead, which keeps its own on-disk pin store.\n\nIf you only run inside a long-lived process, the in-memory pin is fine either way."
+    },
+    {
+      "id": "more",
+      "heading": "What else comes with it",
+      "body": "The blast-radius grade is on by default alongside the pin, labeling each call's action, reversibility, and egress. Separately, the advisory directory HTTP API (preflight, trust, screen) covers discovery and pre-wire screening, but that is not the in-path gate: the contract pin and diff always run locally.",
+      "deep_link": {
+        "href": "/docs#install-the-gate",
+        "label": "Full SDK and API reference",
+        "look_for": "the SDK section for the complete wrap() options, and 'Ways to use the directory' for the HTTP endpoints."
+      }
+    }
+  ],
+  "next": {
+    "href": "/guides/api-key-cli-login",
+    "label": "Get an API key from the CLI"
+  },
+  "depends_on": [
+    "app/docs/page.tsx",
+    "lib/install/manifest.ts"
+  ],
+  "faq": [
+    {
+      "q": "Does the mcpindex TypeScript SDK persist the contract pin across restarts?",
+      "a": "No. In the TypeScript SDK, PreflightPin is in-memory only and takes no path argument, so a fresh process re-pins from scratch. For durable pins in TypeScript, run the tool behind the standalone gate/proxy, which keeps an on-disk pin store. The Python SDK does persist: pass PreflightPin(path=...)."
+    },
+    {
+      "q": "What happens on a HOLD when I use the SDK wrapper?",
+      "a": "The wrapped tool is never called. In TypeScript the guarded call rejects with a PreflightHold (or invokes your onHold handler); in Python it raises PreflightHold (or calls your on_hold callback). You then review the change and re-pin if it was expected."
+    }
+  ]
+}

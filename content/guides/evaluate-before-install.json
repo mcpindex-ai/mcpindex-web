@@ -1,0 +1,77 @@
+{
+  "slug": "evaluate-before-install",
+  "kind": "walkthrough",
+  "order": 2,
+  "title": "Vet an MCP server before you install it",
+  "meta_description": "Before you wire an MCP server to your agent: map what it could do, screen its description for hidden instructions, and read its directory trust panel. A hands-on walkthrough using mcpindex's in-browser tools.",
+  "h1": "Vet an MCP server before you install it",
+  "project": "mcpindex",
+  "updated": "2026-07-15",
+  "est_minutes": 3,
+  "outcome": "A clear read on any MCP server before you wire it: what your agent could do with it, whether its description hides anything, and where it sits in the directory.",
+  "body": "A directory listing tells you a server exists. It does not tell you what that server could do inside your agent, or whether its tool descriptions carry instructions you did not intend to run. These three checks take a couple of minutes and run before anything touches your machine.",
+  "steps": [
+    {
+      "id": "scan",
+      "heading": "Map the blast radius of your config",
+      "body": "Paste your mcp.json (or a tools list) and see, per tool, the action type, side effect, reversibility, and whether it egresses off-machine. This runs entirely in your browser; your config is parsed locally and never uploaded.",
+      "embed": "scan-tool"
+    },
+    {
+      "id": "screen",
+      "heading": "Screen a tool's description",
+      "body": "A tool description is text your agent reads like a system prompt. The screen is an advisory, semantic-only read that flags hidden instructions or exfiltration wording and highlights the exact line. It is a judgment, not a safety verdict.",
+      "deep_link": {
+        "href": "/screen",
+        "label": "Screen a tool description",
+        "look_for": "the exact line it flags, and the REVIEW or UNVERIFIED label. The screen is advisory (semantic-only); it does not clear a tool as safe."
+      }
+    },
+    {
+      "id": "directory",
+      "heading": "Read the directory trust panel",
+      "body": "The directory carries a quality score and a trust verdict for each listed server. Both are advisory and fail-closed: an absent verdict shows as UNVERIFIED rather than a pass.",
+      "embed": "verdict-states"
+    },
+    {
+      "id": "leaderboard",
+      "heading": "Compare across the directory",
+      "body": "The maturity rankings put quality and the verdict side by side across servers, so you can see where a candidate sits rather than reading it in isolation.",
+      "deep_link": {
+        "href": "/leaderboard",
+        "label": "Open the maturity rankings",
+        "look_for": "the quality score column next to the verdict column. Higher quality is not a safety guarantee; it is how complete and consistent the listing is."
+      }
+    },
+    {
+      "id": "add",
+      "heading": "Add the directory client to your host (optional)",
+      "body": "If you want search and screening from inside your agent, add the advisory directory server. Pick your host and it shows only your command or config. This is the directory client, not the in-path gate.",
+      "embed": "host-picker"
+    }
+  ],
+  "next": {
+    "href": "/guides/install-the-gate-first-hold",
+    "label": "Install the gate and watch your first HOLD"
+  },
+  "depends_on": [
+    "components/ScanTool.tsx",
+    "lib/scan/analyze.ts",
+    "app/screen/page.tsx",
+    "lib/install/manifest.ts"
+  ],
+  "citation_ids": [
+    "mcpindex-snapshot:io-github-microsoft-playwright-mcp",
+    "mcpindex-snapshot:io-github-domdomegg-gmail-mcp"
+  ],
+  "faq": [
+    {
+      "q": "Does screening an MCP server tell me it is safe?",
+      "a": "No. The screen is advisory and semantic-only: it reads the tool description for hidden instructions or exfiltration wording and returns REVIEW or UNVERIFIED. It never returns a safe/cleared verdict, because a description read cannot prove runtime behavior."
+    },
+    {
+      "q": "Is my mcp.json uploaded when I scan it?",
+      "a": "No. The scan parses and grades your config entirely in the browser using a vendored classifier. Nothing is sent to a server."
+    }
+  ]
+}

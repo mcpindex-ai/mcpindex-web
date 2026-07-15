@@ -1,0 +1,56 @@
+{
+  "slug": "api-key-cli-login",
+  "kind": "walkthrough",
+  "order": 6,
+  "title": "Get an mcpindex API key from the CLI",
+  "meta_description": "A walkthrough of mcpindex login: run it, sign in with GitHub or Google over a loopback OAuth callback, and get a free API key stored locally. What the flow does and does not store. About 2 minutes.",
+  "h1": "Get an API key from the CLI",
+  "project": "mcpindex",
+  "updated": "2026-07-15",
+  "est_minutes": 2,
+  "outcome": "A free API key minted from your terminal in under a minute, stored locally at ~/.mcpindex/credentials.json, with a clear picture of what the login flow does and does not store.",
+  "body": "The gate works with no account. An API key only matters if you opt into cloud tiers or higher rate limits. If that is not you, you can skip this. If it is, here is the whole flow.",
+  "steps": [
+    {
+      "id": "run",
+      "heading": "Run the login command",
+      "body": "The login command ships with the npm SDK, not the Python gate. Run it with npx (no install needed):",
+      "embed": "login-command"
+    },
+    {
+      "id": "browser",
+      "heading": "Sign in in the browser",
+      "body": "Your terminal prints `Opening your browser to sign in:` with a URL (paste it yourself if the browser does not open). The browser opens to GitHub, or Google if you passed `--provider google`. After you authorize, the page shows `Signed in. You can close this tab and return to your terminal.` The key is handed back to the CLI over a loopback callback bound to 127.0.0.1 with a one-time nonce, so nothing but your own CLI can receive it. The flow times out after 180 seconds if you do not finish."
+    },
+    {
+      "id": "stored",
+      "heading": "Where the key lives",
+      "body": "Back in the terminal you see `Signed in. Your mcpindex key is stored.` The key itself is never printed. It is written to `~/.mcpindex/credentials.json` with `0600` permissions. Check your status anytime with `mcpindex whoami`, which shows the key's path but never the key.",
+      "troubleshoot": "No browser (a remote or headless box)? The command prints the sign-in URL, open it on any machine and complete the flow, since the callback returns to the loopback port the CLI opened. Google not working? That provider must be configured server-side; GitHub is the default."
+    },
+    {
+      "id": "privacy",
+      "heading": "What login stores about you",
+      "body": "Identity is stored server-side as a one-way hash of the provider and subject, never your email or any other personal detail. The key is a free-tier key; it raises your rate limits and unlocks opt-in cloud tiers, and the gate itself keeps working locally with or without it."
+    }
+  ],
+  "next": {
+    "href": "/guides/read-the-public-ledger",
+    "label": "Read the public drift ledger"
+  },
+  "depends_on": [
+    "app/api/auth/login/start/route.ts",
+    "app/api/auth/login/callback/route.ts",
+    "lib/loginOAuth.ts"
+  ],
+  "faq": [
+    {
+      "q": "Where does mcpindex store my API key after login?",
+      "a": "In ~/.mcpindex/credentials.json with 0600 file permissions. The key is never printed to your terminal; the login flow only confirms 'Your mcpindex key is stored.' Run mcpindex whoami to see the key's path (not the key itself)."
+    },
+    {
+      "q": "Do I need an account to use the mcpindex gate?",
+      "a": "No. The gate installs and runs locally with no account. An API key from mcpindex login only matters if you opt into higher rate limits or cloud tiers. Login stores a one-way identity hash, never your email."
+    }
+  ]
+}

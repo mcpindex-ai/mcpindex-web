@@ -193,6 +193,13 @@ export default async function Home() {
               HOLD) - PyPI <code className="text-[var(--color-ink)]">mcpindex-gate</code>, not
               the directory MCP client.{' '}
               <Link
+                href="/guides/install-the-gate-first-hold"
+                className="underline decoration-[var(--color-accent)] underline-offset-4 hover:text-[var(--color-accent)]"
+              >
+                New here? Walk through it →
+              </Link>
+              {' · '}
+              <Link
                 href="#install-paths"
                 className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
               >
@@ -314,9 +321,9 @@ export default async function Home() {
             />
             <Disclose summary="npm global / JSON config (Cursor, Claude Desktop, Cline, Zed)">
               <CopyField
-                label="npm global (then paste JSON from docs)"
+                label="npm global (or pick your host on /install)"
                 value={DISCOVERY_NPM_GLOBAL}
-                notes="Separate from the in-path gate. Tools: recommend_mcp_for_task, search_mcp_servers, compare_servers, check_tool_trust, assess_server, get_install_command. Per-client JSON: /docs#wire-it-to-your-client"
+                notes="Separate from the in-path gate. Tools: recommend_mcp_for_task, search_mcp_servers, compare_servers, check_tool_trust, assess_server, get_install_command. Per-host command or config: /install"
               />
             </Disclose>
           </div>

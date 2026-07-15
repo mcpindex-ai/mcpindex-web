@@ -52,6 +52,13 @@ export default function DocsPage() {
           anything in.)
         </p>
 
+        <p className="text-[14px] leading-[1.55]" style={{ color: 'var(--color-mute)' }}>
+          New here? The <Ext href="/guides/install-the-gate-first-hold">walkthrough</Ext> shows
+          install and your first HOLD, start to finish. For every install method - uv, pip, the
+          SDK, the full matrix - see <Ext href="/install">/install</Ext>. This page is the
+          reference: the one-liner, wiring by hand, and how the gate works.
+        </p>
+
         <div
           className="rule-t pt-5"
           style={{ borderColor: 'var(--color-rule)' }}
@@ -211,11 +218,16 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
             className="mt-2 text-[13px] leading-[1.5]"
             style={{ color: 'var(--color-mute)' }}
           >
-            Pass <Mono>PreflightPin(path=…)</Mono> to persist the baseline across
+            Persistence differs by runtime. In Python, pass{' '}
+            <Mono>PreflightPin(path=…)</Mono> to persist the baseline across
             restarts (so drift while the agent is offline is still caught on the
-            next call). On a hold the wrapper raises (or calls your{' '}
-            <Mono>on_hold</Mono> handler) with the structured verdict; the wrapped
-            session is never called on a hold.
+            next call). The TypeScript <Mono>PreflightPin</Mono> is in-memory only
+            (it takes no <Mono>path</Mono>); for durable pins in TS, run the tool
+            behind the standalone gate/proxy, which keeps its own on-disk pin store.
+            On a hold the wrapper raises (Python) or rejects with a{' '}
+            <Mono>PreflightHold</Mono> (TypeScript), or calls your{' '}
+            <Mono>on_hold</Mono> / <Mono>onHold</Mono> handler; the wrapped session
+            is never called on a hold.
           </p>
         </div>
 
@@ -486,84 +498,14 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
 
       {/* §04 - Wire it to your client */}
       <div id="wire-it-to-your-client" className="scroll-mt-20" />
-      <Section number="04" title="Wire the directory client to your host">
+      <Section number="04" title="What the directory client exposes">
         <p>
-          This section installs the <strong>directory MCP client</strong> (
-          <Mono>mcp-server-mcpindex</Mono>) - discovery + advisory trust. It does{' '}
-          <em>not</em> install the in-path gate; use §01 for that. Prefer the
-          CLI one-liners when your host ships <Mono>mcp add</Mono>.
+          The directory MCP client (<Mono>mcp-server-mcpindex</Mono>) is discovery +
+          advisory trust - <em>not</em> the in-path gate (that is §01). Install it from{' '}
+          <Ext href="/install">/install</Ext>: one-click for Cursor and VS Code, or pick your
+          host for the exact command or config (Claude Desktop, Claude Code, Gemini CLI, Zed,
+          Cline). Restart the client after wiring.
         </p>
-
-        <pre className="mt-3 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
-          <code>{`# Claude Code (user scope)
-claude mcp add --scope user mcpindex -- npx -y mcp-server-mcpindex@latest
-
-# Gemini CLI (user scope)
-gemini mcp add -s user mcpindex npx -y mcp-server-mcpindex@latest`}</code>
-        </pre>
-
-        <p className="mt-4">
-          Or paste JSON into the host config. Restart the client after editing.
-        </p>
-
-        <ClientConfig
-          client="Claude Desktop"
-          path="~/Library/Application Support/Claude/claude_desktop_config.json"
-          json={`{
-  "mcpServers": {
-    "mcpindex": {
-      "command": "npx",
-      "args": ["-y", "mcp-server-mcpindex@latest"]
-    }
-  }
-}`}
-        />
-
-        <ClientConfig
-          client="Claude Code"
-          path="claude mcp add (preferred) or ~/.claude.json"
-          json={`claude mcp add --scope user mcpindex -- npx -y mcp-server-mcpindex@latest`}
-        />
-
-        <ClientConfig
-          client="Cursor"
-          path=".cursor/mcp.json (project) or ~/.cursor/mcp.json (global)"
-          json={`{
-  "mcpServers": {
-    "mcpindex": {
-      "command": "npx",
-      "args": ["-y", "mcp-server-mcpindex@latest"]
-    }
-  }
-}`}
-        />
-
-        <ClientConfig
-          client="Gemini CLI"
-          path="gemini mcp add (preferred) or ~/.gemini/settings.json"
-          json={`gemini mcp add -s user mcpindex npx -y mcp-server-mcpindex@latest`}
-        />
-
-        <ClientConfig
-          client="Cline (VS Code)"
-          path="Cline settings panel → MCP Servers → Add"
-          json={`Command:  npx
-Args:     -y mcp-server-mcpindex@latest`}
-        />
-
-        <ClientConfig
-          client="Zed"
-          path="~/.config/zed/settings.json"
-          json={`{
-  "context_servers": {
-    "mcpindex": {
-      "command": "npx",
-      "args": ["-y", "mcp-server-mcpindex@latest"]
-    }
-  }
-}`}
-        />
-
         <p>
           Once installed, the six tools are available in any agent loop:{' '}
           <Mono>recommend_mcp_for_task</Mono>, <Mono>search_mcp_servers</Mono>,{' '}
@@ -927,39 +869,6 @@ function UseCase({
           {notes}
         </p>
       )}
-    </div>
-  );
-}
-
-function ClientConfig({
-  client,
-  path,
-  json,
-}: {
-  client: string;
-  path: string;
-  json: string;
-}) {
-  return (
-    <div
-      className="rule-t pt-5"
-      style={{ borderColor: 'var(--color-rule)' }}
-    >
-      <h3
-        className="text-[14px] font-semibold tracking-tight"
-        style={{ color: 'var(--color-ink)' }}
-      >
-        {client}
-      </h3>
-      <p
-        className="mt-1 text-[11.5px]"
-        style={{ fontFamily: FONT_MONO, color: 'var(--color-mute)' }}
-      >
-        {path}
-      </p>
-      <pre className="mt-3 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
-        <code>{json}</code>
-      </pre>
     </div>
   );
 }

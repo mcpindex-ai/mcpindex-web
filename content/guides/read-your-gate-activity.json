@@ -1,0 +1,60 @@
+{
+  "slug": "read-your-gate-activity",
+  "kind": "walkthrough",
+  "order": 3,
+  "title": "Read your Gate Activity (mcpindex receipts)",
+  "meta_description": "Every gated tool call leaves a private receipt. This walkthrough shows how to find your install id, open your Gate Activity, and read each row, and what is deliberately never recorded.",
+  "h1": "Read your Gate Activity (receipts)",
+  "project": "mcpindex",
+  "updated": "2026-07-15",
+  "est_minutes": 2,
+  "outcome": "Your install's private receipt log, decoded: which tool ran, the verdict, and the action on each row, with the guarantee that no arguments or content are ever stored.",
+  "body": "The gate keeps a running record of what it saw: one receipt per gated call, private to your install. It is credential-blind by design. Here is how to find it and read it.",
+  "steps": [
+    {
+      "id": "find-id",
+      "heading": "Find your install id",
+      "body": "Your gate posts receipts under a 32-character (hex) install id that only you hold. It is generated the first time the gate emits, and stored at `~/.mcpindex/install_id` (the same machine id used for optional drift telemetry). Treat it like an unguessable key: anyone with it can read your activity, so it is not indexed and not shared.",
+      "troubleshoot": "No id yet? The gate writes it on first run. Make sure the gate has actually handled at least one tool call since install."
+    },
+    {
+      "id": "open",
+      "heading": "Open your Gate Activity",
+      "body": "Load your receipts page with your install id. The page is private (noindex) and shows your calls in time order.",
+      "deep_link": {
+        "href": "/receipts",
+        "label": "Open your Gate Activity",
+        "look_for": "one row per gated call: the tool hash, the verdict, the action, and the date. Add your install id to the URL to load your own log."
+      }
+    },
+    {
+      "id": "read-row",
+      "heading": "Read a receipt row",
+      "body": "Each row is deliberately spare:\n\n| Column | What it means |\n| --- | --- |\n| Tool | A hash of the tool identity, not its arguments |\n| Verdict | HOLD or PROCEED, the gate's contract-diff result |\n| Action | The blast-radius class read from the contract (read, write, send, delete, execute) |\n| Date | When the call was gated |\n\nThe verdict column uses the same vocabulary as everywhere else:",
+      "embed": "verdict-states"
+    },
+    {
+      "id": "privacy",
+      "heading": "What is never in a receipt",
+      "body": "No arguments, no content, no secrets. A receipt records that a call happened and how the gate ruled on the contract, and nothing about the payload. That is what credential-blind means here: the gate can show you its activity without ever holding what flowed through your tools."
+    }
+  ],
+  "next": {
+    "href": "/guides/tune-postures",
+    "label": "Tune how strictly the gate holds"
+  },
+  "depends_on": [
+    "app/receipts/page.tsx",
+    "app/api/v1/receipts/route.ts"
+  ],
+  "faq": [
+    {
+      "q": "Can mcpindex see the arguments my agent passed to a tool?",
+      "a": "No. Receipts are credential-blind: they record the tool identity hash, the verdict, the action class, and the date. Arguments and content are never captured, so there is nothing about the payload to see."
+    },
+    {
+      "q": "Why does opening my Gate Activity need an install id?",
+      "a": "The install id is an unguessable 32-character key unique to your install. The receipts page is private and not indexed; the id is what scopes it to you, so only someone holding your id can read your log."
+    }
+  ]
+}
