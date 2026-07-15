@@ -1,0 +1,81 @@
+{
+  "manifest_version": "0.2",
+  "name": "mcp-server-mcpindex",
+  "display_name": "mcpindex",
+  "version": "0.3.7",
+  "description": "Find MCP servers by natural-language task, with quality scores and advisory trust screens (check_tool_trust, assess_server) before an agent calls a tool.",
+  "long_description": "The directory client for mcpindex.ai. Describe a task in plain language and get ranked MCP server picks with install commands and quality scores, then run an advisory trust screen on a server or tool before wiring it in. Zero-config: queries the public mcpindex.ai API, no credentials. Advisory only (REVIEW / UNVERIFIED at v1), not a safety verdict and not an in-path gate.",
+  "author": {
+    "name": "Bhartis LLC",
+    "email": "hello@mcpindex.ai",
+    "url": "https://mcpindex.ai"
+  },
+  "homepage": "https://mcpindex.ai",
+  "documentation": "https://mcpindex.ai/methodology",
+  "support": "https://github.com/mcpindex-ai/mcpindex-web/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mcpindex-ai/mcpindex-web"
+  },
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "discovery",
+    "trust",
+    "tool-safety",
+    "registry"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "src/index.mjs",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/src/index.mjs"],
+      "env": {
+        "MCPINDEX_API_BASE": "${user_config.api_base}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "recommend_mcp_for_task",
+      "description": "Recommend the best MCP servers for a natural-language task: ranked picks with reasoning, install commands, and quality scores."
+    },
+    {
+      "name": "search_mcp_servers",
+      "description": "Keyword and semantic search across the full MCP server registry, with an optional category filter."
+    },
+    {
+      "name": "get_install_command",
+      "description": "Get the exact install command for a given MCP server and client (Claude Desktop, Claude Code, Cursor, Gemini CLI, Cline, Zed)."
+    },
+    {
+      "name": "compare_servers",
+      "description": "Side-by-side comparison of 2 to 5 MCP servers: quality scores, install paths, transport types, env vars."
+    },
+    {
+      "name": "check_tool_trust",
+      "description": "Advisory pre-invocation trust screen for a specific tool on a server. Returns REVIEW or UNVERIFIED at v1; fail-closed, never coerces to ALLOW."
+    },
+    {
+      "name": "assess_server",
+      "description": "Aggregated advisory trust assessment across all tools on a server. Same verdict shape as check_tool_trust."
+    }
+  ],
+  "tools_generated": false,
+  "user_config": {
+    "api_base": {
+      "type": "string",
+      "title": "API base URL",
+      "description": "Override the mcpindex API base if you self-host. Leave as the default otherwise.",
+      "default": "https://mcpindex.ai",
+      "required": false
+    }
+  },
+  "compatibility": {
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}

@@ -48,6 +48,7 @@ try {
   run(
     'rsync',
     ['-a', '--delete', '--exclude', '.git', '--exclude', 'node_modules',
+      '--exclude', '*.mcpb',
       `${pkgRoot}/`, `${clone}/`],
     tmp,
   );
