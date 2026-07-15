@@ -4,6 +4,17 @@ All notable changes to `mcp-server-mcpindex` are recorded here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.8] - 2026-07-15
+
+### Fixed
+
+- **Empty `MCPINDEX_API_BASE` no longer breaks every API call.** Some MCPB-bundle hosts substitute an empty string for an unset optional `user_config` field, so `MCPINDEX_API_BASE=""` was being used verbatim as the base URL, turning every request into a broken relative URL. The base now falls back to `https://mcpindex.ai` on an empty value (`||` instead of `??`), so those hosts work out of the box. Source change was already on `main` at 0.3.7 but had not reached npm; this release ships it.
+
+### Changed
+
+- Swept em-dashes to hyphens in the `check_tool_trust` tool description and the update-check comments (house style).
+- Removed a no-op template expression in the recommendation output (`${r.name}@${r.qualityScore ? '' : ''}` always rendered `${r.name}`).
+
 ## [0.3.5] - 2026-07-12
 
 ### Changed
