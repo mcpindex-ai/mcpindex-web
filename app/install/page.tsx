@@ -72,9 +72,9 @@ export default function InstallPage() {
         <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">Add mcpindex to your agent.</h1>
         <p className="mt-4 text-[16px] leading-[1.65] text-[var(--color-cite)]">
           The <strong className="text-[var(--color-ink)]">gate</strong>{' '}is the product. It sits in the path of
-          every MCP tool call and runs a deterministic contract-diff, so a server that changed since you
-          approved it can&apos;t change your agent silently. Start there. If you just want to look first, there
-          is a zero-install path too.
+          every MCP tool call and runs a deterministic contract-diff, so a server whose contract changed
+          since you approved it can&apos;t silently change the tools your agent sees. Start there. If you just
+          want to look first, there is a zero-install path too.
         </p>
 
         {/* ---- 1. The gate (the product) -------------------------------- */}

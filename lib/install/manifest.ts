@@ -1,11 +1,11 @@
 /**
- * Single source of truth for every way to install mcpindex.
+ * Source of truth for install COMMANDS on mcpindex.
  *
- * WHY this exists: install commands were duplicated across /#install,
- * /docs, the per-server rail, GateInstallBridge and llms.txt, so the same
- * string had to be hand-synced in five places. The /install page, and later
- * the machine surfaces, render from HERE so the command a human copies and
- * the command an LLM cites are the same string.
+ * The /install page, llms.txt and llms-full.txt render their commands from
+ * here, and the homepage / CTA command constants (lib/install-command.ts and
+ * lib/client-install.ts) re-export from here, so the string a human copies and
+ * the string an LLM cites are one value. (app/docs and app/.well-known still
+ * carry their own literals; folding them in is a later pass.)
  *
  * Honesty invariant (brand-binding): the GATE does deterministic contract-diff
  * in-path; it flags changes, it is not a safety verdict. The DIRECTORY server
@@ -154,12 +154,23 @@ export const DIRECTORY_CLIENTS: DirectoryClient[] = [
 export const LEGACY_EOL_PACKAGE = 'mcpindex-preflight';
 
 /**
- * Hosts the install flow wires, for prose surfaces. Derived from the client
- * list (minus the raw fallback) so it can't drift from the picker on /install.
+ * Hosts the GATE config-wires, for prose surfaces (llms.txt, llms-full.txt).
+ * Authoritative source: mcpindex-trust/corpus_eval/tooling/cse/config_scan.py
+ * `_default_config_paths()`. This is a SUPERSET of the directory picker
+ * (DIRECTORY_CLIENTS): the gate also wires VS Code and Windsurf. Do NOT derive
+ * it from the picker - that understates the gate on the machine surfaces, where
+ * an LLM reads the list as the exhaustive capability set.
  */
-export const SUPPORTED_HOSTS = DIRECTORY_CLIENTS.filter((c) => c.id !== 'raw')
-  .map((c) => c.label)
-  .join(' / ');
+export const GATE_WIRING_HOSTS = [
+  'Claude Desktop',
+  'Claude Code',
+  'Cursor',
+  'VS Code',
+  'Windsurf',
+  'Cline',
+  'Zed',
+  'Gemini CLI',
+] as const;
 
 /**
  * Canonical one-line gate-install summary for llms.txt and llms-full.txt, so
@@ -171,7 +182,7 @@ export function gateInstallLine({ code = false }: { code?: boolean } = {}): stri
   const uv = GATE_METHODS.find((m) => m.id === 'uv')!.command;
   const curl = GATE_METHODS.find((m) => m.id === 'curl')!.command;
   return (
-    `Install: one-click config-wire across ${SUPPORTED_HOSTS} via ${cmd(uv)} or ${cmd(curl)} ` +
+    `Install: one-click config-wire across ${GATE_WIRING_HOSTS.join(' / ')} via ${cmd(uv)} or ${cmd(curl)} ` +
     `(rewrites the host config to route each server through the gate; zero credentials change hands), ` +
     `or the SDK wrap() one-liner (TS + Python) around an already-authenticated session. ` +
     `Legacy ${cmd(LEGACY_EOL_PACKAGE)} is EOL (frozen 0.7.0); install ${cmd(PACKAGES.gateBinary)}, not preflight. See /docs.`

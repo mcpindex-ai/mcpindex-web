@@ -1,5 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   GATE_METHODS,
   DIRECTORY_CLIENTS,
@@ -8,9 +10,19 @@ import {
   cursorDeepLink,
   vscodeDeepLink,
   gateInstallLine,
-  SUPPORTED_HOSTS,
+  GATE_WIRING_HOSTS,
   PACKAGES,
 } from './manifest';
+import {
+  INSTALL_SHELL_COMMAND,
+} from '../install-command';
+import {
+  GATE_PACKAGE,
+  GATE_UV_INSTALL,
+  DISCOVERY_PACKAGE,
+  DISCOVERY_CLAUDE_MCP_ADD,
+  DISCOVERY_GEMINI_MCP_ADD,
+} from '../client-install';
 
 // No em-dash anywhere in copied commands/notes (site-wide hard rule).
 test('manifest contains no em-dash', () => {
@@ -56,13 +68,46 @@ test('gateInstallLine derives commands + hosts from the manifest (llms surfaces)
   // Carries the exact manifest commands, not a hand-synced copy.
   assert.ok(plain.includes(GATE_METHODS.find((m) => m.id === 'uv')!.command));
   assert.ok(plain.includes(GATE_METHODS.find((m) => m.id === 'curl')!.command));
-  assert.ok(plain.includes(SUPPORTED_HOSTS));
+  assert.ok(plain.includes(GATE_WIRING_HOSTS.join(' / ')));
   assert.ok(plain.includes(PACKAGES.gateBinary));
   // Steers off the EOL binary; plain form has no backticks.
   assert.ok(plain.includes('EOL'));
   assert.ok(!plain.includes('`'));
   // Markdown form backticks the commands.
   assert.ok(gateInstallLine({ code: true }).includes('`'));
-  // Supported hosts list is derived (excludes the raw fallback).
-  assert.ok(!SUPPORTED_HOSTS.includes('raw'));
+});
+
+// The GATE wires more hosts than the advisory directory server runs in. The
+// machine-surface host list must be the complete gate set (an LLM reads it as
+// exhaustive), NOT the directory picker - or it understates the gate.
+test('GATE_WIRING_HOSTS is the complete gate set: superset of the picker, incl. VS Code + Windsurf', () => {
+  assert.ok(GATE_WIRING_HOSTS.includes('VS Code'), 'gate wires VS Code');
+  assert.ok(GATE_WIRING_HOSTS.includes('Windsurf'), 'gate wires Windsurf');
+  const gateHosts: readonly string[] = GATE_WIRING_HOSTS;
+  const pickerHosts = DIRECTORY_CLIENTS.filter((c) => c.id !== 'raw').map((c) => c.label);
+  for (const h of pickerHosts) {
+    assert.ok(gateHosts.includes(h), `gate host set must include picker host "${h}"`);
+  }
+  assert.ok(GATE_WIRING_HOSTS.length > pickerHosts.length, 'gate host set must be a strict superset');
+});
+
+// Consolidation guard: the homepage/CTA constants re-export the manifest value,
+// so a rename can't leave the homepage and /install serving different commands.
+test('legacy install constants derive from the manifest (no parallel source)', () => {
+  assert.equal(INSTALL_SHELL_COMMAND, GATE_METHODS.find((m) => m.id === 'curl')!.command);
+  assert.equal(GATE_PACKAGE, PACKAGES.gateBinary);
+  assert.equal(GATE_UV_INSTALL, GATE_METHODS.find((m) => m.id === 'uv')!.command);
+  assert.equal(DISCOVERY_PACKAGE, PACKAGES.directoryServer);
+  assert.equal(DISCOVERY_CLAUDE_MCP_ADD, DIRECTORY_CLIENTS.find((c) => c.id === 'claude-code')!.value);
+  assert.equal(DISCOVERY_GEMINI_MCP_ADD, DIRECTORY_CLIENTS.find((c) => c.id === 'gemini')!.value);
+});
+
+// Emission guard: the machine surfaces must actually render gateInstallLine();
+// a refactor that dropped the call would silently un-derive them. Source-text
+// check (network-free) so it runs in the unit suite.
+test('llms.txt and llms-full.txt render the derived gateInstallLine()', () => {
+  for (const f of ['app/llms.txt/route.ts', 'app/llms-full.txt/route.ts']) {
+    const src = readFileSync(join(process.cwd(), f), 'utf8');
+    assert.ok(src.includes('gateInstallLine'), `${f} must render gateInstallLine()`);
+  }
 });

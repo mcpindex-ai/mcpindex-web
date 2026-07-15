@@ -29,14 +29,14 @@ export function DirectoryInstall({
         <a
           href={cursorHref}
           onClick={() => trackGateInstallCopy('install-page-oneclick-cursor')}
-          className="inline-flex items-center gap-2 bg-[var(--color-ink)] text-zinc-100 px-4 py-2.5 text-[13px] font-medium hover:opacity-90"
+          className="inline-flex items-center gap-2 bg-[var(--color-ink)] text-zinc-100 px-4 py-2.5 text-[13px] font-medium hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--color-accent)]"
         >
           Add to Cursor
         </a>
         <a
           href={vscodeHref}
           onClick={() => trackGateInstallCopy('install-page-oneclick-vscode')}
-          className="inline-flex items-center gap-2 border border-[var(--color-rule)] px-4 py-2.5 text-[13px] font-medium text-[var(--color-ink)] hover:border-[var(--color-ink)]"
+          className="inline-flex items-center gap-2 border border-[var(--color-rule)] px-4 py-2.5 text-[13px] font-medium text-[var(--color-ink)] hover:border-[var(--color-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--color-accent)]"
         >
           Add to VS Code
         </a>
@@ -54,7 +54,7 @@ export function DirectoryInstall({
             onClick={() => setClientId(c.id)}
             aria-pressed={c.id === clientId}
             className={
-              'px-3 py-1.5 text-[12px] font-mono border ' +
+              'px-3 py-1.5 text-[12px] font-mono border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--color-accent)] ' +
               (c.id === clientId
                 ? 'border-[var(--color-ink)] text-[var(--color-ink)]'
                 : 'border-[var(--color-rule)] text-[var(--color-mute)] hover:border-[var(--color-ink)]')
