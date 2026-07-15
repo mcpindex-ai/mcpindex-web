@@ -65,6 +65,14 @@ export function computeBadgeState(v: Verdict | null): BadgeState {
   const { schemaContentFail, screenFail: screenFlagged } = splitFlags(v);
 
   if (screenFlagged) {
+    // A `confirmed` screen flag renders "flagged" EVEN IF a schema-content FAIL is
+    // also held. This is intentional, not a masking bug: "flagged" is strictly more
+    // severe than the schema hold's "review", so it is never a fail-open (nothing
+    // bad is hidden - a viewer still sees red, not clean). The schema hold is NOT
+    // lost: the /server page renders its own "schema flag - held" box unconditionally
+    // on schemaContentFail (page.tsx), and the held-adjudication healthcheck probe
+    // holds the record until the schema axis is reviewed. Do NOT downgrade this to
+    // "review" - that would hide a human-confirmed accusation. (badge.test.ts pins it.)
     if (v.adjudication?.decision === 'confirmed') return 'flagged';
     // a cleared SCREEN flag still cannot clear an unreviewed schema-content FAIL
     if (v.adjudication?.decision === 'cleared') return schemaContentFail ? 'review' : 'screened';
