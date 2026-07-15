@@ -37,33 +37,7 @@
       }
     }
   },
-  "tools": [
-    {
-      "name": "recommend_mcp_for_task",
-      "description": "Recommend the best MCP servers for a natural-language task: ranked picks with reasoning, install commands, and quality scores."
-    },
-    {
-      "name": "search_mcp_servers",
-      "description": "Keyword and semantic search across the full MCP server registry, with an optional category filter."
-    },
-    {
-      "name": "get_install_command",
-      "description": "Get the exact install command for a given MCP server and client (Claude Desktop, Claude Code, Cursor, Gemini CLI, Cline, Zed)."
-    },
-    {
-      "name": "compare_servers",
-      "description": "Side-by-side comparison of 2 to 5 MCP servers: quality scores, install paths, transport types, env vars."
-    },
-    {
-      "name": "check_tool_trust",
-      "description": "Advisory pre-invocation trust screen for a specific tool on a server. Returns REVIEW or UNVERIFIED at v1; fail-closed, never coerces to ALLOW."
-    },
-    {
-      "name": "assess_server",
-      "description": "Aggregated advisory trust assessment across all tools on a server. Same verdict shape as check_tool_trust."
-    }
-  ],
-  "tools_generated": false,
+  "tools_generated": true,
   "user_config": {
     "api_base": {
       "type": "string",
