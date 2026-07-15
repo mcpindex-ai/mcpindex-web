@@ -19,11 +19,25 @@ const API_BASE = process.env.MCPINDEX_API_BASE || 'https://mcpindex.ai';
 /* eslint-disable @typescript-eslint/no-explicit-any -- thin adapter over external JSON */
 
 async function api(path: string): Promise<any> {
+  // 8s per-fetch timeout so a slow upstream can't hold the (unauthenticated)
+  // serverless invocation open up to maxDuration, esp. under compare_servers fan-out.
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { 'User-Agent': 'mcpindex-remote-mcp/1.0', Accept: 'application/json' },
+    signal: AbortSignal.timeout(8000),
   });
-  if (!res.ok) throw new Error(`mcpindex API ${res.status}: ${await res.text()}`);
+  // Status only - never echo the upstream body (avoids surfacing a verbose 5xx to callers).
+  if (!res.ok) throw new Error(`mcpindex API ${res.status}`);
   return res.json();
+}
+
+// Defense-in-depth: the base host is fixed, but keep path-segment inputs from
+// walking the /api/v1 path (reject traversal / control chars). Block-list, not
+// allow-list, so we never reject a legitimate slug/tool name.
+function safeSeg(v: string, label: string): string {
+  if (!v || v === '.' || v.includes('/') || v.includes('\\') || v.includes('..') || /[\u0000-\u001f]/.test(v)) {
+    throw new Error(`invalid ${label}`);
+  }
+  return v;
 }
 
 const text = (t: string) => ({ content: [{ type: 'text' as const, text: t }] });
@@ -155,7 +169,9 @@ const handler = createMcpHandler(
       },
       async ({ server_slug, client }) => {
         try {
-          return text(formatInstall(await api(`/api/v1/server/${encodeURIComponent(server_slug)}`), client));
+          return text(
+            formatInstall(await api(`/api/v1/server/${encodeURIComponent(safeSeg(server_slug, 'server_slug'))}`), client),
+          );
         } catch (e) {
           return errText('get_install_command', e);
         }
@@ -174,7 +190,9 @@ const handler = createMcpHandler(
       },
       async ({ slugs }) => {
         try {
-          const rows = await Promise.all(slugs.map((s) => api(`/api/v1/server/${encodeURIComponent(s)}`)));
+          const rows = await Promise.all(
+            slugs.map((s) => api(`/api/v1/server/${encodeURIComponent(safeSeg(s, 'slug'))}`)),
+          );
           return text(formatCompare(rows));
         } catch (e) {
           return errText('compare_servers', e);
@@ -196,7 +214,7 @@ const handler = createMcpHandler(
       async ({ server_id, tool_name }) => {
         try {
           const v = await api(
-            `/api/v1/trust/tool/${encodeURIComponent(server_id)}/${encodeURIComponent(tool_name)}`,
+            `/api/v1/trust/tool/${encodeURIComponent(safeSeg(server_id, 'server_id'))}/${encodeURIComponent(safeSeg(tool_name, 'tool_name'))}`,
           );
           return text(JSON.stringify(v, null, 2));
         } catch (e) {
@@ -217,7 +235,7 @@ const handler = createMcpHandler(
       },
       async ({ server_id }) => {
         try {
-          const v = await api(`/api/v1/trust/server/${encodeURIComponent(server_id)}`);
+          const v = await api(`/api/v1/trust/server/${encodeURIComponent(safeSeg(server_id, 'server_id'))}`);
           return text(JSON.stringify(v, null, 2));
         } catch (e) {
           return errText('assess_server', e);
