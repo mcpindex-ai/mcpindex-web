@@ -3,8 +3,8 @@
   "name": "mcp-server-mcpindex",
   "display_name": "mcpindex",
   "version": "0.3.7",
-  "description": "Find MCP servers by natural-language task, with quality scores and advisory trust screens (check_tool_trust, assess_server) before an agent calls a tool.",
-  "long_description": "The directory client for mcpindex.ai. Describe a task in plain language and get ranked MCP server picks with install commands and quality scores, then run an advisory trust screen on a server or tool before wiring it in. Zero-config: queries the public mcpindex.ai API, no credentials. Advisory only (REVIEW / UNVERIFIED at v1), not a safety verdict and not an in-path gate.",
+  "description": "The MCP directory that vets servers, not just lists them: find one by task, then screen a tool before an agent calls it. Advisory, conformance-monitored, not a safety verdict.",
+  "long_description": "mcpindex is the MCP directory that vets servers, not just lists them. Find the right server for a task (ranked picks with install commands and quality scores), then screen a specific tool or a whole server before an agent calls it: check_tool_trust and assess_server return an advisory verdict (REVIEW / UNVERIFIED at v1) backed by conformance monitoring and a live drift ledger, and fail closed to human review. Zero-config: queries the public mcpindex.ai API, no credentials. Monitored, not enforced; advisory, not a safety verdict and not an in-path gate.",
   "author": {
     "name": "Bhartis LLC",
     "email": "hello@mcpindex.ai",
