@@ -4,6 +4,12 @@ All notable changes to `mcp-server-mcpindex` are recorded here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.9] - 2026-07-15
+
+### Changed
+
+- **Tool descriptions now have a single source of truth (`src/tools-meta.json`).** The stdio CLI (`src/index.mjs`) and the hosted remote endpoint both import the shared name/title/description for the 6 tools, so their copy can no longer drift. Description text is byte-identical to 0.3.8; this is an internal refactor with no change to the advertised tool copy. Bumped so the refactored source is releasable to npm.
+
 ## [0.3.8] - 2026-07-15
 
 ### Fixed
