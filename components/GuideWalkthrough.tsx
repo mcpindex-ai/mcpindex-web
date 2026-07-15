@@ -1,8 +1,6 @@
 import Link from 'next/link';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import type { Guide } from '@/lib/guides-content';
-import { md, escapeAnglesOutsideCode } from './proseComponents';
+import { Prose } from './proseComponents';
 import { renderEmbed } from '@/lib/guide-embeds';
 import { GuideDeepLink } from './GuideDeepLink';
 import { Disclose } from './Disclose';
@@ -12,14 +10,6 @@ import { Disclose } from './Disclose';
 // numbered steps (each an anchor target with its own embed / deep-link /
 // troubleshoot), and an end-of-guide "next journey" CTA that chains the funnel.
 // The classic flat-body render still lives in app/guides/[slug]/page.tsx.
-
-function Prose({ children }: { children: string }) {
-  return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={md}>
-      {escapeAnglesOutsideCode(children)}
-    </ReactMarkdown>
-  );
-}
 
 export function GuideWalkthrough({ guide }: { guide: Guide }) {
   const steps = guide.steps ?? [];
@@ -53,7 +43,7 @@ export function GuideWalkthrough({ guide }: { guide: Guide }) {
 
       <ol className="mt-10 space-y-0">
         {steps.map((step, i) => (
-          <li key={step.id} id={step.id} className="scroll-mt-24 rule-t py-8 first:rule-t">
+          <li key={step.id} id={step.id} className="scroll-mt-24 rule-t py-8">
             <div className="flex items-baseline gap-3">
               <span className="font-mono text-[12px] text-[var(--color-accent)]">
                 {String(i + 1).padStart(2, '0')}
@@ -63,7 +53,7 @@ export function GuideWalkthrough({ guide }: { guide: Guide }) {
                 <a
                   href={`#${step.id}`}
                   aria-label={`Link to: ${step.heading}`}
-                  className="ml-2 align-middle font-mono text-[13px] text-[var(--color-rule)] opacity-0 transition-opacity group-hover:opacity-100 hover:text-[var(--color-accent)]"
+                  className="ml-2 align-middle font-mono text-[13px] text-[var(--color-rule)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-[var(--color-accent)]"
                 >
                   #
                 </a>

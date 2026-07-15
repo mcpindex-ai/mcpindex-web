@@ -2,9 +2,8 @@ import type { ReactNode } from 'react';
 import { CopyField } from '@/components/CopyField';
 import DriftGateDemo from '@/components/DriftGateDemo';
 import { ScanTool } from '@/components/ScanTool';
-import { ArchDiagram } from '@/components/ArchDiagram';
 import { Disclose } from '@/components/Disclose';
-import { GuideHostPicker, type HostOption } from '@/components/GuideHostPicker';
+import { GuideHostPicker } from '@/components/GuideHostPicker';
 import {
   CURL_INSTALL,
   UV_INSTALL,
@@ -42,8 +41,7 @@ export type EmbedKey =
   | 'drift-gate-demo'
   | 'scan-tool'
   | 'ambient-trace'
-  | 'verdict-states'
-  | 'arch-diagram';
+  | 'verdict-states';
 
 interface Embed {
   /** One line on what this embed shows / why it's here (for the registry index). */
@@ -52,17 +50,6 @@ interface Embed {
 }
 
 const KICKER = 'font-mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-mute)]';
-
-// Directory-server per-host install data, shaped for the client picker. This adds
-// the ADVISORY directory server (a normal npx MCP server), NOT the in-path gate -
-// the gate has no per-host command (its one-liner rewrites every host config).
-const HOST_OPTIONS: HostOption[] = DIRECTORY_CLIENTS.map((c) => ({
-  id: c.id,
-  label: c.label,
-  kind: c.kind,
-  value: c.value,
-  ...(c.path ? { path: c.path } : {}),
-}));
 
 export const EMBED_REGISTRY: Record<EmbedKey, Embed> = {
   'install-command': {
@@ -127,7 +114,7 @@ export const EMBED_REGISTRY: Record<EmbedKey, Embed> = {
     note: 'Pick-your-host install of the ADVISORY directory server (DIRECTORY_CLIENTS). One click shows only your command/config.',
     render: () => (
       <div className="mt-5">
-        <GuideHostPicker hosts={HOST_OPTIONS} />
+        <GuideHostPicker hosts={DIRECTORY_CLIENTS} />
         <p className="mt-2.5 text-[12.5px] leading-[1.5] text-[var(--color-mute)]">
           This adds the advisory directory server (a normal MCP server for search and screening).
           It is not the in-path gate.
@@ -203,11 +190,6 @@ mcpindex · noted github/delete_repo - delete, irreversible
         </div>
       );
     },
-  },
-
-  'arch-diagram': {
-    note: 'The in-repo vector diagram of the request flow (components/ArchDiagram). Scales, no raster.',
-    render: () => <ArchDiagram />,
   },
 };
 

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { CopyField } from '@/components/CopyField';
 import { DirectoryInstall } from '@/components/install/DirectoryInstall';
+import { jsonLdSafe } from '@/lib/jsonLd';
 import {
   GATE_METHODS,
   SDK_SNIPPET_TS,
@@ -62,7 +63,7 @@ export default function InstallPage() {
     <article className="site-container pt-16 pb-24">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD).replace(/</g, '\\u003c') }}
+        dangerouslySetInnerHTML={{ __html: jsonLdSafe(JSON_LD) }}
       />
 
       {/* Reading column: constrain the measure so prose and command boxes

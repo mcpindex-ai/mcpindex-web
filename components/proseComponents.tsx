@@ -1,4 +1,5 @@
-import type { Components } from 'react-markdown';
+import ReactMarkdown, { type Components } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 // Shared markdown prose renderers for /whitepaper and /guides so the two long-form
 // surfaces read as one system. amber (#ea580c) stays reserved for the verdict token:
@@ -104,3 +105,15 @@ export const md: Components = {
       <img src={src} alt={alt ?? ''} className="mt-6 max-w-full rule-t rule-b rule-l rule-r" />
     ) : null,
 };
+
+// The shared long-form renderer: GFM markdown through the `md` map, with stray
+// angle brackets escaped so `<placeholder>` text survives. Used by /guides
+// (walkthrough + classic body) and could back /whitepaper too, so the surfaces
+// read as one system.
+export function Prose({ children }: { children: string }) {
+  return (
+    <ReactMarkdown remarkPlugins={[remarkGfm]} components={md}>
+      {escapeAnglesOutsideCode(children)}
+    </ReactMarkdown>
+  );
+}

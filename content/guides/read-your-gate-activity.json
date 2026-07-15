@@ -30,7 +30,7 @@
     {
       "id": "read-row",
       "heading": "Read a receipt row",
-      "body": "Each row is deliberately spare:\n\n| Column | What it means |\n| --- | --- |\n| Tool | A hash of the tool identity, not its arguments |\n| Verdict | HOLD or PROCEED, the gate's contract-diff result |\n| Action | The blast-radius class read from the contract (read, write, send, delete, execute) |\n| Date | When the call was gated |\n\nThe verdict column uses the same vocabulary as everywhere else:",
+      "body": "Each row is deliberately spare:\n\n| Column | What it means |\n| --- | --- |\n| Tool | A hash of the tool identity, not its arguments |\n| Verdict | ALLOW, REVIEW, or DENY: the in-path decision recorded on the trust axis (a PROCEED is logged ALLOW, a HOLD is logged DENY, an inconclusive REVIEW) |\n| Action | The blast-radius class read from the contract (read, write, send, delete, execute) |\n| Date | When the call was gated |\n\nUnderneath, that verdict is the same contract-diff the gate makes in-path:",
       "embed": "verdict-states"
     },
     {
