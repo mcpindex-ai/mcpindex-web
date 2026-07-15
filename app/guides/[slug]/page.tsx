@@ -65,36 +65,42 @@ export default async function GuidePage(
 
   const servers = await referencedServers(guide.citationIds);
 
+  const url = `https://mcpindex.ai/guides/${slug}`;
+  const org = { '@type': 'Organization', name: 'mcpindex', url: 'https://mcpindex.ai' };
+
   // model-generated text goes into a dangerouslySetInnerHTML script; escape "<"
   // so a "</script>" in title/h1/description cannot break out of the LD block.
-  const jsonLd = jsonLdSafe({
-    '@context': 'https://schema.org',
-    '@graph': [
-      {
-        '@type': 'TechArticle',
-        headline: guide.h1,
-        description: guide.metaDescription,
-        url: `https://mcpindex.ai/guides/${slug}`,
-      },
-      {
-        '@type': 'BreadcrumbList',
-        itemListElement: [
-          {
-            '@type': 'ListItem',
-            position: 1,
-            name: 'Guides',
-            item: 'https://mcpindex.ai/guides',
-          },
-          {
-            '@type': 'ListItem',
-            position: 2,
-            name: guide.h1,
-            item: `https://mcpindex.ai/guides/${slug}`,
-          },
-        ],
-      },
-    ],
-  });
+  // FAQPage is added when the guide carries Q&A pairs - answer engines (ChatGPT,
+  // Perplexity, Google AI) extract those question/answer nodes directly.
+  const graph: unknown[] = [
+    {
+      '@type': 'TechArticle',
+      headline: guide.h1,
+      description: guide.metaDescription,
+      url,
+      author: org,
+      publisher: org,
+      ...(guide.updated ? { datePublished: guide.updated, dateModified: guide.updated } : {}),
+    },
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Guides', item: 'https://mcpindex.ai/guides' },
+        { '@type': 'ListItem', position: 2, name: guide.h1, item: url },
+      ],
+    },
+  ];
+  if (guide.faq && guide.faq.length > 0) {
+    graph.push({
+      '@type': 'FAQPage',
+      mainEntity: guide.faq.map((f) => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
+    });
+  }
+  const jsonLd = jsonLdSafe({ '@context': 'https://schema.org', '@graph': graph });
 
   return (
     <article className="site-container pt-16 pb-24">
@@ -115,6 +121,22 @@ export default async function GuidePage(
           {escapeAnglesOutsideCode(guide.body)}
         </ReactMarkdown>
       </div>
+
+      {guide.faq && guide.faq.length > 0 && (
+        <section className="mt-12 rule-t pt-6">
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-5">
+            Questions
+          </div>
+          <dl className="space-y-6">
+            {guide.faq.map((f, i) => (
+              <div key={i}>
+                <dt className="text-[16px] font-medium text-[var(--color-ink)]">{f.q}</dt>
+                <dd className="mt-1.5 text-[15px] leading-[1.6] text-[var(--color-cite)]">{f.a}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
 
       {servers.length > 0 && (
         <div className="mt-12 rule-t pt-6">

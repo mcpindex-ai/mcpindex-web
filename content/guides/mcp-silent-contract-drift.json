@@ -1,13 +1,27 @@
 {
   "slug": "mcp-silent-contract-drift",
-  "title": "Silent MCP tool contract drift — what it is and how to HOLD it",
+  "title": "Silent MCP tool contract drift - what it is and how to HOLD it",
   "meta_description": "MCP tools can change remotely with no version bump. How silent contract drift works, why agents miss it, and how an in-path gate HOLDs the call before your agent acts.",
-  "h1": "Silent MCP tool contract drift — and how to catch it before your agent acts",
-  "body": "Model Context Protocol tools are described to your agent the way a system prompt is: a name, parameters, constraints, and annotations. That description is a contract. Unlike a pinned npm version, many MCP servers can change that contract on the remote side with no release tag your client notices.\n\nWhen the contract drifts — a new required parameter, a narrowed enum, an annotation flip to destructive — the agent still calls the tool with Monday’s assumptions. The failure mode is quiet. You see a weird tool result, a wrong side effect, or a hold-up much later in the chain.\n\nA directory listing or a one-time “screen” of the description helps before you wire a tool. It does not help on Tuesday when the live schema changed. That is an in-path problem: something has to compare the live contract to what you pinned on first sight and stop the call when they disagree.\n\nmcpindex’s drift gate does that locally. It pins each tool contract on first sight (TOFU), diffs on every later call, and HOLDs when the change is breaking. Benign added-optional fields can proceed. The verdict is a contract-diff — “this changed” — not a claim that the tool is safe. Zero credentials; the default build egresses nothing.\n\nIf you only need discovery or an advisory REVIEW/UNVERIFIED screen before install, use the directory and /screen. If you already run tools in Claude Desktop, Cursor, Cline, or Zed, install the gate so silent drift cannot run unseen: https://mcpindex.ai/#install",
+  "h1": "Silent MCP tool contract drift - and how to catch it before your agent acts",
+  "body": "Model Context Protocol tools are described to your agent the way a system prompt is: a name, parameters, constraints, and annotations. That description is a contract. Unlike a pinned npm version, many MCP servers can change that contract on the remote side with no release tag your client notices.\n\nWhen the contract drifts - a new required parameter, a narrowed enum, an annotation flip to destructive - the agent still calls the tool with Monday’s assumptions. The failure mode is quiet. You see a weird tool result, a wrong side effect, or a hold-up much later in the chain.\n\nA directory listing or a one-time “screen” of the description helps before you wire a tool. It does not help on Tuesday when the live schema changed. That is an in-path problem: something has to compare the live contract to what you pinned on first sight and stop the call when they disagree.\n\nmcpindex’s drift gate does that locally. It pins each tool contract on first sight (TOFU), diffs on every later call, and HOLDs when the change is breaking. Benign added-optional fields can proceed. The verdict is a contract-diff - “this changed” - not a claim that the tool is safe. Zero credentials; the default build egresses nothing.\n\nIf you only need discovery or an advisory REVIEW/UNVERIFIED screen before install, use the directory and /screen. If you already run tools in Claude Desktop, Cursor, Cline, or Zed, install the gate so silent drift cannot run unseen: https://mcpindex.ai/#install",
   "citation_ids": [
     "mcpindex-snapshot:io-github-microsoft-playwright-mcp",
     "mcpindex-snapshot:io-github-domdomegg-gmail-mcp"
   ],
   "project": "mcpindex",
-  "updated": "2026-07-12"
+  "updated": "2026-07-14",
+  "faq": [
+    {
+      "q": "How do I know if an MCP tool changed after I connected it?",
+      "a": "Pin the tool's declared contract (name, schema, annotations) on first sight and diff it on every later call. When the live contract differs from what you pinned, a drift gate flags the specific change or holds the call. MCP servers can change remotely with no version bump, so a diff is the only reliable signal."
+    },
+    {
+      "q": "What is silent MCP tool contract drift?",
+      "a": "It is when an MCP server changes a tool's declared contract, a new required parameter, a narrowed constraint, an annotation flipping from read to write, without a version bump your client notices. The agent keeps calling the tool with its old assumptions, and the failure is quiet: a wrong side effect or a bad result later in the chain."
+    },
+    {
+      "q": "Can you detect an MCP server that changes behavior without changing its schema?",
+      "a": "Not from the client side deterministically. Contract pinning catches declared changes to schema, description, and annotations. A server that keeps the schema identical and changes behavior underneath is the honest hard part, and anyone claiming to verify behavior for arbitrary servers is overclaiming. mcpindex scopes itself to declared-contract diff and labels behavior-underneath as out of scope."
+    }
+  ]
 }

@@ -1,0 +1,24 @@
+{
+  "slug": "mcp-tool-trust-vs-authentication",
+  "title": "MCP tool trust vs authentication: what allow-lists do not cover",
+  "meta_description": "MCP tool trust vs authentication: auth and allow-lists answer who may call a tool, not whether the tool still does what it declared. Tool trust is integrity over time, not identity and permission.",
+  "h1": "How is MCP tool trust different from authentication and allow-lists?",
+  "body": "**Short answer: authentication and allow-lists answer who is allowed to call a tool. They say nothing about whether the tool still does what it declared when you connected it.** MCP tool trust is about integrity over time, not identity and permission.\n\n## The gap auth does not cover\n\nAuth, OAuth, and allow-lists are access control. They decide whether a caller is permitted. That is necessary, but a permitted call to a tool that has quietly changed its contract is still a problem. A fully authorized call to a server that redefined a tool, same name, now writes instead of reads, passes every auth check you have. The credential was valid. The permission was granted. The tool is not what it was.\n\n## Why MCP makes this sharp\n\nMCP servers are remote and updatable with no version bump your client notices. The tools/list you consented to on connect can change on the server side. A re-described tool with the same name is a silent redefinition, and access control waves it through because identity and permission did not change.\n\n## What trust over time looks like\n\nPin each tool's declared contract on first sight. Diff it on every later call. Classify the kind of change, an added required parameter, a read annotation flipping to write, a narrowed constraint, so a benign additive change proceeds and a real redefinition shows up as a specific, actionable difference. Hold the call at the moment of drift, not on the next handshake, because the change can land mid-session.\n\n## What this does not replace\n\nThis is not a substitute for auth. You still need access control to decide who may call a tool. Trust over time sits next to it and answers the separate question of whether the tool still honors the contract you agreed to. Both matter.\n\n## Try it\n\nThe [drift gate](https://mcpindex.ai/demo) pins and diffs contracts locally and holds on drift. To see the blast radius of the tools you have already connected, run the [scan](https://mcpindex.ai/scan) on your mcp.json.",
+  "faq": [
+    {
+      "q": "How is MCP tool trust different from authentication and allow-lists?",
+      "a": "Authentication and allow-lists answer who is allowed to call a tool. They say nothing about whether the tool still does what it declared when you connected it. A fully authorized call to a server that quietly changed its contract passes every auth check you have. Tool trust is about integrity over time, not identity and permission."
+    },
+    {
+      "q": "Does OAuth protect against an MCP tool changing its behavior?",
+      "a": "No. OAuth proves who is calling and that they are permitted. It does not verify that the tool still honors the contract it declared when you connected it. A tool can keep the same identity and permissions while its schema or behavior is redefined on the server side."
+    },
+    {
+      "q": "What is a silent tool redefinition in MCP?",
+      "a": "It is when an MCP server changes what a tool does while keeping the same name, so the tools/list you consented to on connect no longer matches what the tool now does. Access control waves it through because identity and permission did not change. Pinning and diffing the contract is what catches it."
+    }
+  ],
+  "citation_ids": [],
+  "project": "mcpindex",
+  "updated": "2026-07-14"
+}

@@ -8,6 +8,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+export interface FaqItem {
+  q: string;
+  a: string; // plain text (goes into FAQPage acceptedAnswer); no markdown
+}
+
 export interface Guide {
   slug: string;
   title: string;
@@ -17,6 +22,7 @@ export interface Guide {
   citationIds: string[]; // e.g. "mcpindex-snapshot:github-mcp" -> the /server card
   project: string;
   updated?: string; // ISO date, if the artifact carries one (drives sitemap lastmod)
+  faq?: FaqItem[]; // optional Q&A pairs -> FAQPage JSON-LD (answer-engine extraction)
 }
 
 const GUIDES_DIR = path.join(process.cwd(), 'content', 'guides');
@@ -39,6 +45,7 @@ function coerce(raw: unknown, slugFromFile: string): Guide | null {
   const body = str(r.body);
   if (!title || !h1 || !body) return null; // presence floor mirrors the producer
   const updated = str(r.updated) || str(r.updated_at);
+  const faq = coerceFaq(r.faq);
   return {
     slug,
     title,
@@ -48,7 +55,24 @@ function coerce(raw: unknown, slugFromFile: string): Guide | null {
     citationIds: list(r.citation_ids),
     project: str(r.project),
     ...(updated ? { updated } : {}),
+    ...(faq.length ? { faq } : {}),
   };
+}
+
+// Q&A pairs -> validated FaqItem[]; tolerant of malformed entries (skip, never throw).
+function coerceFaq(v: unknown): FaqItem[] {
+  if (!Array.isArray(v)) return [];
+  const out: FaqItem[] = [];
+  for (const it of v) {
+    if (it && typeof it === 'object') {
+      const q = (it as Record<string, unknown>).q;
+      const a = (it as Record<string, unknown>).a;
+      if (typeof q === 'string' && typeof a === 'string' && q.trim() && a.trim()) {
+        out.push({ q: q.trim(), a: a.trim() });
+      }
+    }
+  }
+  return out;
 }
 
 async function loadAll(): Promise<Record<string, Guide>> {
