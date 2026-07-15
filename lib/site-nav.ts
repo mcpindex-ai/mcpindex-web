@@ -8,5 +8,5 @@ export const PRIMARY_NAV = [
   { href: '/scan', label: 'Scan' },
   { href: '/search', label: 'Search' },
   { href: '/docs', label: 'Docs' },
-  { href: '/#install', label: 'Install', cta: true },
+  { href: '/install', label: 'Install', cta: true },
 ] as const;

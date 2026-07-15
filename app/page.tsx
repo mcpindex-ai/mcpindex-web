@@ -205,6 +205,13 @@ export default async function Home() {
               >
                 auditable uv path
               </Link>
+              {' · '}
+              <Link
+                href="/install"
+                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+              >
+                all install options →
+              </Link>
             </p>
           </div>
         </div>
