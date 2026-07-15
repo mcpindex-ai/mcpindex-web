@@ -29,7 +29,14 @@ export default async function SearchPage({
         <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">Find an MCP server.</h1>
         <p className="mt-4 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
           Search the public directory by name, category, or keyword. Open any result for its trust
-          verdict, maturity score, and install commands. Prefer to browse?{' '}
+          verdict, maturity score, and install commands. New to picking a server?{' '}
+          <Link
+            href="/guides/find-mcp-server-by-task"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+          >
+            Find the right one by task
+          </Link>
+          . Prefer to browse?{' '}
           <Link
             href="/best"
             className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"

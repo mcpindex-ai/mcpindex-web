@@ -1,4 +1,6 @@
 import { loadServers, loadSnapshotMeta } from '@/lib/registry';
+import { loadGuides } from '@/lib/guides-content';
+import type { Guide } from '@/lib/guides-content';
 import { CATEGORY_LABELS } from '@/lib/categorize';
 import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
 import { gateInstallLine } from '@/lib/install/manifest';
@@ -10,7 +12,7 @@ export const revalidate = 3600;
 // daily via cron, so serializing once per version is sufficient.
 let bodyCache: { version: string; body: string } | null = null;
 
-function buildBody(servers: IndexedServer[]): string {
+function buildBody(servers: IndexedServer[], guides: Guide[]): string {
   const byCategory = new Map<string, IndexedServer[]>();
   for (const s of servers) {
     const bucket = byCategory.get(s.category);
@@ -60,6 +62,24 @@ function buildBody(servers: IndexedServer[]): string {
     'PDF: https://mcpindex.ai/whitepaper.pdf',
     '',
   ];
+
+  // Guides: enumerate each intent page (title, description, URL, and any FAQ
+  // Q&A) so answer engines can cite the specific guide, not just the section.
+  if (guides.length) {
+    parts.push('## Guides', '');
+    for (const g of guides) {
+      parts.push(
+        `- ${g.title}`,
+        `  ${g.metaDescription}`,
+        `  https://mcpindex.ai/guides/${g.slug}`,
+      );
+      if (g.faq?.length) {
+        for (const f of g.faq) parts.push(`  Q: ${f.q}`, `  A: ${f.a}`);
+      }
+      parts.push('');
+    }
+  }
+
   for (const [cat, list] of [...byCategory.entries()].sort()) {
     parts.push(`\n## ${CATEGORY_LABELS[cat] ?? cat} (${list.length})\n`);
     for (const s of list) {
@@ -83,8 +103,8 @@ function buildBody(servers: IndexedServer[]): string {
 export async function GET() {
   const meta = await loadSnapshotMeta();
   if (!bodyCache || bodyCache.version !== meta.version) {
-    const servers = await loadServers();
-    bodyCache = { version: meta.version, body: buildBody(servers) };
+    const [servers, guides] = await Promise.all([loadServers(), loadGuides()]);
+    bodyCache = { version: meta.version, body: buildBody(servers, guides) };
   }
   return new Response(bodyCache.body, {
     headers: {
