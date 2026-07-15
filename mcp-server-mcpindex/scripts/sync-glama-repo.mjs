@@ -22,7 +22,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -50,12 +50,23 @@ try {
 
   // Export ONLY the committed package tree at HEAD into a clean dir. `git archive`
   // emits just tracked files, so gitignored/untracked files can never be mirrored.
+  // NOTE: `HEAD:<path>` is resolved relative to the CWD-within-the-repo, so this
+  // MUST run from the repo root - from pkgRoot git would look for
+  // `<subdir>/<subdir>` and emit an EMPTY archive, which the --delete below would
+  // then use to wipe the entire mirror.
   mkdirSync(exportDir);
+  const repoRoot = capture('git', ['rev-parse', '--show-toplevel'], pkgRoot).trim();
   const archive = execFileSync('git', ['archive', `HEAD:${SUBDIR}`], {
-    cwd: pkgRoot,
+    cwd: repoRoot,
     maxBuffer: 256 * 1024 * 1024,
   });
   execFileSync('tar', ['-x', '-f', '-', '-C', exportDir], { input: archive });
+
+  // Safety net: never let an empty/partial export drive `rsync --delete` - that
+  // would blow away the whole mirror. Abort loudly if the export came out empty.
+  if (readdirSync(exportDir).length === 0) {
+    throw new Error('git archive produced no files; refusing to wipe the mirror');
+  }
 
   // Sync the clean export into the clone; --delete keeps the mirror faithful
   // (handles files removed from source). .git is the only thing we must not touch.
