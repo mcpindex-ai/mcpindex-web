@@ -148,6 +148,36 @@ export const DIRECTORY_CLIENTS: DirectoryClient[] = [
   },
 ];
 
+// --- Machine surfaces (llms.txt / llms-full.txt derive from here) ------------
+
+/** The frozen, do-not-use binary. Named only to steer users off it. */
+export const LEGACY_EOL_PACKAGE = 'mcpindex-preflight';
+
+/**
+ * Hosts the install flow wires, for prose surfaces. Derived from the client
+ * list (minus the raw fallback) so it can't drift from the picker on /install.
+ */
+export const SUPPORTED_HOSTS = DIRECTORY_CLIENTS.filter((c) => c.id !== 'raw')
+  .map((c) => c.label)
+  .join(' / ');
+
+/**
+ * Canonical one-line gate-install summary for llms.txt and llms-full.txt, so
+ * the machine surfaces cite the SAME commands as the /install page instead of
+ * a hand-synced copy. Pass code:true for markdown (backticked) surfaces.
+ */
+export function gateInstallLine({ code = false }: { code?: boolean } = {}): string {
+  const cmd = (s: string) => (code ? `\`${s}\`` : s);
+  const uv = GATE_METHODS.find((m) => m.id === 'uv')!.command;
+  const curl = GATE_METHODS.find((m) => m.id === 'curl')!.command;
+  return (
+    `Install: one-click config-wire across ${SUPPORTED_HOSTS} via ${cmd(uv)} or ${cmd(curl)} ` +
+    `(rewrites the host config to route each server through the gate; zero credentials change hands), ` +
+    `or the SDK wrap() one-liner (TS + Python) around an already-authenticated session. ` +
+    `Legacy ${cmd(LEGACY_EOL_PACKAGE)} is EOL (frozen 0.7.0); install ${cmd(PACKAGES.gateBinary)}, not preflight. See /docs.`
+  );
+}
+
 // --- One-click deep links (directory server only) ----------------------------
 //
 // A deep link adds ONE MCP server, which fits the directory server (a plain

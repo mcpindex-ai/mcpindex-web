@@ -7,6 +7,8 @@ import {
   DIRECTORY_CONFIG_JSON,
   cursorDeepLink,
   vscodeDeepLink,
+  gateInstallLine,
+  SUPPORTED_HOSTS,
   PACKAGES,
 } from './manifest';
 
@@ -47,4 +49,20 @@ test('directory config JSON parses and points at the directory package', () => {
 test('gate one-liner leads the gate methods', () => {
   assert.equal(GATE_METHODS[0].id, 'curl');
   assert.match(GATE_METHODS[0].command, /install\.sh \| sh$/);
+});
+
+test('gateInstallLine derives commands + hosts from the manifest (llms surfaces)', () => {
+  const plain = gateInstallLine();
+  // Carries the exact manifest commands, not a hand-synced copy.
+  assert.ok(plain.includes(GATE_METHODS.find((m) => m.id === 'uv')!.command));
+  assert.ok(plain.includes(GATE_METHODS.find((m) => m.id === 'curl')!.command));
+  assert.ok(plain.includes(SUPPORTED_HOSTS));
+  assert.ok(plain.includes(PACKAGES.gateBinary));
+  // Steers off the EOL binary; plain form has no backticks.
+  assert.ok(plain.includes('EOL'));
+  assert.ok(!plain.includes('`'));
+  // Markdown form backticks the commands.
+  assert.ok(gateInstallLine({ code: true }).includes('`'));
+  // Supported hosts list is derived (excludes the raw fallback).
+  assert.ok(!SUPPORTED_HOSTS.includes('raw'));
 });

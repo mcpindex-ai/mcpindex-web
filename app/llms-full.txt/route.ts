@@ -1,6 +1,7 @@
 import { loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { CATEGORY_LABELS } from '@/lib/categorize';
 import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
+import { gateInstallLine } from '@/lib/install/manifest';
 import type { IndexedServer } from '@/lib/types';
 
 export const revalidate = 3600;
@@ -26,7 +27,7 @@ function buildBody(servers: IndexedServer[]): string {
     '',
     'In-path trust gate for agent tool calls. Pins each MCP tool contract trust-on-first-use (TOFU) and HOLDs a call before the agent acts the moment the contract silently changes. Sits in the call path, so it can HOLD (not merely alert like the advisory screen).',
     'Method: deterministic contract-diff over a ChangeKind taxonomy (added-required-param, required-set-expanded, constraint-narrowed, type-changed, enum-values-removed, removed-param, annotation-flip-to-destructive, output-schema-added/changed, tool-added/removed) + an injection/exfil marker scan over input schema, output schema, and description. Postures: Monitor / Guard (default) / Strict. Fail-closed.',
-    'Install: one-click config-wire across Claude Desktop / Claude Code / Cursor / Gemini CLI / Cline / Zed via uv tool install mcpindex-gate (or curl https://mcpindex.ai/install.sh | sh). Legacy mcpindex-preflight is EOL (frozen 0.7.0); install mcpindex-gate. Zero credentials change hands. Or the SDK wrap() one-liner (TS + Python). See https://mcpindex.ai/docs.',
+    gateInstallLine(),
     'Tiered ladder: tier-0 deterministic contract-diff is the live, deterministic leg and runs first. Above it the ladder is built as in-path seams - a cloud tier-1 corpus lookup, a tier-2 LLM consult on the ambiguous, and a tier-3 behavioral verifier that exercises a changed tool to clear or refute the change - but each is held off by default and requires explicit opt-in; the default build egresses nothing and stays fail-closed.',
     'Honest limits: contract_diff_not_safety_verdict (a HOLD means the contract CHANGED vs your pin, not that it is unsafe; when enabled, the behavioral tier clears or refutes, it does not prove a tool safe); tiers1to3_held_off_by_default_opt_in; default_build_egresses_nothing_fail_closed; calibrated_false_v1 (confidence reported but not yet calibrated against a held-out corpus).',
     'Status: tier-0 deterministic contract-diff is live and verified end-to-end against the live gate; tiers 1-3 are built but held off by default (opt-in).',
