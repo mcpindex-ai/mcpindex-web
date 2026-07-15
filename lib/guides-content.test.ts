@@ -133,8 +133,9 @@ test('unsafe hrefs (javascript:, data:) are rejected in deep links and next', ()
   assert.equal(g.steps?.[0].deepLink, undefined, 'javascript: deep link must be dropped');
   assert.equal(g.next, undefined, 'data: next href must be dropped');
 
-  // protocol-relative + backslash forms resolve off-origin -> must be rejected
-  for (const bad of ['//evil.com', '/\\evil.com', '/\\/evil.com']) {
+  // protocol-relative + backslash + control-char-obfuscated forms resolve
+  // off-origin -> must be rejected (browsers strip TAB/LF/CR mid-URL)
+  for (const bad of ['//evil.com', '/\\evil.com', '/\\/evil.com', '/\t/evil.com', '/\n/evil.com']) {
     const gg = coerceGuide(
       {
         ...CLASSIC,
@@ -158,6 +159,18 @@ test('unsafe hrefs (javascript:, data:) are rejected in deep links and next', ()
   );
   assert.equal(ok?.steps?.[0].deepLink?.href, '/ledger');
   assert.equal(ok?.next?.href, 'https://mcpindex.ai/docs');
+});
+
+test('updated accepts a real ISO date, drops trailing junk (no bad JSON-LD date)', () => {
+  assert.equal(coerceGuide({ ...CLASSIC, updated: '2026-07-15' }, 'x')?.updated, '2026-07-15');
+  assert.equal(
+    coerceGuide({ ...CLASSIC, updated: '2026-07-15T09:00:00Z' }, 'x')?.updated,
+    '2026-07-15T09:00:00Z',
+  );
+  // prefix-match junk and impossible dates must be dropped
+  for (const bad of ['2026-07-15junk', '2026-07-15<script>', '2026-13-40', 'soon', '']) {
+    assert.equal(coerceGuide({ ...CLASSIC, updated: bad }, 'x')?.updated, undefined, `updated ${JSON.stringify(bad)} must drop`);
+  }
 });
 
 test('impatient jump is dropped unless target_id matches a surviving step id', () => {
