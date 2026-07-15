@@ -84,6 +84,8 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 npm install -g mcp-server-mcpindex
 \`\`\`
 
+Or connect remotely (no install): point any MCP client that supports remote servers at https://mcpindex.ai/api/mcp (Streamable HTTP, no credentials) - same six tools.
+
 Add to Claude Desktop / Claude Code / Cursor / Gemini CLI / Cline / Zed. Prefer CLI one-liners when available:
 
 \`\`\`bash

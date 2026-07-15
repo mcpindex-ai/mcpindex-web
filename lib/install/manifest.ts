@@ -235,6 +235,7 @@ export const METHOD_MATRIX: MethodRow[] = [
   { surface: 'Gate (in-path)', method: 'pip', command: PIP_INSTALL },
   { surface: 'Gate (in-path)', method: 'SDK (TypeScript)', command: `npm i ${PACKAGES.sdkTs}` },
   { surface: 'Directory (advisory)', method: 'npx', command: DIRECTORY_NPX },
+  { surface: 'Directory (advisory)', method: 'Remote (hosted, no install)', command: 'https://mcpindex.ai/api/mcp' },
   { surface: 'Directory (advisory)', method: 'Claude Code', command: CLAUDE_MCP_ADD },
   { surface: 'Directory (advisory)', method: 'Gemini CLI', command: GEMINI_MCP_ADD },
   { surface: 'Directory (advisory)', method: 'MCP Registry', command: PACKAGES.registryName },
