@@ -1,4 +1,4 @@
-/** Shared progressive-disclosure — matches homepage/docs mono summary style. */
+/** Shared progressive-disclosure - matches homepage/docs mono summary style. */
 export function Disclose({
   summary,
   children,

@@ -12,7 +12,7 @@ export const OG_CONTENT_TYPE = 'image/png';
 // Per-server verdict card for share images. decision = null renders the
 // fail-closed "not yet screened" state (never a fake green).
 const DECISION_OG: Record<string, { bg: string; fg: string; bd: string; label: string }> = {
-  // Reserved contract states — stone, not green/red clearance.
+  // Reserved contract states - stone, not green/red clearance.
   ALLOW: { bg: '#fafaf9', fg: '#57534e', bd: '#d6d3d1', label: 'ALLOW*' },
   DENY: { bg: '#fafaf9', fg: '#57534e', bd: '#d6d3d1', label: 'DENY*' },
   REVIEW: { bg: '#fffbeb', fg: '#b45309', bd: '#fcd34d', label: 'REVIEW' },

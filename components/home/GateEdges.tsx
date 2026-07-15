@@ -1,5 +1,5 @@
 // Honest edges for the gate. A trust product earns trust by stating its limits.
-// Cardinal rule: the gate reports a CONTRACT-DIFF, never a safety verdict — never
+// Cardinal rule: the gate reports a CONTRACT-DIFF, never a safety verdict - never
 // say "safe" / "verified" / "blocks attacks". Tier-0 (the deterministic contract-
 // diff) is the live, deterministic leg; tiers 1-3 are built in-path seams,
 // HELD off by default (each requires explicit opt-in). The behavioral tier CLEARS
@@ -31,7 +31,7 @@ const EDGES: [string, string][] = [
     'What runs on Cursor today: the in-path stdio interceptor, the TOFU pin with cross-restart persistence, the deterministic ChangeKind diff, Monitor / Guard / Strict postures, and the marker scan for input and output schemas. Above tier-0 the ladder is built as in-path seams (a cloud tier-1 corpus lookup, a tier-2 LLM consult, a tier-3 behavioral verifier), but each is held off by default and requires explicit opt-in. The default build egresses nothing and stays fail-closed.',
   ],
   [
-    'The behavioral tier clears or refutes — it never proves safe',
+    'The behavioral tier clears or refutes - it never proves safe',
     'When enabled, the tier-3 verifier exercises a changed tool to clear the change or refute it; it is not a proof of safety, and it is unavailable by default. Confidence is reported but not yet calibrated against a held-out corpus (calibrated=false at v1). We say "caught / held / cleared", never "guaranteed safe".',
   ],
 ];

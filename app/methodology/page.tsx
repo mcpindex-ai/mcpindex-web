@@ -24,10 +24,10 @@ export default function MethodologyPage() {
         tool description for hidden instructions, bound to the exact tool
         definition that was seen (tool_definition_hash). The deterministic
         conformance probe is built but has not yet run against the public
-        corpus &mdash; so a conforming ALLOW (which the probe would have to earn)
+        corpus - so a conforming ALLOW (which the probe would have to earn)
         is not produced at v1; the screen emits REVIEW or UNVERIFIED. The finding
         is what an agent reads before it calls. Confidence is reported but not
-        yet calibrated (calibrated=false) &mdash; the honest limits below.
+        yet calibrated (calibrated=false) - the honest limits below.
       </p>
 
       <section className="mt-12">
@@ -38,7 +38,7 @@ export default function MethodologyPage() {
           <Dim
             label="Conformance probe"
             kind="roadmap"
-            body="Built but not yet run on the public corpus. When it runs, it drives the tool against its declared schema and checks whether observed behavior matches what the description claims (a pass/fail dimension verdict with a captured trace), gated to the D3 labeled-corpus milestone. At v1 it is built-not-run on the screen: no public verdict carries a conformance result yet, and a conformance result, when it lands, will be monitored, not enforced — it surfaces in the verdict; it does not block the call upstream."
+            body="Built but not yet run on the public corpus. When it runs, it drives the tool against its declared schema and checks whether observed behavior matches what the description claims (a pass/fail dimension verdict with a captured trace), gated to the D3 labeled-corpus milestone. At v1 it is built-not-run on the screen: no public verdict carries a conformance result yet, and a conformance result, when it lands, will be monitored, not enforced - it surfaces in the verdict; it does not block the call upstream."
           />
           <Dim
             label="Intent judge"
@@ -62,7 +62,7 @@ export default function MethodologyPage() {
           The drift gate is the live, in-path check during use. It answers a
           narrower, provable question: did this tool&rsquo;s contract change
           since you pinned it? The verdict is a contract-diff, not a safety
-          verdict &mdash; but the gate sits in the call path, so it can HOLD the
+          verdict - but the gate sits in the call path, so it can HOLD the
           call before your agent acts on the change, not merely report it after.
           The gate runs deterministically and entirely on your host. Its
           verdicts are produced by the live gate code, not a hand-written
@@ -96,9 +96,9 @@ export default function MethodologyPage() {
           Honest limits (the gate)
         </div>
         <ul className="space-y-3 text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Contract-diff, not a safety verdict.</strong> A HOLD means &ldquo;this tool&rsquo;s contract changed vs what you pinned&rdquo; &mdash; not that the new contract is unsafe. You review the before/after and re-pin if the change is expected.</li>
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Advisory in judgment, in-path in effect.</strong> The gate does not assert a tool is safe; it asserts what changed. Because it sits in the call path, that judgment can actually HOLD the call &mdash; a passive scanner can only alert after the fact.</li>
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Deterministic tier-0 live; tiers 1-3 built but held off by default.</strong> The contract-diff is deterministic, runs first, and is the live, deterministic leg. Above it the ladder is built as in-path seams — a cloud tier-1 corpus lookup (a contract judged once clears or condemns it everywhere), a tier-2 LLM consult on the ambiguous, and a tier-3 behavioral verifier that exercises a changed tool to clear or refute the change — but each is held off by default and requires explicit opt-in; the default build egresses nothing and stays fail-closed. When enabled, the behavioral tier clears or refutes a contract change; it is not a proof of safety, and confidence is reported but not yet calibrated (calibrated=false at v1).</li>
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Contract-diff, not a safety verdict.</strong> A HOLD means &ldquo;this tool&rsquo;s contract changed vs what you pinned&rdquo; - not that the new contract is unsafe. You review the before/after and re-pin if the change is expected.</li>
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Advisory in judgment, in-path in effect.</strong> The gate does not assert a tool is safe; it asserts what changed. Because it sits in the call path, that judgment can actually HOLD the call - a passive scanner can only alert after the fact.</li>
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Deterministic tier-0 live; tiers 1-3 built but held off by default.</strong> The contract-diff is deterministic, runs first, and is the live, deterministic leg. Above it the ladder is built as in-path seams - a cloud tier-1 corpus lookup (a contract judged once clears or condemns it everywhere), a tier-2 LLM consult on the ambiguous, and a tier-3 behavioral verifier that exercises a changed tool to clear or refute the change - but each is held off by default and requires explicit opt-in; the default build egresses nothing and stays fail-closed. When enabled, the behavioral tier clears or refutes a contract change; it is not a proof of safety, and confidence is reported but not yet calibrated (calibrated=false at v1).</li>
           <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Fail-closed.</strong> A tool with no pin, an unreadable contract, or a diff the gate cannot complete holds rather than proceeds. The gate never silently allows what it could not verify.</li>
         </ul>
       </section>
@@ -112,14 +112,14 @@ export default function MethodologyPage() {
           before you do. mcpindex crawls the public MCP registry every day, re-derives each
           tool&rsquo;s contract, and records every silent change as a fingerprint-only entry. When
           you pin a tool, the gate can ask the network one question: has the crawler already caught
-          this contract drifting? If it has, you are warned on the first call &mdash; a contract-diff
+          this contract drifting? If it has, you are warned on the first call - a contract-diff
           advisory that rides alongside the verdict and never moves PROCEED or HOLD. Every drift the
           crawler catches is public in the{' '}
           <Link href="/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">drift ledger</Link>.
         </p>
         <ul className="space-y-3 text-[14.5px] leading-[1.6] text-[var(--color-cite)] mt-5">
           <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Crawler-corroborated, not crowd-sourced.</strong> The public corroboration count floors at the crawler (one first-party source); forgeable install reports are excluded from the public number. The warning is real today because the crawler sees the drift, not because other installs reported it.</li>
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Opt-in, privacy-by-construction.</strong> Off by default. When enabled, the only thing that leaves is a salted (HMAC) fingerprint plus closed-vocabulary fields (change type, safety flag, hour-rounded time) &mdash; never a schema, argument, description, URL, or server/tool name. Fail-open: it never blocks or changes a call.</li>
+          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Opt-in, privacy-by-construction.</strong> Off by default. When enabled, the only thing that leaves is a salted (HMAC) fingerprint plus closed-vocabulary fields (change type, safety flag, hour-rounded time) - never a schema, argument, description, URL, or server/tool name. Fail-open: it never blocks or changes a call.</li>
           <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Advisory, never the decision.</strong> The fleet advisory informs; the gate&rsquo;s deterministic contract-diff still decides. The network can raise your attention; it cannot move a PROCEED or a HOLD.</li>
         </ul>
       </section>

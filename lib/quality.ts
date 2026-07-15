@@ -1,15 +1,15 @@
 // MCP Quality Score (v0). Composite 0-100 from publicly observable signals.
-// Methodology page (/methodology) is the canonical doc — keep this in sync.
+// Methodology page (/methodology) is the canonical doc - keep this in sync.
 // Intentionally simple. Open PR welcome to refine weights or add signals.
 
 import type { IndexedServer } from './types';
 
 export type QualityBreakdown = {
-  freshness: number;       // 0-25 — recently updated
-  completeness: number;    // 0-25 — title/desc/repo/website populated
-  installability: number;  // 0-25 — has install path (package or remote URL)
-  documentation: number;   // 0-15 — env vars described, repo present
-  stability: number;       // 0-10 — semver >= 1.0.0
+  freshness: number;       // 0-25 - recently updated
+  completeness: number;    // 0-25 - title/desc/repo/website populated
+  installability: number;  // 0-25 - has install path (package or remote URL)
+  documentation: number;   // 0-15 - env vars described, repo present
+  stability: number;       // 0-10 - semver >= 1.0.0
 };
 
 export function computeQuality(s: IndexedServer): { score: number; breakdown: QualityBreakdown } {

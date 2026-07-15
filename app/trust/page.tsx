@@ -27,7 +27,7 @@ export default function TrustPage() {
       </h1>
       <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)]">
         mcpindex is the in-path trust gate an agent (or host) runs before a tool call
-        executes — pin the contract, HOLD on silent drift — plus an advisory directory
+        executes - pin the contract, HOLD on silent drift - plus an advisory directory
         screen for what you wire. A trust product has to earn the word: by being legible
         about how it works, what it anchors, and exactly where it stops. This page is that
         account.
@@ -47,7 +47,7 @@ export default function TrustPage() {
           severity. The deterministic conformance probe (does observed behavior
           match the declared schema) is built but has not run on the public
           corpus; no published verdict carries a conformance result, and a
-          clearing ALLOW &mdash; which the probe would have to earn &mdash; is
+          clearing ALLOW - which the probe would have to earn - is
           not produced at v1.
         </p>
         <p className="mt-4">
@@ -113,7 +113,7 @@ export default function TrustPage() {
           The screen above is advisory and out of the call path. The drift gate
           is different in one decisive way: it is in-path. It pins each MCP
           tool&rsquo;s contract on first sight and checks the live contract
-          before your agent acts, so it can HOLD the call &mdash; not just alert
+          before your agent acts, so it can HOLD the call - not just alert
           after the fact, the way a passive scanner does. That position is what
           lets it protect a running agent; it is also what makes its trust
           posture worth stating exactly.
@@ -124,7 +124,7 @@ export default function TrustPage() {
             client already authenticated and reads only the public tool contracts;
             the one-click wiring passes a server&rsquo;s original env / headers
             through to that server untouched. There is no token field and no
-            second connection &mdash; structurally, not as a promise.
+            second connection - structurally, not as a promise.
           </Edge>
           <Edge head="Contract-diff, not a safety verdict.">
             A HOLD means the tool&rsquo;s contract changed versus what you pinned,
@@ -166,23 +166,23 @@ export default function TrustPage() {
           <Edge head="Optional egress: the cloud corpus lookup.">
             If you opt into the cloud tier-1 corpus lookup, the only thing that
             leaves is a contract hash (a deterministic hash over the public tool
-            contract) plus your bearer key on the pinned transport &mdash; never a
+            contract) plus your bearer key on the pinned transport - never a
             token, an argument, a schema body, or your call data. Any error
             degrades to a miss (fail-closed). That request lands on mcpindex&rsquo;s
             US-region edge.
           </Edge>
           <Edge head="Optional egress: the drift network.">
             If you opt into drift telemetry (<code className="font-mono">MCPINDEX_DRIFT_TELEMETRY=detection</code>,
-            off by default), the gate emits one one-way signal on a pin or a drift &mdash; salted
+            off by default), the gate emits one one-way signal on a pin or a drift - salted
             (HMAC) fingerprints of the server/tool id, the contract hashes, the change type, a
-            safety flag, an hour-rounded time, a random install id, and the SDK tag &mdash; and
+            safety flag, an hour-rounded time, a random install id, and the SDK tag - and
             queries the network so it can warn you on the first call. Never a schema, argument,
             description, URL, or server/tool name. Fail-open: it never blocks or changes a call.
             Full disclosure on{' '}
             <Link href="/privacy" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">privacy</Link>.
           </Edge>
           <Edge head="Sub-processors.">
-            None in the default local deployment &mdash; nothing leaves the host,
+            None in the default local deployment - nothing leaves the host,
             so there is nothing to sub-process. If you opt into the cloud tier-1
             lookup, the request lands on our US-region edge (Vercel) and no other
             sub-processor sees it. A current sub-processor list is available on

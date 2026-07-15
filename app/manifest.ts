@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'mcpindex.ai',
     short_name: 'mcpindex',
     description:
-      'In-path trust gate for MCP tool calls. Pins each contract and HOLDs when it silently changes—before your agent acts.',
+      'In-path trust gate for MCP tool calls. Pins each contract and HOLDs when it silently changes-before your agent acts.',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',

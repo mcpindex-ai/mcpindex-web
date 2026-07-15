@@ -8,7 +8,7 @@ import { SAMPLE_TOOLS, SAMPLE_CONFIG_JSON } from './samples';
 
 // ---------------------------------------------------------------- parity vectors
 // If the vendored classifier ever diverges from the SDK's known-correct grading,
-// these fail — the signal to re-vendor from mcpindex-trust/clients/ts/src.
+// these fail - the signal to re-vendor from mcpindex-trust/clients/ts/src.
 
 test('classify: read_file is read / none / reversible / none', () => {
   const ac = classify('read_file', 'Read a file and return its contents.', { type: 'object', properties: { path: { type: 'string' } } }, { readOnlyHint: true });

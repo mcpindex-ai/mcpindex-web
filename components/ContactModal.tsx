@@ -106,7 +106,7 @@ function ContactModal({ onClose }: { onClose: () => void }) {
 
         {state === 'success' ? (
           <p className="mt-6 text-[14px] leading-[1.55] text-[var(--color-cite)]">
-            Thanks — we will be in touch shortly. Check your inbox for a confirmation.
+            Thanks - we will be in touch shortly. Check your inbox for a confirmation.
           </p>
         ) : (
           <>

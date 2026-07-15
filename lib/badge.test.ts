@@ -1,4 +1,4 @@
-// Unit tests for the badge gate — the security-load-bearing logic that decides what a
+// Unit tests for the badge gate - the security-load-bearing logic that decides what a
 // verdict shows publicly. Run with `npm test` (tsx + node:test). These lock the R6
 // insulation: a deterministic schema-content FAIL must never be auto-cleared by a
 // `cleared` SCREEN adjudication (fail-open) nor auto-escalated to public "flagged".

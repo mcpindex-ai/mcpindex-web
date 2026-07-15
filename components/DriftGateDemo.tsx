@@ -4,18 +4,18 @@ import { useState, type ReactNode } from 'react';
 import { Mark } from './Mark';
 
 // The centerpiece: watch the in-path drift gate HOLD a silently-changed tool
-// contract before the agent acts. CLIENT-SIDE + DETERMINISTIC — the gate's diff
+// contract before the agent acts. CLIENT-SIDE + DETERMINISTIC - the gate's diff
 // is a pure function of (pinned contract, observed contract), so there is no
 // backend round-trip to fake. The ChangeKind -> verdict -> reason table below is
 // the SAME mapping the real gate produces (ported from oneclick/clients/ts/src/
 // {gate.ts,schemaDiff.ts} and proven by mcpindex-dogfood/verify_scenarios.py).
 //
 // HONESTY (the trust-product cardinal rule): the gate's claim is "this tool's
-// contract CHANGED vs what you pinned" — a contract-diff, not a safety verdict.
+// contract CHANGED vs what you pinned" - a contract-diff, not a safety verdict.
 // No "safe"/"blocks attacks"/"prevents" copy anywhere in this component.
 
 // ----------------------------------------------------------- the pinned contract
-// make_report(title:str, count:int[0..1000], mode:enum[fast,full]) — read-only.
+// make_report(title:str, count:int[0..1000], mode:enum[fast,full]) - read-only.
 // Mirrors mcpindex-dogfood _base_make_report(). Rendered in Geist Mono below.
 const PINNED_CONTRACT_LINES: ReadonlyArray<string> = [
   'make_report(',
@@ -49,7 +49,7 @@ type Drift = {
   // The plain-language reason, reused from gate.ts BREAKING_KIND_REASON / the
   // marker + behavioral reason strings.
   readonly reason: string;
-  // The ⬡-banner clause "<tool> — <clause>" (HOLD only), mirroring
+  // The ⬡-banner clause "<tool> - <clause>" (HOLD only), mirroring
   // gate.ts friendlyBreakingClause()/bannerWhatChanged().
   readonly bannerClause: string | null;
   // The "no false alarm" control: the one drift the gate PROCEEDs on.
@@ -67,9 +67,9 @@ const DRIFTS: ReadonlyArray<Drift> = [
     staticDecision: 'HOLD',
     guardBlocks: true,
     reason:
-      'this tool now requires a new parameter — existing calls that omit it will fail',
+      'this tool now requires a new parameter - existing calls that omit it will fail',
     bannerClause:
-      'this tool now requires a new parameter — existing calls that omit it will fail',
+      'this tool now requires a new parameter - existing calls that omit it will fail',
   },
   {
     id: 'annotation_flip',
@@ -100,7 +100,7 @@ const DRIFTS: ReadonlyArray<Drift> = [
     reason:
       "an injection/exfil marker is present in the tool's outputSchema (an unhashed, agent-consumed channel)",
     bannerClause:
-      'make_report contract drifted (output-schema-added) — an injection/exfil marker is present in the result schema',
+      'make_report contract drifted (output-schema-added) - an injection/exfil marker is present in the result schema',
   },
   {
     id: 'constraint_narrowed',
@@ -114,9 +114,9 @@ const DRIFTS: ReadonlyArray<Drift> = [
     staticDecision: 'HOLD',
     guardBlocks: true,
     reason:
-      'an input rule was tightened — a value your calls send may now be rejected',
+      'an input rule was tightened - a value your calls send may now be rejected',
     bannerClause:
-      'an input rule was tightened — a value your calls send may now be rejected',
+      'an input rule was tightened - a value your calls send may now be rejected',
   },
   {
     id: 'added_optional',
@@ -134,7 +134,7 @@ const DRIFTS: ReadonlyArray<Drift> = [
 
 // ------------------------------------------------------------- the posture layer
 // Faithful port of Gate.applyPosture(). A PROCEED short-circuits (so the benign
-// added-optional, which the gate auto-accepts to PROCEED, is NEVER held — not
+// added-optional, which the gate auto-accepts to PROCEED, is NEVER held - not
 // even under STRICT; that short-circuit is the gate's real "no false alarm"
 // property). MONITOR notifies and proceeds on a drift; GUARD blocks the
 // unambiguous-dangerous + behavioral-mandated classes and notify-proceeds the
@@ -289,7 +289,7 @@ export default function DriftGateDemo() {
 
       {active && repinned && (
         <div className="rule-t px-5 py-5 font-mono text-[12px] text-[var(--color-cite)]">
-          <span className="text-[var(--color-accent)]">▸</span> re-pinned — the changed contract is now your
+          <span className="text-[var(--color-accent)]">▸</span> re-pinned - the changed contract is now your
           baseline, so the next call proceeds. The gate only holds a change against what you pinned.
         </div>
       )}
@@ -359,14 +359,14 @@ function HeldVerdict({
 }) {
   const isInconclusive = effective === 'INCONCLUSIVE';
   // The ⬡ banner, mirroring gate.ts renderHoldBanner(): "caught a silent change:
-  // <tool> — <clause>. Held before your agent ran it."
+  // <tool> - <clause>. Held before your agent ran it."
   const banner = isInconclusive
-    ? `${BRAND_MARK} — make_report drifted in a class only a behavioral check can clear. Held the call until it's validated.`
-    : `${BRAND_MARK} — caught a silent change: ${drift.bannerClause}. Held before your agent ran it.`;
+    ? `${BRAND_MARK} - make_report drifted in a class only a behavioral check can clear. Held the call until it's validated.`
+    : `${BRAND_MARK} - caught a silent change: ${drift.bannerClause}. Held before your agent ran it.`;
 
   return (
     <div className="rule-t rule-b rule-l rule-r bg-white elevate p-5 sm:p-6">
-      {/* the verdict token — amber is reserved for this */}
+      {/* the verdict token - amber is reserved for this */}
       <div className="flex flex-wrap items-center gap-3">
         <span className="inline-flex items-center border border-[var(--color-accent)] bg-[var(--color-accent-soft)] px-3 py-1.5 font-mono text-[15px] font-medium tracking-wide text-[var(--color-accent)]">
           {isInconclusive ? 'HELD · needs behavioral check' : 'HELD'}
@@ -379,7 +379,7 @@ function HeldVerdict({
         </span>
       </div>
 
-      {/* the ⬡ banner, Geist Mono — mirrors the real product */}
+      {/* the ⬡ banner, Geist Mono - mirrors the real product */}
       <pre className="mt-4 overflow-x-auto whitespace-pre-wrap break-words bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-[1.55]">
         <code>{banner}</code>
       </pre>
@@ -388,7 +388,7 @@ function HeldVerdict({
         {drift.reason}
       </p>
 
-      {/* action affordances — Review · Re-pin · Validate (non-functional labels,
+      {/* action affordances - Review · Re-pin · Validate (non-functional labels,
           except Re-pin, which re-sets the baseline) */}
       <div className="mt-4 flex flex-wrap gap-1.5">
         <span className="font-mono text-[11px] border border-[var(--color-rule)] bg-white px-2.5 py-1 text-[var(--color-mute)]">
@@ -436,7 +436,7 @@ function ProceedVerdict({
       <p className="mt-4 text-[14px] leading-[1.55] text-[var(--color-cite)]">
         {drift.isControl && !notify ? (
           <>
-            Proceeds — benign additive change, no hold. Adding an optional parameter cannot break an
+            Proceeds - benign additive change, no hold. Adding an optional parameter cannot break an
             existing call, so the gate auto-accepts it and re-pins. This is the no-false-alarm property:
             the gate stays quiet when nothing breaks.
           </>

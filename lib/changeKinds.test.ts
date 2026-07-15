@@ -36,7 +36,7 @@ test('non-array / unparseable / nullish -> [] (never throws)', () => {
 });
 
 test('bounds a hostile oversized array to MAX_CHANGE_KINDS distinct', () => {
-  // 10k entries, but only the known taxonomy can survive — and the cap holds regardless.
+  // 10k entries, but only the known taxonomy can survive - and the cap holds regardless.
   const huge = Array.from({ length: 10_000 }, (_, i) => `kind-${i}`);
   assert.equal(coerceChangeKinds(huge).length, 0); // all unknown -> dropped
   const realDupes = Array.from({ length: 10_000 }, () => 'type-changed');
@@ -46,7 +46,7 @@ test('bounds a hostile oversized array to MAX_CHANGE_KINDS distinct', () => {
 
 test('the allowlist matches the trust SURFACE_KINDS taxonomy member-for-member', () => {
   // Pin the FULL sorted member list (not just size) so a 1-for-1 swap vs. the trust-side
-  // SURFACE_KINDS — which would silently drop a real kind from the public page — fails the build.
+  // SURFACE_KINDS - which would silently drop a real kind from the public page - fails the build.
   assert.deepEqual([...SURFACE_CHANGE_KINDS].sort(), [
     'added-optional-param',
     'added-required-param',

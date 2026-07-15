@@ -75,7 +75,7 @@ export default async function Home() {
         applicationCategory: 'DeveloperApplication',
         operatingSystem: 'macOS, Linux, Windows',
         description:
-          'An in-path trust gate that pins every MCP tool contract and HOLDs a call the moment the contract silently changes, and grades the blast radius of every call (read, write, delete, send; reversible or not) before your agent acts. Deterministic and advisory — a contract-diff and a blast-radius label, not a safety verdict.',
+          'An in-path trust gate that pins every MCP tool contract and HOLDs a call the moment the contract silently changes, and grades the blast radius of every call (read, write, delete, send; reversible or not) before your agent acts. Deterministic and advisory - a contract-diff and a blast-radius label, not a safety verdict.',
         url: 'https://mcpindex.ai',
         offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
         publisher: { '@id': 'https://mcpindex.ai/#org' },
@@ -85,7 +85,7 @@ export default async function Home() {
         '@id': 'https://mcpindex.ai/#how-the-gate-works',
         name: 'How the mcpindex gate works',
         description:
-          'Pin each MCP tool contract on first sight and HOLD the call when the contract silently changes—before your agent acts.',
+          'Pin each MCP tool contract on first sight and HOLD the call when the contract silently changes-before your agent acts.',
         step: GATE_LOOP_STEPS.map((s, i) => ({
           '@type': 'HowToStep',
           position: i + 1,
@@ -102,7 +102,7 @@ export default async function Home() {
             name: 'What happens when an MCP tool contract silently changes?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: `mcpindex pins every MCP tool contract on first sight and HOLDs the call the instant that contract drifts—before your agent acts. Zero credentials. One-click gate install in ${GATE_HOSTS_SHORT}.`,
+              text: `mcpindex pins every MCP tool contract on first sight and HOLDs the call the instant that contract drifts-before your agent acts. Zero credentials. One-click gate install in ${GATE_HOSTS_SHORT}.`,
             },
           },
           {
@@ -118,15 +118,15 @@ export default async function Home() {
             name: 'What is the blast-radius grade?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: 'The gate labels each call’s blast radius in the path before it runs—action (read, write, delete, send, execute), what it touches, whether it can be undone, and whether it leaves your org. The grade is deterministic and advisory; it never overrides the gate’s HOLD/PROCEED decision.',
+              text: 'The gate labels each call’s blast radius in the path before it runs-action (read, write, delete, send, execute), what it touches, whether it can be undone, and whether it leaves your org. The grade is deterministic and advisory; it never overrides the gate’s HOLD/PROCEED decision.',
             },
           },
           {
             '@type': 'Question',
-            name: 'What does the gate claim — and what doesn’t it?',
+            name: 'What does the gate claim - and what doesn’t it?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: 'The gate says “this contract changed,” never “this is safe.” The blast-radius grade is advisory, not a safety call. The grade is static—what a call would do, read from its contract.',
+              text: 'The gate says “this contract changed,” never “this is safe.” The blast-radius grade is advisory, not a safety call. The grade is static-what a call would do, read from its contract.',
             },
           },
         ],
@@ -141,14 +141,14 @@ export default async function Home() {
         dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }}
       />
 
-      {/* §00 HERO — install in-fold (no scroll tax). */}
+      {/* §00 HERO - install in-fold (no scroll tax). */}
       <section className="rule-b bg-[var(--color-accent-soft)]">
         <div className="site-container pt-14 pb-16 sm:pt-20 sm:pb-24">
           <div className="hero-rise hero-rise-1 font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-accent)] mb-6">
             In-path trust gate for agent tool calls
           </div>
           <h1 className="hero-rise hero-rise-2 font-medium text-[var(--color-ink)] leading-[1.06] tracking-[-0.02em] text-[clamp(2.2rem,1.2rem+3.4vw,3.4rem)]">
-            The tool your agent trusted on Monday can change on Tuesday —{' '}
+            The tool your agent trusted on Monday can change on Tuesday -{' '}
             <span className="italic font-normal">silently</span>.
             <br />
             <span className="font-semibold text-[var(--color-accent)]">
@@ -157,7 +157,7 @@ export default async function Home() {
           </h1>
           <p className="hero-rise hero-rise-3 mt-6 text-[16px] sm:text-[17.5px] leading-[1.5] text-[var(--color-cite)]">
             It <strong>pins every MCP tool contract</strong> on first sight and{' '}
-            <strong>HOLDs the call</strong> the instant that contract drifts&mdash;before your
+            <strong>HOLDs the call</strong> the instant that contract drifts-before your
             agent acts. Zero credentials. One-click gate install in {GATE_HOSTS_SHORT}.
           </p>
 
@@ -184,13 +184,13 @@ export default async function Home() {
                 label="Install the mcpindex gate (one command)"
                 value={INSTALL_SHELL_COMMAND}
                 trackSource="homepage_hero"
-                notes="Inspect first: curl -fsSL https://mcpindex.ai/install.sh | less — then run the command. Restarts your host after wiring."
+                notes="Inspect first: curl -fsSL https://mcpindex.ai/install.sh | less - then run the command. Restarts your host after wiring."
               />
             </div>
             <p className="mt-3 font-mono text-[12px] leading-[1.5] text-[var(--color-mute)]">
               Free · no account · runs locally. This is the{' '}
               <strong className="text-[var(--color-cite)]">gate</strong> (in-path
-              HOLD) — PyPI <code className="text-[var(--color-ink)]">mcpindex-gate</code>, not
+              HOLD) - PyPI <code className="text-[var(--color-ink)]">mcpindex-gate</code>, not
               the directory MCP client.{' '}
               <Link
                 href="#install-paths"
@@ -212,7 +212,7 @@ export default async function Home() {
 
       <LiveTicker />
 
-      {/* §demo — product proof immediately after hero install. */}
+      {/* §demo - product proof immediately after hero install. */}
       <section id="demo" className="rule-t scroll-mt-20">
         <div className="site-container py-20 sm:py-28">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
@@ -238,7 +238,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* §how-it-works — compact titles; bodies on reveal. */}
+      {/* §how-it-works - compact titles; bodies on reveal. */}
       <section id="how-it-works" className="rule-t scroll-mt-20">
         <div className="reveal site-container py-20 sm:py-28">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3">
@@ -256,7 +256,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* §install-paths — gate audit path + directory client (two jobs, labeled). */}
+      {/* §install-paths - gate audit path + directory client (two jobs, labeled). */}
       <section id="install-paths" className="rule-t scroll-mt-20">
         <div className="site-container py-16 sm:py-20">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-3 flex items-center gap-2">
@@ -267,7 +267,7 @@ export default async function Home() {
             Gate first. Directory client only if you want discovery in-chat.
           </h2>
           <p className="mt-3 mb-6 text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-            <strong>Job 1 — gate</strong> (hero above): pins contracts and HOLDs drift in-path
+            <strong>Job 1 - gate</strong> (hero above): pins contracts and HOLDs drift in-path
             for {GATE_HOSTS_SHORT}. Ships as{' '}
             <code className="font-mono text-[13px] text-[var(--color-ink)]">mcpindex-gate</code>{' '}
             via uv; audit before you pipe:{' '}
@@ -279,9 +279,9 @@ export default async function Home() {
           <div className="flex items-start gap-3 mb-8">
             <Seal size={34} ring="var(--color-rule)" bracket="var(--color-ink)" />
             <p className="text-[12.5px] leading-[1.55] text-[var(--color-mute)]">
-              Pinned, in-path, zero custody. Full wiring — including the auditable{' '}
+              Pinned, in-path, zero custody. Full wiring - including the auditable{' '}
               <code className="font-mono text-[12.5px] text-[var(--color-ink)]">uv tool install</code>{' '}
-              path — is in the{' '}
+              path - is in the{' '}
               <Link
                 href="/docs#install-the-gate"
                 className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
@@ -292,7 +292,7 @@ export default async function Home() {
             </p>
           </div>
           <div className="mb-4 font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-mute)]">
-            Job 2 — directory MCP client (advisory; does not install the gate)
+            Job 2 - directory MCP client (advisory; does not install the gate)
           </div>
           <div className="space-y-4">
             <CopyField
@@ -316,7 +316,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Dark trust band — short. */}
+      {/* Dark trust band - short. */}
       <section className="rule-t bg-[var(--color-ink)]">
         <div className="reveal site-container py-16 sm:py-20">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-500 mb-3">
@@ -352,16 +352,16 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Tier-3 depth — collapsed, content preserved. */}
+      {/* Tier-3 depth - collapsed, content preserved. */}
       <section className="rule-t">
         <div className="site-container py-16 sm:py-20 space-y-8">
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
             Dig deeper
           </div>
 
-          <Disclose summary="Blast radius — grade the move, not just the tool">
+          <Disclose summary="Blast radius - grade the move, not just the tool">
             <p className="mb-3">
-              A read and an irreversible delete look identical to your agent&mdash;both are
+              A read and an irreversible delete look identical to your agent-both are
               &ldquo;a tool call.&rdquo; The gate labels each call&rsquo;s{' '}
               <strong>blast radius in the path</strong> before it runs: action (read, write,
               delete, send, execute), what it touches, whether it can be undone, and whether it
@@ -375,7 +375,7 @@ export default async function Home() {
             </p>
           </Disclose>
 
-          <Disclose summary="Honest edges — what the gate claims and doesn’t">
+          <Disclose summary="Honest edges - what the gate claims and doesn’t">
             <p className="mb-6">
               A trust product earns trust by stating its edges. The gate says{' '}
               <strong>&ldquo;this contract changed,&rdquo;</strong> never &ldquo;this is safe.&rdquo;{' '}
@@ -390,11 +390,11 @@ export default async function Home() {
             <GateEdges />
           </Disclose>
 
-          <Disclose summary="Directory corpus — screen verdicts and the drift ledger">
+          <Disclose summary="Directory corpus - screen verdicts and the drift ledger">
             <p className="mb-3">
               Before you wire a tool, the directory screens it (REVIEW or UNVERIFIED at v1). In
               the call path, the gate says <strong>HELD or PROCEED</strong>. Screen verdicts are
-              semantic-only and advisory — never an ALLOW or DENY clearance (those unlock with
+              semantic-only and advisory - never an ALLOW or DENY clearance (those unlock with
               the behavioral corpus).
             </p>
             <p className="mb-6">

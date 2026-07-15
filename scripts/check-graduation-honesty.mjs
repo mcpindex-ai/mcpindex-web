@@ -161,7 +161,7 @@ const GATE_CONTEXT = /\b(?:drift gate|the gate\b|in-path gate|preflight|pre-flig
 // held. tier-0 alone is the live leg, so a bare "tier-0 is live" is fine and is
 // NOT matched here (the pattern requires a 1/2/3 or "full ladder" subject).
 const GATE_TIER_SUBJECT =
-  /\b(?:tier[- ]?[123]\b|tiers?\s*1\s*[-–to]+\s*3|full tiered ladder|the (?:full )?tiered ladder)/i;
+  /\b(?:tier[- ]?[123]\b|tiers?\s*1\s*[--to]+\s*3|full tiered ladder|the (?:full )?tiered ladder)/i;
 const GATE_TIER_LIVENESS_VERB =
   /\b(?:is|are)\s+(?:now\s+)?live\b|\bruns?\b|\bexercises?\b|\bescalat\w*\b|\bis\s+active\b|\benabled by default\b|\benabled\b/i;
 const GATE_HELD_CUE =

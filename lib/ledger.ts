@@ -1,11 +1,11 @@
 // Public drift ledger (M4, read side). Reads the `drift:ledger` blob the mini32 drain maintains
 // and exposes it to the C9 page + /api/v1/ledger. The blob is what mcpindex's CRAWLER OBSERVED:
-// contract changes between two daily registry snapshots — a contract diff, NOT a safety verdict
+// contract changes between two daily registry snapshots - a contract diff, NOT a safety verdict
 // and NOT an in-path prevention (that's the gate). Every row is crawl-seen (public-registry
 // server); forgeable install reports never enter this surface.
 //
 // ONE-WAY DOOR: this surface is gated by NEXT_PUBLIC_DRIFT_LEDGER. Until it's '1', the page 404s
-// and the API 404s — go-live (M4) is a deliberate env flip + redeploy, never a merge side effect.
+// and the API 404s - go-live (M4) is a deliberate env flip + redeploy, never a merge side effect.
 //
 // This module is PURE (types + validation + the public flag) and has NO Upstash token, so it is
 // safe to import from anywhere and is unit-testable in plain node. The token-holding IO lives in
@@ -37,7 +37,7 @@ export interface LedgerEvent {
 
 export interface LedgerStat {
   readonly tools_observed_drifting: number; // the numerator (N)
-  readonly total_contract_drifts_observed: number; // the honest denominator (M) — N of M, never "all"
+  readonly total_contract_drifts_observed: number; // the honest denominator (M) - N of M, never "all"
   readonly servers: number;
   readonly safety_relevant: number;
 }
@@ -52,7 +52,7 @@ export interface Ledger {
 
 const FP_RE = /^[0-9a-f]{32}$/;
 // The drain coarsens last_seen to the hour: YYYY-MM-DDTHH:00:00Z. The blob is operator/attacker-
-// controllable, so gate the one free-form timestamp field to that exact shape (else blank it) —
+// controllable, so gate the one free-form timestamp field to that exact shape (else blank it) -
 // a malformed/oversized/unicode-spoofed string can't reach the public page.
 const TS_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 

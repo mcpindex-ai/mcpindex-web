@@ -11,7 +11,7 @@ export type Analysis =
   | { readonly kind: 'unknown' }
   | { readonly kind: 'invalid' };
 
-/** Parse (tolerantly), detect the input grade, and summarize. Total — invalid
+/** Parse (tolerantly), detect the input grade, and summarize. Total - invalid
  * JSON -> 'invalid', valid-but-empty -> 'unknown'. Never throws. */
 export function analyze(text: string): Analysis {
   const parsed = tolerantParse(text);

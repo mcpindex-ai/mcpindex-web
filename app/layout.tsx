@@ -1,15 +1,15 @@
-// LAUNCH CONTENT — this tree is launch-state copy (everything BUILT = LIVE),
+// LAUNCH CONTENT - this tree is launch-state copy (everything BUILT = LIVE),
 // published in lockstep with the deploy per the PUBLISH-COUPLING rule. It ships
 // only on GB's explicit go-live. See /LAUNCH-CONTENT.md at the repo root and
 // ~/mcpindex-launch/value-prop-bible.md for the (A) deploy-held / (B) maturity-
 // held framing the copy and the honesty guard conform to.
 import type { Metadata, Viewport } from 'next';
-// Self-hosted Geist (bundled woff2) — NOT next/font/google. next/font/google fetches the font
+// Self-hosted Geist (bundled woff2) - NOT next/font/google. next/font/google fetches the font
 // files from Google AT BUILD; a transient socket drop there fails the whole Vercel build with
 // UND_ERR_SOCKET (errorStep direct:build). The `geist` package ships the same fonts locally, so
 // the build has zero outbound font dependency. Variable names ('--font-geist-sans'/'-mono') are
 // the package defaults and match globals.css, so no CSS change is needed.
-// next/font/local (used by geist) defaults to font-display: swap — do not add next/font/google.
+// next/font/local (used by geist) defaults to font-display: swap - do not add next/font/google.
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import './globals.css';
@@ -19,7 +19,7 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 
 const SITE_DESCRIPTION =
-  'In-path trust gate for MCP tool calls. Pins each contract and HOLDs when it silently changes—before your agent acts. Zero credentials.';
+  'In-path trust gate for MCP tool calls. Pins each contract and HOLDs when it silently changes-before your agent acts. Zero credentials.';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://mcpindex.ai'),

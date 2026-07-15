@@ -4,7 +4,7 @@ import { loadLedger } from '@/lib/ledgerServer';
 import { checkDriftReadLimit } from '@/lib/ratelimit';
 
 // Public drift ledger (M4): the contract changes mcpindex's CRAWLER OBSERVED between daily
-// registry snapshots — a contract diff, not a safety verdict, not an in-path prevention. Read-only.
+// registry snapshots - a contract diff, not a safety verdict, not an in-path prevention. Read-only.
 // Gated by NEXT_PUBLIC_DRIFT_LEDGER: when off, this 404s exactly like a non-existent route, so the
 // surface is invisible until M4 go-live. Rate-limited like the rest of the drift read path.
 export const dynamic = 'force-dynamic';

@@ -24,7 +24,7 @@ export function InstallCtaButton() {
       trackGateInstallCopy('homepage_hero_cta');
       showToast();
     } catch {
-      /* clipboard blocked — hero CopyField remains as fallback */
+      /* clipboard blocked - hero CopyField remains as fallback */
       const field = document.getElementById('install');
       field?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -37,7 +37,7 @@ export function InstallCtaButton() {
       className="fixed bottom-6 left-1/2 z-[200] -translate-x-1/2 max-w-[min(92vw,28rem)] border border-[var(--color-rule)] bg-[var(--color-ink)] px-4 py-3 shadow-lg pointer-events-none"
     >
       <p className="font-mono text-[12.5px] leading-snug text-zinc-100 text-center">
-        Install command copied — paste in your terminal
+        Install command copied - paste in your terminal
       </p>
     </div>
   ) : null;

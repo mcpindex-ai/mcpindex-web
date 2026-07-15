@@ -6,14 +6,14 @@
 //
 // The NUMERATOR is automated: a HyperLogLog union (PFCOUNT over the trailing daily
 // `drift:installs:{day}` keys, which the ingest gives a 35-day TTL). The DENOMINATOR is NOT in
-// drift telemetry — the SDK deliberately emits no per-run ping (that would break off-by-default
+// drift telemetry - the SDK deliberately emits no per-run ping (that would break off-by-default
 // zero-egress), so it cannot know how many installs exist. Pass the count of installs you
 // distributed via --installs / env DRIFT_TOTAL_INSTALLS (npm/PyPI download stats or your
 // design-partner roster). See tasks/todo-mcpindex-drift-flywheel.md "Falsifier measurement".
 //
 //   node scripts/drift-falsifier-report.mjs --installs 12 [--window-days 28]
 //
-// Env: UPSTASH_REDIS_REST_URL/TOKEN (or KV_REST_API_URL/TOKEN). READ-ONLY — writes no keys.
+// Env: UPSTASH_REDIS_REST_URL/TOKEN (or KV_REST_API_URL/TOKEN). READ-ONLY - writes no keys.
 
 import { Redis } from '@upstash/redis';
 
@@ -27,7 +27,7 @@ function arg(name, fallback) {
 function lastNDays(n, now) {
   const out = [];
   for (let i = 0; i < n; i++) {
-    // yyyy-mm-dd in UTC — must match the ingest's `now.toISOString().slice(0,10)` day key.
+    // yyyy-mm-dd in UTC - must match the ingest's `now.toISOString().slice(0,10)` day key.
     out.push(new Date(now.getTime() - i * 86_400_000).toISOString().slice(0, 10));
   }
   return out;
@@ -62,10 +62,10 @@ async function main() {
   ]);
 
   const num = n(windowInstalls);
-  console.log('\n  mcpindex drift telemetry — M1 falsifier report');
+  console.log('\n  mcpindex drift telemetry - M1 falsifier report');
   console.log('  ' + '-'.repeat(54));
   console.log(`  window:                       trailing ${windowDays} days (UTC)`);
-  console.log(`  distinct emitting installs:   ${num}   (numerator — HLL union of daily keys)`);
+  console.log(`  distinct emitting installs:   ${num}   (numerator - HLL union of daily keys)`);
   console.log(`  all-time emitting installs:   ${n(allTimeInstalls)}`);
   console.log(`  servers covered (distinct):   ${n(servers)}`);
   console.log(
@@ -75,14 +75,14 @@ async function main() {
   console.log('  ' + '-'.repeat(54));
 
   if (!Number.isFinite(totalInstalls) || totalInstalls <= 0) {
-    console.log('  opt-in %:   UNKNOWN — pass --installs N (total installs distributed).');
+    console.log('  opt-in %:   UNKNOWN - pass --installs N (total installs distributed).');
     console.log('              The denominator is NOT in drift telemetry (no per-run ping, by design).\n');
     return;
   }
   const rate = num / totalInstalls;
   const verdict =
     rate < KILL_THRESHOLD
-      ? `KILL  (< ${KILL_THRESHOLD * 100}% — stop, do not build M2-M4)`
+      ? `KILL  (< ${KILL_THRESHOLD * 100}% - stop, do not build M2-M4)`
       : 'CONTINUE';
   console.log(`  total installs (denominator): ${totalInstalls}   (--installs, manually tracked)`);
   console.log(`  opt-in %:                     ${(rate * 100).toFixed(1)}%   =>  ${verdict}\n`);

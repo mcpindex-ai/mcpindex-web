@@ -13,7 +13,7 @@ export async function GET() {
   const body = {
     name: 'mcpindex.ai',
     description:
-      'In-path trust gate for agent tool calls. Pins each MCP tool contract (TOFU) and HOLDs a call before the agent acts when the contract silently changes (a deterministic contract-diff, not a safety verdict), and grades each call\'s blast radius — what it would do (read, write, delete, send) and whether it can be undone — read from the tool\'s declared contract (advisory and static, on by default in the clients). Secondary: a public directory indexes MCP servers and publishes per-tool advisory screening verdicts (REVIEW/UNVERIFIED at v1) so an agent can check a tool before it wires it.',
+      'In-path trust gate for agent tool calls. Pins each MCP tool contract (TOFU) and HOLDs a call before the agent acts when the contract silently changes (a deterministic contract-diff, not a safety verdict), and grades each call\'s blast radius - what it would do (read, write, delete, send) and whether it can be undone - read from the tool\'s declared contract (advisory and static, on by default in the clients). Secondary: a public directory indexes MCP servers and publishes per-tool advisory screening verdicts (REVIEW/UNVERIFIED at v1) so an agent can check a tool before it wires it.',
     version: '1',
     serversIndexed: count,
     upstream: 'https://registry.modelcontextprotocol.io',
@@ -37,7 +37,7 @@ export async function GET() {
         // /methodology and the honest_limits below.
         screen_conformance: 'built_not_yet_run_on_public_corpus_semantic_only',
         produced_decisions_at_v1: ['REVIEW', 'UNVERIFIED'],
-        note: 'A screened server returns its real REVIEW (semantic-only) from the same getVerdict layer the website renders; an unscreened server returns UNVERIFIED (fail-closed). ALLOW/DENY are reserved in the contract but not produced at v1 — a conforming ALLOW requires the behavioral probe (D3 milestone). Coverage is advisory and semantic-only.',
+        note: 'A screened server returns its real REVIEW (semantic-only) from the same getVerdict layer the website renders; an unscreened server returns UNVERIFIED (fail-closed). ALLOW/DENY are reserved in the contract but not produced at v1 - a conforming ALLOW requires the behavioral probe (D3 milestone). Coverage is advisory and semantic-only.',
       },
       severity_scale: ['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
       exposure_tier: 'free_no_key_required',

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Production cron entry. Pulls full registry, writes data/snapshot.json + a
 // dated snapshot to data/snapshots/. Run via Vercel cron (vercel.json) or any
-// scheduler. Idempotent — safe to re-run.
+// scheduler. Idempotent - safe to re-run.
 //
 //   node scripts/sync-registry.mjs
 

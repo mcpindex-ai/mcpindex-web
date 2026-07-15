@@ -1,12 +1,12 @@
 // Distributed rate limit + global cost cap for the LLM-backed screen endpoint.
 // proxy.ts has a per-INSTANCE in-memory limit; on serverless that lets an
 // IP-rotating attacker drive unbounded Groq spend. This adds a SHARED (Upstash)
-// per-IP limit AND a global daily call ceiling — the cost circuit-breaker that
+// per-IP limit AND a global daily call ceiling - the cost circuit-breaker that
 // bounds spend regardless of source-IP distribution.
 //
 // Fail-OPEN if Upstash is unconfigured or errors: never break the demo on a
 // Redis hiccup; the proxy.ts per-IP limit remains the backstop. (The global cap
-// is best-effort by design — it protects cost when Redis is healthy.)
+// is best-effort by design - it protects cost when Redis is healthy.)
 
 import 'server-only'; // build-time tripwire: this module holds the Upstash REST token; never bundle to the client
 import { Redis } from '@upstash/redis';
@@ -30,7 +30,7 @@ export function __setRatelimitRedisForTest(client: Redis | null | undefined): vo
   _redis = client;
 }
 
-const PER_IP_PER_MIN = 10; // tighter than the general /api/v1/* 60/min — this one costs money
+const PER_IP_PER_MIN = 10; // tighter than the general /api/v1/* 60/min - this one costs money
 const GLOBAL_PER_DAY = 5000; // hard daily ceiling on Groq calls regardless of IP
 
 export type ScreenLimit = { ok: true } | { ok: false; reason: 'ip' | 'global' };
@@ -61,7 +61,7 @@ export async function checkScreenLimit(ip: string, now: Date): Promise<ScreenLim
 }
 
 // Drift-telemetry ingest limit (/api/v1/drift). Batched, free (no LLM spend), so the per-IP
-// ceiling is generous — it only exists to bound an abusive flood, not to ration a paid
+// ceiling is generous - it only exists to bound an abusive flood, not to ration a paid
 // resource. A blocked request is dropped silently by the route (telemetry is lossy by
 // design). Reuses the same Upstash instance + fail-open posture as the screen limiter.
 const DRIFT_BATCH_PER_IP_PER_MIN = 120;
@@ -86,7 +86,7 @@ export async function checkDriftLimit(ip: string, now: Date): Promise<DriftLimit
     if (c === 1) await r.expire(ipKey, 70);
     if (c > DRIFT_BATCH_PER_IP_PER_MIN) return { ok: false };
 
-    // Global daily circuit-breaker — bounds metric-poisoning under IP spoofing.
+    // Global daily circuit-breaker - bounds metric-poisoning under IP spoofing.
     const gKey = `drift:global:${day}`;
     const g = await r.incr(gKey);
     if (g === 1) await r.expire(gKey, 90_000); // ~25h
@@ -98,13 +98,13 @@ export async function checkDriftLimit(ip: string, now: Date): Promise<DriftLimit
 
 // The fleet-query READ path (/api/v1/drift/any) gets a SEPARATE budget from ingest. The SDK
 // queries this on every first pin (high volume by design), so sharing the ingest budget would
-// let read traffic 429-STARVE telemetry ingest — silently dropping signals and poisoning the
+// let read traffic 429-STARVE telemetry ingest - silently dropping signals and poisoning the
 // very falsifier metrics the ingest cap protects. Reads are cheap (a SISMEMBER), so the caps
 // are higher; distinct `drift:read:*` keys keep the two budgets fully independent.
 const DRIFT_READ_PER_IP_PER_MIN = 600;
 const DRIFT_READ_GLOBAL_PER_DAY = 5_000_000;
 
-// Drift identity register limit (/api/v1/drift/register). Tighter than ingest — registration
+// Drift identity register limit (/api/v1/drift/register). Tighter than ingest - registration
 // is an abuse vector (identity minting). Fail-open on Redis error.
 const REGISTER_PER_IP_PER_MIN = 10;
 // Per-IP limit is the real abuse control; global cap is only a blast-radius backstop.
@@ -162,7 +162,7 @@ export async function checkOAuthLimit(ip: string, now: Date): Promise<DriftLimit
 // daily cap bounds blast radius under x-forwarded-for spoofing. Own `login:*` counters so it never
 // shares (or 429-starves) the drift oauth budget. Fail-OPEN on a Redis error is safe here: if
 // Upstash is down the state store (same instance) can't write either, so login is unavailable
-// regardless — the limiter failing open adds no exposure.
+// regardless - the limiter failing open adds no exposure.
 const LOGIN_PER_IP_PER_MIN = 10;
 const LOGIN_GLOBAL_PER_DAY = 50_000;
 
@@ -188,11 +188,11 @@ export async function checkLoginLimit(ip: string, now: Date): Promise<DriftLimit
 }
 
 // Receipt-plane ingest limit (/api/v1/receipts). A SEPARATE budget from drift so a receipt
-// flood can't 429-starve drift telemetry (and vice-versa) — the two opt-in planes share the
+// flood can't 429-starve drift telemetry (and vice-versa) - the two opt-in planes share the
 // Upstash instance but never share a counter. Same shape/posture as checkDriftLimit: batched,
 // free (no LLM spend), generous per-IP ceiling that only bounds an abusive flood, a global
 // daily cap to bound metric/HLL poisoning under x-forwarded-for spoofing, and fail-OPEN on a
-// Redis error (a dropped receipt batch is acceptable — the plane is lossy by design).
+// Redis error (a dropped receipt batch is acceptable - the plane is lossy by design).
 const RECEIPT_BATCH_PER_IP_PER_MIN = 120;
 const RECEIPT_GLOBAL_BATCH_PER_DAY = 200_000;
 
@@ -209,7 +209,7 @@ export async function checkReceiptLimit(ip: string, now: Date): Promise<DriftLim
     if (c === 1) await r.expire(ipKey, 70);
     if (c > RECEIPT_BATCH_PER_IP_PER_MIN) return { ok: false };
 
-    // Global daily circuit-breaker — bounds metric/HLL poisoning under IP spoofing.
+    // Global daily circuit-breaker - bounds metric/HLL poisoning under IP spoofing.
     const gKey = `receipt:global:${day}`;
     const g = await r.incr(gKey);
     if (g === 1) await r.expire(gKey, 90_000); // ~25h

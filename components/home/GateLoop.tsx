@@ -1,4 +1,4 @@
-// The gate loop, stated as four concrete steps. Server component, no state —
+// The gate loop, stated as four concrete steps. Server component, no state -
 // it is reference prose, not an interactive surface. The honest claim is fixed:
 // the gate reports a CONTRACT-DIFF ("this changed vs what you pinned"), not a
 // safety verdict.
@@ -15,13 +15,13 @@ export const GATE_LOOP_STEPS: {
     title: 'Install once, rides your agent',
     body: 'One config-wire in Claude Desktop, Claude Code, Cursor, Gemini CLI, Cline, or Zed. The gate sits in your agent’s MCP session. No credentials; the contract-diff runs locally and the default build egresses nothing.',
     detail:
-      'The optional cloud tier-1 lookup, held off by default, sends only a contract hash—never tokens or call data.',
+      'The optional cloud tier-1 lookup, held off by default, sends only a contract hash-never tokens or call data.',
     note: 'stdio interceptor + TS / Python SDK',
   },
   {
     n: '02',
     title: 'Pins each tool on first sight',
-    body: 'On first sight, the gate records the tool’s contract—name, params, constraints, annotations, schemas—and persists it across restarts. TOFU: the baseline is what you saw.',
+    body: 'On first sight, the gate records the tool’s contract-name, params, constraints, annotations, schemas-and persists it across restarts. TOFU: the baseline is what you saw.',
     note: 'TOFU pin · cross-restart persistence',
   },
   {
@@ -38,7 +38,7 @@ export const GATE_LOOP_STEPS: {
   },
 ];
 
-/** @param compact — titles + notes always visible; body/detail behind <details>. */
+/** @param compact - titles + notes always visible; body/detail behind <details>. */
 export function GateLoop({ compact = false }: { compact?: boolean }) {
   return (
     <ol className="rule-t m-0 list-none p-0">

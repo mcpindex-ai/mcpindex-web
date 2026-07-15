@@ -25,7 +25,7 @@ export function GateInstallBridge({ serverTitle }: { serverTitle: string }) {
       </h2>
       <p className="mt-2 text-[13.5px] leading-[1.55] text-[var(--color-cite)]">
         MCP tool contracts can change remotely with no version bump. The mcpindex gate pins
-        each contract and <strong>HOLDs the call</strong> when it drifts—before your agent acts.
+        each contract and <strong>HOLDs the call</strong> when it drifts-before your agent acts.
         Zero credentials. This is not the package install for this server itself
         (use <strong>Install this server</strong> for that).
       </p>

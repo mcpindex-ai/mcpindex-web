@@ -1,4 +1,4 @@
-// Lightweight keyword-based categorizer. Intentionally crude — the Quality Score
+// Lightweight keyword-based categorizer. Intentionally crude - the Quality Score
 // page lists this as "v0 categorization, contributions welcome" so no precision claim.
 
 const RULES: Array<{ category: string; patterns: RegExp[] }> = [

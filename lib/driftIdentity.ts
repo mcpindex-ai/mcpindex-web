@@ -1,4 +1,4 @@
-// Drift install identity (WS-B) — Upstash-backed register/verify for opt-in SDK installs.
+// Drift install identity (WS-B) - Upstash-backed register/verify for opt-in SDK installs.
 // Stores ONLY token_sha256 (never the raw token); no IP, no name. Fail-open on Redis errors.
 
 import 'server-only';

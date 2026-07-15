@@ -22,17 +22,17 @@ const DECISION: Record<Decision, { cls: string; label: string; title: string }> 
   ALLOW: {
     cls: 'text-stone-600 bg-stone-50 border-stone-300',
     label: 'ALLOW*',
-    title: 'Reserved in the verdict contract — not produced by the v1 public screen (REVIEW/UNVERIFIED only)',
+    title: 'Reserved in the verdict contract - not produced by the v1 public screen (REVIEW/UNVERIFIED only)',
   },
   DENY: {
     cls: 'text-stone-600 bg-stone-50 border-stone-300',
     label: 'DENY*',
-    title: 'Reserved in the verdict contract — not produced by the v1 public screen (REVIEW/UNVERIFIED only)',
+    title: 'Reserved in the verdict contract - not produced by the v1 public screen (REVIEW/UNVERIFIED only)',
   },
   REVIEW: {
     cls: 'text-amber-700 bg-amber-50 border-amber-300',
     label: 'REVIEW',
-    title: 'Advisory semantic screen — not a safety clearance',
+    title: 'Advisory semantic screen - not a safety clearance',
   },
 };
 const DIM: Record<DimensionVerdict, string> = {

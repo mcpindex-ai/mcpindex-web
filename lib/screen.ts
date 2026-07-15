@@ -67,13 +67,13 @@ const INVISIBLE_CHARS = /[­᠎​-‏‪-‮⁠-⁤⁦-⁩﻿]/g;
 // hash, so the model and any cache see the SAME bytes, and an instruction hidden
 // behind invisible characters cannot slip past the screen. NOTE: this folds
 // invisible-character and compatibility-form evasion, NOT script-confusable
-// homoglyphs (a Cyrillic 'а' for a Latin 'a') — that needs a confusables map.
+// homoglyphs (a Cyrillic 'а' for a Latin 'a') - that needs a confusables map.
 export function canonicalize(s: string): string {
   return s.normalize('NFKC').replace(INVISIBLE_CHARS, '').replace(/\s+/g, ' ').trim();
 }
 
 // True iff the judge's `quote` actually appears in the (already-canonical) screened
-// text — a case-insensitive containment check on the same canonical form. An empty
+// text - a case-insensitive containment check on the same canonical form. An empty
 // or absent quote is NOT grounded. The judge POINTS (it returns a quote); this
 // VERIFIES the pointer, so a hallucinated/paraphrased quote cannot be surfaced as a
 // verbatim highlight.
@@ -119,7 +119,7 @@ async function screenWithKey(key: string, description: string): Promise<ScreenRe
     if (obj.malicious) {
       // Verify the judge's pointer before surfacing it. An ungrounded quote (not
       // present in the screened text) is a fabricated highlight: we KEEP the flag
-      // (fail-closed — a flag routes to REVIEW, the safe direction) but never show
+      // (fail-closed - a flag routes to REVIEW, the safe direction) but never show
       // an unverifiable quote, and log the fabrication so a drifting judge that
       // invents evidence is visible before it erodes trust. No user data is logged.
       const rawQuote = typeof obj.quote === 'string' ? obj.quote : '';

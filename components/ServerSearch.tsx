@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 // Client search widget over GET /api/v1/search. Debounced, abortable, fail-soft. Each result links
-// to /server/[slug] (where the trust verdict + maturity score live) — so this is a navigation funnel
+// to /server/[slug] (where the trust verdict + maturity score live) - so this is a navigation funnel
 // into the indexed server pages, not a results page meant to be indexed itself.
 
 interface Result {

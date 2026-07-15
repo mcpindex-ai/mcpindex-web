@@ -4,10 +4,10 @@
 // the Upstash blob/meta is operator/attacker-controllable, so a value that reaches a public page
 // or API must be re-validated against a fixed allowlist, deduped, sorted, and length-bounded.
 //
-// SOURCE OF TRUTH: this is the SURFACED subset — it mirrors `SURFACE_KINDS` in
+// SOURCE OF TRUTH: this is the SURFACED subset - it mirrors `SURFACE_KINDS` in
 // mcpindex-trust/scripts/drift_corpus_drain.py exactly (12 kinds). It is NOT the same list as the
 // FULL detector taxonomy published in app/.well-known/mcp-index.json (that superset includes
-// tool-added, which is deliberately not surfaced here). Keep in sync with the trust SURFACE_KINDS —
+// tool-added, which is deliberately not surfaced here). Keep in sync with the trust SURFACE_KINDS -
 // a kind the drain surfaces but this set omits is silently dropped from the public display
 // (fail-quiet, never fail-render). The test below pins the full member list to catch a 1-for-1 swap.
 
@@ -26,7 +26,7 @@ export const SURFACE_CHANGE_KINDS: ReadonlySet<string> = new Set([
   'deep-schema-undiffable',
 ]);
 
-// Hard cap on how many kinds render/return for one event — a hostile blob cannot bloat the page or
+// Hard cap on how many kinds render/return for one event - a hostile blob cannot bloat the page or
 // the API response. Comfortably above the real taxonomy size (12) so a legitimate event is never
 // truncated, while a forged 10k-element array is.
 export const MAX_CHANGE_KINDS = 16;

@@ -146,4 +146,4 @@ test('parseLedgerBlob: drops malformed events and bounds the free strings', () =
 
 // loadLedger lives in ledgerServer.ts (import 'server-only', not importable in plain node). Its
 // only logic beyond parseLedgerBlob (tested above) is `if (!ledgerEnabled()) return null` + a
-// guarded redis().get — both trivial and covered by the ledgerEnabled + parseLedgerBlob tests.
+// guarded redis().get - both trivial and covered by the ledgerEnabled + parseLedgerBlob tests.

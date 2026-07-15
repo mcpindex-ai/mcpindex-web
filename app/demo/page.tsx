@@ -41,7 +41,7 @@ export default function DemoPage() {
         Videos &amp; embed
       </div>
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
-        How to use it — and share it.
+        How to use it - and share it.
       </h1>
       <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)]">
         Overview and persona films below. For the interactive drift gate, use the{' '}
@@ -88,7 +88,7 @@ export default function DemoPage() {
           Embed it anywhere
         </div>
         <p className="text-[14.5px] leading-[1.55] text-[var(--color-cite)]">
-          Drop this into any page, or share the link on social — it unfurls to a playable card on
+          Drop this into any page, or share the link on social - it unfurls to a playable card on
           X and LinkedIn. The lightweight embed plays the overview film.
         </p>
         <pre className="mt-4 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">

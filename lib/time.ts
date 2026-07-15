@@ -10,7 +10,7 @@ export function timeAgo(iso: string): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-/** Epoch-ms cutoff for "N days ago" — used to count recently-added servers.
+/** Epoch-ms cutoff for "N days ago" - used to count recently-added servers.
  * Kept out of component bodies so the React Compiler purity lint doesn't flag
  * Date.now() in render: async server components run once per request, so the
  * call is correct here; the rule just can't tell a component from an RSC. */

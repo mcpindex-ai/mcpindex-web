@@ -5,7 +5,7 @@ import { Disclose } from '@/components/Disclose';
 export const metadata: Metadata = {
   title: 'Documentation',
   description:
-    'Install the in-path drift gate: it HOLDs a call the moment an MCP tool’s contract silently changes, before your agent acts. Plus the free advisory directory — verdict API, drop-in MCP server, and recommend endpoint for discovery.',
+    'Install the in-path drift gate: it HOLDs a call the moment an MCP tool’s contract silently changes, before your agent acts. Plus the free advisory directory - verdict API, drop-in MCP server, and recommend endpoint for discovery.',
   alternates: { canonical: 'https://mcpindex.ai/docs' },
 };
 
@@ -32,7 +32,7 @@ export default function DocsPage() {
         <p className="mt-3 text-[14px] leading-[1.55] text-[var(--color-mute)]">
           The rest of this page documents the advisory directory the gate queries: an MCP-native
           API (free, no key, low-latency) that returns a verdict (REVIEW or UNVERIFIED today; ALLOW / DENY are reserved in the contract) on a tool
-          and a recommendation endpoint for discovery &mdash; direct HTTP, drop-in MCP server, or
+          and a recommendation endpoint for discovery - direct HTTP, drop-in MCP server, or
           embedded.
         </p>
       </header>
@@ -71,14 +71,14 @@ export default function DocsPage() {
             Auto-wire covers Claude Desktop, Claude Code, Cursor, Gemini CLI
             (<Mono>~/.gemini/settings.json</Mono>), Cline, Zed, Windsurf, and VS Code.
             The <Mono>curl | sh</Mono> one-liner does the same thing in one step
-            &mdash; inspect it first if you prefer:
+            - inspect it first if you prefer:
           </p>
           <pre className="mt-3 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
-            <code>{`# auditable path — install the package, then run the wiring wizard
+            <code>{`# auditable path - install the package, then run the wiring wizard
 uv tool install mcpindex-gate
 
 # convenience: the same install + host-config rewrite in one command.
-# inspect it before you run it — it only rewrites your MCP host config,
+# inspect it before you run it - it only rewrites your MCP host config,
 # and uninstall.sh restores it:
 curl -fsSL https://mcpindex.ai/install.sh | less   # read it first
 curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
@@ -90,7 +90,7 @@ curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
             style={{ color: 'var(--color-mute)' }}
           >
             The PyPI package is <Mono>mcpindex-gate</Mono>. (The older name{' '}
-            <Mono>mcpindex-preflight</Mono> is EOL, frozen at 0.7.0 — do not use it
+            <Mono>mcpindex-preflight</Mono> is EOL, frozen at 0.7.0 - do not use it
             for new installs.) Prefer to wire it by hand? Rewrite each MCP server
             entry so the agent launches that server{' '}
             <em>behind</em> the gate: keep the server&rsquo;s original command as the
@@ -101,7 +101,7 @@ curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
             editing.
           </p>
           <pre className="mt-3 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
-            <code>{`# claude_desktop_config.json — route an existing server through the gate
+            <code>{`# claude_desktop_config.json - route an existing server through the gate
 
 // before: the agent talks to the server directly
 "filesystem": {
@@ -111,7 +111,7 @@ curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
 
 // after: the gate launches the server and checks each tool's contract in-path.
 // The original command becomes --upstream-command; each original arg becomes a
-// separate --upstream-arg=VALUE (the =VALUE form is required — a dash-leading
+// separate --upstream-arg=VALUE (the =VALUE form is required - a dash-leading
 // arg like -y does not survive a bare passthrough).
 "filesystem": {
   "command": "uvx",
@@ -127,12 +127,12 @@ curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
             className="mt-2 text-[13px] leading-[1.5]"
             style={{ color: 'var(--color-mute)' }}
           >
-            Easier: let the one-click installer write this for you &mdash; it
+            Easier: let the one-click installer write this for you - it
             rewrites every server entry, which is fiddly to do by hand. The gate
             forwards to your original server and checks the contract on every
             call. Zero credentials change hands: a stdio server&rsquo;s original{' '}
             <Mono>env</Mono> and an http server&rsquo;s original{' '}
-            <Mono>headers</Mono> ride through to your server untouched &mdash; the
+            <Mono>headers</Mono> ride through to your server untouched - the
             gate reads only the public tool contracts, never your tokens. The
             one-click installer (<Mono>install.sh</Mono> /{' '}
             <Mono>install.ps1</Mono>) does this rewrite for you across every
@@ -159,7 +159,7 @@ curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
             routed through a local gateway instead: the gate rewrites the entry to
             point your client at a loopback gateway, and the gateway forwards to
             the upstream with your original <Mono>headers</Mono> threaded through
-            untouched &mdash; same zero-custody posture, just over HTTP.
+            untouched - same zero-custody posture, just over HTTP.
           </p>
           <p
             className="mt-2 text-[13px] leading-[1.5]"
@@ -168,7 +168,7 @@ curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
             One boundary to know: today the gateway gates only{' '}
             <strong style={{ color: 'var(--color-ink)' }}>HTTPS upstreams that resolve to a public IP</strong>.
             A plain-<Mono>http</Mono>, <Mono>localhost</Mono>, or LAN upstream is
-            rejected (<Mono>ssrf_blocked</Mono>), not silently passed through &mdash;
+            rejected (<Mono>ssrf_blocked</Mono>), not silently passed through -
             gating those is on the roadmap. So a remote HTTPS server is gated like
             any stdio one; a local HTTP server is not yet covered.
           </p>
@@ -190,19 +190,19 @@ curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
           >
             For a server-side agent or custom orchestrator, wrap the MCP client
             session you already authenticated. One line; no per-server config, no
-            token handling &mdash; the wrapper reuses the session&rsquo;s own
+            token handling - the wrapper reuses the session&rsquo;s own
             transport. <Mono>list_tools</Mono> / <Mono>call_tool</Mono> stay
             drop-in.
           </p>
           <pre className="mt-3 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
-            <code>{`// TypeScript — npm i @mcp-index/sdk
+            <code>{`// TypeScript - npm i @mcp-index/sdk
 import { wrap, PreflightPin } from "@mcp-index/sdk";
 
 const guarded = wrap(session, { pin: new PreflightPin(), serverId: "your-server" });
 // use guarded.list_tools() / guarded.call_tool(...) exactly as before`}</code>
           </pre>
           <pre className="mt-2 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
-            <code>{`# Python — pip/uv: mcpindex-gate
+            <code>{`# Python - pip/uv: mcpindex-gate
 from mcpindex_gate import wrap, PreflightPin
 
 session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
@@ -231,17 +231,17 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
           </h3>
           <ul className="mt-2 space-y-2 text-[14px] leading-[1.55]" style={{ color: 'var(--color-cite)' }}>
             <li>
-              <Mono>Monitor</Mono> &mdash; notify and proceed (awareness, no
+              <Mono>Monitor</Mono> - notify and proceed (awareness, no
               friction).
             </li>
             <li>
-              <Mono>Guard</Mono> (default) &mdash; hold the unambiguously
+              <Mono>Guard</Mono> (default) - hold the unambiguously
               breaking and dangerous changes; auto-accept a proven-benign drift
               (added optional param, byte-identical description) and re-pin so
               cosmetic churn never raises a false alarm.
             </li>
             <li>
-              <Mono>Strict</Mono> &mdash; hold on any drift.
+              <Mono>Strict</Mono> - hold on any drift.
             </li>
           </ul>
           <p
@@ -252,8 +252,8 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
             (the exact ChangeKind, the before/after on a description change). It is
             fail-closed: a tool the gate cannot verify holds rather than proceeds.
             You review, then re-pin if the change is expected. On an ambiguous
-            change, the third-door behavioral verifier &mdash; a built in-path seam
-            that is held off by default and requires explicit opt-in &mdash; can
+            change, the third-door behavioral verifier - a built in-path seam
+            that is held off by default and requires explicit opt-in - can
             exercise the changed tool to clear or refute the change. It clears or
             refutes; it does not prove a tool safe.
           </p>
@@ -274,9 +274,9 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
             style={{ color: 'var(--color-mute)' }}
           >
             Alongside the contract-diff, the gate labels what each call would do
-            before your agent acts &mdash; <Mono>action_type</Mono> (read, write,
+            before your agent acts - <Mono>action_type</Mono> (read, write,
             delete, send), whether it can be undone (<Mono>reversibility</Mono>),
-            and whether it leaves the machine (<Mono>egress</Mono>) &mdash; plus a
+            and whether it leaves the machine (<Mono>egress</Mono>) - plus a
             static autonomy ceiling. A read and an irreversible delete look
             identical to an agent until something labels them; this is that label.
             It is on by default in <Mono>@mcp-index/sdk</Mono> and{' '}
@@ -287,7 +287,7 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
             style={{ color: 'var(--color-mute)' }}
           >
             The grade is read statically from the tool&rsquo;s declared contract
-            &mdash; it never runs the tool &mdash; so it is deterministic, needs no
+            - it never runs the tool - so it is deterministic, needs no
             network, and carries no argument values (every field is a typed enum or
             hash). It is advisory and fail-closed: when the contract is ambiguous it
             grades toward the more dangerous class. It says what a call{' '}
@@ -312,8 +312,8 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
           >
             The clients leave a quiet trace that mcpindex is working: the first time
             each tool is used in a session, one dim line on <Mono>stderr</Mono>{' '}
-            &mdash; <Mono>mcpindex &middot; noted github/delete_repo &mdash;
-            delete, irreversible</Mono> &mdash; then silence on every repeat call, plus a
+            - <Mono>mcpindex &middot; noted github/delete_repo -
+            delete, irreversible</Mono> - then silence on every repeat call, plus a
             one-line session summary. It is local-only: no network, nothing
             persisted, and it never touches <Mono>stdout</Mono> or changes a gate
             decision.
@@ -340,7 +340,7 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
             mcpindex crawls the public MCP registry every day and records which tool contracts
             silently change. Turn the network on with{' '}
             <Mono>MCPINDEX_DRIFT_TELEMETRY=detection</Mono> (off by default) and the gate asks it, on
-            each pin, whether the crawler already caught this contract drifting &mdash; warning you on
+            each pin, whether the crawler already caught this contract drifting - warning you on
             the first call. A contract-diff advisory: it rides alongside the verdict and never moves
             PROCEED or HOLD. Surfaced by <Mono>renderVerdict</Mono> and the{' '}
             <Mono>fleetAdvisory</Mono> field on the verdict.
@@ -358,7 +358,7 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
       {/* §02 - The shape */}
       <p className="mt-14 text-[14px] leading-[1.55]" style={{ color: 'var(--color-mute)' }}>
         The rest of this page documents the advisory directory the gate above can optionally
-        query &mdash; a separate, free surface: search, recommend, and trust-verdict lookups
+        query - a separate, free surface: search, recommend, and trust-verdict lookups
         over HTTP or as its own MCP server.
       </p>
       <Section number="02" title="The shape">
@@ -367,12 +367,12 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
         </p>
         <ArchDiagram />
         <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-mute)]">
-          Diagram = advisory directory path (secondary). The in-path gate is Job 1 — see §00–§01.
+          Diagram = advisory directory path (secondary). The in-path gate is Job 1 - see §00-§01.
         </p>
         <p>
           Top-down: a request originates in your agent client and passes through an
           adapter into the API. The trust path returns an advisory screen verdict for a
-          given tool (v1: REVIEW or UNVERIFIED — a semantic integrity check, not a safety
+          given tool (v1: REVIEW or UNVERIFIED - a semantic integrity check, not a safety
           clearance); the discovery path ranks an indexed catalog of MCP servers and
           returns picks with install commands. The catalog is rebuilt daily from an
           upstream source. The in-path gate (install via mcpindex-gate) is a separate
@@ -489,7 +489,7 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
       <Section number="04" title="Wire the directory client to your host">
         <p>
           This section installs the <strong>directory MCP client</strong> (
-          <Mono>mcp-server-mcpindex</Mono>) — discovery + advisory trust. It does{' '}
+          <Mono>mcp-server-mcpindex</Mono>) - discovery + advisory trust. It does{' '}
           <em>not</em> install the in-path gate; use §01 for that. Prefer the
           CLI one-liners when your host ships <Mono>mcp add</Mono>.
         </p>
@@ -574,7 +574,7 @@ Args:     -y mcp-server-mcpindex@latest`}
         </p>
       </Section>
 
-      {/* §05–06 — Tier-3 API depth; collapsed for scanability */}
+      {/* §05-06 - Tier-3 API depth; collapsed for scanability */}
       <div className="mt-14 space-y-6">
         <Disclose summary="05 · Anatomy of a response (JSON shapes)">
           <div className="space-y-4 text-[15px] leading-[1.6]">
@@ -784,7 +784,7 @@ Args:     -y mcp-server-mcpindex@latest`}
           top of the Anthropic registry for discovery, not as a replacement; the registry
           is the canonical source of truth. The reason mcpindex exists is the second axis
           these tools don&rsquo;t have at all: an in-path gate that pins each tool contract
-          and HOLDs the call when it silently drifts — plus an advisory screen so you can
+          and HOLDs the call when it silently drifts - plus an advisory screen so you can
           check a description before you wire the server.
         </p>
 

@@ -4,10 +4,10 @@
 
 export type Transport = 'local' | 'remote' | 'unknown';
 
-/** One MCP server as declared in a config file. Never carries secret VALUES —
+/** One MCP server as declared in a config file. Never carries secret VALUES -
  * only the KEY NAMES that look like secrets, so the UI can say "carries a
  * credential" without the value ever leaving the browser (and it never leaves
- * the browser at all — parsing is client-side). */
+ * the browser at all - parsing is client-side). */
 export interface ScannedServer {
   readonly name: string;
   readonly transport: Transport; // remote = can change server-side; local = spawns a process

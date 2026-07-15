@@ -1,6 +1,6 @@
 // Lightweight BM25-ish keyword search. Works without API keys.
 // When OPENAI_API_KEY is set + an embedding index exists, search.ts can be
-// upgraded to semantic — leave that as a v2 cron-driven enhancement.
+// upgraded to semantic - leave that as a v2 cron-driven enhancement.
 //
 // v1.1 (validated on a held-out intent set, 2026-06-01):
 //   O1  strip the reverse-DNS hosting prefix from the searchable name, so a
@@ -24,7 +24,7 @@ const STOPWORDS = new Set([
 ]);
 
 // O3: pure action verbs that match tool-name nouns and add only noise. Kept
-// deliberately small — excludes search/query/upload/read/list/fetch, which are
+// deliberately small - excludes search/query/upload/read/list/fetch, which are
 // real capabilities a server can be named for.
 const VERB_STOP = new Set([
   'create','update','manage','get','open','send','run','make','set','put','call',

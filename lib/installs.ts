@@ -1,4 +1,4 @@
-// Generate install commands per client. Best-effort — falls back to manual JSON
+// Generate install commands per client. Best-effort - falls back to manual JSON
 // when the registry entry doesn't expose a runnable package or URL.
 
 import type { IndexedServer } from './types';
@@ -24,7 +24,7 @@ export function buildInstalls(s: IndexedServer): InstallTarget[] {
   const out: InstallTarget[] = [];
   const env = envBlock(s);
 
-  // Remote (HTTP/SSE) — preferred when available.
+  // Remote (HTTP/SSE) - preferred when available.
   if (s.remoteUrl) {
     out.push({
       client: 'remote',

@@ -11,7 +11,7 @@ export default function Image() {
       <BrandOg
         eyebrow="Docs"
         title="Install the gate. Or call the directory."
-        sub="Pin contracts and HOLD silent drift in-path — then the advisory screen API, verdict contract, and host wiring for Claude, Cursor, Gemini, Cline, and Zed."
+        sub="Pin contracts and HOLD silent drift in-path - then the advisory screen API, verdict contract, and host wiring for Claude, Cursor, Gemini, Cline, and Zed."
       />
     ),
     size,

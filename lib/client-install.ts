@@ -12,11 +12,11 @@ export const DISCOVERY_PACKAGE = 'mcp-server-mcpindex';
 
 export const DISCOVERY_NPM_GLOBAL = `npm install -g ${DISCOVERY_PACKAGE}`;
 
-/** Claude Code — user scope so it is available outside one project. */
+/** Claude Code - user scope so it is available outside one project. */
 export const DISCOVERY_CLAUDE_MCP_ADD =
   'claude mcp add --scope user mcpindex -- npx -y mcp-server-mcpindex@latest';
 
-/** Gemini CLI — user scope. */
+/** Gemini CLI - user scope. */
 export const DISCOVERY_GEMINI_MCP_ADD =
   'gemini mcp add -s user mcpindex npx -y mcp-server-mcpindex@latest';
 

@@ -66,7 +66,7 @@ export default function OpengraphImage() {
                 letterSpacing: '2px',
               }}
             >
-              {/* ⬡ as inline SVG — the glyph font is not fetchable in next/og */}
+              {/* ⬡ as inline SVG - the glyph font is not fetchable in next/og */}
               <svg width="30" height="34" viewBox="0 0 30 34" fill="none">
                 <path
                   d="M15 2 L27 9 V25 L15 32 L3 25 V9 Z"

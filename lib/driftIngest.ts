@@ -1,13 +1,13 @@
-// Drift-telemetry ingest (M1) — the minimal server side of the usage-log drift flywheel.
+// Drift-telemetry ingest (M1) - the minimal server side of the usage-log drift flywheel.
 //
-// Two jobs: (1) STRICTLY validate the closed DriftSignal shape — this is the server-side
+// Two jobs: (1) STRICTLY validate the closed DriftSignal shape - this is the server-side
 // privacy BACKSTOP. The client emits only fingerprints/hashes/enums by construction; the
 // schema re-asserts it on the wire, so even a future client bug cannot land a raw tool
 // string here: server_fp/tool_fp must be exactly 32 hex, hashes are `algo:hex`, change
 // kinds are a bounded lowercase-token vocabulary, at_hour is a fixed format or empty, and
 // `.strict()` rejects ANY unexpected key. (2) Fold each batch into best-effort counters:
 // distinct installs (the opt-in falsifier metric), distinct servers covered, and per-event
-// tallies. Counters are fail-OPEN on a Redis hiccup — we never reject a valid batch over our
+// tallies. Counters are fail-OPEN on a Redis hiccup - we never reject a valid batch over our
 // own infra, but we also never persist a signal we could not validate.
 
 import 'server-only';
@@ -21,7 +21,7 @@ const AT_HOUR = /^(?:\d{4}-\d{2}-\d{2}T\d{2}:00:00Z)?$/; // hour-coarsened or em
 const INSTALL_ID = /^[0-9a-f]{32}$/; // both SDKs emit exactly 16 random bytes = 32 hex
 
 export const MAX_BATCH = 256;
-// Daily counter keys expire after ~35 days — enough to PFMERGE a trailing-28-day window for
+// Daily counter keys expire after ~35 days - enough to PFMERGE a trailing-28-day window for
 // the opt-in/coverage measurement, but bounded so day-keys cannot accumulate forever.
 const DAILY_TTL_S = 35 * 86_400;
 // Hard ceiling on how long the (best-effort) counter write may hold the ingest response.
@@ -29,7 +29,7 @@ const EXEC_TIMEOUT_MS = 2_000;
 // M2 corpus stream: each validated signal is enqueued here for the mini32 drain, which builds
 // the `drift_events` corpus (Supabase) + the corroboration cache. Capped via xadd MAXLEN so a
 // down drain can't grow it unbounded; the drain trims consumed entries. The stream carries the
-// SAME closed, already-validated signal — no new field, no raw tool data.
+// SAME closed, already-validated signal - no new field, no raw tool data.
 const STREAM_KEY = 'drift:stream';
 const STREAM_MAXLEN = 100_000;
 // Hints are best-effort tips for the mini32 recrawl worker. SET semantics dedup by fp.
@@ -71,7 +71,7 @@ function redis(): Redis | null {
   if (_redis !== undefined) return _redis;
   const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
-  // retries:1 bounds the REST client's default 5-retry exponential backoff — a Redis incident
+  // retries:1 bounds the REST client's default 5-retry exponential backoff - a Redis incident
   // must not stack ~11s of retries onto the ingest response (see EXEC_TIMEOUT_MS below).
   _redis = url && token ? new Redis({ url, token, retry: { retries: 1 } }) : null;
   return _redis;
@@ -79,7 +79,7 @@ function redis(): Redis | null {
 
 // Fold a validated batch into cumulative + daily counters. Best-effort: any Redis error is
 // swallowed (the caller already 204'd the client). Distinct installs/servers use HyperLogLog
-// (PFADD) so cardinality is O(1) space regardless of volume — exactly the opt-in-rate and
+// (PFADD) so cardinality is O(1) space regardless of volume - exactly the opt-in-rate and
 // coverage numbers the M1 falsifier needs, with no per-signal row retained.
 export async function recordDriftBatch(
   signals: DriftSignal[],

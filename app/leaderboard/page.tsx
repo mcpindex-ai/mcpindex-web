@@ -10,12 +10,12 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: 'Maturity Rankings',
   description:
-    'Top MCP servers ranked by listing maturity (Quality Score from public registry signals). Trust verdict shown separately — not used for sort order.',
+    'Top MCP servers ranked by listing maturity (Quality Score from public registry signals). Trust verdict shown separately - not used for sort order.',
   alternates: { canonical: 'https://mcpindex.ai/leaderboard' },
 };
 
 const VERDICT_CHIP: Record<string, string> = {
-  // ALLOW/DENY reserved at v1 screen — muted, not green/red clearance styling
+  // ALLOW/DENY reserved at v1 screen - muted, not green/red clearance styling
   ALLOW: 'border-stone-300 text-stone-600 bg-stone-50',
   DENY: 'border-stone-300 text-stone-600 bg-stone-50',
   REVIEW: 'border-amber-300 text-amber-700 bg-amber-50',
@@ -27,8 +27,8 @@ function VerdictTag({ dec }: { dec?: string }) {
     <span
       title={
         reserved
-          ? 'Reserved in the verdict contract — v1 public screen emits REVIEW or UNVERIFIED'
-          : 'Advisory semantic screen — not a safety clearance'
+          ? 'Reserved in the verdict contract - v1 public screen emits REVIEW or UNVERIFIED'
+          : 'Advisory semantic screen - not a safety clearance'
       }
       className={`font-mono text-[10px] uppercase tracking-[0.12em] border px-1.5 py-0.5 ${VERDICT_CHIP[dec] ?? ''}`}
     >
@@ -61,7 +61,7 @@ export default async function Leaderboard() {
           Sorted by listing maturity only: freshness, completeness, installability,
           documentation, and semver stability (see{' '}
           <code className="font-mono text-[13px] text-[var(--color-ink)]">lib/quality.ts</code>
-          ). Trust verdict is shown beside each row but does not affect rank — most
+          ). Trust verdict is shown beside each row but does not affect rank - most
           maturity-leaders aren&rsquo;t screened yet.{' '}
           <Link
             href="/methodology"

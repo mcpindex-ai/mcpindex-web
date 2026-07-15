@@ -22,7 +22,7 @@ export function Footer() {
             <p className="mt-3 text-[12.5px] leading-[1.55] text-[var(--color-mute)]">
               The in-path trust gate for agent tool calls. It pins each MCP
               tool&rsquo;s contract and HOLDs a call when the contract silently
-              changes — before your agent acts.
+              changes - before your agent acts.
             </p>
             <p className="mt-4 font-mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
               Unofficial. Not affiliated with Anthropic.

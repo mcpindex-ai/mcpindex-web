@@ -1,32 +1,32 @@
-// Action-receipt ingest (Phase D) — the minimal server side of the receipt calibration plane.
+// Action-receipt ingest (Phase D) - the minimal server side of the receipt calibration plane.
 //
 // Two jobs, mirroring driftIngest.ts 1:1:
 //
-// (1) STRICTLY validate the closed ActionReceipt shape — this is the server-side privacy
+// (1) STRICTLY validate the closed ActionReceipt shape - this is the server-side privacy
 //     BACKSTOP. The PUBLIC client emitter (tooling.cse.receipt_emit.build_receipt_wire) builds
 //     the wire dict by construction from closed enums + hash-shaped ids only; this schema
 //     re-asserts that on the wire, so even a future client bug cannot land a raw tool string,
 //     arg, result, URL, or any free text here. Every object level is `.strict()` (rejects ANY
-//     unknown key — a free-text key is exactly the PII channel the closed vocab exists to deny);
+//     unknown key - a free-text key is exactly the PII channel the closed vocab exists to deny);
 //     every enum is the EXACT vocab from the trust files (receipt_vocab.py + action_class.py);
 //     every id/hash/ts is `.regex(...)`; arrays are length-bounded to the Pydantic max_lengths.
-//     The envelope carries install_id (one per SDK process), which is NOT a receipt field — it
+//     The envelope carries install_id (one per SDK process), which is NOT a receipt field - it
 //     stays out of the per-receipt schema (the receipt stays a pure action record).
 //
 // (2) For each validated receipt: XADD it to the `receipts:stream` for the mini32 drain
 //     (scripts/drift_corpus_drain.py, parse_receipt_entries -> drain_receipts), which writes the
 //     Supabase `receipts` corpus (migration 0005). Fields are `d` (receipt JSON) / `install_id`
-//     (envelope id) / `auth` ('1'|'0' bearer stamp) — matched EXACTLY to the drain's reader.
+//     (envelope id) / `auth` ('1'|'0' bearer stamp) - matched EXACTLY to the drain's reader.
 //     Also PFADD the install_id into `receipts:installs` for O(1)-space distinct-install
 //     cardinality. STORE-ONLY: no aggregated/corroboration signal is computed or served here
 //     (publishing a multi-party signal is a gated one-way door handled elsewhere). Best-effort,
-//     fail-OPEN on a Redis hiccup — same resilience as recordDriftBatch.
+//     fail-OPEN on a Redis hiccup - same resilience as recordDriftBatch.
 
 import 'server-only';
 import { z } from 'zod';
 import { Redis } from '@upstash/redis';
 
-// --- id / hash / ts / install patterns — byte-for-byte from tooling.cse.receipt_vocab + the
+// --- id / hash / ts / install patterns - byte-for-byte from tooling.cse.receipt_vocab + the
 // --- action_class Pydantic patterns. (Anchored to the WHOLE string; the Python `re` patterns
 // --- are likewise full-match in their Field/StrEnum usage.)
 const RECEIPT_ID = /^rcpt_[a-z0-9]{8,40}$/; // receipt_vocab.ID_RE
@@ -49,7 +49,7 @@ const RI_TTL_S = 7_776_000;
 // Hard ceiling on how long the (best-effort) write may hold the ingest response.
 const EXEC_TIMEOUT_MS = 2_000;
 
-// --- enums — EXACT values from tooling.cse.action_class (action_classification block) ---
+// --- enums - EXACT values from tooling.cse.action_class (action_classification block) ---
 
 const ActionType = z.enum([
   'read',
@@ -124,7 +124,7 @@ const ActionClassificationSchema = z
   })
   .strict();
 
-// --- run-context / outcome enums — EXACT values from tooling.cse.receipt_vocab ---
+// --- run-context / outcome enums - EXACT values from tooling.cse.receipt_vocab ---
 
 const AutonomyLevel = z.enum(['discovery', 'reversible', 'irreversible']);
 const TaskIntentClass = z.enum([
@@ -171,7 +171,7 @@ const OutcomeSchema = z
   })
   .strict();
 
-// The closed ActionReceipt — exactly build_receipt_wire's output. install_id is ENVELOPE-level
+// The closed ActionReceipt - exactly build_receipt_wire's output. install_id is ENVELOPE-level
 // and is intentionally ABSENT here (it lives on the batch, not the receipt).
 export const ReceiptSchema = z
   .object({
@@ -218,7 +218,7 @@ function redis(): Redis | null {
   if (_redis !== undefined) return _redis;
   const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
-  // retries:1 bounds the REST client's default 5-retry exponential backoff — a Redis incident
+  // retries:1 bounds the REST client's default 5-retry exponential backoff - a Redis incident
   // must not stack ~11s of retries onto the ingest response (see EXEC_TIMEOUT_MS below).
   _redis = url && token ? new Redis({ url, token, retry: { retries: 1 } }) : null;
   return _redis;
@@ -226,7 +226,7 @@ function redis(): Redis | null {
 
 // Enqueue a validated receipt batch for the corpus drain + fold the distinct-install HLL.
 // Best-effort, fail-OPEN: any Redis error is swallowed (the caller already 204'd the client).
-// STORE-ONLY — XADD + PFADD; no aggregated signal is computed here. The stream fields
+// STORE-ONLY - XADD + PFADD; no aggregated signal is computed here. The stream fields
 // (d / install_id / auth) match drift_corpus_drain.parse_receipt_entries EXACTLY.
 export async function recordReceiptBatch(
   receipts: Receipt[],

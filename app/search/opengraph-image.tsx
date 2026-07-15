@@ -11,7 +11,7 @@ export default function Image() {
       <BrandOg
         eyebrow="Search"
         title="Find an MCP server."
-        sub="Search the public directory by name, category, or keyword. Open any server for its advisory screen (REVIEW/UNVERIFIED at v1) and maturity score — not a safety clearance."
+        sub="Search the public directory by name, category, or keyword. Open any server for its advisory screen (REVIEW/UNVERIFIED at v1) and maturity score - not a safety clearance."
       />
     ),
     size,

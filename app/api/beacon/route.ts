@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 
 /**
- * Privacy-safe adoption beacon — event name + short source tag only.
+ * Privacy-safe adoption beacon - event name + short source tag only.
  * Visible in Vercel logs as `[beacon]`. Complements Vercel Analytics `track`.
  */
 export async function POST(req: NextRequest) {

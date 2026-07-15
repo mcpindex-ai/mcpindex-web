@@ -6,11 +6,11 @@ import { checkDriftLimit } from '@/lib/ratelimit';
 // Drift-telemetry ingest (M1). POST only. Accepts a batch of CLOSED DriftSignals from the
 // opt-in SDK emitters, validates the shape STRICTLY (the server-side privacy backstop), folds
 // it into best-effort counters, and returns 204. Fail-CLOSED on shape (a malformed body is
-// 400 — we never persist a signal we could not validate); fail-OPEN on our own Redis.
+// 400 - we never persist a signal we could not validate); fail-OPEN on our own Redis.
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
-  // Require application/json — closes the no-preflight ("simple") cross-origin text/plain
+  // Require application/json - closes the no-preflight ("simple") cross-origin text/plain
   // path, same as /api/v1/screen. Direct SDK callers send JSON and are unaffected.
   if (!(req.headers.get('content-type') ?? '').toLowerCase().includes('application/json')) {
     return Response.json({ error: 'unsupported_media_type' }, { status: 415 });
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   const parsed = DriftBatchSchema.safeParse(raw);
   if (!parsed.success) {
     // Fail-closed: reject the whole batch on ANY shape violation. No detail echoed back
-    // (a strict 400 — never reflect attacker input).
+    // (a strict 400 - never reflect attacker input).
     return Response.json({ error: 'invalid_signal' }, { status: 400 });
   }
 

@@ -1,5 +1,5 @@
 // Pure, total parsers. Given already-parsed JSON (the component owns JSON.parse +
-// its error), normalize into our data model. Never throw — hostile / malformed
+// its error), normalize into our data model. Never throw - hostile / malformed
 // input resolves to an empty result, not an exception.
 
 import type { ToolDef } from './vendor/preflight-types';
@@ -115,7 +115,7 @@ export function parseToolsList(root: unknown): ToolDef[] {
 }
 
 /** JSON.parse, but tolerant of the JSONC real configs ship with (VS Code allows
- * `//` and block comments and trailing commas). Returns undefined on failure —
+ * `//` and block comments and trailing commas). Returns undefined on failure -
  * never throws. Strings inside the JSON are preserved (we skip comment-stripping
  * inside quotes). */
 export function tolerantParse(text: string): unknown {
@@ -142,7 +142,7 @@ function isWs(c: string): boolean {
  * would delete commas that live INSIDE string values (e.g. an arg `"[a, ]"`), so
  * the comma removal is done in its own string-aware scan, not by regex. */
 function stripJsonc(src: string): string {
-  // Pass 1 — strip comments (string-aware).
+  // Pass 1 - strip comments (string-aware).
   let out = '';
   let inStr = false;
   let quote = '';
@@ -176,7 +176,7 @@ function stripJsonc(src: string): string {
     }
     out += c;
   }
-  // Pass 2 — drop trailing commas (a `,` whose next non-whitespace char is `}`/`]`),
+  // Pass 2 - drop trailing commas (a `,` whose next non-whitespace char is `}`/`]`),
   // string-aware. Comments are already gone, so whitespace-only lookahead is enough.
   let res = '';
   inStr = false;

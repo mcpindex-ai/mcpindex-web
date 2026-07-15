@@ -1,5 +1,5 @@
 // "Where's my file?" data for the Tier-1 helper. Typical config locations per
-// client + OS. Paths vary by version; the UI says so. Values are static strings —
+// client + OS. Paths vary by version; the UI says so. Values are static strings -
 // no secrets, no I/O.
 
 export type OS = 'mac' | 'win' | 'linux';
@@ -28,9 +28,9 @@ const PATHS: Table = {
     linux: '~/.cursor/mcp.json',
   },
   'VS Code': {
-    mac: '.vscode/mcp.json  (in your project) — or the "mcp" block in settings.json',
-    win: '.vscode\\mcp.json  (in your project) — or the "mcp" block in settings.json',
-    linux: '.vscode/mcp.json  (in your project) — or the "mcp" block in settings.json',
+    mac: '.vscode/mcp.json  (in your project) - or the "mcp" block in settings.json',
+    win: '.vscode\\mcp.json  (in your project) - or the "mcp" block in settings.json',
+    linux: '.vscode/mcp.json  (in your project) - or the "mcp" block in settings.json',
   },
   Cline: {
     mac: '~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json',

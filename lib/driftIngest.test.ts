@@ -1,4 +1,4 @@
-// Unit tests for the drift-ingest validator — the server-side PRIVACY BACKSTOP. The client
+// Unit tests for the drift-ingest validator - the server-side PRIVACY BACKSTOP. The client
 // emits only fingerprints/hashes/enums by construction; these tests lock that the ingest
 // REJECTS anything else, so even a future client regression cannot land a raw tool string in
 // our store. Run with `npm test` (tsx + node:test).

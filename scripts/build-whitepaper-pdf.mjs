@@ -136,7 +136,7 @@ const html = `<!doctype html>
   <section class="cover">
     <div class="mark">${markSvg(40, INK, AMBER)}</div>
     <div class="kicker">silent MCP contract drift, caught at the moment of use</div>
-    <h1>[ mcpindex ] &mdash; the trust-to-act layer for agent tool calls.</h1>
+    <h1>[ mcpindex ] - the trust-to-act layer for agent tool calls.</h1>
     <p class="standfirst">The tool your agent trusted on Monday can change on Tuesday, silently. mcpindex holds the call before your agent acts.</p>
     <p class="sub">It pins every tool&rsquo;s contract and holds the call the moment that contract moves. A verdict is a change-tripwire, not a safety oracle: a <span class="token">HOLD</span> means the contract moved, not that the call is dangerous.</p>
     <div class="version">Version 1.0 &middot; Launch edition</div>

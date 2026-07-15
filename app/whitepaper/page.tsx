@@ -50,7 +50,7 @@ export default function WhitepaperPage() {
           Whitepaper · v1.0 launch edition
         </div>
         <p className="mt-4 text-[14px] leading-[1.6] text-[var(--color-mute)]">
-          Free to read in full below. Free PDF, no email required &mdash; the paper is the open,
+          Free to read in full below. Free PDF, no email required - the paper is the open,
           honest credibility engine, not a lead wall.
         </p>
         <div className="mt-5 flex flex-wrap items-center gap-3">

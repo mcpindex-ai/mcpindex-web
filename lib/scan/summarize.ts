@@ -14,7 +14,7 @@ function isObj(v: unknown): v is Record<string, unknown> {
 }
 
 // Risk-note codes the STATIC classifier can emit -> plain language. Two declared
-// FACTS, never an inference verdict ("looks X") — the brand states the contract and
+// FACTS, never an inference verdict ("looks X") - the brand states the contract and
 // lets the reader conclude. Probe/corpus/CVE notes never appear from a client-side
 // classify(); if a future code shows up, noteLabel() humanizes it rather than hiding it.
 const NOTE_LABEL: Record<string, string> = {
@@ -66,7 +66,7 @@ export function summarize(servers: readonly ScannedServer[], tools: readonly Sca
       needsApproval: tools.filter(
         (t) => t.autonomyCeiling === 'needs-approval' || t.autonomyCeiling === 'never-unattended',
       ).length,
-      unpinned: tools.length, // a fresh scan pins nothing — every tool is unwatched
+      unpinned: tools.length, // a fresh scan pins nothing - every tool is unwatched
     },
   };
 }

@@ -24,7 +24,7 @@ export function __setLedgerServerRedisForTest(client: Redis | null | undefined):
 }
 
 /** Read + validate the published ledger blob. Returns null when the flag is off, the cache is
- * unavailable, or the blob is missing/malformed — the page/API treat null as "not published".
+ * unavailable, or the blob is missing/malformed - the page/API treat null as "not published".
  * Fail-CLOSED on shape (a corrupt blob is not published), but never throws. The branchy parsing
  * is in `parseLedgerBlob` (./ledger), which is unit-tested without a Redis. */
 export async function loadLedger(): Promise<Ledger | null> {

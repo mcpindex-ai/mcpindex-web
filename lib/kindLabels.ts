@@ -1,5 +1,5 @@
 // Human labels for the surfaced ChangeKind taxonomy. One label per member of
-// SURFACE_CHANGE_KINDS (lib/changeKinds.ts) — parity is test-enforced in kindLabels.test.ts so a
+// SURFACE_CHANGE_KINDS (lib/changeKinds.ts) - parity is test-enforced in kindLabels.test.ts so a
 // taxonomy addition can't silently ship an unlabeled raw token. Unknown codes still degrade
 // gracefully (hyphens -> spaces) rather than hiding.
 export const KIND_LABEL: Record<string, string> = {

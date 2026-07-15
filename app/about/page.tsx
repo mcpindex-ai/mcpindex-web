@@ -22,7 +22,7 @@ export default function AboutPage() {
         mcpindex is the in-path trust gate for agent tool calls. Agents discover tools at
         runtime, read the descriptions their authors wrote, and call them. The Monday
         contract can change on Tuesday with no version bump. mcpindex pins each contract
-        and HOLDs the call when it drifts — before the agent acts — and screens the
+        and HOLDs the call when it drifts - before the agent acts - and screens the
         directory so you can check a tool before you wire it.
       </p>
 
@@ -54,8 +54,8 @@ export default function AboutPage() {
           mcpindex publishes a per-tool finding with dimension verdicts
           (integrity, hidden intent, and others) and severity. Today the screen
           is semantic-only: an LLM judge reads the description for hidden
-          instructions. The deterministic conformance probe &mdash; which checks
-          whether observed behavior matches the declared schema &mdash; is built
+          instructions. The deterministic conformance probe - which checks
+          whether observed behavior matches the declared schema - is built
           but has not yet run on the public corpus, so no published screen verdict
           carries a conformance result yet. History is OTS Bitcoin-anchored, so
           once a block confirms, the trust record for a tool cannot be quietly
@@ -97,7 +97,7 @@ export default function AboutPage() {
           The two moments feed each other, and that loop is the network. The first
           turn is already live: mcpindex crawls the public registry every day and
           records every contract that drifts, and the gate can query that record to
-          warn you on the first call &mdash; crawler-corroborated and opt-in. That
+          warn you on the first call - crawler-corroborated and opt-in. That
           record is public in the{' '}
           <Link href="/ledger" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">live drift ledger</Link>.
           The deeper tier-1 corpus lookup the gate queries before it decides is still
