@@ -1,5 +1,6 @@
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { safeMarkdownUrl } from '@/lib/safeUrl';
 
 // Shared markdown prose renderers for /whitepaper and /guides so the two long-form
 // surfaces read as one system. amber (#ea580c) stays reserved for the verdict token:
@@ -106,13 +107,15 @@ export const md: Components = {
     ) : null,
 };
 
-// The shared long-form renderer: GFM markdown through the `md` map, with stray
-// angle brackets escaped so `<placeholder>` text survives. Used by /guides
-// (walkthrough + classic body) and could back /whitepaper too, so the surfaces
-// read as one system.
+// The shared long-form renderer for /guides (walkthrough + classic body): GFM
+// markdown through the `md` map, with stray angle brackets escaped so
+// `<placeholder>` text survives. `urlTransform` routes every markdown link/image
+// href through safeMarkdownUrl, so a body link like `[x](//evil.com)` in
+// human-merged guide JSON can't become an off-origin open redirect (the same
+// class isSafeHref closes for structured deep_link/next hrefs).
 export function Prose({ children }: { children: string }) {
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={md}>
+    <ReactMarkdown remarkPlugins={[remarkGfm]} components={md} urlTransform={safeMarkdownUrl}>
       {escapeAnglesOutsideCode(children)}
     </ReactMarkdown>
   );

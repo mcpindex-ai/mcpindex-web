@@ -8,11 +8,13 @@ import type { DirectoryClient } from '@/lib/install/manifest';
 // sees ONLY their exact command or config, instead of scanning a wall of every
 // host. Reduces "which of these is mine" friction to one click.
 //
-// DATA COMES IN AS PROPS, typed as DirectoryClient. The `import type` is erased
-// at compile time (zero runtime), so the manifest's method arrays + Buffer
-// deep-link code never enter this client bundle - the server registry
-// (lib/guide-embeds) passes the plain DIRECTORY_CLIENTS array in. Single source
-// stays server-side, and there is one shape of truth (no parallel HostOption).
+// DATA COMES IN AS PROPS (typed via `import type DirectoryClient`, erased at
+// compile time). The server registry (lib/guide-embeds) passes DIRECTORY_CLIENTS
+// in; props keep this picker generic and reusable (a caller can pass a filtered
+// subset) and give it one shape of truth, DirectoryClient, with no parallel
+// HostOption. (Value-importing the manifest here would also be bundle-safe - its
+// Buffer/deep-link code tree-shakes out, as components/install/DirectoryInstall
+// does - but props keep the component decoupled from the data source.)
 //
 // A11y: a group of toggle buttons (aria-pressed), NOT a tablist. A tablist would
 // promise arrow-key roving + a labelled tabpanel; a button group needs neither

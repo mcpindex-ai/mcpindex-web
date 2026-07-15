@@ -7,6 +7,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { isSafeHref } from './safeUrl';
 
 export interface FaqItem {
   q: string;
@@ -96,8 +97,12 @@ export function coerceGuide(raw: unknown, slugFromFile: string): Guide | null {
   // Only accept an ISO-ish date; a junk `updated` would emit invalid
   // datePublished/dateModified in the TechArticle JSON-LD and a bad sitemap lastmod.
   const updatedRaw = str(r.updated) || str(r.updated_at);
+  // Fully-anchored ISO date (optional time), so trailing junk like "2026-07-15x"
+  // can't slip a bad datePublished/dateModified into the JSON-LD. Date.parse is
+  // the secondary guard that rejects impossible dates (2026-13-40).
   const updated =
-    /^\d{4}-\d{2}-\d{2}/.test(updatedRaw) && !Number.isNaN(Date.parse(updatedRaw))
+    /^\d{4}-\d{2}-\d{2}(T[\d:.]+(Z|[+-]\d{2}:\d{2})?)?$/.test(updatedRaw) &&
+    !Number.isNaN(Date.parse(updatedRaw))
       ? updatedRaw
       : '';
   const faq = coerceFaq(r.faq);
@@ -174,16 +179,6 @@ function coerceSteps(v: unknown): WalkStep[] {
     });
   }
   return out;
-}
-
-// Only allow a same-origin path or an explicit http(s) URL. Rejects javascript:,
-// data:, and other schemes that React would render verbatim on an <a>/next Link
-// (React does not sanitize hrefs). A leading "//" (protocol-relative) or "/\"
-// (browsers normalize "\" to "/") resolves OFF-origin, so those are rejected too
-// - closing an open-redirect / injection from guide JSON.
-function isSafeHref(href: string): boolean {
-  if (href.startsWith('/')) return !/^\/[/\\]/.test(href);
-  return /^https?:\/\//.test(href);
 }
 
 function coerceDeepLink(v: unknown): StepDeepLink | undefined {

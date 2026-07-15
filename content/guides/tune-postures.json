@@ -25,11 +25,11 @@
     {
       "id": "confirm",
       "heading": "Confirm which posture is active",
-      "body": "There is no separate 'show posture' command, but the posture surfaces where it matters. Under Monitor the gate prints a line like `- MONITOR posture: proceeding. Use posture=GUARD to withhold.` when it lets a change through. The posture name is not stored in your receipts, but its effect is: under Monitor a breaking change is logged ALLOW, where Guard or Strict would log DENY.",
+      "body": "There is no separate 'show posture' command, and the posture name is not stored in your receipts. The reliable signal is its effect: under Monitor an unambiguously breaking change is logged ALLOW, where Guard or Strict would log DENY. So if a change you expected to be held shows ALLOW in your Gate Activity, you are running Monitor.",
       "deep_link": {
         "href": "/receipts",
         "label": "Check your Gate Activity",
-        "look_for": "the verdict column: under Monitor a breaking change shows as ALLOW, where Guard or Strict would show DENY."
+        "look_for": "the verdict column: under Monitor an unambiguously breaking change shows as ALLOW, where Guard or Strict would show DENY."
       }
     },
     {
