@@ -215,6 +215,8 @@ MIT.
 
 - Website: [mcpindex.ai](https://mcpindex.ai)
 - Methodology: [mcpindex.ai/methodology](https://mcpindex.ai/methodology)
+- Screen a server: [mcpindex.ai/screen](https://mcpindex.ai/screen)
+- Guide: [Find the right MCP server by task](https://mcpindex.ai/guides/find-mcp-server-by-task)
 - Source: [github.com/mcpindex-ai](https://github.com/mcpindex-ai)
 
 [![mcp-server-mcpindex MCP server](https://glama.ai/mcp/servers/mcpindex-ai/mcp-server-mcpindex/badges/score.svg)](https://glama.ai/mcp/servers/mcpindex-ai/mcp-server-mcpindex)
