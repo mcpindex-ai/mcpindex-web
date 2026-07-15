@@ -1,17 +1,21 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.gautamgb/mcp-server-mcpindex",
+  "title": "mcpindex",
   "description": "Find MCP servers by natural-language task, with advisory trust screens. Not a safety verdict.",
+  "websiteUrl": "https://mcpindex.ai",
   "repository": {
     "url": "https://github.com/mcpindex-ai/mcpindex-web",
-    "source": "github"
+    "source": "github",
+    "subfolder": "mcp-server-mcpindex"
   },
-  "version": "0.3.7",
+  "version": "0.3.8",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "mcp-server-mcpindex",
       "version": "0.3.7",
+      "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
       }
