@@ -65,6 +65,7 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 
 ## Endpoints an agent can call
 
+- POST /api/mcp                                                  Remote MCP server (Streamable HTTP) - connect any MCP client without installing; exposes the 6 tools below as MCP.
 - GET /api/v1/search?q=<query>                                   Keyword + semantic search across servers.
 - GET /api/v1/recommend?task=<text>                              Natural language task -> top 3 servers with reasoning.
 - GET /api/v1/preflight?task=<text>                              Pre-flight: top servers + the rank-1 server's advisory verdict in one call.

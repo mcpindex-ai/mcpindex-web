@@ -155,6 +155,9 @@ export async function GET() {
     },
 
     endpoints: {
+      // Hosted remote MCP server (Streamable HTTP) - connect any MCP client
+      // without installing; exposes the 6 discovery + advisory-screen tools.
+      mcp: 'https://mcpindex.ai/api/mcp',
       search: 'https://mcpindex.ai/api/v1/search?q={query}',
       recommend: 'https://mcpindex.ai/api/v1/recommend?task={natural_language}',
       // Pre-flight: discovery + the rank-1 server's advisory verdict in one call.
