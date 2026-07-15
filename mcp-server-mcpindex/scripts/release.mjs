@@ -61,4 +61,18 @@ run('npm', ['publish', '--access', 'public']);
 const tag = `pkg-v${version}`;
 run('git', ['tag', tag]);
 run('git', ['push', 'origin', tag]);
+
+// 7: mirror source to the Glama-bound standalone repo so its Maintenance grade
+// stays fresh (see scripts/sync-glama-repo.mjs for why the mirror exists).
+// Best-effort: npm has already published, so a mirror failure must not fail the
+// release - it just needs a manual re-run.
+try {
+  run('node', ['scripts/sync-glama-repo.mjs']);
+} catch {
+  console.error(
+    'release: WARNING - published to npm but the Glama mirror push failed. ' +
+      'Re-run `npm run sync-glama` (check the standalone repo is unarchived).',
+  );
+}
+
 console.log(`release: done - published ${name}@${version} and pushed tag ${tag}.`);

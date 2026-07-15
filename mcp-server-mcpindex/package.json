@@ -44,6 +44,7 @@
     "build": "node --check src/index.mjs && node --check src/trust.mjs && node --check src/update-check.mjs",
     "test": "node --test test/*.test.mjs",
     "check-published": "node scripts/check-published.mjs",
+    "sync-glama": "node scripts/sync-glama-repo.mjs",
     "release": "node scripts/release.mjs"
   },
   "dependencies": {
