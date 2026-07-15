@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   GATE_METHODS,
   DIRECTORY_CLIENTS,
@@ -22,6 +22,8 @@ import {
   DISCOVERY_PACKAGE,
   DISCOVERY_CLAUDE_MCP_ADD,
   DISCOVERY_GEMINI_MCP_ADD,
+  GATE_HOSTS_SHORT,
+  GATE_HOSTS_DOCS,
 } from '../client-install';
 
 // No em-dash anywhere in copied commands/notes (site-wide hard rule).
@@ -104,10 +106,31 @@ test('legacy install constants derive from the manifest (no parallel source)', (
 
 // Emission guard: the machine surfaces must actually render gateInstallLine();
 // a refactor that dropped the call would silently un-derive them. Source-text
-// check (network-free) so it runs in the unit suite.
+// check (network-free) so it runs in the unit suite. Match the CALL shape
+// 'gateInstallLine(' - the plain name also appears in the `import { ... }` line,
+// so a bare-name check would pass even if only the import survived. Path is
+// resolved from this file (import.meta.url), not process.cwd(), so running the
+// file directly from its own dir does not throw ENOENT.
 test('llms.txt and llms-full.txt render the derived gateInstallLine()', () => {
   for (const f of ['app/llms.txt/route.ts', 'app/llms-full.txt/route.ts']) {
-    const src = readFileSync(join(process.cwd(), f), 'utf8');
-    assert.ok(src.includes('gateInstallLine'), `${f} must render gateInstallLine()`);
+    const src = readFileSync(fileURLToPath(new URL(`../../${f}`, import.meta.url)), 'utf8');
+    assert.ok(src.includes('gateInstallLine('), `${f} must CALL gateInstallLine(), not just import it`);
+  }
+});
+
+// Honesty guard: the trimmed marketing host list (rendered on the homepage as an
+// affirmative "the gate wires X" claim) must never name a host the gate does not
+// actually wire. Every host in it must be in the authoritative GATE_WIRING_HOSTS.
+test('marketing host lists are a subset of GATE_WIRING_HOSTS (no over-claim)', () => {
+  const gateHosts: readonly string[] = GATE_WIRING_HOSTS;
+  const named = [GATE_HOSTS_SHORT, GATE_HOSTS_DOCS].flatMap((s) =>
+    s
+      .split(/[/,]| and /)
+      .map((h) => h.trim())
+      .filter((h) => h.length > 0),
+  );
+  assert.ok(named.length >= 6, 'marketing host lists should parse to real host names');
+  for (const h of named) {
+    assert.ok(gateHosts.includes(h), `marketing list names "${h}" which the gate does not wire`);
   }
 });

@@ -13,23 +13,25 @@
  * this file must not claim otherwise.
  */
 
-export const PACKAGES = {
-  /** In-path gate binary (curl / uv / pip). The product / the wedge. */
-  gateBinary: 'mcpindex-gate',
-  /** TypeScript SDK for embedding the pin in your own server. */
-  sdkTs: '@mcp-index/sdk',
-  /** Advisory directory client (a normal single MCP server). */
-  directoryServer: 'mcp-server-mcpindex',
-  /** Docker MCP Registry image (build/sign pending review, PR #4441). */
-  dockerImage: 'mcp/mcpindex',
-  /** Official MCP Registry name (live). */
-  registryName: 'io.github.gautamgb/mcp-server-mcpindex',
-  installScript: 'https://mcpindex.ai/install.sh',
-} as const;
+// Scalar command primitives live in the client-safe leaf module. Client-facing
+// re-export files (lib/install-command.ts, lib/client-install.ts) import from
+// './commands' directly, so they never pull this module's arrays / deep-link
+// code into the browser. Re-exported here for server consumers (the /install
+// page, tests) that already import them from the manifest.
+import {
+  PACKAGES,
+  DIRECTORY_COMMAND,
+  DIRECTORY_ARGS,
+  CURL_INSTALL,
+  INSPECT_INSTALL,
+  UV_INSTALL,
+  PIP_INSTALL,
+  DIRECTORY_NPX,
+  CLAUDE_MCP_ADD,
+  GEMINI_MCP_ADD,
+} from './commands';
 
-/** The npx invocation the directory server runs under in every host config. */
-export const DIRECTORY_COMMAND = 'npx';
-export const DIRECTORY_ARGS = ['-y', `${PACKAGES.directoryServer}@latest`] as const;
+export * from './commands';
 
 // --- Gate install methods (the product) --------------------------------------
 
@@ -47,28 +49,28 @@ export const GATE_METHODS: GateMethod[] = [
   {
     id: 'curl',
     label: 'One-liner (all hosts)',
-    command: `curl -fsSL ${PACKAGES.installScript} | sh`,
+    command: CURL_INSTALL,
     note: 'Installs the gate and wires your MCP hosts to route tool calls through it. Restarts the host after wiring.',
     track: 'install-page-gate-curl',
   },
   {
     id: 'inspect',
     label: 'Read it first',
-    command: `curl -fsSL ${PACKAGES.installScript} | less`,
+    command: INSPECT_INSTALL,
     note: 'Pipe to less to read the script before you run it. uninstall.sh restores the original config.',
     track: 'install-page-gate-inspect',
   },
   {
     id: 'uv',
     label: 'uv (auditable)',
-    command: `uv tool install ${PACKAGES.gateBinary}`,
+    command: UV_INSTALL,
     note: 'Install the binary yourself, then run the wiring wizard. No pipe-to-shell.',
     track: 'install-page-gate-uv',
   },
   {
     id: 'pip',
     label: 'pip',
-    command: `pip install ${PACKAGES.gateBinary}`,
+    command: PIP_INSTALL,
     note: 'Same binary from PyPI if you would rather not add uv.',
     track: 'install-page-gate-pip',
   },
@@ -104,13 +106,13 @@ export const DIRECTORY_CLIENTS: DirectoryClient[] = [
     id: 'claude-code',
     label: 'Claude Code',
     kind: 'command',
-    value: `claude mcp add --scope user mcpindex -- ${DIRECTORY_COMMAND} ${DIRECTORY_ARGS.join(' ')}`,
+    value: CLAUDE_MCP_ADD,
   },
   {
     id: 'gemini',
     label: 'Gemini CLI',
     kind: 'command',
-    value: `gemini mcp add -s user mcpindex ${DIRECTORY_COMMAND} ${DIRECTORY_ARGS.join(' ')}`,
+    value: GEMINI_MCP_ADD,
   },
   {
     id: 'cursor',
@@ -144,7 +146,7 @@ export const DIRECTORY_CLIENTS: DirectoryClient[] = [
     id: 'raw',
     label: 'Any host (raw)',
     kind: 'command',
-    value: `${DIRECTORY_COMMAND} ${DIRECTORY_ARGS.join(' ')}`,
+    value: DIRECTORY_NPX,
   },
 ];
 
@@ -160,6 +162,14 @@ export const LEGACY_EOL_PACKAGE = 'mcpindex-preflight';
  * (DIRECTORY_CLIENTS): the gate also wires VS Code and Windsurf. Do NOT derive
  * it from the picker - that understates the gate on the machine surfaces, where
  * an LLM reads the list as the exhaustive capability set.
+ *
+ * PARITY (cross-repo, comment-enforced): this list mirrors a Python source in
+ * another repo, so no build check can compare them. If you add/remove a host in
+ * `_default_config_paths()`, update THIS list in the same change - and vice
+ * versa (that function carries the reciprocal pointer). Getting them out of sync
+ * makes llms.txt over- or under-state the gate. A shared committed JSON artifact
+ * is the robust follow-up. The subset/superset tests in manifest.test.ts guard
+ * the picker and the marketing list against THIS constant, not against Python.
  */
 export const GATE_WIRING_HOSTS = [
   'Claude Desktop',
@@ -179,10 +189,8 @@ export const GATE_WIRING_HOSTS = [
  */
 export function gateInstallLine({ code = false }: { code?: boolean } = {}): string {
   const cmd = (s: string) => (code ? `\`${s}\`` : s);
-  const uv = GATE_METHODS.find((m) => m.id === 'uv')!.command;
-  const curl = GATE_METHODS.find((m) => m.id === 'curl')!.command;
   return (
-    `Install: one-click config-wire across ${GATE_WIRING_HOSTS.join(' / ')} via ${cmd(uv)} or ${cmd(curl)} ` +
+    `Install: one-click config-wire across ${GATE_WIRING_HOSTS.join(' / ')} via ${cmd(UV_INSTALL)} or ${cmd(CURL_INSTALL)} ` +
     `(rewrites the host config to route each server through the gate; zero credentials change hands), ` +
     `or the SDK wrap() one-liner (TS + Python) around an already-authenticated session. ` +
     `Legacy ${cmd(LEGACY_EOL_PACKAGE)} is EOL (frozen 0.7.0); install ${cmd(PACKAGES.gateBinary)}, not preflight. See /docs.`
@@ -222,13 +230,13 @@ export type MethodRow = {
 };
 
 export const METHOD_MATRIX: MethodRow[] = [
-  { surface: 'Gate (in-path)', method: 'Install script', command: `curl -fsSL ${PACKAGES.installScript} | sh` },
-  { surface: 'Gate (in-path)', method: 'uv', command: `uv tool install ${PACKAGES.gateBinary}` },
-  { surface: 'Gate (in-path)', method: 'pip', command: `pip install ${PACKAGES.gateBinary}` },
+  { surface: 'Gate (in-path)', method: 'Install script', command: CURL_INSTALL },
+  { surface: 'Gate (in-path)', method: 'uv', command: UV_INSTALL },
+  { surface: 'Gate (in-path)', method: 'pip', command: PIP_INSTALL },
   { surface: 'Gate (in-path)', method: 'SDK (TypeScript)', command: `npm i ${PACKAGES.sdkTs}` },
-  { surface: 'Directory (advisory)', method: 'npx', command: `${DIRECTORY_COMMAND} ${DIRECTORY_ARGS.join(' ')}` },
-  { surface: 'Directory (advisory)', method: 'Claude Code', command: `claude mcp add --scope user mcpindex -- ${DIRECTORY_COMMAND} ${DIRECTORY_ARGS.join(' ')}` },
-  { surface: 'Directory (advisory)', method: 'Gemini CLI', command: `gemini mcp add -s user mcpindex ${DIRECTORY_COMMAND} ${DIRECTORY_ARGS.join(' ')}` },
+  { surface: 'Directory (advisory)', method: 'npx', command: DIRECTORY_NPX },
+  { surface: 'Directory (advisory)', method: 'Claude Code', command: CLAUDE_MCP_ADD },
+  { surface: 'Directory (advisory)', method: 'Gemini CLI', command: GEMINI_MCP_ADD },
   { surface: 'Directory (advisory)', method: 'MCP Registry', command: PACKAGES.registryName },
   { surface: 'Directory (advisory)', method: 'Docker', command: `docker mcp gateway run  # image ${PACKAGES.dockerImage}`, pending: 'Image build/sign under review (docker/mcp-registry#4441).' },
   { surface: 'Web (no install)', method: 'Scan your config', command: 'https://mcpindex.ai/scan' },
