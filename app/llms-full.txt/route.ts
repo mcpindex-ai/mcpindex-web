@@ -68,11 +68,9 @@ function buildBody(servers: IndexedServer[], guides: Guide[]): string {
   if (guides.length) {
     parts.push('## Guides', '');
     for (const g of guides) {
-      parts.push(
-        `- ${g.title}`,
-        `  ${g.metaDescription}`,
-        `  https://mcpindex.ai/guides/${g.slug}`,
-      );
+      parts.push(`- ${g.title}`);
+      if (g.metaDescription) parts.push(`  ${g.metaDescription}`);
+      parts.push(`  https://mcpindex.ai/guides/${g.slug}`);
       if (g.faq?.length) {
         for (const f of g.faq) parts.push(`  Q: ${f.q}`, `  A: ${f.a}`);
       }

@@ -1,4 +1,4 @@
-// Mirror this package's source to the Glama-bound standalone repo
+// Mirror this package's COMMITTED source to the Glama-bound standalone repo
 // (mcpindex-ai/mcp-server-mcpindex).
 //
 // WHY THIS EXISTS: Glama permanently binds a server listing to one repository -
@@ -8,25 +8,29 @@
 // unarchived and receive a commit each release or the grade decays back toward F.
 //
 // Development lives in the mcpindex-web monorepo (single source of truth). This
-// script keeps the standalone a faithful, hands-off mirror so the monorepo stays
-// canonical while Glama still sees fresh activity. Run standalone to backfill, or
-// automatically as release.mjs step 7.
+// script keeps the standalone a faithful, hands-off mirror of the *committed*
+// package tree.
 //
-// Idempotent: clones the mirror, rsyncs the package tree in, and pushes ONLY when
-// something actually changed (no empty commits). Auth uses the machine's existing
-// git credential helper (same path we push the monorepo with). Requires the
-// mirror repo to be UNARCHIVED - a rejected push almost always means it was
-// re-archived, which would also tank the Maintenance grade.
+// SECURITY: the mirror is built from `git archive HEAD:<subdir>`, i.e. only files
+// TRACKED and committed in the monorepo (which respects the monorepo .gitignore).
+// An untracked or gitignored file - .env, .npmrc, a key, a built .mcpb - is not in
+// HEAD and therefore can NEVER be pushed to the public mirror. This replaces an
+// earlier rsync-of-the-live-dir that used a fragile denylist. Idempotent: pushes
+// only when the mirror actually differs. Auth uses the machine's git credential
+// helper (same path the monorepo pushes with). A rejected push almost always means
+// the mirror was re-archived (Glama needs it live) or has diverged.
 
 import { readFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const MIRROR_REPO = 'https://github.com/mcpindex-ai/mcp-server-mcpindex.git';
 const MIRROR_SLUG = 'mcpindex-ai/mcp-server-mcpindex';
+// This package's path within the monorepo (the tree `git archive` exports).
+const SUBDIR = 'mcp-server-mcpindex';
 
 const pkgRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const { name, version } = JSON.parse(
@@ -35,39 +39,43 @@ const { name, version } = JSON.parse(
 
 const tmp = mkdtempSync(path.join(tmpdir(), 'mcpindex-mirror-'));
 const clone = path.join(tmp, 'repo');
+const exportDir = path.join(tmp, 'export');
 const run = (cmd, args, cwd) => execFileSync(cmd, args, { cwd, stdio: 'inherit' });
 const capture = (cmd, args, cwd) =>
   execFileSync(cmd, args, { cwd, encoding: 'utf8' });
 
 try {
-  console.log(`sync-glama-repo: mirroring ${name}@${version} -> ${MIRROR_SLUG}`);
+  console.log(`sync-glama-repo: mirroring committed ${name}@${version} -> ${MIRROR_SLUG}`);
   run('git', ['clone', '--depth', '1', MIRROR_REPO, clone], tmp);
 
-  // Faithful mirror of the package tree; --delete drops files that no longer
-  // exist in source. .git and node_modules are the only things we must not touch.
-  run(
-    'rsync',
-    ['-a', '--delete', '--exclude', '.git', '--exclude', 'node_modules',
-      '--exclude', '*.mcpb',
-      `${pkgRoot}/`, `${clone}/`],
-    tmp,
-  );
+  // Export ONLY the committed package tree at HEAD into a clean dir. `git archive`
+  // emits just tracked files, so gitignored/untracked files can never be mirrored.
+  mkdirSync(exportDir);
+  const archive = execFileSync('git', ['archive', `HEAD:${SUBDIR}`], {
+    cwd: pkgRoot,
+    maxBuffer: 256 * 1024 * 1024,
+  });
+  execFileSync('tar', ['-x', '-f', '-', '-C', exportDir], { input: archive });
+
+  // Sync the clean export into the clone; --delete keeps the mirror faithful
+  // (handles files removed from source). .git is the only thing we must not touch.
+  run('rsync', ['-a', '--delete', '--exclude', '.git', `${exportDir}/`, `${clone}/`], tmp);
 
   if (!capture('git', ['status', '--porcelain'], clone).trim()) {
     console.log('sync-glama-repo: mirror already current, nothing to push.');
-    process.exit(0);
+  } else {
+    run('git', ['add', '-A'], clone);
+    run('git', ['commit', '-m', `sync: ${name}@${version} from mcpindex-web`], clone);
+    run('git', ['push', 'origin', 'HEAD'], clone);
+    console.log(`sync-glama-repo: pushed mirror commit for ${version}.`);
   }
-
-  run('git', ['add', '-A'], clone);
-  run('git', ['commit', '-m', `sync: ${name}@${version} from mcpindex-web`], clone);
-  run('git', ['push', 'origin', 'HEAD'], clone);
-  console.log(`sync-glama-repo: pushed mirror commit for ${version}.`);
 } catch (err) {
   console.error(`sync-glama-repo: FAILED - ${err.message}`);
   console.error(
-    'If the push was rejected, confirm the mirror repo is UNARCHIVED (Glama needs it live).',
+    'Check: mirror repo UNARCHIVED (Glama needs it live), no non-fast-forward divergence, git identity configured.',
   );
-  process.exit(1);
+  process.exitCode = 1;
 } finally {
+  // Always runs (no process.exit above), so the temp clone is never leaked.
   rmSync(tmp, { recursive: true, force: true });
 }

@@ -30,6 +30,16 @@ const { name, version } = JSON.parse(
 );
 console.log(`release: preparing ${name}@${version}`);
 
+// manifest.json is committed + mirrored to the Glama repo and built into the .mcpb;
+// keep its version in lockstep with package.json so no artifact ships a stale one.
+const manifest = JSON.parse(await readFile(path.join(pkgRoot, 'manifest.json'), 'utf8'));
+if (manifest.version !== version) {
+  console.error(
+    `release: ABORT - manifest.json version (${manifest.version}) != package.json (${version}). Bump manifest.json.`,
+  );
+  process.exit(1);
+}
+
 // 1 + 2: build (syntax) and tests
 run('npm', ['run', 'build']);
 run('npm', ['test']);

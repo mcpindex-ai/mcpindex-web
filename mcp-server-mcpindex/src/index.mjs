@@ -12,7 +12,10 @@ import { createRequire } from 'node:module';
 export { checkToolTrust, assessServer, VERDICT_CONTRACT_VERSION, V1_HONEST_LIMITS } from './trust.mjs';
 import { notifyUpdateIfAvailable } from './update-check.mjs';
 
-const API_BASE = process.env.MCPINDEX_API_BASE ?? 'https://mcpindex.ai';
+// `||` (not `??`) so an empty MCPINDEX_API_BASE - which some MCPB hosts substitute
+// for an unset optional user_config field - falls back to the default instead of
+// becoming "" and breaking every fetch with a relative URL.
+const API_BASE = process.env.MCPINDEX_API_BASE || 'https://mcpindex.ai';
 // Single source of truth for the running version - read from package.json so the
 // User-Agent and the update-check can never drift from what npm actually shipped.
 const PKG_VERSION = createRequire(import.meta.url)('../package.json').version;
@@ -227,7 +230,7 @@ function formatRecommend(data) {
   const lines = [`Top ${data.recommendations.length} for: "${data.task}"`, ''];
   for (const r of data.recommendations) {
     lines.push(`[${r.rank}] ${r.title}  ·  QS ${r.qualityScore}/100  ·  ${r.category}`);
-    lines.push(`    ${r.name}@${r.qualityScore ? '' : ''}`);
+    lines.push(`    ${r.name}`);
     lines.push(`    ${r.reasoning}`);
     const install = r.installs.npm
       ? `npx -y ${r.installs.npm}`
