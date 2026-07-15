@@ -93,7 +93,13 @@ export function coerceGuide(raw: unknown, slugFromFile: string): Guide | null {
   const h1 = str(r.h1);
   const body = str(r.body);
   if (!title || !h1 || !body) return null; // presence floor mirrors the producer
-  const updated = str(r.updated) || str(r.updated_at);
+  // Only accept an ISO-ish date; a junk `updated` would emit invalid
+  // datePublished/dateModified in the TechArticle JSON-LD and a bad sitemap lastmod.
+  const updatedRaw = str(r.updated) || str(r.updated_at);
+  const updated =
+    /^\d{4}-\d{2}-\d{2}/.test(updatedRaw) && !Number.isNaN(Date.parse(updatedRaw))
+      ? updatedRaw
+      : '';
   const faq = coerceFaq(r.faq);
   const steps = coerceSteps(r.steps);
   const kind = str(r.kind) === 'walkthrough' ? ('walkthrough' as const) : undefined;
@@ -142,10 +148,17 @@ function coerceSteps(v: unknown): WalkStep[] {
     const body = typeof s.body === 'string' ? s.body : '';
     if (!heading || !body.trim()) continue; // presence floor
     const rawId = typeof s.id === 'string' ? s.id.trim() : '';
-    // Valid, unique author id wins; otherwise (missing/invalid/duplicate) fall
-    // back to the positional id so React keys + anchors never collide.
-    const id =
-      SLUG_RE.test(rawId) && !usedIds.has(rawId) ? rawId : `step-${out.length + 1}`;
+    // Valid, unused author id wins; otherwise fall back to a positional id and
+    // loop past any collision (incl. an author id already sitting in the step-N
+    // namespace) so React keys + DOM anchors + HowTo step urls never collide.
+    let id: string;
+    if (SLUG_RE.test(rawId) && !usedIds.has(rawId)) {
+      id = rawId;
+    } else {
+      let n = out.length + 1;
+      id = `step-${n}`;
+      while (usedIds.has(id)) id = `step-${++n}`;
+    }
     usedIds.add(id);
     const embed = typeof s.embed === 'string' && s.embed.trim() ? s.embed.trim() : undefined;
     const deepLink = coerceDeepLink(s.deep_link);
@@ -165,9 +178,12 @@ function coerceSteps(v: unknown): WalkStep[] {
 
 // Only allow a same-origin path or an explicit http(s) URL. Rejects javascript:,
 // data:, and other schemes that React would render verbatim on an <a>/next Link
-// (React does not sanitize hrefs), closing a latent injection from guide JSON.
+// (React does not sanitize hrefs). A leading "//" (protocol-relative) or "/\"
+// (browsers normalize "\" to "/") resolves OFF-origin, so those are rejected too
+// - closing an open-redirect / injection from guide JSON.
 function isSafeHref(href: string): boolean {
-  return href.startsWith('/') || /^https?:\/\//.test(href);
+  if (href.startsWith('/')) return !/^\/[/\\]/.test(href);
+  return /^https?:\/\//.test(href);
 }
 
 function coerceDeepLink(v: unknown): StepDeepLink | undefined {
@@ -222,10 +238,12 @@ async function loadAll(): Promise<Record<string, Guide>> {
   try {
     files = await fs.readdir(GUIDES_DIR);
   } catch {
-    _cache = {};
+    _cache = Object.create(null) as Record<string, Guide>;
     return _cache;
   }
-  const out: Record<string, Guide> = {};
+  // Null-prototype map so a slug like "__proto__" / "constructor" resolves to
+  // undefined (-> notFound), not Object.prototype/the Object fn (-> a 500).
+  const out: Record<string, Guide> = Object.create(null);
   for (const f of files) {
     if (!f.endsWith('.json')) continue;
     try {

@@ -133,6 +133,20 @@ test('unsafe hrefs (javascript:, data:) are rejected in deep links and next', ()
   assert.equal(g.steps?.[0].deepLink, undefined, 'javascript: deep link must be dropped');
   assert.equal(g.next, undefined, 'data: next href must be dropped');
 
+  // protocol-relative + backslash forms resolve off-origin -> must be rejected
+  for (const bad of ['//evil.com', '/\\evil.com', '/\\/evil.com']) {
+    const gg = coerceGuide(
+      {
+        ...CLASSIC,
+        steps: [{ heading: 'h', body: 'b', deep_link: { href: bad, label: 'x', look_for: 'y' } }],
+        next: { href: bad, label: 'n' },
+      },
+      'x',
+    );
+    assert.equal(gg?.steps?.[0].deepLink, undefined, `deep link ${bad} must be dropped`);
+    assert.equal(gg?.next, undefined, `next ${bad} must be dropped`);
+  }
+
   // sanity: safe hrefs (path + https) survive
   const ok = coerceGuide(
     {
@@ -173,6 +187,24 @@ test('duplicate author step ids fall back to positional ids (no key/anchor colli
   );
   assert.equal(g?.steps?.[0].id, 'dup');
   assert.equal(g?.steps?.[1].id, 'step-2'); // second dup -> positional
+});
+
+test('author id in the step-N namespace never collides with an auto-filled id', () => {
+  const g = coerceGuide(
+    {
+      ...CLASSIC,
+      steps: [
+        { id: 'step-2', heading: 'a', body: 'b' }, // author grabs the positional slot of step 2
+        { heading: 'c', body: 'd' }, // auto-fill would be step-2 -> must skip to step-3
+        { heading: 'e', body: 'f' }, // step-3 taken by... resolve to a free slot
+      ],
+    },
+    'x',
+  );
+  const ids = g?.steps?.map((s) => s.id) ?? [];
+  assert.equal(ids.length, 3);
+  assert.equal(new Set(ids).size, 3, `ids must be unique, got ${ids.join(',')}`);
+  assert.equal(ids[0], 'step-2');
 });
 
 test('citationToServerSlug strips namespace, rejects traversal', () => {

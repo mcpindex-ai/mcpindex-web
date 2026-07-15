@@ -2,27 +2,23 @@
 
 import { useState } from 'react';
 import { CopyField } from './CopyField';
+import type { DirectoryClient } from '@/lib/install/manifest';
 
 // Pick-your-host directory-install picker: the reader clicks their MCP host and
 // sees ONLY their exact command or config, instead of scanning a wall of every
 // host. Reduces "which of these is mine" friction to one click.
 //
-// DATA COMES IN AS PROPS. This is a client component, and lib/install/manifest.ts
-// must never be imported client-side (it would drag the method arrays + the
-// Buffer deep-link code into the browser bundle - see the module's own header).
-// The server registry (lib/guide-embeds) reads DIRECTORY_CLIENTS and passes a
-// plain, serializable subset here. Single source stays server-side.
+// DATA COMES IN AS PROPS, typed as DirectoryClient. The `import type` is erased
+// at compile time (zero runtime), so the manifest's method arrays + Buffer
+// deep-link code never enter this client bundle - the server registry
+// (lib/guide-embeds) passes the plain DIRECTORY_CLIENTS array in. Single source
+// stays server-side, and there is one shape of truth (no parallel HostOption).
+//
+// A11y: a group of toggle buttons (aria-pressed), NOT a tablist. A tablist would
+// promise arrow-key roving + a labelled tabpanel; a button group needs neither
+// and matches the sibling components/install/DirectoryInstall pattern.
 
-export type HostOption = {
-  id: string;
-  label: string;
-  kind: 'command' | 'config';
-  value: string;
-  /** File location for kind === 'config'. */
-  path?: string;
-};
-
-export function GuideHostPicker({ hosts }: { hosts: HostOption[] }) {
+export function GuideHostPicker({ hosts }: { hosts: DirectoryClient[] }) {
   const [activeId, setActiveId] = useState(hosts[0]?.id ?? '');
   const active = hosts.find((h) => h.id === activeId) ?? hosts[0];
   if (!active) return null;
@@ -32,15 +28,14 @@ export function GuideHostPicker({ hosts }: { hosts: HostOption[] }) {
       <div className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
         Your host
       </div>
-      <div className="mt-2 flex flex-wrap gap-1.5" role="tablist" aria-label="Pick your MCP host">
+      <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Pick your MCP host">
         {hosts.map((h) => {
           const on = h.id === active.id;
           return (
             <button
               key={h.id}
               type="button"
-              role="tab"
-              aria-selected={on}
+              aria-pressed={on}
               onClick={() => setActiveId(h.id)}
               className={`font-mono text-[11px] tracking-[0.04em] border px-2 py-1 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--color-accent)] ${
                 on

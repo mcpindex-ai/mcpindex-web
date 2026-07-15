@@ -60,10 +60,11 @@ test('evaluate walkthrough: host-picker switches the shown command on click', as
   await expect(page.getByText('claude mcp add', { exact: false })).toBeVisible();
 
   // …click Cursor and the shown command becomes the config JSON block.
-  const cursorTab = page.getByRole('tab', { name: 'Cursor' });
-  await expect(cursorTab).toBeVisible();
-  await cursorTab.click();
-  await expect(cursorTab).toHaveAttribute('aria-selected', 'true');
+  // The picker is a group of aria-pressed toggle buttons (not a tablist).
+  const cursorBtn = page.getByRole('button', { name: 'Cursor' });
+  await expect(cursorBtn).toBeVisible();
+  await cursorBtn.click();
+  await expect(cursorBtn).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByText('"mcpServers"', { exact: false })).toBeVisible();
   await expect(page.getByText('claude mcp add', { exact: false })).toHaveCount(0);
 });

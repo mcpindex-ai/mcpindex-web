@@ -1,8 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import {
   citationToServerSlug,
   getGuide,
@@ -10,7 +8,7 @@ import {
 } from '@/lib/guides-content';
 import { getServer } from '@/lib/registry';
 import { jsonLdSafe } from '@/lib/jsonLd';
-import { md, escapeAnglesOutsideCode } from '@/components/proseComponents';
+import { Prose } from '@/components/proseComponents';
 import { GuideWalkthrough } from '@/components/GuideWalkthrough';
 
 export const revalidate = 3600;
@@ -138,9 +136,7 @@ export default async function GuidePage(
         <GuideWalkthrough guide={guide} />
       ) : (
         <div className="mt-8">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={md}>
-            {escapeAnglesOutsideCode(guide.body)}
-          </ReactMarkdown>
+          <Prose>{guide.body}</Prose>
         </div>
       )}
 
