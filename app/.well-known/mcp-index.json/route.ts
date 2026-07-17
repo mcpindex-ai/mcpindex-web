@@ -195,6 +195,15 @@ export async function GET() {
       ],
     },
 
+    integrations: [
+      {
+        framework: 'mastra',
+        package: '@mcp-index/mastra',
+        registry: 'npm',
+        surface: 'beforeToolCall hook that calls check_tool_trust (advisory screen) before a tool runs; warn or enforce; fail-closed, no credentials',
+      },
+    ],
+
     rateLimit: {
       anonymous: '60 req/min/IP',
       contact: 'hello@mcpindex.ai for higher limits',

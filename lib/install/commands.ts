@@ -20,6 +20,8 @@ export const PACKAGES = {
   sdkTs: '@mcp-index/sdk',
   /** Advisory directory client (a normal single MCP server). */
   directoryServer: 'mcp-server-mcpindex',
+  /** Mastra beforeToolCall hook over the advisory screen. */
+  mastra: '@mcp-index/mastra',
   /** Docker MCP Registry image (build/sign pending review, PR #4441). */
   dockerImage: 'mcp/mcpindex',
   /** Official MCP Registry name (live). */

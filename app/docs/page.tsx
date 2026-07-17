@@ -229,6 +229,15 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
             <Mono>on_hold</Mono> / <Mono>onHold</Mono> handler; the wrapped session
             is never called on a hold.
           </p>
+          <p
+            className="mt-2 text-[13px] leading-[1.5]"
+            style={{ color: 'var(--color-mute)' }}
+          >
+            On Mastra? A dedicated package wires the advisory screen in as a{' '}
+            <Mono>beforeToolCall</Mono> hook (a different check from the drift pin
+            above - it asks whether a tool is vetted, not whether its contract
+            drifted): <Mono>npm i @mcp-index/mastra</Mono>, warn or enforce.
+          </p>
         </div>
 
         <div
@@ -482,7 +491,7 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
             `  encodeURIComponent(userTask));`,
             `const { recommendations } = await res.json();`,
           ]}
-          notes="Attribution appreciated. Email hello@mcpindex.ai if you want a higher rate limit."
+          notes="Using Mastra? npm i @mcp-index/mastra ships this advisory screen as a beforeToolCall hook (warn or enforce), no wiring. Attribution appreciated. Email hello@mcpindex.ai if you want a higher rate limit."
         />
         <UseCase
           letter="D"

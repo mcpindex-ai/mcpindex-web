@@ -1,0 +1,63 @@
+{
+  "slug": "integrate-mcpindex-mastra",
+  "kind": "walkthrough",
+  "order": 8,
+  "title": "Add mcpindex trust checks to a Mastra agent",
+  "meta_description": "A walkthrough for gating a Mastra agent's MCP tool calls with mcpindex: install the hook, add it to your agent in one line, choose warn vs enforce, and read the honest v1 limits. About 3 minutes.",
+  "h1": "Gate your Mastra agent's MCP tool calls",
+  "project": "mcpindex",
+  "updated": "2026-07-17",
+  "est_minutes": 3,
+  "outcome": "Your Mastra agent asks mcpindex whether an MCP tool is vetted before it invokes it, warning you (or blocking the call) on your terms, fail-closed.",
+  "body": "By default a Mastra agent calls whatever tools an MCP server hands it, trusting each tool's own description. The @mcp-index/mastra package adds a second opinion at the moment of the call: a beforeToolCall hook that checks mcpindex's advisory screen first. It is a client of the advisory screen (has this tool been vetted?), not the in-path drift gate (did this contract change since I pinned it?).",
+  "steps": [
+    {
+      "id": "install",
+      "heading": "Install the package",
+      "body": "Zero runtime dependencies; @mastra/core is an optional peer you already have.\n\n```bash\nnpm i @mcp-index/mastra\n```"
+    },
+    {
+      "id": "add-hook",
+      "heading": "Add the hook to your agent",
+      "body": "Pass the mcpindex server id whose tools your agent calls. That is the whole integration.\n\n```ts\nimport { Agent } from \"@mastra/core/agent\";\nimport { mcpindexGate } from \"@mcp-index/mastra\";\n\nconst agent = new Agent({\n  id: \"gated-agent\",\n  name: \"gated-agent\",\n  instructions: \"You are a helpful assistant.\",\n  model: \"openai/gpt-4o-mini\",\n  hooks: {\n    beforeToolCall: mcpindexGate({ serverId: \"your-mcp-server-id\" }),\n  },\n});\n```\n\nIn the default `warn` mode you now get a log line before every tool call with the tool's trust directive, and nothing about your agent's behavior changes."
+    },
+    {
+      "id": "modes",
+      "heading": "Choose warn or enforce",
+      "body": "Two policies, and the default is deliberately the non-breaking one.\n\n```ts\nmcpindexGate({ serverId: \"your-mcp-server-id\", policy: \"warn\" })    // default\nmcpindexGate({ serverId: \"your-mcp-server-id\", policy: \"enforce\" }) // fail-closed\n```\n\n- **warn** never blocks a call. It logs and annotates. Pure visibility.\n- **enforce** is fail-closed: only an explicit ALLOW directive proceeds; DENY, REVIEW, and UNVERIFIED are blocked, and the model receives a short 'not cleared' message in place of the tool's output."
+    },
+    {
+      "id": "honest-limits",
+      "heading": "Read the honest limit (important)",
+      "body": "The mcpindex public advisory API is at verdict contract 1.0.0, and it does not yet emit ALLOW or DENY - every verdict today is REVIEW or UNVERIFIED. So today this is a visibility and early-warning tool, and `warn` is the sane default. `enforce` blocks every tool call right now, because nothing is ALLOW yet; that is correct fail-closed behavior, and it becomes a real allow-list the moment mcpindex ships ALLOW/DENY verdicts, with no code change on your side. If mcpindex is slow or unreachable, the check fails closed to UNVERIFIED rather than silently trusting."
+    },
+    {
+      "id": "direct",
+      "heading": "Direct lookups (optional)",
+      "body": "Need the verdict without the hook? The client is exported.\n\n```ts\nimport { TrustClient } from \"@mcp-index/mastra\";\n\nconst client = new TrustClient();\nconst v = await client.checkTool(\"your-server-id\", \"send_email\");\nconsole.log(v.directive, v.honest_limits);\n```",
+      "deep_link": {
+        "href": "/docs#install-the-gate",
+        "label": "Full SDK and API reference",
+        "look_for": "the 'Ways to use the directory' HTTP endpoints and the SDK section."
+      }
+    }
+  ],
+  "next": {
+    "href": "/guides/is-it-safe-to-let-an-ai-agent-call-an-mcp-tool",
+    "label": "Is it safe to let an AI agent call an MCP tool?"
+  },
+  "depends_on": [
+    "mcpindex-mastra/src/gate.ts",
+    "app/api/v1/trust/tool/[server_id]/[tool_name]/route.ts"
+  ],
+  "faq": [
+    {
+      "q": "Does @mcp-index/mastra block untrusted MCP tools?",
+      "a": "In enforce mode it blocks any tool whose directive is not an explicit ALLOW. But note the mcpindex v1 public API only emits REVIEW or UNVERIFIED today (ALLOW/DENY are reserved), so today enforce blocks everything and warn (the default) is the useful mode: it flags unvetted tools without changing behavior. It becomes a real allow-list when ALLOW/DENY ship, with no code change."
+    },
+    {
+      "q": "What happens if mcpindex is unreachable?",
+      "a": "It fails closed. A timeout, network error, non-2xx, or unparseable response resolves to an UNVERIFIED verdict, never a silent ALLOW. Under warn it proceeds and logs; under enforce it blocks."
+    }
+  ]
+}

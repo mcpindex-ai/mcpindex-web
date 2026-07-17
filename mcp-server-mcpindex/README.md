@@ -97,6 +97,8 @@ npx -y mcp-server-mcpindex@latest
 
 `check_tool_trust` is the **directory client** integration surface (not the in-path `mcpindex-gate`). It lets agent frameworks (Composio, Mastra, LangChain, DSPy, raw LLM-tool-call loops) ask for an advisory screen verdict before dispatching a call. At v1 you will see REVIEW or UNVERIFIED — not a safety clearance.
 
+> **Using Mastra?** The sibling package `@mcp-index/mastra` ships this exact screen as a ready-made `beforeToolCall` hook - `npm i @mcp-index/mastra`, no wiring required.
+
 ### Verdict contract (v1)
 
 ```jsonc
@@ -216,6 +218,18 @@ if (verdict.directive !== 'ALLOW') {
 By default, calls go to `https://mcpindex.ai`. Override with `MCPINDEX_API_BASE=...` if you self-host.
 
 The free tier is rate-limited to 60 req/min/IP. Paid keys are coming for higher throughput and the full evidence-bearing verdict (evidence quotes, LLM rationale, chain history).
+
+## Related packages
+
+Three ways to bring mcpindex into an agent, for different surfaces:
+
+| Package | Install | What it does |
+| --- | --- | --- |
+| **`mcp-server-mcpindex`** *(this package)* | `npm i -g mcp-server-mcpindex` | Directory + advisory screen as an MCP server: find servers by task, and `check_tool_trust` before a call. |
+| **`@mcp-index/mastra`** | `npm i @mcp-index/mastra` | The same advisory screen wired into Mastra as a `beforeToolCall` hook (warn / enforce). |
+| **`@mcp-index/sdk`** | `npm i @mcp-index/sdk` | In-path drift gate: `wrap()` an MCP session and HOLD a call when a tool's contract drifts from your pin. |
+
+**Advisory screen vs drift gate:** this package and `@mcp-index/mastra` ask mcpindex "has this tool been vetted?" (a network verdict). `@mcp-index/sdk` asks a different question locally: "did this tool's contract change since I pinned it?" Complementary, and none depends on another.
 
 ## License
 

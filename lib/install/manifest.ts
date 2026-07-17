@@ -238,6 +238,7 @@ export const METHOD_MATRIX: MethodRow[] = [
   { surface: 'Directory (advisory)', method: 'Remote (hosted, no install)', command: 'https://mcpindex.ai/api/mcp' },
   { surface: 'Directory (advisory)', method: 'Claude Code', command: CLAUDE_MCP_ADD },
   { surface: 'Directory (advisory)', method: 'Gemini CLI', command: GEMINI_MCP_ADD },
+  { surface: 'Directory (advisory)', method: 'Mastra hook', command: `npm i ${PACKAGES.mastra}` },
   { surface: 'Directory (advisory)', method: 'MCP Registry', command: PACKAGES.registryName },
   { surface: 'Directory (advisory)', method: 'Docker', command: `docker mcp gateway run  # image ${PACKAGES.dockerImage}`, pending: 'Image build/sign under review (docker/mcp-registry#4441).' },
   { surface: 'Web (no install)', method: 'Scan your config', command: 'https://mcpindex.ai/scan' },
