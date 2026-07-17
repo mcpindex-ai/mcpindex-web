@@ -57,10 +57,16 @@ export function proxy(req: NextRequest) {
     p !== '/api/waitlist' &&
     p !== '/api/enterprise' &&
     p !== '/api/beacon' &&
-    !p.startsWith('/api/health/')
+    !p.startsWith('/api/health/') &&
+    // AEO measurement window: /llms.txt and /llms-full.txt are temporarily uncached (dynamic)
+    // so fetches can be counted. Un-caching removed their CDN shield, so bring them under the
+    // same per-IP limit to cap abuse of the now-per-request 4MB /llms-full.txt render.
+    p !== '/llms.txt' &&
+    p !== '/llms-full.txt'
   ) {
     return NextResponse.next();
   }
+
   // Vercel signs x-vercel-forwarded-for; raw x-forwarded-for is attacker-
   // controlled and can be used to bypass the limit or poison legit buckets.
   const ip =
@@ -69,11 +75,17 @@ export function proxy(req: NextRequest) {
     req.headers.get('x-real-ip') ||
     'unknown';
 
+  // Namespace the limit bucket by route class so the temporary /llms.* window does NOT deplete
+  // the same per-IP budget as /api/v1/* (a client pulling /llms-full.txt must not 429 its own
+  // /api/v1/search). Coarse two-class split keeps the map bounded.
+  const routeClass = p === '/llms.txt' || p === '/llms-full.txt' ? 'llms' : 'api';
+  const bucketKey = `${routeClass}:${ip}`;
+
   const now = Date.now();
   sweepBuckets(now);
-  const b = buckets.get(ip);
+  const b = buckets.get(bucketKey);
   if (!b || now - b.windowStart > WINDOW_MS || now < b.windowStart) {
-    buckets.set(ip, { count: 1, windowStart: now });
+    buckets.set(bucketKey, { count: 1, windowStart: now });
   } else {
     b.count++;
     if (b.count > MAX_PER_WINDOW) {
@@ -93,9 +105,22 @@ export function proxy(req: NextRequest) {
       );
     }
   }
+
+  // Cache-bust guard (after the per-IP limit, so a ?_=N flood is also rate-capped): /llms-full.txt
+  // is a ~4MB body edge-cached, but a distinct query string is a distinct CDN cache key -> forces a
+  // MISS + full 4MB origin render every request, defeating s-maxage. Collapse any query on the llms
+  // routes to the canonical (cacheable) URL with a tiny 308 so s-maxage actually bounds origin egress.
+  // Legit crawlers fetch the bare URL and never see this. PERMANENT (not part of the AEO-window
+  // revert): it protects the re-cached 4MB route from `?_=N` busting even at s-maxage=3600.
+  if ((p === '/llms.txt' || p === '/llms-full.txt') && req.nextUrl.search) {
+    const clean = new URL(req.url);
+    clean.search = '';
+    return NextResponse.redirect(clean, 308);
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/api/v1/:path*', '/api/waitlist', '/api/enterprise', '/api/beacon', '/api/health/:path*'],
+  matcher: ['/api/v1/:path*', '/api/waitlist', '/api/enterprise', '/api/beacon', '/api/health/:path*', '/llms.txt', '/llms-full.txt'],
 };

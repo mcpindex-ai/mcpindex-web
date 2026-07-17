@@ -112,7 +112,22 @@ async function readBundledSnapshot(): Promise<StoredSnapshot> {
   };
 }
 
-async function resolveSnapshot(): Promise<LoadedSnapshot> {
+let _resolveInflight: Promise<LoadedSnapshot> | null = null;
+
+// De-dup concurrent cold resolves. N simultaneous callers on a cold instance would otherwise EACH
+// pull the ~21MB KV snapshot and zod-parse ~16k entries (~200MB transient apiece) -> OOM/500s under
+// a traffic spike or parallel crawl. Sharing one resolve also fixes a body/version mismatch: every
+// concurrent cold caller then converges on the SAME winning snapshot, so `servers` and `version`
+// (read separately by loadServers vs loadSnapshotMeta) can never come from two different KV reads.
+function resolveSnapshot(): Promise<LoadedSnapshot> {
+  if (_resolveInflight) return _resolveInflight;
+  _resolveInflight = resolveSnapshotUncached().finally(() => {
+    _resolveInflight = null;
+  });
+  return _resolveInflight;
+}
+
+async function resolveSnapshotUncached(): Promise<LoadedSnapshot> {
   const kv = await readKVSnapshot();
   if (kv) {
     const parsed = SnapshotZ.safeParse(kv);
@@ -143,6 +158,8 @@ async function resolveSnapshot(): Promise<LoadedSnapshot> {
 }
 
 export async function loadSnapshot(): Promise<Snapshot> {
+  if (_cache) return _cache.loaded.snapshot; // warm short-circuit (mirror loadServers/loadSnapshotMeta):
+  // without this, a caller that ever went dynamic would re-resolve the 21MB snapshot per request.
   const loaded = await resolveSnapshot();
   return loaded.snapshot;
 }
@@ -175,7 +192,9 @@ export async function loadServers(): Promise<IndexedServer[]> {
     .map(normalize)
     .filter((s) => s.description && s.name && s.slug);
   _cache = { servers, loaded };
-  return servers;
+  // Return from _cache (not the local `servers`) so a caller's servers and a later loadSnapshotMeta()
+  // version always come from the same winning snapshot even if a concurrent cold caller reassigned _cache.
+  return _cache.servers;
 }
 
 export async function getServer(slug: string): Promise<IndexedServer | null> {
