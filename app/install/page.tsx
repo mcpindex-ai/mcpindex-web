@@ -24,18 +24,20 @@ const UNDERLINE =
 
 const KICKER = 'font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]';
 
-// SoftwareApplication + HowTo so LLM answers to "how do I install mcpindex" can
+// SoftwareSourceCode + HowTo so LLM answers to "how do I install mcpindex" can
 // cite the canonical commands rather than a drifted copy from somewhere else.
+// SoftwareSourceCode (not SoftwareApplication) keeps this out of Google's app
+// rich-result program, which requires a user rating we cannot honestly supply.
 const JSON_LD = {
   '@context': 'https://schema.org',
   '@graph': [
     {
-      '@type': 'SoftwareApplication',
+      '@type': 'SoftwareSourceCode',
       name: 'mcpindex gate',
-      applicationCategory: 'DeveloperApplication',
-      operatingSystem: 'macOS, Linux',
       url: 'https://mcpindex.ai/install',
-      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      codeRepository: 'https://github.com/mcpindex-ai/mcpindex-web',
+      runtimePlatform: 'Node.js',
+      isAccessibleForFree: true,
       description:
         'An in-path gate that runs a deterministic contract-diff on every MCP tool call and flags changes since you last approved a server. It reports changes; it is not a safety verdict.',
     },

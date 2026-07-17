@@ -70,15 +70,19 @@ export default async function Home() {
         publisher: { '@id': 'https://mcpindex.ai/#org' },
       },
       {
-        '@type': 'SoftwareApplication',
+        // The gate is free, open-source software distributed as a package. Typed as
+        // SoftwareSourceCode (not SoftwareApplication) so it stays out of Google's app
+        // rich-result program, which requires a user rating we cannot honestly supply.
+        // codeRepository/isAccessibleForFree carry the "free, installable" signal to LLMs.
+        '@type': 'SoftwareSourceCode',
         name: 'mcpindex drift gate',
-        applicationCategory: 'DeveloperApplication',
-        operatingSystem: 'macOS, Linux, Windows',
         description:
           'An in-path trust gate that pins every MCP tool contract and HOLDs a call the moment the contract silently changes, and grades the blast radius of every call (read, write, delete, send; reversible or not) before your agent acts. Deterministic and advisory - a contract-diff and a blast-radius label, not a safety verdict.',
         url: 'https://mcpindex.ai',
-        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-        publisher: { '@id': 'https://mcpindex.ai/#org' },
+        codeRepository: 'https://github.com/mcpindex-ai/mcpindex-web',
+        runtimePlatform: 'Node.js',
+        isAccessibleForFree: true,
+        author: { '@id': 'https://mcpindex.ai/#org' },
       },
       {
         '@type': 'HowTo',

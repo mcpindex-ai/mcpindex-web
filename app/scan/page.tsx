@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ScanTool } from '@/components/ScanTool';
+import { jsonLdSafe } from '@/lib/jsonLd';
 
 export const metadata: Metadata = {
   title: 'Scan your MCP setup - blast radius in your browser',
@@ -12,15 +13,18 @@ export const metadata: Metadata = {
 const UNDERLINE =
   'underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]';
 
-// SoftwareApplication JSON-LD so LLM answers + search can surface the free tool.
+// Service JSON-LD so LLM answers + search can surface the free tool. Typed as
+// Service (not SoftwareApplication) because it is an in-browser tool with nothing
+// to install or download, and to stay out of Google's app rich-result program,
+// which requires a user rating we cannot honestly supply.
 const JSON_LD = {
   '@context': 'https://schema.org',
-  '@type': 'SoftwareApplication',
+  '@type': 'Service',
   name: 'mcpindex scan',
-  applicationCategory: 'DeveloperApplication',
-  operatingSystem: 'Any',
+  serviceType: 'MCP configuration blast-radius scan',
   url: 'https://mcpindex.ai/scan',
-  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  isAccessibleForFree: true,
+  provider: { '@type': 'Organization', name: 'mcpindex.ai', url: 'https://mcpindex.ai' },
   description:
     'A free, in-browser tool that reads your MCP configuration and reports each tool’s blast radius: action type, side effect, reversibility, and off-machine egress. No install, no upload.',
 };
@@ -30,8 +34,8 @@ export default function ScanPage() {
     <article className="site-container pt-16 pb-24">
       <script
         type="application/ld+json"
-        // JSON_LD is a static constant; escape `<` anyway so a future dynamic field can't break out of the script.
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD).replace(/</g, '\\u003c') }}
+        // One escaping path across all four JSON-LD pages (also handles >, &, U+2028/9).
+        dangerouslySetInnerHTML={{ __html: jsonLdSafe(JSON_LD) }}
       />
 
       <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">Scan</div>

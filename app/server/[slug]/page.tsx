@@ -18,6 +18,7 @@ import { splitFlags } from '@/lib/badge';
 import { ContractDrift } from '@/components/ContractDrift';
 import { GateInstallBridge } from '@/components/GateInstallBridge';
 import { jsonLdSafe } from '@/lib/jsonLd';
+import { buildServerJsonLd, isSafeHref } from '@/lib/serverJsonLd';
 
 // Trust verdict shape (public projection of the v1.0.0 verdict contract).
 // Full back-history is not surfaced on this public page; the current verdict
@@ -95,47 +96,8 @@ export default async function ServerPage(
     .filter((s) => s.category === server.category && s.slug !== server.slug)
     .slice(0, 3);
 
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
-    name: server.title,
-    alternateName: server.name,
-    description: server.description,
-    softwareVersion: server.version,
-    applicationCategory: 'DeveloperApplication',
-    operatingSystem: 'Cross-platform',
-    url: `https://mcpindex.ai/server/${server.slug}`,
-    sameAs: [server.repositoryUrl, server.websiteUrl].filter(
-      (u): u is string => {
-        if (!u) return false;
-        try {
-          const p = new URL(u).protocol;
-          return p === 'http:' || p === 'https:';
-        } catch {
-          return false;
-        }
-      },
-    ),
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: score,
-      ratingCount: 1,
-      bestRating: 100,
-      worstRating: 0,
-    },
-  };
+  const jsonLd = buildServerJsonLd(server);
 
-  // Belt-and-suspenders URL scheme check (normalize() already strips non-http(s)
-  // at registry load; this guards future code paths that bypass it).
-  const isSafeHref = (u: string | undefined): u is string => {
-    if (!u) return false;
-    try {
-      const p = new URL(u).protocol;
-      return p === 'http:' || p === 'https:';
-    } catch {
-      return false;
-    }
-  };
   const repoHref = isSafeHref(server.repositoryUrl) ? server.repositoryUrl : undefined;
   const siteHref = isSafeHref(server.websiteUrl) ? server.websiteUrl : undefined;
   const remoteHref = isSafeHref(server.remoteUrl) ? server.remoteUrl : undefined;
