@@ -1,10 +1,22 @@
 import { getServerCount, getCategoryCount } from '@/lib/registry';
 import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
 import { gateInstallLine } from '@/lib/install/manifest';
+import { recordAeoFetch } from '@/lib/aeoCounter';
 
-export const revalidate = 3600;
+// Uncached for the AEO measurement window so every fetch invokes the function (see lib/aeoCounter.ts).
+// The counter is per-isolate/per-minute deduped, so it records ACTIVE-MINUTES (presence), not raw hits —
+// no-store here means /llms.txt catches every distinct active minute per family (finer than /llms-full's
+// s-maxage=60 floor), not raw fetch volume. REVERT after the window: restore `revalidate = 3600` and the
+// `s-maxage=3600` Cache-Control below.
+export const revalidate = 0;
 
-export async function GET() {
+export async function GET(req: Request) {
+  // Only GET is counted: Next 16 auto-implements HEAD from GET, which would otherwise double-count.
+  // Fire-and-forget (not awaited) so the counter adds zero TTFB. The synchronous console.log inside
+  // recordAeoFetch is the RELIABLE read path (always lands pre-response); the un-awaited Upstash write
+  // is best-effort — initiated synchronously but may be dropped if the isolate freezes post-response
+  // (fail-open, per-minute-deduped, self-heals next minute). recordAeoFetch never rejects.
+  if (req.method === 'GET') void recordAeoFetch('llms', req.headers.get('user-agent'));
   const [servers, categories] = await Promise.all([
     getServerCount(),
     getCategoryCount(),
@@ -123,7 +135,8 @@ Unofficial. Not affiliated with Anthropic.
   return new Response(body, {
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
-      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+      // Uncached during the AEO measurement window; revert to s-maxage=3600 afterward.
+      'Cache-Control': 'no-store',
     },
   });
 }
