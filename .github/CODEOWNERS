@@ -5,6 +5,13 @@
 #
 # Pair this file with branch protection: Settings -> Branches -> require review from
 # Code Owners on `main`. Without that toggle, CODEOWNERS only auto-requests review.
+#
+# SCOPE (honest): this governs the PR path only. The PRODUCTION write path is the mini32
+# pushback cron, which commits verdicts.json + the ledger and pushes to `main` DIRECTLY (no PR),
+# trusted-by-construction via the box's SSH key + git creds - the real trust anchor. So this
+# guard + CODEOWNERS defend against a malicious/accidental human PR, not the cron. Enable branch
+# protection with admin-bypass (enforce_admins:false) so the direct cron push still lands; a
+# naive "include administrators" toggle would wedge the 2-hourly sync.
 /data/adjudications.jsonl   @gautamgb
 /data/verdicts.json         @gautamgb
 

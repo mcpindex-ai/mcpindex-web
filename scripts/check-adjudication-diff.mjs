@@ -19,14 +19,19 @@
 // Usage:
 //   node scripts/check-adjudication-diff.mjs --base origin/main   # CI (reads git)
 //   node scripts/check-adjudication-diff.mjs --selftest           # unit self-check
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 const LEDGER = 'data/adjudications.jsonl';
 const DECISIONS = new Set(['confirmed', 'cleared']);
 const REQUIRED = ['slug', 'content_hash', 'decision', 'reason', 'by', 'at'];
+const MAX_BUF = 256 * 1024 * 1024; // git show of a growing append-only ledger; default 1 MiB would ENOBUFS
+// Invisible/zero-width chars that JS `\s` (U+FEFF) splits on but Python str.split() does NOT, so a
+// `confirmed` reason joined by them would count as multiple words in JS / one in Python and slip a
+// bare accusation past the floor. Strip them before counting so JS matches Python (fail-safe).
+const ZERO_WIDTH_RE = /[\uFEFF\u200B-\u200D\u2060]/g;
 // Mirror the write-layer public-ledger invariants from frontier_adjudication.py (OPERATORS,
 // _public_by, the confirmed word-floor). A line authored DIRECTLY in a PR never passed through
 // set_adjudication - the exact path this guard polices - so it must not be able to smuggle a
@@ -55,11 +60,13 @@ function badEntry(line, i) {
   }
   if (!DECISIONS.has(e.decision)) return `added line ${i + 1} has invalid decision "${e.decision}"`;
   if (!SHA256_RE.test(e.content_hash)) return `added line ${i + 1} content_hash is not a sha256:<64-hex> digest`;
-  // Mirror the write-layer invariants (see ALLOWED_BY / CONFIRMED_MIN_WORDS above).
-  if (!ALLOWED_BY.has(e.by)) {
+  // Mirror the write-layer invariants (see ALLOWED_BY / CONFIRMED_MIN_WORDS above). Case-fold `by`:
+  // _public_by matches OPERATORS case-insensitively, so "GB"/"GautamGB" are legitimate handles.
+  if (!ALLOWED_BY.has(e.by.toLowerCase())) {
     return `added line ${i + 1} has non-pseudonymized "by":"${e.by}" (must be an operator handle, "reviewer", or "unknown")`;
   }
-  if (e.decision === 'confirmed' && e.reason.trim().split(/\s+/).length < CONFIRMED_MIN_WORDS) {
+  const words = e.reason.replace(ZERO_WIDTH_RE, '').trim().split(/\s+/).filter(Boolean).length;
+  if (e.decision === 'confirmed' && words < CONFIRMED_MIN_WORDS) {
     return `added line ${i + 1} is a 'confirmed' accusation with a reason under ${CONFIRMED_MIN_WORDS} words`;
   }
   return null;
@@ -104,12 +111,13 @@ function gitShow(ref, file) {
       `Ensure the base is fetched (actions/checkout with fetch-depth: 0).`);
     process.exit(2);
   }
-  try {
-    execFileSync('git', ['cat-file', '-e', `${ref}:${file}`], q);
-  } catch {
-    return ''; // ref resolves but the ledger is absent in it -> genuinely a fresh ledger
-  }
-  return execFileSync('git', ['show', `${ref}:${file}`], { encoding: 'utf8' });
+  // Distinguish TRUE absence from any OTHER git failure. ls-tree prints one line iff the path
+  // exists in the (already-resolved) ref: empty stdout = genuinely absent (fresh ledger). A
+  // non-zero exit (corrupt object, pack error) is NOT swallowed as "absent" - it throws ->
+  // fail-closed, never silently an empty base.
+  const listed = execFileSync('git', ['ls-tree', ref, '--', file], { encoding: 'utf8' });
+  if (listed.trim() === '') return ''; // path absent in this ref -> genuinely a fresh ledger
+  return execFileSync('git', ['show', `${ref}:${file}`], { encoding: 'utf8', maxBuffer: MAX_BUF });
 }
 
 function selftest() {
@@ -145,7 +153,15 @@ function selftest() {
     console.error(`selftest: ${failed} case(s) failed`);
     process.exit(1);
   }
-  console.log(`selftest OK (${cases.length} cases)`);
+  // H1 integration: the pure cases above never touch gitShow. Exercise the real git path in a
+  // child - an unresolvable base ref MUST fail closed (exit 2), never read as an empty base.
+  const bogus = spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--base', '0'.repeat(40)],
+    { encoding: 'utf8' });
+  if (bogus.status !== 2) {
+    console.error(`SELFTEST FAIL: unresolvable base ref must exit 2 (fail-closed), got ${bogus.status}`);
+    process.exit(1);
+  }
+  console.log(`selftest OK (${cases.length} cases + H1 fail-closed)`);
 }
 
 function main() {
@@ -170,5 +186,7 @@ function main() {
   console.log('Adjudication-ledger guard OK (append-only, all added entries well-formed).');
 }
 
-// Only run the CLI when invoked directly - importing checkAppendOnly must not fire main().
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main();
+// Run the CLI when invoked with a recognized flag (deterministic - not a path comparison that
+// could fail-open on an unusual argv[0]). Importing checkAppendOnly (no such flag in a test's
+// argv) never fires main().
+if (process.argv.includes('--selftest') || process.argv.includes('--base')) main();
