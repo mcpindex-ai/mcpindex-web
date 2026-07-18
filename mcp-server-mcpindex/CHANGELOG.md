@@ -4,6 +4,14 @@ All notable changes to `mcp-server-mcpindex` are recorded here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.10] - 2026-07-18
+
+### Fixed
+
+- **`get_install_command` no longer advertises or mislabels a `zed` client.** `zed` was in the client enum but the install builder never produced a zed config, so a zed request silently returned a different client's config under a `zed` header. Removed `zed` from the enum, and `formatInstall` now labels any fallback honestly (never presents one client's config under another client's name).
+- **`check_tool_trust` schema example uses a real registry slug.** The `server_id` example was `"github"`, a short name that never resolves (always ERROR/UNVERIFIED); it now shows a real long-form slug (e.g. `io-github-microsoft-playwright-mcp`) and states it is not a short name.
+- **`compare_servers` description no longer promises "transport types"** that the output table never contained.
+
 ## [0.3.9] - 2026-07-15
 
 ### Changed

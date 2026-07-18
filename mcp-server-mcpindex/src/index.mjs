@@ -85,7 +85,11 @@ const TOOLS = [
         },
         client: {
           type: 'string',
-          enum: ['claude-desktop', 'claude-code', 'cursor', 'gemini-cli', 'cline', 'zed'],
+          // Only clients the API actually generates a config for. 'zed' was advertised
+          // but never produced (buildInstalls has no zed branch), so a zed request silently
+          // fell back to another client's config; dropped until a real zed generator exists.
+          // formatInstall also labels any fallback honestly as defense-in-depth.
+          enum: ['claude-desktop', 'claude-code', 'cursor', 'gemini-cli', 'cline'],
           description: 'Target client.',
         },
       },
@@ -119,7 +123,8 @@ const TOOLS = [
       properties: {
         server_id: {
           type: 'string',
-          description: 'Server slug (e.g. "github", "filesystem"). Same id used by search_mcp_servers.',
+          description:
+            'Registry slug from search_mcp_servers / recommend results, e.g. "io-github-microsoft-playwright-mcp" (NOT a short name like "github").',
         },
         tool_name: {
           type: 'string',
@@ -266,15 +271,24 @@ function formatSearch(data) {
 function formatInstall(server, client) {
   // server here is the per-server JSON we expose at /api/v1/server/<slug>.
   // Returns a code block with the appropriate install snippet.
-  const target = (server.installs ?? []).find((i) => i.client === client) ?? server.installs?.[0];
+  const exact = (server.installs ?? []).find((i) => i.client === client);
+  const target = exact ?? server.installs?.[0];
   if (!target) return `No install path available for ${server.name}`;
+  // Never mislabel a fallback as the requested client: if this server publishes no
+  // config for `client`, show the header for the config we're ACTUALLY returning and
+  // say so, so an agent doesn't paste (e.g.) a claude-desktop block into another client.
+  const shownClient = exact ? client : (target.client ?? client);
+  const fallbackNote = exact
+    ? ''
+    : `\n(No ${client}-specific config published for this server; showing the ${shownClient} config.)`;
   return [
-    `${server.title} (${server.name}) - ${client}`,
+    `${server.title} (${server.name}) - ${shownClient}`,
     '',
     target.json
       ? '```json\n' + target.json + '\n```'
       : '```bash\n' + target.command + '\n```',
     target.notes ? '\n' + target.notes : '',
+    fallbackNote,
     `\n${server.url ?? `https://mcpindex.ai/server/${server.slug}`}`,
   ].join('\n');
 }

@@ -7,6 +7,18 @@ import {
   type Lead,
   type LeadSource,
 } from '@/lib/brevo';
+import { checkLeadLimit } from '@/lib/ratelimit';
+
+function clientIp(req: NextRequest): string {
+  // Vercel sets x-vercel-forwarded-for at the edge (client cannot forge it);
+  // raw x-forwarded-for is the off-Vercel fallback only.
+  return (
+    req.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    'unknown'
+  );
+}
 
 /**
  * Contact / list capture.
@@ -58,6 +70,15 @@ export async function POST(req: NextRequest) {
       message: message || undefined,
     };
     if (isBrevoConfigured()) {
+      // Gate BEFORE any outbound mail: this branch emails the caller-supplied address
+      // and the operator. Rate-limit to stop email-bombing / operator-inbox flooding.
+      const limit = await checkLeadLimit(clientIp(req), new Date());
+      if (!limit.ok) {
+        return Response.json(
+          { error: 'rate_limited', scope: limit.reason },
+          { status: 429, headers: { 'retry-after': limit.reason === 'global' ? '3600' : '60' } },
+        );
+      }
       const [contact, welcome, notify] = await Promise.all([
         upsertLeadContact(lead),
         sendWelcomeEmail(lead),

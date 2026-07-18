@@ -13,6 +13,8 @@ import { POST as driftRegister } from '../../app/api/v1/drift/register/route';
 import { POST as receiptsPost } from '../../app/api/v1/receipts/route';
 import { GET as ledger } from '../../app/api/v1/ledger/route';
 import { GET as loginStart } from '../../app/api/auth/login/start/route';
+import { POST as waitlist } from '../../app/api/waitlist/route';
+import { POST as enterprise } from '../../app/api/enterprise/route';
 
 let restore: () => void;
 beforeEach(() => {
@@ -68,5 +70,30 @@ test('ledger: enabled + over-limit → 429', async () => {
 test('login/start: enabled + over-limit → 429', async () => {
   process.env.MCPINDEX_LOGIN_ENABLED = '1';
   const r = await callRoute(loginStart, '/api/auth/login/start', { ip: '9.9.9.9' });
+  assert.equal(r.status, 429);
+});
+
+// Lead forms email a caller-supplied recipient when Brevo is configured; the limiter must
+// 429 BEFORE any send. (overLimitRedis is active via beforeEach.)
+test('waitlist (contact, Brevo on): over-limit → 429 before send', async () => {
+  process.env.BREVO_API_KEY = 'k';
+  process.env.BREVO_LEADS_LIST_ID = '3';
+  const r = await callRoute(waitlist, '/api/waitlist', {
+    method: 'POST',
+    body: { email: 'a@b.co', source: 'contact' },
+    ip: '9.9.9.9',
+  });
+  assert.equal(r.status, 429);
+  assert.ok(r.headers.get('retry-after'));
+});
+
+test('enterprise (Brevo on): over-limit → 429 before send', async () => {
+  process.env.BREVO_API_KEY = 'k';
+  process.env.BREVO_LEADS_LIST_ID = '3';
+  const r = await callRoute(enterprise, '/api/enterprise', {
+    method: 'POST',
+    body: { email: 'a@b.co', company: 'Acme' },
+    ip: '9.9.9.9',
+  });
   assert.equal(r.status, 429);
 });

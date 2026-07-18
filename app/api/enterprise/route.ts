@@ -6,6 +6,16 @@ import {
   sendWelcomeEmail,
   type Lead,
 } from '@/lib/brevo';
+import { checkLeadLimit } from '@/lib/ratelimit';
+
+function clientIp(req: NextRequest): string {
+  return (
+    req.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    'unknown'
+  );
+}
 
 // Enterprise / procurement lead capture. This is the ONE gated conversation the
 // (public, ungated) whitepaper earns: "request the security & procurement pack".
@@ -46,6 +56,16 @@ export async function POST(req: NextRequest) {
   // Log-only when Brevo is not wired - the operator still has the Vercel log.
   if (!isBrevoConfigured()) {
     return Response.json({ ok: true, delivery: 'logged' });
+  }
+
+  // Gate BEFORE any outbound mail: this branch emails the caller-supplied address and
+  // the operator. Rate-limit to stop email-bombing / operator-inbox flooding.
+  const limit = await checkLeadLimit(clientIp(req), new Date());
+  if (!limit.ok) {
+    return Response.json(
+      { error: 'rate_limited', scope: limit.reason },
+      { status: 429, headers: { 'retry-after': limit.reason === 'global' ? '3600' : '60' } },
+    );
   }
 
   // Best-effort: contact upsert + welcome + operator notification. All fail-soft

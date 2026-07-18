@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo';
 import { loadServers } from '@/lib/registry';
 import { rankByQuality } from '@/lib/quality';
 import { listScreened } from '@/lib/verdicts';
@@ -7,12 +8,12 @@ import { CATEGORY_LABELS } from '@/lib/categorize';
 
 export const revalidate = 3600;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Maturity Rankings',
   description:
     'Top MCP servers ranked by listing maturity (Quality Score from public registry signals). Trust verdict shown separately - not used for sort order.',
-  alternates: { canonical: 'https://mcpindex.ai/leaderboard' },
-};
+  path: '/leaderboard',
+});
 
 const VERDICT_CHIP: Record<string, string> = {
   // ALLOW/DENY reserved at v1 screen - muted, not green/red clearance styling

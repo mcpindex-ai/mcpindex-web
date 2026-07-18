@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo';
 import { ArchDiagram } from '@/components/ArchDiagram';
 import { Disclose } from '@/components/Disclose';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Documentation',
   description:
     'Install the in-path drift gate: it HOLDs a call the moment an MCP tool’s contract silently changes, before your agent acts. Plus the free advisory directory - verdict API, drop-in MCP server, and recommend endpoint for discovery.',
-  alternates: { canonical: 'https://mcpindex.ai/docs' },
-};
+  path: '/docs',
+});
 
 export const revalidate = 3600;
 
@@ -122,7 +123,7 @@ curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
 // arg like -y does not survive a bare passthrough).
 "filesystem": {
   "command": "uvx",
-  "args": ["--from", "mcpindex-gate", "python", "-m", "tooling.cse.proxy",
+  "args": ["--from", "mcpindex-gate", "mcpindex-proxy",
            "--mcpindex-stdio",
            "--upstream-command", "npx",
            "--upstream-arg=-y",
@@ -198,15 +199,16 @@ curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
             For a server-side agent or custom orchestrator, wrap the MCP client
             session you already authenticated. One line; no per-server config, no
             token handling - the wrapper reuses the session&rsquo;s own
-            transport. <Mono>list_tools</Mono> / <Mono>call_tool</Mono> stay
-            drop-in.
+            transport. Your existing tool-list and tool-call seams stay drop-in
+            (<Mono>listTools</Mono>/<Mono>callTool</Mono> in TypeScript,{' '}
+            <Mono>list_tools</Mono>/<Mono>call_tool</Mono> in Python).
           </p>
           <pre className="mt-3 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
             <code>{`// TypeScript - npm i @mcp-index/sdk
 import { wrap, PreflightPin } from "@mcp-index/sdk";
 
 const guarded = wrap(session, { pin: new PreflightPin(), serverId: "your-server" });
-// use guarded.list_tools() / guarded.call_tool(...) exactly as before`}</code>
+// use guarded.listTools() / guarded.callTool(...) exactly as before`}</code>
           </pre>
           <pre className="mt-2 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
             <code>{`# Python - pip/uv: mcpindex-gate
@@ -652,9 +654,9 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
       {/* §07 - How this compares */}
       <Section number="07" title="How this compares">
         <p>
-          Five common ways an agent (or developer) finds an MCP server today. mcpindex.ai
-          is the only one that hits all four traits an agent at inference time actually
-          needs.
+          Five common ways an agent (or developer) finds an MCP server today, scored against
+          the four traits an agent at inference time actually needs. Read the table and judge
+          for yourself; the traits are the claim, not our position in it.
         </p>
 
         <div className="mt-4 site-table-wrap rule-t rule-b rule-l rule-r">

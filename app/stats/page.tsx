@@ -1,16 +1,17 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo';
 import { loadServers, loadSnapshot } from '@/lib/registry';
 import { ALL_CATEGORIES } from '@/lib/categorize';
 import { daysAgoCutoff } from '@/lib/time';
 
 export const revalidate = 3600;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Stats',
   description: 'Public dashboard. Servers indexed, categories tracked, snapshot freshness, all derived from public data.',
-  alternates: { canonical: 'https://mcpindex.ai/stats' },
-};
+  path: '/stats',
+});
 
 export default async function StatsPage() {
   const [servers, snap] = await Promise.all([loadServers(), loadSnapshot()]);

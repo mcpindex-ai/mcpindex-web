@@ -62,7 +62,10 @@ export async function generateMetadata(
   const server = await getServer(slug);
   if (!server) return { title: 'Server not found' };
   return {
-    title: `${server.title} - ${server.name}`,
+    // ~half of registry servers have title === name; emitting "X - X" duplicated the
+    // slug in the <title>. Collapse to a single value when they match (the parent
+    // template still appends "· mcpindex.ai").
+    title: server.title === server.name ? server.name : `${server.title} - ${server.name}`,
     description: server.description,
     alternates: { canonical: `https://mcpindex.ai/server/${server.slug}` },
     openGraph: {

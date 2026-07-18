@@ -1,5 +1,9 @@
 import { getServerCount } from '@/lib/registry';
 import { listScreened } from '@/lib/verdicts';
+// Read the shipped version from the in-repo package (single source of truth) so this
+// machine-readable descriptor can't drift from the real npm release — a stale version
+// here is exactly the silent-drift this product exists to catch.
+import { version as mcpServerVersion } from '../../../mcp-server-mcpindex/package.json';
 
 export const revalidate = 3600;
 
@@ -183,7 +187,7 @@ export async function GET() {
 
     mcpServer: {
       package: 'mcp-server-mcpindex',
-      version: '0.3.5',
+      version: mcpServerVersion,
       registry: 'npm',
       tools: [
         'recommend_mcp_for_task',

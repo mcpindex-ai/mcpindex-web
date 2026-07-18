@@ -25,7 +25,12 @@ export default async function ReceiptsPage({ searchParams }: PageProps) {
           <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">Your tool calls.</h1>
         </header>
         <p className="mt-8 text-[15px] leading-[1.55] text-[var(--color-mute)]">
-          Install ID missing or invalid.
+          Install ID missing or invalid. Your install ID is printed by the gate at install
+          time and is part of your receipts URL (<span className="font-mono">/receipts?id=…</span>).{' '}
+          <a href="/guides/read-your-gate-activity" className="underline">
+            How to read your gate activity
+          </a>
+          .
         </p>
       </article>
     );
@@ -48,7 +53,9 @@ export default async function ReceiptsPage({ searchParams }: PageProps) {
       {receipts.length === 0 ? (
         <div className="mt-10 border border-[var(--color-rule)] bg-white px-5 py-6">
           <p className="text-[15px] leading-[1.55] text-[var(--color-ink)]">
-            Your gate is running. Tool calls will appear here after your first gated call.
+            No activity yet for this install ID. If you just installed the gate, calls appear
+            here after your first gated call. If you reached this by typing the URL, double-check
+            the install ID printed by the gate at install time.
           </p>
         </div>
       ) : (

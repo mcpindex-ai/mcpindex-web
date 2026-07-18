@@ -5,6 +5,10 @@ import { toListItem } from '@/lib/projection';
 
 export const revalidate = 300;
 
+// Matches preflight/recommend (256): q becomes part of the s-maxage cache key, so
+// bound it to defend edge-cache-slot exhaustion. Real queries are short.
+const MAX_Q_LEN = 256;
+
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get('q')?.trim() ?? '';
   const category = req.nextUrl.searchParams.get('category')?.trim();
@@ -16,6 +20,14 @@ export async function GET(req: NextRequest) {
   if (!q) {
     return Response.json(
       { error: 'Missing required ?q=<query>' },
+      { status: 400, headers: { 'Cache-Control': 'no-store' } },
+    );
+  }
+  // Both q AND category are part of the raw query string → the s-maxage cache key.
+  // Capping only q leaves category as an unbounded cache-key-variety vector, so bound both.
+  if (q.length > MAX_Q_LEN || (category && category.length > MAX_Q_LEN)) {
+    return Response.json(
+      { error: 'query too long' },
       { status: 400, headers: { 'Cache-Control': 'no-store' } },
     );
   }

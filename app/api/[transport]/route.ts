@@ -94,13 +94,22 @@ function formatSearch(data: any): string {
 }
 
 function formatInstall(server: any, client: string): string {
-  const target = (server.installs ?? []).find((x: any) => x.client === client) ?? server.installs?.[0];
+  const exact = (server.installs ?? []).find((x: any) => x.client === client);
+  const target = exact ?? server.installs?.[0];
   if (!target) return `No install path available for ${server.name}`;
+  // Never mislabel a fallback as the requested client: if this server publishes no
+  // config for `client`, show the header for the config we're ACTUALLY returning and
+  // say so, so an agent doesn't paste (e.g.) a claude-desktop block into another client.
+  const shownClient = exact ? client : (target.client ?? client);
+  const fallbackNote = exact
+    ? ''
+    : `\n(No ${client}-specific config published for this server; showing the ${shownClient} config.)`;
   return [
-    `${server.title} (${server.name}) - ${client}`,
+    `${server.title} (${server.name}) - ${shownClient}`,
     '',
     target.json ? '```json\n' + target.json + '\n```' : '```bash\n' + target.command + '\n```',
     target.notes ? '\n' + target.notes : '',
+    fallbackNote,
     `\n${server.url ?? `https://mcpindex.ai/server/${server.slug}`}`,
   ].join('\n');
 }
@@ -119,7 +128,11 @@ function formatCompare(rows: any[]): string {
   return [fmt(header), fmt(widths.map((w) => '-'.repeat(w))), ...data.map(fmt)].join('\n');
 }
 
-const CLIENTS = ['claude-desktop', 'claude-code', 'cursor', 'gemini-cli', 'cline', 'zed'] as const;
+// Only clients that lib/installs.ts actually generates a config for. 'zed' was
+// advertised here but never produced (buildInstalls has no zed branch), so a
+// zed request silently fell back to another client's config; dropped until a real
+// zed generator exists. formatInstall also labels any fallback honestly as defense.
+const CLIENTS = ['claude-desktop', 'claude-code', 'cursor', 'gemini-cli', 'cline'] as const;
 
 const handler = createMcpHandler(
   (server) => {
@@ -206,7 +219,11 @@ const handler = createMcpHandler(
       {
         ...tmeta('check_tool_trust'),
         inputSchema: {
-          server_id: z.string().describe('Server slug (e.g. "github").'),
+          server_id: z
+            .string()
+            .describe(
+              'Registry slug from search_mcp_servers / recommend results, e.g. "io-github-microsoft-playwright-mcp" (NOT a short name like "github").',
+            ),
           tool_name: z.string().describe('Tool name as exposed by the server (e.g. "create_pull_request").'),
         },
       },
@@ -250,4 +267,30 @@ const handler = createMcpHandler(
   },
 );
 
-export { handler as GET, handler as POST, handler as DELETE };
+// mcp-handler holds the (unauthenticated) connection open to maxDuration when the
+// POST body is EMPTY or not valid JSON — a valid-JSON-but-not-JSON-RPC body already
+// fast-fails with -32700, so only unparseable/empty input hangs. That is a cheap
+// resource-exhaustion amplifier (each malformed POST ties up a serverless invocation
+// for the full timeout). Pre-validate the body here and return the same fast -32700
+// 400 for empty/unparseable input; valid JSON is forwarded to mcp-handler unchanged.
+function parseError(): Response {
+  return Response.json(
+    { jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error: Invalid JSON' } },
+    { status: 400 },
+  );
+}
+
+async function postHandler(req: Request, ctx: unknown): Promise<Response> {
+  const raw = await req.text();
+  if (raw.trim() === '') return parseError();
+  try {
+    JSON.parse(raw);
+  } catch {
+    return parseError();
+  }
+  // Body is a stream consumed once; rebuild an equivalent request for the handler.
+  const forwarded = new Request(req.url, { method: req.method, headers: req.headers, body: raw });
+  return (handler as (r: Request, c: unknown) => Promise<Response>)(forwarded, ctx);
+}
+
+export { handler as GET, postHandler as POST, handler as DELETE };

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo';
 import { notFound } from 'next/navigation';
 import { ledgerEnabled } from '@/lib/ledger';
 import { loadLedger } from '@/lib/ledgerServer';
@@ -12,12 +13,12 @@ import { fmtUtc } from '@/lib/dates';
 // self-heals per-request; this keeps the page close behind it).
 export const revalidate = 300;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Drift ledger',
   description:
     'Contract changes observed by the mcpindex crawler between daily registry snapshots. A contract diff, not a safety verdict.',
-  alternates: { canonical: 'https://mcpindex.ai/ledger' },
-};
+  path: '/ledger',
+});
 
 function truncateFp(fp: string): string {
   return fp.length >= 12 ? `${fp.slice(0, 12)}...` : fp;

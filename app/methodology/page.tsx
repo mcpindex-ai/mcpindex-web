@@ -1,13 +1,14 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo';
 import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Methodology',
   description:
     'How mcpindex evaluates MCP tools. At v1 the screen is semantic-only (an LLM judge reads the description); the deterministic conformance probe is built but has not run on the public corpus yet. Four-state verdict, OTS Bitcoin-anchored history; Bitcoin-finalized at N=6 confirmations (~1 hr); pending in ~10 min. Honest limits at v1 advisory.',
-  alternates: { canonical: 'https://mcpindex.ai/methodology' },
-};
+  path: '/methodology',
+});
 
 export default function MethodologyPage() {
   return (

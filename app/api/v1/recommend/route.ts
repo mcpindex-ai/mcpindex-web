@@ -4,6 +4,11 @@ import { rankServers, toRecommendations } from '@/lib/recommend';
 
 export const revalidate = 300;
 
+// Matches preflight's cap (256): a long arbitrary task becomes part of the s-maxage
+// cache key, so bound it to defend edge-cache-slot exhaustion. The ranker discards
+// most of a long task anyway (tokenize drops stopwords).
+const MAX_TASK_LEN = 256;
+
 // /api/v1/recommend?task=<natural language>
 // Returns top 3 servers with one-line reasoning each.
 // Without OPENAI_API_KEY: heuristic ranking by search score + quality.
@@ -16,6 +21,9 @@ export async function GET(req: NextRequest) {
       { error: 'Missing required ?task=<natural language description>' },
       { status: 400 },
     );
+  }
+  if (task.length > MAX_TASK_LEN) {
+    return Response.json({ error: 'task too long' }, { status: 400 });
   }
 
   const servers = await loadServers();

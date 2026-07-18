@@ -1,15 +1,16 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo';
 import { ProvenanceBadge } from '@/components/ProvenanceBadge';
 import { Seal } from '@/components/Seal';
 import { D3_CONFORMING_LABELS, D3_REQUIRED_LABELS } from '@/lib/honest-limits';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Trust',
   description:
     'How mcpindex earns trust: how a verdict is produced, Bitcoin-anchored provenance, the security and data model, compliance posture and roadmap, and live status. Honest about the edges.',
-  alternates: { canonical: 'https://mcpindex.ai/trust' },
-};
+  path: '/trust',
+});
 
 // The promoted trust surface (Vercel/Linear "/security" analog). A concise hub
 // that states the trust model plainly and routes to the deep method, status,

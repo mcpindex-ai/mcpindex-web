@@ -15,21 +15,49 @@ const SNAP_DIR = path.join(ROOT, 'data', 'snapshots');
 
 await fs.mkdir(SNAP_DIR, { recursive: true });
 
-const all = [];
-let cursor;
-let page = 0;
-const MAX_PAGES = 500;
+// The upstream registry is cursor-paginated at a hard limit=100 and has become
+// intermittently slow (individual pages have been observed taking 10s+). A single
+// `fetch` with no timeout + `process.exit(1)` on the first blip meant one slow or
+// flaky page aborted the whole ~160-page run and discarded everything already
+// fetched — which, combined with the 10-min CI timeout, is why daily syncs started
+// silently failing. Fetch each page with a per-request timeout and bounded retries
+// so a transient stall no longer kills the run.
+const PAGE_TIMEOUT_MS = 30_000;
+const PAGE_RETRIES = 4;
 
-while (page < MAX_PAGES) {
+async function fetchPage(cursor) {
   const url = new URL(BASE);
   url.searchParams.set('limit', '100');
   if (cursor) url.searchParams.set('cursor', cursor);
-  const res = await fetch(url);
-  if (!res.ok) {
-    console.error(`Page ${page} failed: ${res.status} ${res.statusText}`);
-    process.exit(1);
+  let lastErr;
+  for (let attempt = 0; attempt <= PAGE_RETRIES; attempt++) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(PAGE_TIMEOUT_MS) });
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+      return await res.json();
+    } catch (e) {
+      lastErr = e;
+      if (attempt < PAGE_RETRIES) {
+        const backoff = 1000 * 2 ** attempt; // 1s, 2s, 4s, 8s
+        process.stdout.write(`\n  page fetch failed (${e.message}); retry ${attempt + 1}/${PAGE_RETRIES} in ${backoff}ms`);
+        await new Promise((r) => setTimeout(r, backoff));
+      }
+    }
   }
-  const json = await res.json();
+  throw new Error(`page fetch exhausted retries: ${lastErr?.message ?? lastErr}`);
+}
+
+const all = [];
+let cursor;
+let page = 0;
+// Headroom well above the real registry size (~542 pages / 54k raw records as of
+// 2026-07-18). This is a runaway guard, NOT a size limit: hitting it is treated as a
+// hard failure below (never ship a truncated snapshot). Raise it if the registry ever
+// legitimately approaches this many pages.
+const MAX_PAGES = 2000;
+
+while (page < MAX_PAGES) {
+  const json = await fetchPage(cursor);
   all.push(...json.servers);
   page++;
   process.stdout.write(`\rPage ${page}: ${all.length} entries`);
@@ -38,10 +66,62 @@ while (page < MAX_PAGES) {
 }
 console.log(`\nTotal raw entries: ${all.length}`);
 
+// If we stopped because of the page cap while the registry still had a cursor, the
+// snapshot is TRUNCATED — servers past the cap would be silently missing (this exact bug
+// dropped ~1,445 latest servers when the cap was 500). Refuse to write a truncated
+// snapshot: fail HARD so CI goes red and the previous good snapshot stays live, rather
+// than silently deploying a partial directory. Raise MAX_PAGES (and the CI timeout if
+// needed) when this fires.
+if (cursor) {
+  console.error(
+    `::error::Registry sync hit MAX_PAGES=${MAX_PAGES} (${all.length} raw entries) with a ` +
+      `remaining cursor — snapshot would be TRUNCATED. Refusing to write. Raise MAX_PAGES.`,
+  );
+  process.exit(1);
+}
+
 const latest = all.filter(
   (e) => e._meta?.['io.modelcontextprotocol.registry/official']?.isLatest,
 );
 console.log(`Latest-version servers: ${latest.length}`);
+
+// Repair classic Windows-1252 double-encoding mojibake in registry descriptions/titles
+// (e.g. an em dash "—" arriving as "â€”"). ~31 source records carry this; it surfaces
+// verbatim in the public search API and MCP search tool. The map is intentionally
+// conservative — it only rewrites unambiguous garbage sequences, never valid text.
+const MOJIBAKE = [
+  // Windows-1252 family ("\u00E2\u20AC\u2026") — lead byte 0xE2 decodes to "\u00E2"
+  ['\u00E2\u20AC\u201D', '\u2014'], // em dash
+  ['\u00E2\u20AC\u201C', '\u2013'], // en dash
+  ['\u00E2\u20AC\u2122', '\u2019'], // right single quote
+  ['\u00E2\u20AC\u02DC', '\u2018'], // left single quote
+  ['\u00E2\u20AC\u0153', '\u201C'], // left double quote
+  ['\u00E2\u20AC\u00A6', '\u2026'], // ellipsis
+  ['\u00E2\u20AC', '\u201D'],        // right double quote (bare prefix — keep LAST in family)
+  // Windows-1255/Hebrew family ("\u05D2\u20AC\u2026") — lead byte 0xE2 decodes to "\u05D2"
+  ['\u05D2\u20AC\u201D', '\u2014'], // em dash (E2 80 94)
+  ['\u05D2\u20AC\u201C', '\u2013'], // en dash (E2 80 93)
+  ['\u05D2\u20AC\u2122', '\u2019'], // right single quote (E2 80 99)
+  ['\u05D2\u20AC\u02DC', '\u2018'], // left single quote (E2 80 98)
+  ['\u05D2\u20AC\u00A6', '\u2026'], // ellipsis (E2 80 A6)
+  ['\u05D2\u20AC', '\u2014'],        // bare 1255 prefix -> em dash (dominant case; keep LAST)
+];
+function fixMojibake(s) {
+  if (typeof s !== 'string') return s;
+  let out = s;
+  for (const [bad, good] of MOJIBAKE) out = out.split(bad).join(good);
+  return out;
+}
+let repaired = 0;
+for (const e of latest) {
+  const srv = e.server;
+  if (!srv) continue;
+  const d = fixMojibake(srv.description);
+  const t = fixMojibake(srv.title);
+  if (d !== srv.description) { srv.description = d; repaired++; }
+  if (t !== srv.title) srv.title = t;
+}
+console.log(`Repaired mojibake in ${repaired} descriptions`);
 
 const snapshot = {
   fetchedAt: new Date().toISOString(),

@@ -28,20 +28,20 @@ export const metadata: Metadata = {
     template: '%s · mcpindex.ai',
   },
   description: SITE_DESCRIPTION,
+  // Root openGraph/twitter carry ONLY site-wide defaults (siteName, card, site).
+  // Next.js merges metadata shallowly and does NOT derive og:title/description from a
+  // page's own title/description, so putting the homepage's og:title/description/url
+  // here made EVERY subpage that omits openGraph inherit them verbatim - shares of
+  // /install, /docs, /trust rendered and attributed as the homepage. The homepage's own
+  // OG now lives in app/page.tsx; other pages set theirs via lib/seo.ts `pageMetadata`,
+  // and pages that set none fall back to their own <title>/<meta description> (correct).
   openGraph: {
-    title: 'mcpindex - the in-path trust gate for agent tool calls',
-    description:
-      'The tool your agent trusted on Monday can change on Tuesday - silently. mcpindex holds the call before your agent acts on the change.',
-    url: 'https://mcpindex.ai',
     siteName: 'mcpindex.ai',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     site: '@mcpindex',
-    title: 'mcpindex - the in-path trust gate for agent tool calls',
-    description:
-      'The tool your agent trusted on Monday can change on Tuesday - silently. mcpindex holds the call before your agent acts on the change.',
   },
   alternates: {
     canonical: 'https://mcpindex.ai',

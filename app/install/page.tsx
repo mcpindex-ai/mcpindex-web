@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo';
 import Link from 'next/link';
 import { CopyField } from '@/components/CopyField';
 import { DirectoryInstall } from '@/components/install/DirectoryInstall';
@@ -12,12 +13,12 @@ import {
   vscodeDeepLink,
 } from '@/lib/install/manifest';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Install mcpindex - every way to add the gate',
   description:
     'Install the mcpindex gate to route your agent’s MCP tool calls through a deterministic contract-diff (curl, uv, pip, or the SDK), or add the advisory directory server one-click to Cursor, VS Code, Claude, Gemini and more. Free.',
-  alternates: { canonical: 'https://mcpindex.ai/install' },
-};
+  path: '/install',
+});
 
 const UNDERLINE =
   'underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]';
@@ -136,6 +137,13 @@ export default function InstallPage() {
               />
             ))}
           </div>
+
+          <p className="mt-3 text-[12.5px] leading-[1.55] text-[var(--color-mute)]">
+            The PyPI package is{' '}
+            <code className="font-mono text-[12px] text-[var(--color-cite)]">mcpindex-gate</code>.
+            An unrelated third-party package named{' '}
+            <code className="font-mono text-[12px]">mcp-index</code> exists on PyPI and is not us.
+          </p>
 
           <div className="mt-8">
             <div className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-cite)] mb-1.5">

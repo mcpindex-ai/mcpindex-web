@@ -219,6 +219,46 @@ export async function checkReceiptLimit(ip: string, now: Date): Promise<DriftLim
   }
 }
 
+// Lead-form send limit (/api/waitlist source=contact|pricing, /api/enterprise).
+// These are UNAUTHENTICATED and, when Brevo is wired, send a welcome email to the
+// CALLER-SUPPLIED address and notify the operator inbox on every accepted call.
+// Without a distributed cap an IP-rotating attacker can email-bomb arbitrary victims
+// with mcpindex-branded mail and flood the operator inbox, burning Brevo quota and
+// sender-domain reputation. proxy.ts's per-INSTANCE limit doesn't bound this across
+// serverless instances, so mirror the screen limiter: shared per-IP + a global daily
+// ceiling. Real lead volume is a handful/day, so the caps are deliberately low.
+// Fail-OPEN on Redis error/unconfigured (never break a genuine lead on a Redis hiccup;
+// proxy.ts remains the per-instance backstop).
+const LEAD_PER_IP_PER_MIN = 5;
+const LEAD_GLOBAL_PER_DAY = 500; // hard daily ceiling on outbound lead emails regardless of IP
+
+export type LeadLimit = { ok: true } | { ok: false; reason: 'ip' | 'global' };
+
+export async function checkLeadLimit(ip: string, now: Date): Promise<LeadLimit> {
+  const r = redis();
+  if (!r) return { ok: true }; // fail-open: proxy.ts per-instance limit is the backstop
+
+  const min = now.toISOString().slice(0, 16); // yyyy-mm-ddThh:mm
+  const day = now.toISOString().slice(0, 10); // yyyy-mm-dd
+  try {
+    // Per-IP first; an IP-blocked request must NOT count toward the global cap.
+    const ipKey = `lead:ip:${ip}:${min}`;
+    const c = await r.incr(ipKey);
+    if (c === 1) await r.expire(ipKey, 70);
+    if (c > LEAD_PER_IP_PER_MIN) return { ok: false, reason: 'ip' };
+
+    // Global daily circuit-breaker: bounds a distributed / IP-rotating email flood.
+    const gKey = `lead:global:${day}`;
+    const g = await r.incr(gKey);
+    if (g === 1) await r.expire(gKey, 90_000); // ~25h
+    if (g > LEAD_GLOBAL_PER_DAY) return { ok: false, reason: 'global' };
+
+    return { ok: true };
+  } catch {
+    return { ok: true }; // fail-open on Redis error
+  }
+}
+
 export async function checkDriftReadLimit(ip: string, now: Date): Promise<DriftLimit> {
   const r = redis();
   if (!r) return { ok: true }; // fail-open

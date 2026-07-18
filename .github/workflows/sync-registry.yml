@@ -16,7 +16,14 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # The upstream registry grew past ~16k servers and turned intermittently slow
+    # (pages have been seen taking 10s+ at a hard limit=100). A full ~160-page sync
+    # now regularly exceeds 10 minutes, so every scheduled run was being cancelled at
+    # the timeout — silently, since a cancel doesn't trigger failure alerts. 30 min
+    # gives headroom for the slow-upstream + retry path in scripts/sync-registry.mjs.
+    # The full ~542-page fetch is ~1min on a fast day but has been seen near ~34min when
+    # the upstream stalls on many pages; 45 absorbs a bad day without cancel-truncating.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -32,8 +39,12 @@ jobs:
         run: |
           ENTRIES=$(node -e "console.log(require('./data/snapshot.json').servers.length)")
           echo "Snapshot contains $ENTRIES active servers"
-          if [ "$ENTRIES" -lt 1000 ]; then
-            echo "::error::Suspiciously small snapshot ($ENTRIES). Refusing to commit. Likely a partial fetch or upstream API issue."
+          # Floor set proportional to the known corpus (~17.4k latest servers on
+          # 2026-07-18). A partial fetch that still clears the old floor of 1000 was
+          # slipping through; this catches a fetch that drops a large chunk of the tail.
+          # Raise it as the registry grows.
+          if [ "$ENTRIES" -lt 14000 ]; then
+            echo "::error::Suspiciously small snapshot ($ENTRIES, expected ~17k). Refusing to commit. Likely a partial fetch or upstream API issue."
             exit 1
           fi
           echo "ENTRIES=$ENTRIES" >> "$GITHUB_ENV"

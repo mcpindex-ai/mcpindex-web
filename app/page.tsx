@@ -19,8 +19,29 @@ import { Disclose } from '@/components/Disclose';
 import { Mark } from '@/components/Mark';
 import { Seal } from '@/components/Seal';
 import { listScreened } from '@/lib/verdicts';
+import type { Metadata } from 'next';
 
 export const revalidate = 3600;
+
+// Homepage-specific OG/twitter (moved out of the root layout so it no longer leaks
+// onto every subpage). Canonical stays the root domain (set in the root layout).
+export const metadata: Metadata = {
+  openGraph: {
+    title: 'mcpindex - the in-path trust gate for agent tool calls',
+    description:
+      'The tool your agent trusted on Monday can change on Tuesday - silently. mcpindex holds the call before your agent acts on the change.',
+    url: 'https://mcpindex.ai',
+    siteName: 'mcpindex.ai',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@mcpindex',
+    title: 'mcpindex - the in-path trust gate for agent tool calls',
+    description:
+      'The tool your agent trusted on Monday can change on Tuesday - silently. mcpindex holds the call before your agent acts on the change.',
+  },
+};
 
 export default async function Home() {
   const screened = await listScreened();
@@ -60,7 +81,6 @@ export default async function Home() {
         name: 'mcpindex.ai',
         url: 'https://mcpindex.ai',
         description: 'The in-path trust gate for agent tool calls.',
-        founder: { '@type': 'Person', name: 'Gautam Bharti' },
       },
       {
         '@type': 'WebSite',
@@ -451,7 +471,7 @@ export default async function Home() {
                 Search →
               </Link>
               <span className="font-mono text-[11.5px] text-[var(--color-mute)]">
-                {screened.length} tools screened · advisory, semantic-only
+                {screened.length} servers screened · advisory, semantic-only
               </span>
             </div>
           </Disclose>
