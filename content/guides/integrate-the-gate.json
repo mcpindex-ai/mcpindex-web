@@ -6,7 +6,7 @@
   "meta_description": "A walkthrough for embedding the mcpindex contract pin inside your own MCP server: install the SDK, wrap your session, handle a HOLD, and persist the baseline correctly for TypeScript vs Python. About 3 minutes.",
   "h1": "Integrate the gate in your own code",
   "project": "mcpindex",
-  "updated": "2026-07-15",
+  "updated": "2026-07-18",
   "est_minutes": 3,
   "outcome": "The gate's contract pin running inside your own MCP server in a few lines, with the HOLD handled and the baseline persisted correctly for your language.",
   "body": "You do not have to run the standalone gate to get contract pinning. If you already have an authenticated MCP client session in your own code, the SDK wraps it so the pin runs in-path, with no per-server config and no token handling.",

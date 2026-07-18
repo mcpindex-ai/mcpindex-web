@@ -47,8 +47,8 @@
     "label": "Is it safe to let an AI agent call an MCP tool?"
   },
   "depends_on": [
-    "mcpindex-mastra/src/gate.ts",
-    "app/api/v1/trust/tool/[server_id]/[tool_name]/route.ts"
+    "app/api/v1/trust/tool/[server_id]/[tool_name]/route.ts",
+    "lib/verdicts.ts"
   ],
   "faq": [
     {
