@@ -27,6 +27,14 @@ import { pathToFileURL } from 'node:url';
 const LEDGER = 'data/adjudications.jsonl';
 const DECISIONS = new Set(['confirmed', 'cleared']);
 const REQUIRED = ['slug', 'content_hash', 'decision', 'reason', 'by', 'at'];
+// Mirror the write-layer public-ledger invariants from frontier_adjudication.py (OPERATORS,
+// _public_by, the confirmed word-floor). A line authored DIRECTLY in a PR never passed through
+// set_adjudication - the exact path this guard polices - so it must not be able to smuggle a
+// leaked personal name or an unsubstantiated accusation past the structural check. Keep these
+// in sync with OPERATORS / _CONFIRMED_MIN_WORDS on the Python side.
+const ALLOWED_BY = new Set(['gautamgb', 'gb', 'reviewer', 'unknown']); // OPERATORS ∪ {reviewer, unknown}
+const CONFIRMED_MIN_WORDS = 4;
+const SHA256_RE = /^sha256:[0-9a-f]{64}$/;
 
 /** Split a ledger blob into non-empty trimmed lines (trailing newline / blank lines ignored). */
 function lines(text) {
@@ -46,7 +54,14 @@ function badEntry(line, i) {
     if (typeof e[f] !== 'string' || e[f].trim() === '') return `added line ${i + 1} missing/empty field "${f}"`;
   }
   if (!DECISIONS.has(e.decision)) return `added line ${i + 1} has invalid decision "${e.decision}"`;
-  if (!e.content_hash.startsWith('sha256:')) return `added line ${i + 1} content_hash is not sha256-prefixed`;
+  if (!SHA256_RE.test(e.content_hash)) return `added line ${i + 1} content_hash is not a sha256:<64-hex> digest`;
+  // Mirror the write-layer invariants (see ALLOWED_BY / CONFIRMED_MIN_WORDS above).
+  if (!ALLOWED_BY.has(e.by)) {
+    return `added line ${i + 1} has non-pseudonymized "by":"${e.by}" (must be an operator handle, "reviewer", or "unknown")`;
+  }
+  if (e.decision === 'confirmed' && e.reason.trim().split(/\s+/).length < CONFIRMED_MIN_WORDS) {
+    return `added line ${i + 1} is a 'confirmed' accusation with a reason under ${CONFIRMED_MIN_WORDS} words`;
+  }
   return null;
 }
 
@@ -75,16 +90,32 @@ export function checkAppendOnly(oldText, newText) {
 }
 
 function gitShow(ref, file) {
+  // FAIL-CLOSED on any git error. A transient/unresolvable-ref failure must NEVER read as
+  // "base ledger was empty" - that would treat every surviving prior line as a fresh addition
+  // and silently void the append-only invariant (H1). So: verify the ref RESOLVES first (hard
+  // exit if not - the base wasn't fetched; see fetch-depth: 0 in the workflow); only THEN is an
+  // absent file a legitimate empty base. A `git show` that errors after both checks is anomalous
+  // and is left to throw (uncaught -> non-zero exit -> CI fails).
+  const q = { stdio: ['ignore', 'ignore', 'ignore'] };
   try {
-    return execFileSync('git', ['show', `${ref}:${file}`], { encoding: 'utf8' });
+    execFileSync('git', ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], q);
   } catch {
-    return ''; // file absent in base -> everything is an addition
+    console.error(`FATAL: base ref "${ref}" does not resolve - cannot verify append-only. ` +
+      `Ensure the base is fetched (actions/checkout with fetch-depth: 0).`);
+    process.exit(2);
   }
+  try {
+    execFileSync('git', ['cat-file', '-e', `${ref}:${file}`], q);
+  } catch {
+    return ''; // ref resolves but the ledger is absent in it -> genuinely a fresh ledger
+  }
+  return execFileSync('git', ['show', `${ref}:${file}`], { encoding: 'utf8' });
 }
 
 function selftest() {
-  const okOld = '{"a":1}\n{"b":2}\n';
-  const good = (e) => JSON.stringify({ slug: 's', content_hash: 'sha256:x', decision: 'cleared', reason: 'r', by: 'gb', at: 't', ...e });
+  const okOld = '{"a":1}\n{"b":2}\n'; // prior lines are an immutable prefix, never re-validated
+  const H = 'sha256:' + 'a'.repeat(64);
+  const good = (e) => JSON.stringify({ slug: 's', content_hash: H, decision: 'cleared', reason: 'r', by: 'gb', at: 't', ...e });
   const cases = [
     ['append one good line', okOld, okOld + good({}) + '\n', 0],
     ['no change', okOld, okOld, 0],
@@ -94,6 +125,11 @@ function selftest() {
     ['added line missing field', okOld, okOld + '{"slug":"s"}\n', 1],
     ['added line bad decision', okOld, okOld + good({ decision: 'banana' }) + '\n', 1],
     ['added line unprefixed hash', okOld, okOld + good({ content_hash: 'deadbeef' }) + '\n', 1],
+    ['added line bare-prefix hash', okOld, okOld + good({ content_hash: 'sha256:' }) + '\n', 1],
+    ['added line leaked personal name in by', okOld, okOld + good({ by: 'Jane Q' }) + '\n', 1],
+    ['added line by=reviewer pseudonym', okOld, okOld + good({ by: 'reviewer' }) + '\n', 0],
+    ['confirmed with thin (1-word) reason', okOld, okOld + good({ decision: 'confirmed', reason: 'scam' }) + '\n', 1],
+    ['confirmed with substantiated reason', okOld, okOld + good({ decision: 'confirmed', reason: 'requests env secrets unrelated to file read' }) + '\n', 0],
     ['empty base, one good add', '', good({}) + '\n', 0],
   ];
   let failed = 0;

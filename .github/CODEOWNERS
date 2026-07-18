@@ -7,3 +7,11 @@
 # Code Owners on `main`. Without that toggle, CODEOWNERS only auto-requests review.
 /data/adjudications.jsonl   @gautamgb
 /data/verdicts.json         @gautamgb
+
+# Self-protect the enforcer. The guard runs from the PR HEAD (pull_request trigger), so a PR
+# that neuters the script/workflow AND forges a ledger line would run the neutered version and
+# pass. Requiring operator review on the guard itself (+ this file) closes that: the two bypass
+# paths - forge the data, or disable the check - can no longer both land without a human.
+/scripts/check-adjudication-diff.mjs        @gautamgb
+/.github/workflows/adjudication-guard.yml   @gautamgb
+/.github/CODEOWNERS                          @gautamgb
