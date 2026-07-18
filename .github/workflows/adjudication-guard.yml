@@ -1,0 +1,35 @@
+name: adjudication-ledger guard
+
+# Structural integrity gate for the human-adjudication ledger. CODEOWNERS gates WHO can
+# touch data/adjudications.jsonl; this gates HOW - append-only + every added entry well-
+# formed - so a forged/rewritten decision fails CI even if a reviewer misses the diff.
+# See scripts/check-adjudication-diff.mjs for the rationale. ubuntu-only (macOS bills 10x).
+
+on:
+  pull_request:
+    paths:
+      - 'data/adjudications.jsonl'
+      - 'scripts/check-adjudication-diff.mjs'
+      - '.github/workflows/adjudication-guard.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # need the base ref to diff the ledger against
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Self-check the guard
+        run: node scripts/check-adjudication-diff.mjs --selftest
+
+      - name: Ledger diff guard (append-only + well-formed)
+        run: node scripts/check-adjudication-diff.mjs --base "origin/${{ github.base_ref }}"

@@ -1,0 +1,9 @@
+# Trust-critical data files. A one-line diff to either can INVERT a published verdict
+# (flagged -> trusted): the adjudication ledger is re-applied to the corpus every sync
+# cycle, and the verdict store is what agents consume. Require operator review on any
+# change so a data-file diff cannot slip through unnoticed in a larger PR.
+#
+# Pair this file with branch protection: Settings -> Branches -> require review from
+# Code Owners on `main`. Without that toggle, CODEOWNERS only auto-requests review.
+/data/adjudications.jsonl   @gautamgb
+/data/verdicts.json         @gautamgb
