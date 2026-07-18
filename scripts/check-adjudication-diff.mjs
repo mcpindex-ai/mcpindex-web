@@ -165,9 +165,10 @@ function selftest() {
   // --wellformed-only integration (SC-8): a marker-polluted ledger must exit 1; a clean one exit 0.
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'wfo-'));
   fs.mkdirSync(path.join(tmp, 'data'));
-  const wfo = (content) => {
-    fs.writeFileSync(path.join(tmp, 'data', 'adjudications.jsonl'), content);
-    return spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--wellformed-only'],
+  const ledgerP = path.join(tmp, 'data', 'adjudications.jsonl');
+  const wfo = (content, extra = []) => {
+    fs.writeFileSync(ledgerP, content);
+    return spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--wellformed-only', ...extra],
       { cwd: tmp, encoding: 'utf8' }).status;
   };
   const H2 = 'sha256:' + 'a'.repeat(64);
@@ -175,18 +176,43 @@ function selftest() {
   if (wfo(goodLine) !== 0) { console.error('SELFTEST FAIL: --wellformed-only rejected a clean ledger'); process.exit(1); }
   const marker = goodLine + '<<<<<<< Updated upstream\n' + goodLine; // an autostash conflict marker (SC-7)
   if (wfo(marker) !== 1) { console.error('SELFTEST FAIL: --wellformed-only must reject a conflict-marker line'); process.exit(1); }
+  // append-only floor (F1): a ledger at/above the committed count passes; below it (shrink) is refused
+  if (wfo(goodLine, ['--min-lines', '1']) !== 0) { console.error('SELFTEST FAIL: 1 line >= floor 1 must pass'); process.exit(1); }
+  if (wfo(goodLine, ['--min-lines', '2']) !== 1) { console.error('SELFTEST FAIL: 1 line < floor 2 must fail (shrink)'); process.exit(1); }
+  // absent ledger with a positive floor -> refuse (a staged deletion would wipe the ledger)
+  fs.rmSync(ledgerP, { force: true });
+  const absentFloor = spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--wellformed-only', '--min-lines', '1'], { cwd: tmp, encoding: 'utf8' }).status;
+  if (absentFloor !== 1) { console.error('SELFTEST FAIL: absent ledger with floor>0 must refuse'); process.exit(1); }
   fs.rmSync(tmp, { recursive: true, force: true });
-  console.log(`selftest OK (${cases.length} cases + H1 fail-closed + wellformed-only)`);
+  console.log(`selftest OK (${cases.length} cases + H1 fail-closed + wellformed-only + append-only floor)`);
 }
 
 // SC-8: validate EVERY non-blank line of the working-tree ledger is well-formed (valid JSON, required
 // fields, content_hash sha256, by-allowlist, confirmed floor). The cron runs this pre-commit so a
-// conflict marker or a malformed/field-forged line can never ship on the direct-push path. No git,
-// no append-only check (merge=union may legitimately reorder). Absent ledger = nothing to ship = ok.
-function wellformedOnly() {
+// conflict marker or a malformed/field-forged line can never ship on the direct-push path (which
+// bypasses the PR-only CI guard). Reuses badEntry() -> no cross-language parity drift.
+//
+// `minLines` is the APPEND-ONLY FLOOR: the cron passes the committed (git HEAD) ledger line count, so a
+// ledger that went ABSENT or SHRANK (an errant rm / truncation / a merge that dropped prior `confirmed`
+// lines) is caught here instead of `git add` silently STAGING A DELETION that wipes the entire trust
+// ledger to prod (the overlay would then strip every human decision and the heartbeat would still be
+// green). A fresh clone with no committed ledger passes minLines=0. This is the tamper-evidence the
+// direct path otherwise lacks (the append-only prefix check only runs on the --base CI path).
+function wellformedOnly(minLines) {
   const p = path.join(process.cwd(), LEDGER);
-  if (!fs.existsSync(p)) { console.log('ledger absent; nothing to validate'); return; }
+  if (!fs.existsSync(p)) {
+    if (minLines > 0) {
+      console.error(`Adjudication-ledger ABSENT but ${minLines} committed entries expected - refusing (a staged deletion would wipe the ledger).`);
+      process.exit(1);
+    }
+    console.log('ledger absent; nothing to validate (no committed entries expected)');
+    return;
+  }
   const ls = lines(fs.readFileSync(p, 'utf8'));
+  if (ls.length < minLines) {
+    console.error(`Adjudication-ledger SHRANK: ${ls.length} lines < ${minLines} committed (append-only violated - truncation/rewrite/dropped entries).`);
+    process.exit(1);
+  }
   for (let i = 0; i < ls.length; i++) {
     const err = badEntry(ls[i], i);
     if (err) {
@@ -195,13 +221,17 @@ function wellformedOnly() {
       process.exit(1);
     }
   }
-  console.log(`ledger well-formed (${ls.length} entries).`);
+  console.log(`ledger well-formed (${ls.length} entries, floor ${minLines}).`);
 }
 
 function main() {
   const args = process.argv.slice(2);
   if (args.includes('--selftest')) return selftest();
-  if (args.includes('--wellformed-only')) return wellformedOnly();
+  if (args.includes('--wellformed-only')) {
+    const mi = args.indexOf('--min-lines');
+    const n = mi !== -1 ? parseInt(args[mi + 1], 10) : 0;
+    return wellformedOnly(Number.isFinite(n) && n > 0 ? n : 0);
+  }
   const bi = args.indexOf('--base');
   if (bi === -1 || !args[bi + 1]) {
     console.error('usage: check-adjudication-diff.mjs --base <ref> | --selftest');
