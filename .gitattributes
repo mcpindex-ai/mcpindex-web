@@ -1,0 +1,5 @@
+# The adjudication ledger is APPEND-ONLY. Union-merge it so concurrent appends (a guard-allowed PR
+# append + the pushback cron's append) auto-combine instead of producing a rebase conflict that would
+# wedge the sync (or, worse, leave conflict markers a direct push could ship). `union` is a git
+# BUILT-IN driver (no custom command), so this cannot introduce a code-exec merge driver.
+data/adjudications.jsonl merge=union

@@ -21,6 +21,7 @@
 //   node scripts/check-adjudication-diff.mjs --selftest           # unit self-check
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -161,12 +162,46 @@ function selftest() {
     console.error(`SELFTEST FAIL: unresolvable base ref must exit 2 (fail-closed), got ${bogus.status}`);
     process.exit(1);
   }
-  console.log(`selftest OK (${cases.length} cases + H1 fail-closed)`);
+  // --wellformed-only integration (SC-8): a marker-polluted ledger must exit 1; a clean one exit 0.
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'wfo-'));
+  fs.mkdirSync(path.join(tmp, 'data'));
+  const wfo = (content) => {
+    fs.writeFileSync(path.join(tmp, 'data', 'adjudications.jsonl'), content);
+    return spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--wellformed-only'],
+      { cwd: tmp, encoding: 'utf8' }).status;
+  };
+  const H2 = 'sha256:' + 'a'.repeat(64);
+  const goodLine = JSON.stringify({ slug: 's', content_hash: H2, decision: 'cleared', reason: 'r', by: 'gb', at: 't' }) + '\n';
+  if (wfo(goodLine) !== 0) { console.error('SELFTEST FAIL: --wellformed-only rejected a clean ledger'); process.exit(1); }
+  const marker = goodLine + '<<<<<<< Updated upstream\n' + goodLine; // an autostash conflict marker (SC-7)
+  if (wfo(marker) !== 1) { console.error('SELFTEST FAIL: --wellformed-only must reject a conflict-marker line'); process.exit(1); }
+  fs.rmSync(tmp, { recursive: true, force: true });
+  console.log(`selftest OK (${cases.length} cases + H1 fail-closed + wellformed-only)`);
+}
+
+// SC-8: validate EVERY non-blank line of the working-tree ledger is well-formed (valid JSON, required
+// fields, content_hash sha256, by-allowlist, confirmed floor). The cron runs this pre-commit so a
+// conflict marker or a malformed/field-forged line can never ship on the direct-push path. No git,
+// no append-only check (merge=union may legitimately reorder). Absent ledger = nothing to ship = ok.
+function wellformedOnly() {
+  const p = path.join(process.cwd(), LEDGER);
+  if (!fs.existsSync(p)) { console.log('ledger absent; nothing to validate'); return; }
+  const ls = lines(fs.readFileSync(p, 'utf8'));
+  for (let i = 0; i < ls.length; i++) {
+    const err = badEntry(ls[i], i);
+    if (err) {
+      console.error(`Adjudication-ledger WELL-FORMEDNESS FAILED: ${err}`);
+      console.error('A conflict marker or malformed/forged line must NEVER be committed to the ledger.');
+      process.exit(1);
+    }
+  }
+  console.log(`ledger well-formed (${ls.length} entries).`);
 }
 
 function main() {
   const args = process.argv.slice(2);
   if (args.includes('--selftest')) return selftest();
+  if (args.includes('--wellformed-only')) return wellformedOnly();
   const bi = args.indexOf('--base');
   if (bi === -1 || !args[bi + 1]) {
     console.error('usage: check-adjudication-diff.mjs --base <ref> | --selftest');
@@ -189,4 +224,4 @@ function main() {
 // Run the CLI when invoked with a recognized flag (deterministic - not a path comparison that
 // could fail-open on an unusual argv[0]). Importing checkAppendOnly (no such flag in a test's
 // argv) never fires main().
-if (process.argv.includes('--selftest') || process.argv.includes('--base')) main();
+if (process.argv.includes('--selftest') || process.argv.includes('--base') || process.argv.includes('--wellformed-only')) main();
