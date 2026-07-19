@@ -226,6 +226,15 @@ export default async function LedgerPage() {
                                 : k}
                             </span>
                           ))}
+                          {e.version_delta && e.version_delta !== 'not-recorded' && (
+                            <span className="inline-block font-mono text-[10.5px] tracking-[0.04em] px-2 py-0.5 border border-[var(--color-accent)] text-[var(--color-ink)]">
+                              {e.version_delta === 'same'
+                                ? 'silent (version unchanged)'
+                                : e.version_delta === 'changed'
+                                  ? 'version changed'
+                                  : 'no version declared'}
+                            </span>
+                          )}
                         </div>
                       ) : (
                         <>

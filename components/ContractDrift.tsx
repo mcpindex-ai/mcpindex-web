@@ -17,6 +17,9 @@ interface ServerDrift {
   safetyRelevant: boolean;
   ledgerGeneratedAt: string;
   toolsetReplaced?: boolean;
+  versionSameCount?: number;
+  versionChangedCount?: number;
+  versionUndeclaredCount?: number;
 }
 
 export function ContractDrift({ serverId }: { serverId: string }) {
@@ -75,6 +78,30 @@ export function ContractDrift({ serverId }: { serverId: string }) {
                 </span>
               )}
             </div>
+            {(() => {
+              const same = drift.versionSameCount ?? 0;
+              const changed = drift.versionChangedCount ?? 0;
+              const undeclared = drift.versionUndeclaredCount ?? 0;
+              if (same + changed + undeclared === 0) return null;
+              if (undeclared > 0 && same === 0 && changed === 0) {
+                return (
+                  <p className="mt-3 text-[13px] leading-[1.55] text-[var(--color-cite)]">
+                    This server did not declare a version when these changes were observed, so
+                    they cannot be classified as silent or version-changed.
+                  </p>
+                );
+              }
+              return (
+                <p className="mt-3 text-[13px] leading-[1.55] text-[var(--color-cite)]">
+                  {same > 0 && `${same} change${same === 1 ? '' : 's'} with the declared version unchanged`}
+                  {same > 0 && changed > 0 && ' · '}
+                  {changed > 0 && `${changed} change${changed === 1 ? '' : 's'} with a version change`}
+                  {undeclared > 0 &&
+                    ` · ${undeclared} observed while no version was declared`}
+                  .
+                </p>
+              );
+            })()}
             {drift.kinds.length > 0 && (
               <div className="mt-3 flex flex-wrap items-baseline gap-2">
                 <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-mute)]">

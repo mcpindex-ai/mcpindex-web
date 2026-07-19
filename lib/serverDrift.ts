@@ -14,6 +14,12 @@ export interface ServerDrift {
   // >=5-at-once toolset replacement - the label ships with the rows so a bulk replacement
   // never renders as N bare removals on a named page.
   readonly toolsetReplaced: boolean;
+  // Version-evidence counts by the per-fp REDUCED version_delta (D4 fairness surface):
+  // a server that changed WITH a version change gets that exculpatory context; undeclared
+  // is its own class, never conflated with silent; not-recorded contributes to none.
+  readonly versionSameCount: number;
+  readonly versionChangedCount: number;
+  readonly versionUndeclaredCount: number;
 }
 
 /** Filter the ledger's events to one server (by its precomputed server_fp) and summarize. A server
@@ -38,5 +44,8 @@ export function aggregateServerDrift(
     safetyRelevant: mine.some((e) => e.safety_relevant),
     ledgerGeneratedAt,
     toolsetReplaced: mine.some((e) => e.removal_scope === 'toolset-replaced'),
+    versionSameCount: mine.filter((e) => e.version_delta === 'same').length,
+    versionChangedCount: mine.filter((e) => e.version_delta === 'changed').length,
+    versionUndeclaredCount: mine.filter((e) => e.version_delta === 'undeclared').length,
   };
 }

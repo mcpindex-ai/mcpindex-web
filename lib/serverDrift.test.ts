@@ -57,3 +57,18 @@ test('aggregateServerDrift: toolsetReplaced true only when a matched removal eve
     [ev({ server_fp: 'c'.repeat(32), removal_scope: 'toolset-replaced' }) as never], fp, '');
   assert.equal(otherServer.toolsetReplaced, false);
 });
+
+test('aggregateServerDrift version counts: reduced classes counted; not-recorded contributes nothing', () => {
+  const fp = 'a'.repeat(32);
+  const ev = (vd?: string) => ({
+    tool_fp: 'b'.repeat(32), server_fp: fp, sources: 1, safety_relevant: false,
+    last_seen: '2026-07-19T00:00:00Z', change_kinds: ['type-changed'],
+    ...(vd ? { version_delta: vd } : {}),
+  });
+  const out = aggregateServerDrift(
+    [ev('same'), ev('same'), ev('changed'), ev('undeclared'), ev('not-recorded'), ev()] as never[],
+    fp, '2026-07-19T00:00:00Z');
+  assert.equal(out.versionSameCount, 2);
+  assert.equal(out.versionChangedCount, 1);
+  assert.equal(out.versionUndeclaredCount, 1);
+});

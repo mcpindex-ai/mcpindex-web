@@ -37,15 +37,26 @@ export interface LedgerEvent {
   // toolset replacements, not single deletions - the label pairs every removal row with that
   // context. Absent unless the blob carries a valid value.
   readonly removal_scope?: 'single' | 'toolset-replaced';
+  // Version evidence (ADDITIVE on /2; emitted by the drain only behind the ratification-gated
+  // evidence flag). The value is the drain's fairness-first REDUCTION over every transition
+  // for this fp: 'same' only when every computable transition kept the declared version;
+  // any version change wins; any undeclared transition blocks 'same'. 'not-recorded' = our
+  // observation gap, renders nothing.
+  readonly version_delta?: 'same' | 'changed' | 'undeclared' | 'not-recorded';
 }
 
 const REMOVAL_SCOPES = new Set(['single', 'toolset-replaced']);
+const VERSION_DELTAS = new Set(['same', 'changed', 'undeclared', 'not-recorded']);
 
 export interface LedgerStat {
   readonly tools_observed_drifting: number; // the numerator (N)
   readonly total_contract_drifts_observed: number; // the honest denominator (M) - N of M, never "all"
   readonly servers: number;
   readonly safety_relevant: number;
+  // Count of surfaced fps whose REDUCED version_delta is 'same' (never counts an fp with any
+  // version-changed or undeclared transition). Present only when the drain emits the gated
+  // evidence fields; undefined otherwise (absence of the stat is not zero).
+  readonly silent_same_version?: number;
 }
 
 export interface Ledger {
@@ -79,6 +90,10 @@ export function coerceEvent(x: unknown): LedgerEvent | null {
     typeof e.removal_scope === 'string' && REMOVAL_SCOPES.has(e.removal_scope)
       ? (e.removal_scope as 'single' | 'toolset-replaced')
       : undefined;
+  const vdelta =
+    typeof e.version_delta === 'string' && VERSION_DELTAS.has(e.version_delta)
+      ? (e.version_delta as 'same' | 'changed' | 'undeclared' | 'not-recorded')
+      : undefined;
   return {
     tool_fp,
     server_fp: typeof e.server_fp === 'string' && FP_RE.test(e.server_fp) ? e.server_fp : '',
@@ -87,6 +102,7 @@ export function coerceEvent(x: unknown): LedgerEvent | null {
     last_seen,
     change_kinds: coerceChangeKinds(e.change_kinds), // allowlist-validated; [] for an old blob
     ...(scope ? { removal_scope: scope } : {}),
+    ...(vdelta ? { version_delta: vdelta } : {}),
   };
 }
 
@@ -96,11 +112,16 @@ export function coerceStat(x: unknown): LedgerStat {
     const k = Number(v);
     return Number.isFinite(k) && k >= 0 ? Math.floor(k) : 0;
   };
+  const silent = s.silent_same_version;
+  const silentN = Number(silent);
   return {
     tools_observed_drifting: n(s.tools_observed_drifting),
     total_contract_drifts_observed: n(s.total_contract_drifts_observed),
     servers: n(s.servers),
     safety_relevant: n(s.safety_relevant),
+    ...(silent !== undefined && Number.isFinite(silentN) && silentN >= 0
+      ? { silent_same_version: Math.floor(silentN) }
+      : {}),
   };
 }
 

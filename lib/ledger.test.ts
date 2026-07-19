@@ -158,3 +158,30 @@ test('coerceEvent removal_scope: allowlist coercion, absent when invalid or miss
   // The removal-context field is ADDITIVE on /2 - the schema string must not have moved.
   assert.equal(SCHEMA, 'mcpindex.drift.ledger/2');
 });
+
+test('coerceEvent version_delta: allowlist all four states; invalid/missing -> absent', () => {
+  const base = { tool_fp: FP };
+  for (const v of ['same', 'changed', 'undeclared', 'not-recorded'] as const) {
+    assert.equal(coerceEvent({ ...base, version_delta: v })?.version_delta, v);
+  }
+  assert.equal(coerceEvent({ ...base, version_delta: 'bumped' })?.version_delta, undefined);
+  assert.equal(coerceEvent(base)?.version_delta, undefined);
+});
+
+test('coerceStat silent_same_version: present only when valid; absence is not zero', () => {
+  assert.equal(coerceStat({ silent_same_version: 42 }).silent_same_version, 42);
+  assert.equal(coerceStat({ silent_same_version: 0 }).silent_same_version, 0);
+  assert.equal(coerceStat({}).silent_same_version, undefined);
+  assert.equal(coerceStat({ silent_same_version: -1 }).silent_same_version, undefined);
+  assert.equal(coerceStat({ silent_same_version: 'many' }).silent_same_version, undefined);
+});
+
+test('lede copy pin (spec 2.4b): DriftReport carries the re-pinned basis-named string, no banned framings', () => {
+  const fs = require('node:fs') as typeof import('node:fs');
+  const src = fs.readFileSync(new URL('../components/DriftReport.tsx', import.meta.url), 'utf8');
+  assert.ok(src.includes('only ever changed'), 'pinned lede fragment missing');
+  assert.ok(src.includes('declared version unchanged, where version evidence exists'), 'pinned lede tail missing');
+  assert.ok(!src.includes('never shipped a change alongside a version change'), 'old v3 lede wording banned');
+  assert.ok(!/%\s*silent/.test(src), 'bare report-headline framing banned on /ledger lede');
+  assert.ok(!src.includes('version bumped'), "'bumped' asserts direction the data does not carry");
+});
