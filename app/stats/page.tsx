@@ -11,6 +11,7 @@ export const metadata: Metadata = pageMetadata({
   title: 'Stats',
   description: 'Public dashboard. Servers indexed, categories tracked, snapshot freshness, all derived from public data.',
   path: '/stats',
+  image: '/opengraph-image',
 });
 
 export default async function StatsPage() {

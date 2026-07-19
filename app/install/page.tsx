@@ -18,6 +18,7 @@ export const metadata: Metadata = pageMetadata({
   description:
     'Install the mcpindex gate to route your agent’s MCP tool calls through a deterministic contract-diff (curl, uv, pip, or the SDK), or add the advisory directory server one-click to Cursor, VS Code, Claude, Gemini and more. Free.',
   path: '/install',
+  image: '/opengraph-image',
 });
 
 const UNDERLINE =

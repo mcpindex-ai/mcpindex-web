@@ -80,5 +80,9 @@ export async function POST(req: NextRequest) {
   if (!welcome.ok) console.warn(`[enterprise] brevo welcome failed: ${welcome.error}`);
   if (!notify.ok) console.warn(`[enterprise] brevo operator notify failed: ${notify.error}`);
 
-  return Response.json({ ok: true, delivery: 'sent' });
+  // HONEST status: a configured-but-dead Brevo key must not report 'sent'. If every
+  // call failed, say 'failed' (the lead is still in the server log for recovery); any
+  // one success still counts as 'sent'.
+  const delivery = contact.ok || welcome.ok || notify.ok ? 'sent' : 'failed';
+  return Response.json({ ok: true, delivery });
 }

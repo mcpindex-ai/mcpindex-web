@@ -78,6 +78,27 @@ test('enterprise: Brevo configured → 200 delivery:sent', async () => {
   assert.equal(obj(r).delivery, 'sent');
 });
 
+// A revoked/dead Brevo key: every call 401s. The response must NOT claim 'sent'.
+const deadBrevoFetch: typeof fetch = (async () => new Response('unauthorized', { status: 401 })) as unknown as typeof fetch;
+
+test('waitlist: Brevo configured but key dead (all 401) → delivery:failed (not a false sent)', async () => {
+  process.env.BREVO_API_KEY = 'revoked';
+  process.env.BREVO_LEADS_LIST_ID = '3';
+  __setBrevoFetchForTest(deadBrevoFetch);
+  const r = await callRoute(waitlist, '/api/waitlist', { method: 'POST', body: { email: 'a@b.co', source: 'contact' } });
+  assert.equal(r.status, 200);
+  assert.equal(obj(r).delivery, 'failed');
+});
+
+test('enterprise: Brevo configured but key dead (all 401) → delivery:failed', async () => {
+  process.env.BREVO_API_KEY = 'revoked';
+  process.env.BREVO_LEADS_LIST_ID = '3';
+  __setBrevoFetchForTest(deadBrevoFetch);
+  const r = await callRoute(enterprise, '/api/enterprise', { method: 'POST', body: { email: 'a@b.co', company: 'Acme' } });
+  assert.equal(r.status, 200);
+  assert.equal(obj(r).delivery, 'failed');
+});
+
 test('ledger: enabled + valid blob → 200, no-store', async () => {
   process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
   __setLedgerServerRedisForTest({ async get() { return JSON.stringify(LEDGER_BLOB); } } as any);

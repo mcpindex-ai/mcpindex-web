@@ -26,6 +26,15 @@ interface PageMetadataArgs {
   /** Route path beginning with '/', e.g. '/install'. Builds the canonical + og:url. */
   path: string;
   /**
+   * OG/Twitter card image. REQUIRED for any page WITHOUT its own
+   * `opengraph-image.tsx`: the explicit openGraph block below replaces the root's,
+   * which suppresses the *inherited* root card image (a same-segment
+   * `opengraph-image.tsx` still merges in, so pages that have one omit this). Pass
+   * `'/opengraph-image'` to reuse the root card. Omit it ONLY when the page ships its
+   * own `opengraph-image.tsx`.
+   */
+  image?: string;
+  /**
    * Extra alternates merged over the derived canonical (e.g. RSS `types`).
    * `canonical` defaults to the path-derived URL but can be overridden here.
    */
@@ -42,10 +51,12 @@ export function pageMetadata({
   title,
   description,
   path,
+  image,
   alternates,
   rest,
 }: PageMetadataArgs): Metadata {
   const url = `${SITE_URL}${path}`;
+  const images = image ? [image] : undefined;
   return {
     title,
     description,
@@ -55,12 +66,16 @@ export function pageMetadata({
       url,
       siteName: SITE_NAME,
       type: 'website',
+      // Only set when the page has no own opengraph-image.tsx (see `image` doc). When
+      // omitted, a same-segment opengraph-image.tsx still supplies the card.
+      ...(images ? { images } : {}),
     },
     twitter: {
       card: 'summary_large_image',
       site: TWITTER_SITE,
       title,
       description,
+      ...(images ? { images } : {}),
     },
     alternates: {
       canonical: url,

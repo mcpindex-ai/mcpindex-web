@@ -13,6 +13,7 @@ export const metadata: Metadata = pageMetadata({
   description:
     'Top MCP servers ranked by listing maturity (Quality Score from public registry signals). Trust verdict shown separately - not used for sort order.',
   path: '/leaderboard',
+  image: '/opengraph-image',
 });
 
 const VERDICT_CHIP: Record<string, string> = {
@@ -132,7 +133,7 @@ export default async function Leaderboard() {
         </p>
         <p className="font-mono text-[12px] text-[var(--color-mute)]">
           Screened so far:{' '}
-          <span className="text-[var(--color-ink)] tabular-nums">{screened.length}</span> tools.{' '}
+          <span className="text-[var(--color-ink)] tabular-nums">{screened.length}</span> servers.{' '}
           <Link
             href="/best"
             className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
