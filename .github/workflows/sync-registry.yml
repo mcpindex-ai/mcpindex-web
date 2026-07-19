@@ -16,14 +16,16 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    # The upstream registry grew past ~16k servers and turned intermittently slow
-    # (pages have been seen taking 10s+ at a hard limit=100). A full ~160-page sync
-    # now regularly exceeds 10 minutes, so every scheduled run was being cancelled at
-    # the timeout — silently, since a cancel doesn't trigger failure alerts. 30 min
-    # gives headroom for the slow-upstream + retry path in scripts/sync-registry.mjs.
-    # The full ~542-page fetch is ~1min on a fast day but has been seen near ~34min when
-    # the upstream stalls on many pages; 45 absorbs a bad day without cancel-truncating.
-    timeout-minutes: 45
+    # The upstream registry is cursor-paginated at a hard limit=100 (~542 sequential
+    # pages / ~54k raw records) and intermittently slow (5-11s/page). At ~5-6s/page a
+    # full fetch is ~45-55min, so the 2026-07-19 run was still cancelled at 45m. Public
+    # repo = unlimited Actions minutes, and this is a once-daily job, so use a generous
+    # 120min ceiling: fast days finish in ~1-2min, the slowest observed day fits with
+    # room, and the mcpindex-snapshot-freshness healthcheck probe pages if it ever does
+    # cross ~36h stale. (Sequential cursor pagination can't be parallelized; a larger
+    # page size is 422-rejected; so headroom is the only lever short of moving the sync
+    # off Actions to a no-timeout host.)
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
