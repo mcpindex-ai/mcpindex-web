@@ -69,8 +69,8 @@ unwire_hosts() {
   fi
   uvx --from "$PKG" python - <<'PY'
 import glob, os
-from tooling.cse.config_scan import _default_config_paths
-from tooling.cse.config_wire import unwire
+from mcpindex_gate.tooling.cse.config_scan import _default_config_paths
+from mcpindex_gate.tooling.cse.config_wire import unwire
 configs = servers = skipped = 0
 for path in _default_config_paths():
     targets = sorted(glob.glob(path)) if any(c in path for c in "*?[") else [path]

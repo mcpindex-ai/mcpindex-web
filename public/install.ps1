@@ -26,8 +26,11 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $Pkg          = 'mcpindex-gate'
-$ProxyModule  = 'tooling.cse.proxy'
-$WatcherModule= 'tooling.cse.watcher'
+# mcpindex-gate 0.8.0 moved trust/tooling under the mcpindex_gate namespace. Proxy uses
+# the STABLE console script (name unchanged across versions); the watcher has no console
+# script, so it uses the namespaced module path.
+$ProxyScript  = 'mcpindex-proxy'
+$WatcherModule= 'mcpindex_gate.tooling.cse.watcher'
 $TaskName     = 'mcpindex-watcher'
 $LogDir       = Join-Path $env:LOCALAPPDATA 'mcpindex'
 $UvInstallerUrl = 'https://astral.sh/uv/install.ps1'
@@ -97,7 +100,7 @@ function Resolve-Uvx {
   exit 1
 }
 $script:UvxBin = $null
-function Proxy-Cmd   { "`"$script:UvxBin`" --from $Pkg python -m $ProxyModule" }
+function Proxy-Cmd   { "`"$script:UvxBin`" --from $Pkg $ProxyScript" }
 function Watcher-Cmd { "`"$script:UvxBin`" --from $Pkg python -m $WatcherModule" }
 
 # --- step 2: detect + wire (consented) ----------------------------------------------------
@@ -110,7 +113,7 @@ function Wire-Hosts {
   }
   $py = @'
 import sys
-from tooling.cse.config_wire import first_run_wire_all, render_first_run_prompt
+from mcpindex_gate.tooling.cse.config_wire import first_run_wire_all, render_first_run_prompt
 proxy_cmd = sys.argv[1].split()
 plan = first_run_wire_all(proxy_cmd=proxy_cmd, confirm=False)
 print("mcpindex:", render_first_run_prompt(plan))

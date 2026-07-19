@@ -562,8 +562,8 @@ So a buyer reads the *proxy* boundary as persistent-pin + subprocess upstream (n
   >
   > ```bash
   > uv tool install mcpindex-gate          # installs the proxy artifact only - no rewrites, no watcher
-  > python -m tooling.cse.config_wire wire --config <your-host-config-path>   # wire ONE host, explicitly, reversible
-  > # unwire later:  python -m tooling.cse.config_wire unwire --config <path>
+  > mcpindex-config-wire wire --config <your-host-config-path>   # wire ONE host, explicitly, reversible
+  > # unwire later:  mcpindex-config-wire unwire --config <path>
   > ```
   >
   > You trade auto-wiring for zero config-rewrite-by-the-installer and zero background daemon; the gate still holds drift on the wired client, and `config_wire` writes the same atomic, byte-restorable, marked-for-unwire entry the installer would. This is the install variant most likely to clear an endpoint-security gate. *(There is no `install.sh --proxy-only` flag; the manual `uv tool install` + `config_wire` path above is the verified, shipping way to get a no-rewrite, no-watcher install.)*

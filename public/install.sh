@@ -23,8 +23,12 @@
 set -eu
 
 PKG="mcpindex-gate"
-PROXY_MODULE="tooling.cse.proxy"
-WATCHER_MODULE="tooling.cse.watcher"
+# mcpindex-gate 0.8.0 moved trust/tooling under the mcpindex_gate namespace (they were
+# top-level and collided with unrelated PyPI packages). The proxy is launched via the
+# STABLE console script (name unchanged across versions, survives internal moves); the
+# watcher has no console script, so it uses the namespaced module path.
+PROXY_SCRIPT="mcpindex-proxy"
+WATCHER_MODULE="mcpindex_gate.tooling.cse.watcher"
 ASSUME_YES=0
 DRY_RUN=0
 # Offline self-test hook (set by smoke_install_units): WRITE + lint the watcher unit but skip
@@ -170,7 +174,7 @@ resolve_uvx() {
 # ABSOLUTE uvx path (resolved above) so launchd/systemd can actually exec it. Kept in sync with
 # config_wire's proxy_cmd shape (a list of argv tokens).
 proxy_cmd() {
-  printf '%s' "$UVX_BIN --from $PKG python -m $PROXY_MODULE"
+  printf '%s' "$UVX_BIN --from $PKG $PROXY_SCRIPT"
 }
 watcher_cmd() {
   printf '%s' "$UVX_BIN --from $PKG python -m $WATCHER_MODULE"
@@ -199,7 +203,7 @@ wire_hosts() {
   # entry carries a per-entry marker (no whole-file backup) that un-wire restores in place.
   uvx --from "$PKG" python - "$(proxy_cmd)" <<'PY'
 import sys
-from tooling.cse.config_wire import first_run_wire_all, render_first_run_prompt
+from mcpindex_gate.tooling.cse.config_wire import first_run_wire_all, render_first_run_prompt
 proxy_cmd = sys.argv[1].split()
 plan = first_run_wire_all(proxy_cmd=proxy_cmd, confirm=False)
 print("mcpindex:", render_first_run_prompt(plan))
