@@ -11,6 +11,8 @@
 // fan out to Brevo.
 export const dynamic = 'force-dynamic';
 
+import { createHash } from 'node:crypto';
+
 const ACCOUNT_URL = 'https://api.brevo.com/v3/account';
 const TTL_MS = 300_000; // 5 min - matches the healthcheck cadence
 
@@ -20,6 +22,9 @@ type Health = {
   list_configured: boolean;
   api_ok: boolean | null;
   checked_at: string;
+  // TEMP DIAGNOSTIC (redacted): identifies WHICH key the running function reads,
+  // without exposing it. sha8 of the value + its length. Remove after diagnosis.
+  key_fp: string | null;
 };
 
 let memo: { at: number; body: Health } | null = null;
@@ -49,12 +54,15 @@ async function compute(): Promise<Health> {
     list_configured: !!process.env.BREVO_LEADS_LIST_ID,
     api_ok,
     checked_at: new Date().toISOString(),
+    key_fp: key ? `${createHash('sha256').update(key).digest('hex').slice(0, 8)}:${key.length}` : null,
   };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   const now = Date.now();
-  if (!memo || now - memo.at >= TTL_MS) {
+  // ?fresh=1 bypasses the per-instance memo (for diagnosis; memo defeats ?_cb polling).
+  const fresh = new URL(req.url).searchParams.get('fresh') === '1';
+  if (fresh || !memo || now - memo.at >= TTL_MS) {
     memo = { at: now, body: await compute() };
   }
   return Response.json(memo.body, {
