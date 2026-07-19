@@ -83,7 +83,7 @@ export function Footer() {
         </div>
 
         <div className="rule-t mt-12 pt-6 flex flex-col sm:flex-row justify-between gap-3 font-mono text-[11.5px] text-[var(--color-mute)]">
-          <div>© 2026 Bhartis LLC</div>
+          <div>© 2026 mcpindex.ai</div>
           <div>mcpindex.ai · the in-path trust gate for agent tool calls</div>
         </div>
       </div>

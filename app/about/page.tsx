@@ -138,32 +138,15 @@ export default function AboutPage() {
           Author
         </div>
         <h2 className="text-[22px] tracking-tight font-medium text-[var(--color-ink)]">
-          Gautam Bharti
+          GB
         </h2>
         <p className="mt-3 text-[15px] leading-[1.6] text-[var(--color-cite)]">
           Writes about agent infrastructure, platform design, and the MCP
-          ecosystem. More analysis and research at{' '}
-          <a
-            href="https://seekgb.com"
-            target="_blank"
-            rel="noreferrer"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
-          >
-            seekgb.com
-          </a>
-          .{' '}
-          <a
-            href="https://www.linkedin.com/in/gautambharti"
-            target="_blank"
-            rel="noreferrer"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
-          >
-            LinkedIn
-          </a>
-          {' · '}
+          ecosystem. Reach the project at{' '}
           <a href="mailto:hello@mcpindex.ai" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
             hello@mcpindex.ai
           </a>
+          .
         </p>
       </section>
 

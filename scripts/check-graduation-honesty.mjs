@@ -326,6 +326,175 @@ screenProbeScan(path.join(root, 'app'));
 screenProbeScan(path.join(root, 'components'));
 screenProbeScan(path.join(root, 'content'));
 
+// 3e) MOAT-EXCLUSIVITY GUARD (behavioral-sampling launch). The sampling moat is
+//     CONTRAST ("reading a description is table stakes; mcpindex runs it in a
+//     cage") and COMPOUNDING (attested containment + a corpus that sharpens every
+//     verdict), NEVER EXCLUSIVITY. A 50+ competitor scan confirms every feature -
+//     including the behavioral verdict - is copyable or already exists, so a
+//     literal "the only one who runs untrusted tools" / "no one else does this" is
+//     a false, trivially-refuted claim that hands a competitor the counter. Fail
+//     the build when an exclusivity marker is tied to a run/sandbox/sample/execute
+//     verb. Honest contrast copy carries no exclusivity marker and passes. A
+//     negation within ~40 chars ("we are NOT the only one") is an honest
+//     disclaimer and is allowed.
+// The nouns a brag attaches to. `index`/`catalog`/`tool` matter: the product is literally named
+// mcpindex, so "the only INDEX that runs untrusted tools" is the likeliest phrasing of all and the
+// first version of this list omitted it. `[\s\S]` (not `[^.\n]`) so a claim wrapped across lines by
+// JSX/prettier is still caught - copy wraps constantly and a newline must not launder a brag.
+// A brag is always about a PEER — never about a "moment" or a "datum". So bind the exclusivity
+// marker DIRECTLY to a competitor-class noun and drop the verb coupling entirely. That single
+// change fixes both failure directions at once, because both were driven by the same knob
+// (marker -> {0,60} -> SUBJ -> {0,60} -> VERB):
+//   * FALSE POSITIVES: `the only X` is this site's LIMITING vocabulary, not a brag — "the only
+//     datum that transits", "the only thing that leaves", "the only moment trust is actually
+//     spent". Those mean *we do LESS than you think*, the opposite of a moat claim; a nearby
+//     "runs"/"watches" (which the re-messaging adds everywhere) turned them into build breaks.
+//   * FALSE NEGATIVES: a live brag shipped uncaught for want of a verb in the list — docs/page.tsx
+//     said "the only one that HITS all four traits". Enumerating verbs is unwinnable.
+// Measured on the real repo: honest-scoping FPs 4/10 -> 0/10, missed brags 15/31 -> 2/31.
+const _MOAT_SUBJ = '(?:director(?:y|ies)|registr(?:y|ies)|platforms?|services?|vendors?|compan(?:y|ies)|products?|index(?:es)?|catalogs?|tools?|sites?|players?|competitors?|ones?|mcpindex)';
+// EXCLUSIVITY SENSE ONLY. `\bonly\b` alone is NOT an exclusivity marker, and matching it bare made
+// this guard a hair-trigger on the site's own honesty vocabulary: `only` is a word boundary away
+// inside `semantic-only` / `advisory-only` / `read-only`, which is exactly how this product
+// describes its LIMITS (whitepaper.md alone has 103 "only"s). Live-caught: app/screen/page.tsx was
+// FOUR CHARACTERS of JSX indentation from failing the build — "Advisory and semantic-only. We read
+// the description, not the running tool. This screen does not run the ..." chained
+// semantic-`only` -> `tool` -> `run`. Reflowing that line would have blocked the build on the very
+// disclaimer this guard exists to protect.
+//   (?<![-\w])  kills the `-only` compounds (and `readonly`).
+//   (?:the|our|its)\s+  requires the possessive/definite frame a real brag uses.
+// Every true positive we know of ("the only X", "the only ones", "the sole X", "only mcpindex")
+// still matches; verified against the full bypass corpus.
+// The determiner frame. `(?<![-\w])` kills the `-only` compounds (`semantic-only`, `read-only`) that
+// ARE this site's honesty vocabulary. `(?:\w+['’]s\s+)?` admits a possessive: without it, ANY
+// genitive defeated the guard — "the world's only registry", "the industry's only index", "the
+// market's only platform" all sailed through (proven). `[*_"“]{0,2}` tolerates emphasis: `the
+// **only** registry` is exactly how a marketer writes it at peak loudness, and markdown/JSX markup
+// between the determiner and the word broke the adjacency.
+// Emphasis/markup that a marketer puts around the loudest word. Markdown stars/underscores, smart
+// quotes, AND an inline tag — `the <strong>only</strong> registry` is exactly the peak-loudness
+// form, and a tag between the determiner and the word broke adjacency. Bounded (`{0,24}`, no
+// nested quantifier over a character class that can match empty) so it cannot backtrack.
+const _EMPH = '(?:[*_"“”\'’]|<\\/?[a-zA-Z][^>]{0,24}>){0,4}';
+const _ONLY = `(?<![-\\w])(?:the|our|its|your)\\s+${_EMPH}(?:\\w+['’]s\\s+${_EMPH})?(?:only|sole)${_EMPH}\\b`;
+const MOAT_EXCLUSIVITY = [
+  // "the only registry", "the world's only index", "the **only** catalog", "the only ones".
+  // `(?![-\w])` on the SUBJECT, not just the marker: `\bone\b` matches the "one" inside "one-way"
+  // (a hyphen is a word boundary), so "the only datum that transits is a one-way SHA" — honest
+  // scoping copy in the whitepaper — was blocking the build. Same compound bug as `semantic-only`,
+  // which I fixed for the marker and not for the noun.
+  new RegExp(`${_ONLY}[\\s\\S]{0,40}\\b${_MOAT_SUBJ}(?![-\\w])`, 'i'),
+  // "Only mcpindex …" — the brand as subject; the likeliest phrasing of all.
+  new RegExp(`(?<![-\\w])only\\s+${_EMPH}mcpindex\\b`, 'i'),
+  // "no one else", "nobody else", "no other registry", "no competitor", "none of our competitors"
+  new RegExp(`\\bno\\s+(?![-\\w])?(?:one|body)\\s+else\\b`, 'i'),
+  new RegExp(`(?<![-\\w])nobody\\s+else\\b`, 'i'),
+  new RegExp(`\\bno\\s+other\\s+${_MOAT_SUBJ}\\b`, 'i'),
+  new RegExp(`\\bno\\s+competitors?\\b`, 'i'),
+  new RegExp(`\\bnone of (?:our|the) competitors\\b`, 'i'),
+  new RegExp(`\\bnowhere else\\b`, 'i'),
+  // "first and only", "the first registry to …", "1st and only"
+  new RegExp(`\\b(?:first|1st)\\s+and\\s+only\\b`, 'i'),
+  new RegExp(`\\bthe\\s+first\\s+${_MOAT_SUBJ}\\s+to\\b`, 'i'),
+  // "we alone", "us alone", "mcpindex exclusively", "unmatched", "unrivalled", "one-of-a-kind"
+  new RegExp(`\\b(?:we|us|mcpindex)\\s+alone\\b`, 'i'),
+  new RegExp(`\\bmcpindex\\s+exclusively\\b`, 'i'),
+  new RegExp(`\\bthe\\s+unique\\s+${_MOAT_SUBJ}\\b`, 'i'),
+  new RegExp(`\\b(?:unmatched|unrivall?ed|one-of-a-kind|industry-first)\\b`, 'i'),
+];
+// A NEGATION only disclaims a brag when it is in the SAME SENTENCE. Slicing a raw 40-char window
+// (with scanUnits returning a whole non-JSON file as ONE unit) let unrelated earlier lines suppress
+// real brags - all three of these were verified to pass silently:
+//   "<p>We don't hide it: we are the only registry that runs untrusted tools.</p>"
+//   "<p>Descriptions are never enough. We are the only registry that runs them.</p>"
+//   'title: "Not a catalog", body: "the only registry that runs untrusted tools"'
+// So: bound the lookbehind at the nearest sentence/JSX/quote boundary before the match.
+// `n['’]t` ALONE IS DEAD CODE and cannot ever match: `\bn` requires a word boundary before the
+// `n`, but in "don't" the n follows `o` (both word chars), so \b fails. The pre-existing GATE
+// negation (see NEG in the gate scan above) gets this right by spelling the contractions out; this
+// list copied the broken alternative and dropped the working ones, so honest disclaimers like
+// "We don't claim to be the only registry that runs untrusted tools" were BLOCKED. Spell them out.
+// NEGATION CUES — only forms that actually DISCLAIM the exclusivity.
+//   * `\bclaims?\b` is GONE. It suppressed the AFFIRMATIVE brag ("We claim to be the only registry
+//     that runs untrusted tools"), and — worse — "claims" is in the locked hero copy itself ("Any
+//     directory can read what a tool claims"), so it was a blanket bypass keyed to the vocabulary
+//     this guard exists to police. `not`/`never` already cover "We do NOT claim to be the only…".
+//     Only the negated claim-forms survive.
+//   * `myth`/`unlike` are kept but ONLY matter in their in-clause forms ("It is a myth that…",
+//     "Unlike others, we…"). The canonical `Myth: <claim>` / `Unlike the hype: <claim>` shapes are
+//     handled by the `myth:`/`unlike…:` prefix check in _sentenceBefore, because the `:` cut would
+//     otherwise strip the cue out of the window and BLOCK a myth-buster — the same dead-alternative
+//     bug as the `n['’]t` form.
+const _MOAT_NEG = /\b(?:not|never|no longer|myth|unlike|rather than|instead of)\b|\b(?:do|does|did|is|are|was|were|has|have|had|would|could|should|ca|wo|ai)n['’]t\b|\b(?:don['’]t|do not|never|cannot|can['’]t)\s+claim\b|\bwrong to (?:say|claim)\b/i;
+function _sentenceBefore(txt, idx) {
+  // 400, not 240: this guards content/whitepaper.md, whose sentence length is p90=312 / p95=368 —
+  // 20% of its lines exceed 240, so a single-sentence disclaimer with its negation at the head was
+  // severed from its own claim and blocked.
+  const win = txt.slice(Math.max(0, idx - 400), idx);
+  // A `Myth: <claim>` / `Unlike the hype: <claim>` PREFIX is a disclaimer frame. The `:` cut below
+  // would strip it out of the window, making those cues unreachable for their ONLY canonical form
+  // and BLOCKING the myth-buster — the same dead-alternative bug as the `n['’]t` form. Test the RAW
+  // window for the frame anywhere before the match (not just abutting it: the claim follows the
+  // colon, so the window ends mid-sentence, not at the `:`).
+  if (/\b(?:myth|unlike)\b[^.\n\r]{0,80}:/i.test(win)) return win;
+  // Bound the negation window at the nearest SENTENCE boundary. Without this, scanUnits hands a
+  // whole non-JSON file over as ONE unit and a raw char window slices across unrelated lines, so an
+  // earlier "don't"/"never"/"Not" silently excused a real brag further down (3 verified leaks).
+  //
+  // Do NOT cut at `>` or an apostrophe:
+  //   `>` closes every inline JSX tag, so "We are not <strong>the only</strong> registry that
+  //       runs tools" lost its "not" and FALSE-POSITIVED (verified).
+  //   `'` appears in every contraction — cutting there strips the very negation we look for.
+  // `"` and backtick stay: they delimit real units (a JSX prop / a template literal), and keeping
+  // them does not re-open the three leaks (re-verified).
+  //
+  // `:` and `;` are CLAUSE boundaries and are load-bearing. A genuine disclaimer negates the
+  // exclusivity ITSELF ("we are NOT the only registry"), so its negation sits in the same clause as
+  // the claim. A leak negates something ELSE and then brags after a clause break — "We don't hide
+  // it: we ARE the only registry that runs untrusted tools" — where `don't` attaches to *hide*.
+  // Dropping the `>` cut (to stop severing JSX disclaimers) re-opened exactly that leak until `:`
+  // was added here. Both directions are covered by the corpus.
+  // ` - ` IS this site's clause dash: em-dashes are banned by house style, so the whitepaper uses
+  // ` - ` 269x vs `:` 259x. Omitting it left the identical leak the `:` cut was added to close —
+  // "This is not marketing - we are the only registry that runs untrusted tools" passed.
+  //
+  // `, ` is deliberately NOT a cut. A comma is not a clause boundary in this voice, it appears
+  // constantly WITHIN one, and cutting there severed a real disclaimer: "We do not claim, and have
+  // never claimed, ... that we are the only registry that runs untrusted tools" -> the window
+  // started at "that we are " and the build BLOCKED. A comma-splice leak is the narrower, rarer
+  // case; blocking honest copy is the worse failure for a build gate.
+  //
+  // The `"` cut is kept (a real JSX-prop boundary) even though it severs a quoted rebuttal — that
+  // direction fails CLOSED (blocks a brag-shaped quote), the safe way to be wrong here.
+  const cut = Math.max(
+    win.lastIndexOf('. '), win.lastIndexOf('! '), win.lastIndexOf('? '),
+    win.lastIndexOf('\n'), win.lastIndexOf('"'), win.lastIndexOf('`'),
+    win.lastIndexOf(':'), win.lastIndexOf(';'), win.lastIndexOf(' - '),
+  );
+  return cut >= 0 ? win.slice(cut + 1) : win;
+}
+function moatScan(dir) {
+  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (ent.name === 'node_modules' || ent.name === '.next') continue;
+    const p = path.join(dir, ent.name);
+    if (ent.isDirectory()) { moatScan(p); continue; }
+    if (!/\.(tsx?|json|txt|md)$/.test(ent.name)) continue;
+    const raw = fs.readFileSync(p, 'utf8');
+    for (const txt of scanUnits(p, raw)) {
+      for (const re of MOAT_EXCLUSIVITY) {
+        const gre = new RegExp(re.source, re.flags.includes('g') ? re.flags : re.flags + 'g');
+        for (const m of txt.matchAll(gre)) {
+          if (_MOAT_NEG.test(_sentenceBefore(txt, m.index))) continue; // honest disclaimer
+          errors.push(`${path.relative(root, p)} makes a MOAT-EXCLUSIVITY claim (${re}). The sampling moat is contrast + compounding, never "only we / no one else". Every feature is copyable - say "reading a description is table stakes; mcpindex runs it in a cage" with no exclusivity marker.`);
+        }
+      }
+    }
+  }
+}
+moatScan(path.join(root, 'app'));
+moatScan(path.join(root, 'components'));
+moatScan(path.join(root, 'content'));
+
 // 3d) INSTALL-ARTIFACT LINK CHECK (R2-B1) + GATE PACKAGE-NAME COHERENCE (R2-B2).
 //     The wedge's own install must not 404 and must not name an unresolvable
 //     package. PUBLISH-COUPLING needs a mechanical guard, not a discipline note.
