@@ -48,6 +48,16 @@ export default async function LedgerPage() {
 
   const { stat, events } = ledger;
 
+  // Cap the rendered table: ~3.7k rows was ~38k DOM nodes / ~9MB of HTML, which taxes
+  // low-end and mobile devices. The full corpus stays honest via the aggregate stats
+  // above and the machine-readable /api/v1/ledger; the table shows the most-recently
+  // observed changes (the useful view), newest first.
+  const MAX_ROWS = 300;
+  const truncated = events.length > MAX_ROWS;
+  const rows = truncated
+    ? [...events].sort((a, b) => (b.last_seen ?? '').localeCompare(a.last_seen ?? '')).slice(0, MAX_ROWS)
+    : events;
+
   // Static Dataset markup (no blob-derived fields -> no </script> injection surface).
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -184,7 +194,7 @@ export default async function LedgerPage() {
                 </tr>
               </thead>
               <tbody>
-                {events.map((e) => (
+                {rows.map((e) => (
                   <tr key={`${e.tool_fp}:${e.server_fp}:${e.last_seen}`}>
                     <td className="rule-b rule-r px-3 py-2 align-top font-mono text-[13px] text-[var(--color-cite)] tabular-nums">
                       {truncateFp(e.tool_fp)}
@@ -238,6 +248,17 @@ export default async function LedgerPage() {
               </tbody>
             </table>
           </div>
+        )}
+        {truncated && (
+          <p className="mt-4 text-[13px] leading-[1.55] text-[var(--color-mute)]">
+            Showing the {MAX_ROWS} most recently-observed of{' '}
+            {events.length.toLocaleString()} contract changes. The complete, machine-readable
+            ledger is at{' '}
+            <a href="/api/v1/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+              /api/v1/ledger
+            </a>
+            .
+          </p>
         )}
       </section>
 

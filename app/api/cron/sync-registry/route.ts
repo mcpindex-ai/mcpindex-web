@@ -3,9 +3,12 @@ import { timingSafeEqual } from 'node:crypto';
 import { fetchAllPages } from '@/lib/registry';
 import { kvConfigured, snapshotVersion, writeKVSnapshot } from '@/lib/snapshotStore';
 
-// Vercel cron hits this once per day (see vercel.json). Successful fetch
-// writes through to Upstash KV; readers prefer KV, fall back to bundled
-// snapshot.json on KV miss / failure.
+// NO LONGER SCHEDULED. The Vercel cron was removed (2026-07-19): a full registry
+// fetch (~542 sequential pages, 25-50min) can't finish within maxDuration=300s, so
+// the cron never wrote KV. The canonical sync is the GitHub Actions workflow
+// (.github/workflows/sync-registry.yml), which commits data/snapshot.json to main;
+// readers fall back to that bundled snapshot on KV miss. This route is kept (auth-gated,
+// CRON_SECRET) for manual/on-demand invocation; a successful fetch still writes KV.
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 

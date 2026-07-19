@@ -1,11 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "crons": [
-    {
-      "path": "/api/cron/sync-registry",
-      "schedule": "0 6 * * *"
-    }
-  ],
   "headers": [
     {
       "source": "/api/v1/(.*)",
