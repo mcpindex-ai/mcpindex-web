@@ -60,9 +60,9 @@ test('directory config JSON parses and points at the directory package', () => {
   assert.deepEqual(parsed.mcpServers.mcpindex.args, ['-y', `${PACKAGES.directoryServer}@latest`]);
 });
 
-test('gate one-liner leads the gate methods', () => {
-  assert.equal(GATE_METHODS[0].id, 'curl');
-  assert.match(GATE_METHODS[0].command, /install\.sh \| sh$/);
+test('gate one-liner leads the gate methods (auditable uv path, wired)', () => {
+  assert.equal(GATE_METHODS[0].id, 'uv');
+  assert.match(GATE_METHODS[0].command, /^uv tool install .+ && mcpindex-config-wire$/);
 });
 
 test('gateInstallLine derives commands + hosts from the manifest (llms surfaces)', () => {
@@ -96,9 +96,11 @@ test('GATE_WIRING_HOSTS is the complete gate set: superset of the picker, incl. 
 // Consolidation guard: the homepage/CTA constants re-export the manifest value,
 // so a rename can't leave the homepage and /install serving different commands.
 test('legacy install constants derive from the manifest (no parallel source)', () => {
-  assert.equal(INSTALL_SHELL_COMMAND, GATE_METHODS.find((m) => m.id === 'curl')!.command);
+  assert.equal(INSTALL_SHELL_COMMAND, GATE_METHODS.find((m) => m.id === 'uv')!.command);
   assert.equal(GATE_PACKAGE, PACKAGES.gateBinary);
-  assert.equal(GATE_UV_INSTALL, GATE_METHODS.find((m) => m.id === 'uv')!.command);
+  // The uv method is the wired one-liner; the bare uv install must be its prefix
+  // so the two can never name different packages.
+  assert.ok(GATE_METHODS.find((m) => m.id === 'uv')!.command.startsWith(GATE_UV_INSTALL));
   assert.equal(DISCOVERY_PACKAGE, PACKAGES.directoryServer);
   assert.equal(DISCOVERY_CLAUDE_MCP_ADD, DIRECTORY_CLIENTS.find((c) => c.id === 'claude-code')!.value);
   assert.equal(DISCOVERY_GEMINI_MCP_ADD, DIRECTORY_CLIENTS.find((c) => c.id === 'gemini')!.value);

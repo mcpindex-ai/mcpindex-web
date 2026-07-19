@@ -208,7 +208,7 @@ export default async function Home() {
                 label="Install the mcpindex gate (one command)"
                 value={INSTALL_SHELL_COMMAND}
                 trackSource="homepage_hero"
-                notes="Inspect first: curl -fsSL https://mcpindex.ai/install.sh | less - then run the command. Restarts your host after wiring."
+                notes="No pipe-to-shell: installs the PyPI package, then runs the wiring wizard. Script alternative: curl -fsSL https://mcpindex.ai/install.sh | sh (read it first with | less). Restarts your host after wiring."
               />
             </div>
             <p className="mt-3 font-mono text-[12px] leading-[1.5] text-[var(--color-mute)]">
@@ -308,11 +308,11 @@ export default async function Home() {
             <strong>Job 1 - gate</strong> (hero above): pins contracts and HOLDs drift in-path
             for {GATE_HOSTS_SHORT}. Ships as{' '}
             <code className="font-mono text-[13px] text-[var(--color-ink)]">mcpindex-gate</code>{' '}
-            via uv; audit before you pipe:{' '}
+            via uv from PyPI - no pipe-to-shell. Script alternative:{' '}
             <code className="font-mono text-[12.5px] text-[var(--color-ink)]">
-              curl -fsSL https://mcpindex.ai/install.sh | less
-            </code>
-            .
+              curl -fsSL https://mcpindex.ai/install.sh | sh
+            </code>{' '}
+            (audit it first with <code className="font-mono text-[12.5px] text-[var(--color-ink)]">| less</code>).
           </p>
           <div className="flex items-start gap-3 mb-8">
             <Seal size={34} ring="var(--color-rule)" bracket="var(--color-ink)" />

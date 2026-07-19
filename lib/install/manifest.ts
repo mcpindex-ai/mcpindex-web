@@ -25,6 +25,7 @@ import {
   CURL_INSTALL,
   INSPECT_INSTALL,
   UV_INSTALL,
+  UV_INSTALL_WIRED,
   PIP_INSTALL,
   DIRECTORY_NPX,
   CLAUDE_MCP_ADD,
@@ -47,10 +48,17 @@ export type GateMethod = {
 
 export const GATE_METHODS: GateMethod[] = [
   {
+    id: 'uv',
+    label: 'uv (auditable, all hosts)',
+    command: UV_INSTALL_WIRED,
+    note: 'Installs the signed PyPI package - no pipe-to-shell - then runs the wiring wizard. Restarts the host after wiring.',
+    track: 'install-page-gate-uv',
+  },
+  {
     id: 'curl',
-    label: 'One-liner (all hosts)',
+    label: 'Install script',
     command: CURL_INSTALL,
-    note: 'Installs the gate and wires your MCP hosts to route tool calls through it. Restarts the host after wiring.',
+    note: 'Installs the gate and wires your MCP hosts in one script. Read it first (below) if you would rather not pipe to shell.',
     track: 'install-page-gate-curl',
   },
   {
@@ -59,13 +67,6 @@ export const GATE_METHODS: GateMethod[] = [
     command: INSPECT_INSTALL,
     note: 'Pipe to less to read the script before you run it. uninstall.sh restores the original config.',
     track: 'install-page-gate-inspect',
-  },
-  {
-    id: 'uv',
-    label: 'uv (auditable)',
-    command: UV_INSTALL,
-    note: 'Install the binary yourself, then run the wiring wizard. No pipe-to-shell.',
-    track: 'install-page-gate-uv',
   },
   {
     id: 'pip',
@@ -190,7 +191,7 @@ export const GATE_WIRING_HOSTS = [
 export function gateInstallLine({ code = false }: { code?: boolean } = {}): string {
   const cmd = (s: string) => (code ? `\`${s}\`` : s);
   return (
-    `Install: one-click config-wire across ${GATE_WIRING_HOSTS.join(' / ')} via ${cmd(UV_INSTALL)} or ${cmd(CURL_INSTALL)} ` +
+    `Install: one-click config-wire across ${GATE_WIRING_HOSTS.join(' / ')} via ${cmd(UV_INSTALL_WIRED)} or ${cmd(CURL_INSTALL)} ` +
     `(rewrites the host config to route each server through the gate; zero credentials change hands), ` +
     `or the SDK wrap() one-liner (TS + Python) around an already-authenticated session. ` +
     `Legacy ${cmd(LEGACY_EOL_PACKAGE)} is EOL (frozen 0.7.0); install ${cmd(PACKAGES.gateBinary)}, not preflight. See /docs.`

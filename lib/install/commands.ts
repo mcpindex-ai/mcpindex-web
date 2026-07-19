@@ -36,6 +36,14 @@ export const DIRECTORY_ARGS = ['-y', `${PACKAGES.directoryServer}@latest`] as co
 export const CURL_INSTALL = `curl -fsSL ${PACKAGES.installScript} | sh`;
 export const INSPECT_INSTALL = `curl -fsSL ${PACKAGES.installScript} | less`;
 export const UV_INSTALL = `uv tool install ${PACKAGES.gateBinary}`;
+/** The wiring wizard the gate ships as a console script; run after installing the binary. */
+export const CONFIG_WIRE_COMMAND = 'mcpindex-config-wire';
+/**
+ * The hero one-liner: auditable package install (no pipe-to-shell) + the wiring
+ * wizard. A trust product can't lead with curl|sh - the script stays available
+ * as the labeled alternative.
+ */
+export const UV_INSTALL_WIRED = `${UV_INSTALL} && ${CONFIG_WIRE_COMMAND}`;
 export const PIP_INSTALL = `pip install ${PACKAGES.gateBinary}`;
 export const NPM_GLOBAL_INSTALL = `npm install -g ${PACKAGES.directoryServer}`;
 export const DIRECTORY_NPX = `${DIRECTORY_COMMAND} ${DIRECTORY_ARGS.join(' ')}`;

@@ -6,7 +6,7 @@ import { Disclose } from '@/components/Disclose';
 import { GuideHostPicker } from '@/components/GuideHostPicker';
 import {
   CURL_INSTALL,
-  UV_INSTALL,
+  UV_INSTALL_WIRED,
   INSPECT_INSTALL,
   GATE_WIRING_HOSTS,
   DIRECTORY_CLIENTS,
@@ -53,21 +53,22 @@ const KICKER = 'font-mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--
 
 export const EMBED_REGISTRY: Record<EmbedKey, Embed> = {
   'install-command': {
-    note: 'The one-liner that installs the gate and wires every MCP host (from lib/install/commands.ts). Auditable uv/inspect paths are collapsed underneath.',
+    note: 'The one-liner that installs the gate and wires every MCP host (from lib/install/commands.ts). The auditable uv path leads; the install script is collapsed underneath.',
     render: () => (
       <div className="mt-5">
-        <CopyField value={CURL_INSTALL} trackSource="guide-install-curl" />
-        <Disclose summary="Prefer not to pipe to shell?" className="mt-3">
+        <CopyField value={UV_INSTALL_WIRED} trackSource="guide-install-uv" />
+        <Disclose summary="Prefer the one-script install?" className="mt-3">
           <p className="mt-0">
-            Install the binary yourself, then run the wiring wizard - no pipe-to-shell:
+            The install script does the same install + wiring in one pass - read it before you
+            run it:
           </p>
-          <CopyField value={UV_INSTALL} label="uv (auditable)" trackSource="guide-install-uv" />
           <CopyField
             value={INSPECT_INSTALL}
             label="Read the script first"
             notes="Pipe to less to read it before you run it. uninstall.sh restores the original config."
             trackSource="guide-install-inspect"
           />
+          <CopyField value={CURL_INSTALL} label="Run it" trackSource="guide-install-curl" />
         </Disclose>
       </div>
     ),
