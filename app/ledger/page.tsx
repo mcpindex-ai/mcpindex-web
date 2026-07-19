@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { pageMetadata } from '@/lib/seo';
 import { notFound } from 'next/navigation';
 import { ledgerEnabled } from '@/lib/ledger';
@@ -220,7 +221,9 @@ export default async function LedgerPage() {
                               key={k}
                               className="inline-block font-mono text-[10.5px] tracking-[0.04em] px-2 py-0.5 border border-[var(--color-mute)] text-[var(--color-cite)]"
                             >
-                              {k}
+                              {k === 'tool-removed' && e.removal_scope === 'toolset-replaced'
+                                ? 'tool-removed (toolset replaced)'
+                                : k}
                             </span>
                           ))}
                         </div>
@@ -254,9 +257,9 @@ export default async function LedgerPage() {
             Showing the {MAX_ROWS} most recently-observed of{' '}
             {events.length.toLocaleString()} contract changes. The complete, machine-readable
             ledger is at{' '}
-            <a href="/api/v1/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+            <Link href="/api/v1/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
               /api/v1/ledger
-            </a>
+            </Link>
             .
           </p>
         )}
@@ -264,6 +267,15 @@ export default async function LedgerPage() {
 
       <p className="mt-10 font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
         Page refreshed every 5 minutes; the crawler runs daily
+      </p>
+      <p className="mt-2 font-mono text-[11px] leading-[1.6] text-[var(--color-mute)] normal-case tracking-normal">
+        As of 2026-07-19 the ledger also counts tool removals; earlier totals exclude them. Most
+        removals arrive as full toolset replacements, not single-tool deletions. Removal entries
+        are historical observations - a same-named tool may have since returned. Details on{' '}
+        <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+          /methodology
+        </Link>
+        .
       </p>
     </article>
   );

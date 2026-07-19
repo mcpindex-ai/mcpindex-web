@@ -147,3 +147,14 @@ test('parseLedgerBlob: drops malformed events and bounds the free strings', () =
 // loadLedger lives in ledgerServer.ts (import 'server-only', not importable in plain node). Its
 // only logic beyond parseLedgerBlob (tested above) is `if (!ledgerEnabled()) return null` + a
 // guarded redis().get - both trivial and covered by the ledgerEnabled + parseLedgerBlob tests.
+
+test('coerceEvent removal_scope: allowlist coercion, absent when invalid or missing (schema stays /2)', () => {
+  const base = { tool_fp: FP, change_kinds: ['tool-removed'] };
+  assert.equal(coerceEvent({ ...base, removal_scope: 'toolset-replaced' })?.removal_scope, 'toolset-replaced');
+  assert.equal(coerceEvent({ ...base, removal_scope: 'single' })?.removal_scope, 'single');
+  assert.equal(coerceEvent({ ...base, removal_scope: 'bulk' })?.removal_scope, undefined);
+  assert.equal(coerceEvent({ ...base, removal_scope: 42 })?.removal_scope, undefined);
+  assert.equal(coerceEvent(base)?.removal_scope, undefined);
+  // The removal-context field is ADDITIVE on /2 - the schema string must not have moved.
+  assert.equal(SCHEMA, 'mcpindex.drift.ledger/2');
+});

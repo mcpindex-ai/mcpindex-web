@@ -39,3 +39,21 @@ test('a server with no matching events returns changes:0 (honest none, not null)
   assert.deepEqual(out.kinds, []);
   assert.equal(out.safetyRelevant, false);
 });
+
+test('aggregateServerDrift: toolsetReplaced true only when a matched removal event carries the scope', () => {
+  const fp = 'a'.repeat(32);
+  const ev = (over: Record<string, unknown>) => ({
+    tool_fp: 'b'.repeat(32), server_fp: fp, sources: 1, safety_relevant: true,
+    last_seen: '2026-07-19T00:00:00Z', change_kinds: ['tool-removed'], ...over,
+  });
+  const withScope = aggregateServerDrift(
+    [ev({ removal_scope: 'toolset-replaced' }) as never], fp, '2026-07-19T00:00:00Z');
+  assert.equal(withScope.toolsetReplaced, true);
+  const single = aggregateServerDrift([ev({ removal_scope: 'single' }) as never], fp, '');
+  assert.equal(single.toolsetReplaced, false);
+  const none = aggregateServerDrift([ev({}) as never], fp, '');
+  assert.equal(none.toolsetReplaced, false);
+  const otherServer = aggregateServerDrift(
+    [ev({ server_fp: 'c'.repeat(32), removal_scope: 'toolset-replaced' }) as never], fp, '');
+  assert.equal(otherServer.toolsetReplaced, false);
+});

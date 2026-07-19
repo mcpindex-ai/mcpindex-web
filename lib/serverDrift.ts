@@ -10,6 +10,10 @@ export interface ServerDrift {
   readonly kinds: readonly string[]; // union of change_kinds across this server's events, sorted
   readonly safetyRelevant: boolean; // any matched event touched a safety-relevant field
   readonly ledgerGeneratedAt: string; // freshness of the underlying ledger blob
+  // Removal fairness context: true when any removal event for this server was part of a
+  // >=5-at-once toolset replacement - the label ships with the rows so a bulk replacement
+  // never renders as N bare removals on a named page.
+  readonly toolsetReplaced: boolean;
 }
 
 /** Filter the ledger's events to one server (by its precomputed server_fp) and summarize. A server
@@ -33,5 +37,6 @@ export function aggregateServerDrift(
     kinds,
     safetyRelevant: mine.some((e) => e.safety_relevant),
     ledgerGeneratedAt,
+    toolsetReplaced: mine.some((e) => e.removal_scope === 'toolset-replaced'),
   };
 }

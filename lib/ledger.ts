@@ -33,7 +33,13 @@ export interface LedgerEvent {
   // What changed (surfaceable ChangeKinds, e.g. 'added-required-param'). ADDITIVE on schema /2:
   // an old blob without it coerces to [], a new blob's value is allowlist-validated. Never raw.
   readonly change_kinds: readonly string[];
+  // Removal context (ADDITIVE on /2, change_kinds precedent): most removals arrive as full
+  // toolset replacements, not single deletions - the label pairs every removal row with that
+  // context. Absent unless the blob carries a valid value.
+  readonly removal_scope?: 'single' | 'toolset-replaced';
 }
+
+const REMOVAL_SCOPES = new Set(['single', 'toolset-replaced']);
 
 export interface LedgerStat {
   readonly tools_observed_drifting: number; // the numerator (N)
@@ -69,6 +75,10 @@ export function coerceEvent(x: unknown): LedgerEvent | null {
   if (!FP_RE.test(tool_fp)) return null; // never render an unvalidated fp
   const sources = Number(e.sources);
   const last_seen = typeof e.last_seen === 'string' && TS_RE.test(e.last_seen) ? e.last_seen : '';
+  const scope =
+    typeof e.removal_scope === 'string' && REMOVAL_SCOPES.has(e.removal_scope)
+      ? (e.removal_scope as 'single' | 'toolset-replaced')
+      : undefined;
   return {
     tool_fp,
     server_fp: typeof e.server_fp === 'string' && FP_RE.test(e.server_fp) ? e.server_fp : '',
@@ -76,6 +86,7 @@ export function coerceEvent(x: unknown): LedgerEvent | null {
     safety_relevant: e.safety_relevant === true,
     last_seen,
     change_kinds: coerceChangeKinds(e.change_kinds), // allowlist-validated; [] for an old blob
+    ...(scope ? { removal_scope: scope } : {}),
   };
 }
 

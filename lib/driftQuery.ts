@@ -27,6 +27,10 @@ export type DriftAny =
       safety_relevant: boolean;
       last_seen: string | null;
       change_kinds: readonly string[]; // what changed; [] when meta is missing/old
+      // Removal context: most removals arrive as full toolset replacements; the
+      // advisory carries the same fairness context the /ledger row does. Absent
+      // unless meta carries a valid value.
+      removal_scope?: 'single' | 'toolset-replaced';
     }
   | { drifted: false }
   | { drifted: null }; // unknown (cache unavailable) -- fail-open
@@ -60,6 +64,10 @@ function metaToDriftedTrue(
       change_kinds: [],
     };
   }
+  const scope =
+    meta.removal_scope === 'single' || meta.removal_scope === 'toolset-replaced'
+      ? (meta.removal_scope as 'single' | 'toolset-replaced')
+      : undefined;
   const sources = Number(meta.sources);
   return {
     drifted: true,
@@ -68,6 +76,7 @@ function metaToDriftedTrue(
     safety_relevant: meta.safety_relevant === '1' || meta.safety_relevant === 1 || meta.safety_relevant === true,
     last_seen: typeof meta.last_seen === 'string' ? meta.last_seen : null,
     change_kinds: coerceChangeKinds(meta.change_kinds),
+    ...(scope ? { removal_scope: scope } : {}),
   };
 }
 

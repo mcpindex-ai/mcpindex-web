@@ -16,6 +16,7 @@ interface ServerDrift {
   kinds: string[];
   safetyRelevant: boolean;
   ledgerGeneratedAt: string;
+  toolsetReplaced?: boolean;
 }
 
 export function ContractDrift({ serverId }: { serverId: string }) {
@@ -85,7 +86,9 @@ export function ContractDrift({ serverId }: { serverId: string }) {
                     title={k}
                     className="text-[11px] px-2 py-0.5 border border-[var(--color-rule)] text-[var(--color-cite)]"
                   >
-                    {kindLabel(k)}
+                    {k === 'tool-removed' && drift.toolsetReplaced
+                      ? `${kindLabel(k)} (toolset replaced)`
+                      : kindLabel(k)}
                   </span>
                 ))}
               </div>

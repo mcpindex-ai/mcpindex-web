@@ -282,3 +282,10 @@ test('crawl set member with missing meta returns drifted:true provenance:crawl s
     change_kinds: [],
   });
 });
+
+test('metaToResult: removal_scope allowlist-coerced, absent when invalid/missing', () => {
+  const base = { sources: '1', safety_relevant: '1', change_kinds: '["tool-removed"]' };
+  assert.equal(metaToResult({ ...base, removal_scope: 'toolset-replaced' }).drifted && (metaToResult({ ...base, removal_scope: 'toolset-replaced' }) as { removal_scope?: string }).removal_scope, 'toolset-replaced');
+  assert.equal((metaToResult({ ...base, removal_scope: 'nonsense' }) as { removal_scope?: string }).removal_scope, undefined);
+  assert.equal((metaToResult(base) as { removal_scope?: string }).removal_scope, undefined);
+});
