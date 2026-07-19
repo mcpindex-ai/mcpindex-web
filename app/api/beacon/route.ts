@@ -9,12 +9,13 @@ export async function POST(req: NextRequest) {
     event?: string;
     source?: string;
   };
-  if (body.event !== 'gate_install_copy') {
+  const ALLOWED = new Set(['gate_install_copy', 'gate_cta_click']);
+  if (!body.event || !ALLOWED.has(body.event)) {
     return Response.json({ error: 'unsupported_event' }, { status: 400 });
   }
   const source = String(body.source ?? 'unknown')
     .replace(/[^\w.-]/g, '')
     .slice(0, 64);
-  console.log(`[beacon] ${new Date().toISOString()} gate_install_copy source=${source || 'unknown'}`);
+  console.log(`[beacon] ${new Date().toISOString()} ${body.event} source=${source || 'unknown'}`);
   return Response.json({ ok: true });
 }

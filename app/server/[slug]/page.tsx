@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { getServer, loadServers } from '@/lib/registry';
+import { getServer, loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { computeQuality, rankByQuality } from '@/lib/quality';
 import { buildInstalls } from '@/lib/installs';
 import { CATEGORY_LABELS } from '@/lib/categorize';
@@ -17,6 +17,7 @@ import {
 import { splitFlags } from '@/lib/badge';
 import { ContractDrift } from '@/components/ContractDrift';
 import { GateInstallBridge } from '@/components/GateInstallBridge';
+import { ServerVerdictCta } from '@/components/ServerVerdictCta';
 import { jsonLdSafe } from '@/lib/jsonLd';
 import { buildServerJsonLd, isSafeHref } from '@/lib/serverJsonLd';
 
@@ -95,6 +96,8 @@ export default async function ServerPage(
   const { score, breakdown } = computeQuality(server);
   const installs = buildInstalls(server);
   const verdictState = await loadVerdictForServer(server.slug);
+  // Crawl-date framing for the post-verdict CTA; memoized snapshot, no extra fetch.
+  const snapshotDay = (await loadSnapshotMeta()).fetchedAt?.slice(0, 10) ?? '';
   const alternatives = all
     .filter((s) => s.category === server.category && s.slug !== server.slug)
     .slice(0, 3);
@@ -179,6 +182,8 @@ export default async function ServerPage(
                 </Link>
               </p>
             </section>
+
+            <ServerVerdictCta serverTitle={server.title} snapshotDay={snapshotDay} />
 
             <ContractDrift serverId={server.name} />
 
