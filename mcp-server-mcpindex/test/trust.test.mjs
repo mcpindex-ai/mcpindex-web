@@ -17,6 +17,7 @@ function assertVerdictShape(v, { expectToolName } = {}) {
   for (const k of [
     'directive',
     'status',
+    'granularity',
     'dimensions',
     'expires_at',
     'honest_limits',
@@ -28,7 +29,8 @@ function assertVerdictShape(v, { expectToolName } = {}) {
     assert.ok(k in v, `missing key: ${k}`);
   }
   assert.ok(['ALLOW', 'DENY', 'REVIEW', 'UNVERIFIED'].includes(v.directive));
-  assert.ok(['EVALUATED', 'STALE', 'ERROR'].includes(v.status));
+  assert.ok(['EVALUATED', 'PARTIAL', 'STALE', 'ERROR'].includes(v.status));
+  assert.ok(v.granularity === null || typeof v.granularity === 'string');
   assert.ok(Array.isArray(v.dimensions));
   assert.ok(Array.isArray(v.honest_limits));
   assert.equal(v.verdict_contract_version, '1.0.0');
@@ -173,6 +175,33 @@ test('checkToolTrust: unknown directive from server is downgraded to UNVERIFIED'
     fetchImpl,
   });
   assert.equal(v.directive, 'UNVERIFIED');
+});
+
+test('checkToolTrust: PARTIAL status passes through (never masked as EVALUATED) + granularity kept', async () => {
+  // This is what the live API emits for a description-level screen. The old client
+  // coerced PARTIAL -> EVALUATED and dropped granularity, overstating completeness.
+  const fetchImpl = async () => ({
+    ok: true,
+    async json() {
+      return { directive: 'REVIEW', status: 'PARTIAL', granularity: 'description-level' };
+    },
+  });
+  const v = await checkToolTrust({ serverId: 's', toolName: 't', fetchImpl });
+  assert.equal(v.status, 'PARTIAL');
+  assert.equal(v.granularity, 'description-level');
+  assert.equal(v.directive, 'REVIEW');
+});
+
+test('checkToolTrust: an UNKNOWN status is coerced DOWN to STALE, never up to EVALUATED', async () => {
+  const fetchImpl = async () => ({
+    ok: true,
+    async json() {
+      return { directive: 'REVIEW', status: 'SOME_FUTURE_STATUS' };
+    },
+  });
+  const v = await checkToolTrust({ serverId: 's', toolName: 't', fetchImpl });
+  assert.equal(v.status, 'STALE'); // conservative, NOT 'EVALUATED'
+  assert.equal(v.granularity, null); // absent granularity normalizes to null
 });
 
 // --- assess_server ------------------------------------------------------

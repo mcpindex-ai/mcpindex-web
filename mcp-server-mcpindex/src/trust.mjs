@@ -3,7 +3,8 @@
 // Contract (v1 advisory, free tier):
 //   {
 //     directive: "ALLOW" | "DENY" | "REVIEW" | "UNVERIFIED",
-//     status: "EVALUATED" | "STALE" | "ERROR",
+//     status: "EVALUATED" | "PARTIAL" | "STALE" | "ERROR",
+//     granularity: string | null,   // e.g. "description-level" for a PARTIAL screen
 //     dimensions: [{ id, verdict, severity }],
 //     expires_at: string | null,
 //     honest_limits: string[],
@@ -14,6 +15,12 @@
 // Fail-CLOSED: if the upstream endpoint is unreachable, returns 404, or
 // returns malformed data, we return directive=UNVERIFIED, status=ERROR.
 // We NEVER fake an ALLOW. This is the load-bearing safety invariant.
+//
+// status is TELEMETRY about screen completeness (not the trust decision — that is
+// `directive`). PARTIAL means the screen only covered part of the surface (e.g.
+// description-level, not the live tool); it must NEVER be reported as EVALUATED. An
+// unexpected/unknown status is coerced DOWN to STALE (conservative), never up to
+// EVALUATED — overstating completeness is the one direction a trust tool must not drift.
 
 export const VERDICT_CONTRACT_VERSION = '1.0.0';
 
@@ -24,7 +31,7 @@ export const V1_HONEST_LIMITS = Object.freeze([
 ]);
 
 const VALID_DIRECTIVES = new Set(['ALLOW', 'DENY', 'REVIEW', 'UNVERIFIED']);
-const VALID_STATUSES = new Set(['EVALUATED', 'STALE', 'ERROR']);
+const VALID_STATUSES = new Set(['EVALUATED', 'PARTIAL', 'STALE', 'ERROR']);
 const VALID_VERDICTS = new Set(['PASS', 'FAIL', 'UNVERIFIED']);
 const VALID_SEVERITIES = new Set(['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
 
@@ -34,6 +41,7 @@ function unverifiedResponse({ serverId, toolName, sourceUrl, reason }) {
   return {
     directive: 'UNVERIFIED',
     status: 'ERROR',
+    granularity: null,
     dimensions: [],
     expires_at: null,
     honest_limits: [...V1_HONEST_LIMITS, `unverified_reason:${reason}`],
@@ -66,11 +74,17 @@ function shapeVerdict({ raw, serverId, toolName, sourceUrl }) {
   }
 
   const directive = VALID_DIRECTIVES.has(raw.directive) ? raw.directive : 'UNVERIFIED';
+  // Known status passes through verbatim (incl. PARTIAL). An UNKNOWN status is coerced
+  // conservatively: ERROR when there's no directive, else STALE — NEVER 'EVALUATED',
+  // which would falsely claim a complete screen.
   const status = VALID_STATUSES.has(raw.status)
     ? raw.status
     : directive === 'UNVERIFIED'
       ? 'ERROR'
-      : 'EVALUATED';
+      : 'STALE';
+  // Screen granularity (e.g. "description-level"); pass through so callers can see a
+  // PARTIAL screen's scope instead of silently losing it.
+  const granularity = typeof raw.granularity === 'string' ? raw.granularity : null;
   const dimensions = normalizeDimensions(raw.dimensions);
   const expires_at = typeof raw.expires_at === 'string' ? raw.expires_at : null;
 
@@ -84,6 +98,7 @@ function shapeVerdict({ raw, serverId, toolName, sourceUrl }) {
   return {
     directive,
     status,
+    granularity,
     dimensions,
     expires_at,
     honest_limits,

@@ -104,7 +104,8 @@ npx -y mcp-server-mcpindex@latest
 ```jsonc
 {
   "directive": "ALLOW" | "DENY" | "REVIEW" | "UNVERIFIED",
-  "status":    "EVALUATED" | "STALE" | "ERROR",
+  "status":    "EVALUATED" | "PARTIAL" | "STALE" | "ERROR",
+  "granularity": "description-level" | null,  // scope of a PARTIAL screen
   "dimensions": [
     { "id": "tool_safety", "verdict": "PASS", "severity": "INFO" }
   ],
@@ -192,7 +193,9 @@ async function gateToolCall({ serverId, toolName, invoke, askHuman }) {
 
 ### The load-bearing rule: never fail-open
 
-If the verdict endpoint is unreachable, returns 404, times out, or returns malformed JSON, `check_tool_trust` returns `directive: "UNVERIFIED"` + `status: "ERROR"`. It never silently coerces to ALLOW. Your gate code SHOULD treat UNVERIFIED as "human review required", never as "looks fine, ship it."
+If the verdict endpoint is unreachable, returns 404, times out, returns malformed JSON, **or has no verdict on file yet for that server**, `check_tool_trust` returns `directive: "UNVERIFIED"` + `status: "ERROR"`. It never silently coerces to ALLOW. Your gate code SHOULD treat UNVERIFIED as "human review required", never as "looks fine, ship it."
+
+`status` is telemetry about screen completeness, distinct from the `directive` trust decision: `EVALUATED` (full screen), `PARTIAL` (only part of the surface, e.g. description-level — see `granularity`), `STALE` (verdict past its freshness window), `ERROR` (unreachable / no verdict on file). A `PARTIAL` screen is never reported as `EVALUATED`.
 
 This is tested. See `test/trust.test.mjs`.
 

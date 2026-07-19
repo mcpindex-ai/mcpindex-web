@@ -4,6 +4,13 @@ All notable changes to `mcp-server-mcpindex` are recorded here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.11] - 2026-07-18
+
+### Fixed
+
+- **Verdict `status` no longer overstates screening completeness.** The live API emits `status: "PARTIAL"` for a description-level screen, but the client's `VALID_STATUSES` omitted `PARTIAL` and coerced it *up* to `EVALUATED` (a full screen) — dishonest for a trust tool. `PARTIAL` now passes through verbatim, an unknown status is coerced *down* to `STALE` (never up to `EVALUATED`), and the `granularity` field (e.g. `"description-level"`) is now preserved instead of dropped.
+- **README:** documents the `PARTIAL` status + `granularity`, and clarifies that `status: "ERROR"` also covers "no verdict on file yet" (not only endpoint failures).
+
 ## [0.3.10] - 2026-07-18
 
 ### Fixed
