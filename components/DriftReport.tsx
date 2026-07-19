@@ -17,7 +17,7 @@ export function DriftReport({ ledger }: { ledger: Ledger }) {
         The Drift Report{asOf ? ` · as of ${asOf}` : ''}
       </div>
       <p className="mt-4 text-[15.5px] leading-[1.6] text-[var(--color-cite)] max-w-2xl">
-        This week the crawler observed{' '}
+        Since tracking began, the crawler has observed{' '}
         <strong className="text-[var(--color-ink)]">{stat.tools_observed_drifting.toLocaleString()}</strong>{' '}
         tools across{' '}
         <strong className="text-[var(--color-ink)]">{stat.servers.toLocaleString()}</strong> servers
@@ -41,10 +41,10 @@ export function DriftReport({ ledger }: { ledger: Ledger }) {
       )}
 
       <p className="mt-6 text-[15.5px] leading-[1.6] text-[var(--color-ink)] max-w-2xl">
-        None of these tripped an auth check. Every one of these servers is still authorized, still on
-        the allow-list, still the same name in your config. Access control answers who may call a tool.
-        It says nothing about whether the tool still does what it declared when you connected it. The
-        failure mode with MCP is rarely &ldquo;I connected a bad server on day one.&rdquo; It is
+        Auth is not built to catch this class of change. A server that edits a tool&rsquo;s contract
+        keeps its API key, its allow-list entry, and its name in your config - access control answers
+        who may call a tool, not whether the tool still does what it declared when you connected it.
+        The failure mode with MCP is rarely &ldquo;I connected a bad server on day one.&rdquo; It is
         &ldquo;I connected a good server that changed on day 30.&rdquo;
       </p>
 
