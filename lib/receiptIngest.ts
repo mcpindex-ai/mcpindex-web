@@ -43,6 +43,11 @@ const STREAM_KEY = 'receipts:stream';
 const STREAM_MAXLEN = 100_000;
 // Distinct-install HyperLogLog (O(1) space): the publish-OFF cardinality metric.
 const INSTALLS_HLL_KEY = 'receipts:installs';
+// Weekly distinct-install HLL (receipts:installs:<yyyy-Www>): the WAG operational proxy.
+// Includes demo-fixture traffic (HLL has no membership/subtraction), so WAG-official is
+// always computed demo-excluded from the receipts corpus - never from these keys.
+const INSTALLS_WEEK_KEY_PREFIX = 'receipts:installs:';
+const INSTALLS_WEEK_TTL_S = 7_776_000; // 90d after last touch; proxy keys age out of Redis
 const RI_KEY_PREFIX = 'ri:';
 const RI_MAX_ENTRIES = 500;
 const RI_TTL_S = 7_776_000;
@@ -224,6 +229,15 @@ function redis(): Redis | null {
   return _redis;
 }
 
+/** ISO-8601 week key in UTC (e.g. "2026-W29"): the Thursday of a date's week fixes its ISO year. */
+export function isoWeekKey(now: Date): string {
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const day = d.getUTCDay() || 7; // Mon=1 .. Sun=7
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const week = Math.ceil(((d.getTime() - Date.UTC(d.getUTCFullYear(), 0, 1)) / 86_400_000 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+}
+
 // Enqueue a validated receipt batch for the corpus drain + fold the distinct-install HLL.
 // Best-effort, fail-OPEN: any Redis error is swallowed (the caller already 204'd the client).
 // STORE-ONLY - XADD + PFADD; no aggregated signal is computed here. The stream fields
@@ -236,13 +250,17 @@ export async function recordReceiptBatch(
 ): Promise<void> {
   const r = redis();
   if (!r) return;
-  void now; // signature parity with recordDriftBatch; no per-day counter on this plane
   try {
     const auth = authedInstalls.has(installId) ? '1' : '0';
     const p = r.pipeline();
 
     // Distinct-install cardinality (publish-OFF metric); O(1) space via HyperLogLog.
     p.pfadd(INSTALLS_HLL_KEY, installId);
+
+    // Weekly WAG proxy: same identity, bucketed by ISO week of ingest time.
+    const weekKey = INSTALLS_WEEK_KEY_PREFIX + isoWeekKey(now);
+    p.pfadd(weekKey, installId);
+    p.expire(weekKey, INSTALLS_WEEK_TTL_S);
 
     // Corpus enqueue: one stream entry per validated receipt. The drain reads d/install_id/auth.
     for (const rec of receipts) {
