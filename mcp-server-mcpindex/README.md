@@ -2,7 +2,7 @@
 
 > An MCP server for finding MCP servers, plus advisory trust verdicts agent frameworks can call before invoking a tool.
 
-A drop-in MCP server that lets your agent discover, compare, install, and pre-flight other MCP servers from inside the agent loop. Backed by [mcpindex.ai](https://mcpindex.ai) - the agent-native index of 3,500+ MCP servers indexed daily from the official registry.
+A drop-in MCP server that lets your agent discover, compare, install, and pre-flight other MCP servers from inside the agent loop. Backed by [mcpindex.ai](https://mcpindex.ai) - the agent-native index of the official MCP registry (live count at [mcpindex.ai/stats](https://mcpindex.ai/stats)), screened and drift-monitored daily.
 
 ## Install
 

@@ -183,7 +183,7 @@ export async function loadSnapshotMeta(): Promise<{ version: string; writtenAt: 
 export async function loadServers(): Promise<IndexedServer[]> {
   if (_cache) return _cache.servers;
   const loaded = await resolveSnapshot();
-  const servers = loaded.snapshot.servers
+  const filtered = loaded.snapshot.servers
     .filter(
       (e) =>
         e._meta['io.modelcontextprotocol.registry/official'].status ===
@@ -191,6 +191,12 @@ export async function loadServers(): Promise<IndexedServer[]> {
     )
     .map(normalize)
     .filter((s) => s.description && s.name && s.slug);
+  // Dedup guard: the publisher's isLatest filter should already yield one entry per
+  // name, but nine public surfaces render servers.length and slugs collide on name -
+  // a publisher regression must never silently double-count (the crawler's seeded
+  // list once carried 407 duplicate names; first entry wins, matching getServer).
+  const seen = new Set<string>();
+  const servers = filtered.filter((s) => (seen.has(s.name) ? false : (seen.add(s.name), true)));
   _cache = { servers, loaded };
   // Return from _cache (not the local `servers`) so a caller's servers and a later loadSnapshotMeta()
   // version always come from the same winning snapshot even if a concurrent cold caller reassigned _cache.
