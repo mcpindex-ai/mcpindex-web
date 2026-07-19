@@ -27,7 +27,18 @@ jobs:
     # off Actions to a no-timeout host.)
     timeout-minutes: 120
     steps:
+      # main requires PR reviews (enforce_admins=false), so the default GITHUB_TOKEN
+      # (github-actions[bot], not an admin) is REJECTED on `git push` — every synced
+      # snapshot committed fine but failed to land ("protected branch hook declined").
+      # Push with SYNC_PAT: a fine-grained PAT (Contents: Read+Write on mcpindex-web)
+      # owned by an admin, so the push bypasses the PR rule the same way an admin push
+      # does — without adding github-actions to the branch-protection bypass list (which
+      # would weaken the guard on the adjudication ledger). Falls back to GITHUB_TOKEN if
+      # the secret is unset (fetch/commit still run; only the push is gated on the PAT).
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.SYNC_PAT || github.token }}
+          persist-credentials: true
 
       - name: Setup Node
         uses: actions/setup-node@v4
