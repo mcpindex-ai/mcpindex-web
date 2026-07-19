@@ -50,7 +50,8 @@ export function proxy(req: NextRequest) {
   // only rate-limit the intended surfaces even if the matcher is later widened -
   // per Next's "verify inside, don't rely on the matcher alone" guidance. Keep it.
   // Rate-limited surfaces: public /api/v1/*; lead forms (/api/waitlist,
-  // /api/enterprise); /api/beacon; /api/health/* (outbound liveness).
+  // /api/enterprise); /api/beacon; /api/health/* (outbound liveness);
+  // /.well-known/mcpindex-challenge (unauthenticated, uncached, one Redis GET per hit).
   const p = req.nextUrl.pathname;
   if (
     !p.startsWith('/api/v1/') &&
@@ -58,6 +59,7 @@ export function proxy(req: NextRequest) {
     p !== '/api/enterprise' &&
     p !== '/api/beacon' &&
     !p.startsWith('/api/health/') &&
+    p !== '/.well-known/mcpindex-challenge' &&
     // AEO measurement window: /llms.txt and /llms-full.txt are temporarily uncached (dynamic)
     // so fetches can be counted. Un-caching removed their CDN shield, so bring them under the
     // same per-IP limit to cap abuse of the now-per-request 4MB /llms-full.txt render.
@@ -78,7 +80,12 @@ export function proxy(req: NextRequest) {
   // Namespace the limit bucket by route class so the temporary /llms.* window does NOT deplete
   // the same per-IP budget as /api/v1/* (a client pulling /llms-full.txt must not 429 its own
   // /api/v1/search). Coarse two-class split keeps the map bounded.
-  const routeClass = p === '/llms.txt' || p === '/llms-full.txt' ? 'llms' : 'api';
+  const routeClass =
+    p === '/llms.txt' || p === '/llms-full.txt'
+      ? 'llms'
+      : p === '/.well-known/mcpindex-challenge'
+        ? 'wellknown'
+        : 'api';
   const bucketKey = `${routeClass}:${ip}`;
 
   const now = Date.now();
@@ -122,5 +129,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/v1/:path*', '/api/waitlist', '/api/enterprise', '/api/beacon', '/api/health/:path*', '/llms.txt', '/llms-full.txt'],
+  matcher: ['/api/v1/:path*', '/api/waitlist', '/api/enterprise', '/api/beacon', '/api/health/:path*', '/llms.txt', '/llms-full.txt', '/.well-known/mcpindex-challenge'],
 };

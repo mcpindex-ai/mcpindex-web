@@ -13,6 +13,8 @@ import {
   type Decision,
   type Severity,
   type DimensionVerdict,
+  type PreviewBadge,
+  type PreviewState,
 } from '@/lib/verdicts';
 import { splitFlags } from '@/lib/badge';
 import { ContractDrift } from '@/components/ContractDrift';
@@ -182,6 +184,12 @@ export default async function ServerPage(
                 </Link>
               </p>
             </section>
+
+            {/* Owner preview badge - an owner-consented, human-confirmed observation. Distinct
+                from and subordinate to the screening verdict above; NEVER a security clearance. */}
+            {verdictState.kind === 'verdict' && verdictState.verdict.preview_badge && (
+              <OwnerPreviewPanel badge={verdictState.verdict.preview_badge} />
+            )}
 
             <ServerVerdictCta serverTitle={server.title} snapshotDay={snapshotDay} />
 
@@ -392,6 +400,53 @@ function RailRow({ k, v, href }: { k: string; v: string; href?: string }) {
         )}
       </dd>
     </div>
+  );
+}
+
+// Owner-preview state -> a short, honest human label. The full honest sentence is the badge's
+// own `statement` (rendered verbatim, escaped, below the label); this is only the chip caption.
+const PREVIEW_STATE_LABEL: Record<PreviewState, string> = {
+  clean: 'no contract drift observed',
+  drift: 'contract drift observed',
+  inconclusive: 'inconclusive',
+};
+
+// Owner preview panel: an owner-consented, human-confirmed OBSERVATION - never a security or
+// safety clearance. Every field is owner-controlled, so it renders as escaped React text (no
+// dangerouslySetInnerHTML). Visually subordinate to the platform's screening verdict above.
+function OwnerPreviewPanel({ badge }: { badge: PreviewBadge }) {
+  return (
+    <section className="mt-10">
+      <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
+        Owner preview&nbsp;·&nbsp;not a verdict
+      </div>
+      <div className="rule-t rule-b rule-l rule-r p-5 bg-[var(--color-accent-soft)]/30 border border-[var(--color-rule)]">
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+          <span className="font-mono text-[11px] uppercase tracking-[0.16em] px-2 py-1 bg-white text-[var(--color-cite)] border border-[var(--color-rule)]">
+            PREVIEW
+          </span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-mute)]">
+            {PREVIEW_STATE_LABEL[badge.state]}
+          </span>
+          {badge.date && (
+            <span className="font-mono text-[11px] text-[var(--color-mute)]">
+              as of {badge.date}
+            </span>
+          )}
+        </div>
+        {badge.statement && (
+          <p className="mt-3 text-[14px] leading-[1.6] text-[var(--color-ink)]">
+            {badge.statement}
+          </p>
+        )}
+        <p className="mt-3 font-mono text-[10.5px] leading-[1.55] text-[var(--color-mute)]">
+          Preview - not a security or safety guarantee. Published at the owner&rsquo;s request and
+          human-confirmed; it reports an observation, not a clearance, and is separate from and
+          subordinate to the screening verdict above.
+          {badge.confirmed_by ? <> Confirmed by {badge.confirmed_by}.</> : null}
+        </p>
+      </div>
+    </section>
   );
 }
 

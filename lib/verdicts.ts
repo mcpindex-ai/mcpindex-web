@@ -36,6 +36,25 @@ export type Adjudication = {
   at: string;
 };
 
+// Owner-consented "preview" conformance badge, published by the trust system into a server's
+// verdict record (owner_preview_adjudication.publish_preview_badge). A POSITIVE axis, distinct
+// from and subordinate to the platform's own screening verdict: it reports an owner-attested
+// observation ("no contract drift observed"), NEVER a security/safety clearance. The `statement`
+// is honest, already-sanitized owner-facing prose the trust system regenerates deterministically;
+// here it is passed through untouched and rendered as escaped text (never HTML).
+export type PreviewState = 'clean' | 'drift' | 'inconclusive';
+export type PreviewBadge = {
+  tier: 'preview';
+  by: string;
+  confirmed_by: string;
+  state: PreviewState;
+  n_drift: number;
+  date: string;
+  server_id: string;
+  statement: string;
+  re_check_policy: string;
+};
+
 export type Verdict = {
   schema_version: '1.0';
   status: VerdictStatus;
@@ -49,6 +68,7 @@ export type Verdict = {
   title?: string;
   evaluated_at?: string; // when the screen was produced (freshness signal); ISO string
   adjudication?: Adjudication;
+  preview_badge?: PreviewBadge;
 };
 
 type RawVerdict = {
@@ -68,6 +88,17 @@ type RawVerdict = {
   title?: string;
   evaluated_at?: string;
   adjudication?: { decision?: string; reason?: string; by?: string; at?: string };
+  preview_badge?: {
+    tier?: string;
+    by?: string;
+    confirmed_by?: string;
+    state?: string;
+    n_drift?: number;
+    date?: string;
+    server_id?: string;
+    statement?: string;
+    re_check_policy?: string;
+  };
 };
 
 const STORE = path.join(process.cwd(), 'data', 'verdicts.json');
@@ -104,6 +135,31 @@ function coerceAdjudication(raw: RawVerdict['adjudication']): Adjudication | und
   };
 }
 
+const PREVIEW_STATES = new Set<string>(['clean', 'drift', 'inconclusive']);
+
+// Pass the owner-controlled badge through as a typed field. The trust system already
+// re-sanitizes it deterministically on write/overlay; here we only coerce shape (typed field,
+// never trust a raw object) and render every field as escaped text. State is coerced fail-closed
+// to 'inconclusive' on a garbage value so a corrupt store can never surface a "clean" chip - the
+// honest `statement` prose is the source of truth and renders verbatim (escaped).
+function coercePreviewBadge(raw: RawVerdict['preview_badge']): PreviewBadge | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const state = (raw.state ?? '').toLowerCase();
+  const nDrift =
+    typeof raw.n_drift === 'number' && Number.isFinite(raw.n_drift) ? raw.n_drift : 0;
+  return {
+    tier: 'preview',
+    by: typeof raw.by === 'string' ? raw.by : '',
+    confirmed_by: typeof raw.confirmed_by === 'string' ? raw.confirmed_by : '',
+    state: (PREVIEW_STATES.has(state) ? state : 'inconclusive') as PreviewState,
+    n_drift: nDrift,
+    date: typeof raw.date === 'string' ? raw.date : '',
+    server_id: typeof raw.server_id === 'string' ? raw.server_id : '',
+    statement: typeof raw.statement === 'string' ? raw.statement : '',
+    re_check_policy: typeof raw.re_check_policy === 'string' ? raw.re_check_policy : '',
+  };
+}
+
 function normalize(raw: RawVerdict): Verdict {
   return {
     schema_version: '1.0',
@@ -127,6 +183,7 @@ function normalize(raw: RawVerdict): Verdict {
     title: raw.title,
     evaluated_at: typeof raw.evaluated_at === 'string' ? raw.evaluated_at : undefined,
     adjudication: coerceAdjudication(raw.adjudication),
+    preview_badge: coercePreviewBadge(raw.preview_badge),
   };
 }
 
