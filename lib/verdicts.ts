@@ -69,6 +69,13 @@ export type Verdict = {
   evaluated_at?: string; // when the screen was produced (freshness signal); ISO string
   adjudication?: Adjudication;
   preview_badge?: PreviewBadge;
+  // Derived (never stored): true when the record carries NO real screening verdict -
+  // an owner-consented preview badge minted for a server the platform has not screened
+  // (origin='owner-preview', or no status AND no dimensions). It is computed in normalize()
+  // from the RAW record because after status-coercion a missing status is indistinguishable
+  // from a genuine ERROR. The /server page routes the SCREENING axis of such a record to the
+  // honest "not yet screened" state (never a red ERROR); the preview_badge axis is independent.
+  unscreened?: boolean;
 };
 
 type RawVerdict = {
@@ -160,6 +167,21 @@ function coercePreviewBadge(raw: RawVerdict['preview_badge']): PreviewBadge | un
   };
 }
 
+// Detect a preview-only record - one with no real screening verdict - from the RAW store
+// entry. Must run on the raw record: normalize() coerces a missing status to 'ERROR', after
+// which a preview-only record is indistinguishable from a genuine screening ERROR. Heuristic
+// (matches the trust writer, owner_preview_adjudication.publish_preview_badge): a record is
+// preview-only only when it carries NO real screening status AND either declares
+// origin='owner-preview' OR shows the structural signature of a minted-but-unscreened record
+// (no dimensions). A record with a real status is NEVER preview-only - it renders its real
+// verdict - even in the contractually-impossible case where it also carries
+// origin='owner-preview'; the status gate takes precedence so a genuine verdict is never hidden.
+function isPreviewOnly(raw: RawVerdict): boolean {
+  if (raw.status != null) return false;
+  const noDimensions = raw.dimensions == null || raw.dimensions.length === 0;
+  return raw.origin === 'owner-preview' || noDimensions;
+}
+
 function normalize(raw: RawVerdict): Verdict {
   return {
     schema_version: '1.0',
@@ -184,6 +206,7 @@ function normalize(raw: RawVerdict): Verdict {
     evaluated_at: typeof raw.evaluated_at === 'string' ? raw.evaluated_at : undefined,
     adjudication: coerceAdjudication(raw.adjudication),
     preview_badge: coercePreviewBadge(raw.preview_badge),
+    unscreened: isPreviewOnly(raw),
   };
 }
 

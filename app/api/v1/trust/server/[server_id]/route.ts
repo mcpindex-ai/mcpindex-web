@@ -44,19 +44,25 @@ export async function GET(
   }
 
   const v = await getVerdict(server_id);
-  const body = v
+  // A preview-only record (owner-consented preview badge minted for a server the platform
+  // has NOT screened) carries no real screening verdict: normalize() coerced its absent
+  // status to ERROR and its absent directive to REVIEW. Reporting that as a screening result
+  // would diverge from the /server page, which routes such a record to the honest
+  // "not yet screened" state. Treat it EXACTLY like a genuinely-absent server on the wire.
+  const screened = v && !v.unscreened ? v : null;
+  const body = screened
     ? {
         subject: { server_id, tool_name: null },
-        status: v.status,
-        directive: v.directive.decision,
-        granularity: v.granularity ?? null,
-        dimensions: v.dimensions.map((d) => ({
+        status: screened.status,
+        directive: screened.directive.decision,
+        granularity: screened.granularity ?? null,
+        dimensions: screened.dimensions.map((d) => ({
           id: d.id,
           verdict: d.verdict,
           severity: d.severity,
         })),
-        expires_at: v.directive.expires_at || null,
-        honest_limits: v.honest_limits ?? [...FLOOR],
+        expires_at: screened.directive.expires_at || null,
+        honest_limits: screened.honest_limits ?? [...FLOOR],
         verdict_contract_version: '1.0.0',
       }
     : {

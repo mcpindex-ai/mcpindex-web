@@ -30,16 +30,26 @@ import { buildServerJsonLd, isSafeHref } from '@/lib/serverJsonLd';
 // Two rendering states for the trust panel, both FAIL-CLOSED (no ALLOW, no
 // green unless a real EVALUATED verdict says so):
 //   verdict     -> render the populated FreeTierVerdict
-//   unverified  -> no verdict on file (v1 default for ~all servers)
+//   unverified  -> no real screening verdict on file (v1 default for ~all servers).
+//                  Also covers a preview-only record: an owner-consented preview badge
+//                  minted for a server the platform has NOT screened. Its screening axis
+//                  is "not yet screened" (never a red ERROR); the owner preview badge is a
+//                  SEPARATE, subordinate axis carried on `previewBadge` and rendered below.
 // (Verdicts come from the build-time store, so there is no "service unreachable"
 // state today; reintroduce one only if a live verdict service is ever wired in.)
 type VerdictState =
   | { kind: 'verdict'; verdict: FreeTierVerdict }
-  | { kind: 'unverified' };
+  | { kind: 'unverified'; previewBadge?: PreviewBadge };
 
 async function loadVerdictForServer(slug: string): Promise<VerdictState> {
   const verdict = await getVerdict(slug);
-  return verdict ? { kind: 'verdict', verdict } : { kind: 'unverified' };
+  if (!verdict) return { kind: 'unverified' };
+  // A preview-only record has no real screening verdict (owner-preview badge on an
+  // un-screened server). Route the SCREENING axis to the same honest "not yet screened"
+  // branch used for an absent verdict - do NOT render the ERROR that status-coercion
+  // produced - while still surfacing the owner preview badge on its own axis.
+  if (verdict.unscreened) return { kind: 'unverified', previewBadge: verdict.preview_badge };
+  return { kind: 'verdict', verdict };
 }
 
 export const revalidate = 3600;
@@ -127,6 +137,13 @@ export default async function ServerPage(
       ? verdictState.verdict.directive.expires_at.slice(0, 10)
       : null;
 
+  // Owner preview badge lives on its own axis, independent of screening: it may ride a
+  // fully screened verdict OR a preview-only record whose screening axis is "not yet screened".
+  const previewBadge =
+    verdictState.kind === 'verdict'
+      ? verdictState.verdict.preview_badge
+      : verdictState.previewBadge;
+
   const RAIL_LABEL =
     'font-mono text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-mute)] mb-3';
 
@@ -186,10 +203,10 @@ export default async function ServerPage(
             </section>
 
             {/* Owner preview badge - an owner-consented, human-confirmed observation. Distinct
-                from and subordinate to the screening verdict above; NEVER a security clearance. */}
-            {verdictState.kind === 'verdict' && verdictState.verdict.preview_badge && (
-              <OwnerPreviewPanel badge={verdictState.verdict.preview_badge} />
-            )}
+                from and subordinate to the screening verdict above; NEVER a security clearance.
+                Independent of the screening axis: it renders whether the server is screened
+                (verdict branch) or preview-only / not-yet-screened (unverified branch). */}
+            {previewBadge && <OwnerPreviewPanel badge={previewBadge} />}
 
             <ServerVerdictCta serverTitle={server.title} snapshotDay={snapshotDay} />
 
