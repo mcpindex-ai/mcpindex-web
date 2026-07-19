@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { getInstallReceipts } from '@/lib/receiptIngest';
 
 export const dynamic = 'force-dynamic';
@@ -27,9 +28,9 @@ export default async function ReceiptsPage({ searchParams }: PageProps) {
         <p className="mt-8 text-[15px] leading-[1.55] text-[var(--color-mute)]">
           Install ID missing or invalid. Your install ID is printed by the gate at install
           time and is part of your receipts URL (<span className="font-mono">/receipts?id=…</span>).{' '}
-          <a href="/guides/read-your-gate-activity" className="underline">
+          <Link href="/guides/read-your-gate-activity" className="underline">
             How to read your gate activity
-          </a>
+          </Link>
           .
         </p>
       </article>

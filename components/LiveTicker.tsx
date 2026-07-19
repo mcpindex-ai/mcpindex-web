@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { loadSnapshot, loadServers } from '@/lib/registry';
 import { daysAgoCutoff, timeAgo } from '@/lib/time';
 
@@ -26,10 +27,10 @@ export async function LiveTicker() {
           </span>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <a href="/changelog" className="hover:text-[var(--color-accent)]">/changelog</a>
-          <a href="/api/registry-count" className="hidden sm:inline hover:text-[var(--color-accent)]">
+          <Link href="/changelog" className="hover:text-[var(--color-accent)]">/changelog</Link>
+          <Link href="/api/registry-count" className="hidden sm:inline hover:text-[var(--color-accent)]">
             /api/registry-count
-          </a>
+          </Link>
         </div>
       </div>
     </div>
