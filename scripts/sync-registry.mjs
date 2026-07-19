@@ -22,8 +22,14 @@ await fs.mkdir(SNAP_DIR, { recursive: true });
 // fetched — which, combined with the 10-min CI timeout, is why daily syncs started
 // silently failing. Fetch each page with a per-request timeout and bounded retries
 // so a transient stall no longer kills the run.
-const PAGE_TIMEOUT_MS = 30_000;
-const PAGE_RETRIES = 4;
+// The upstream intermittently stalls a single page HARD (observed 2026-07-19: page 12
+// exceeded 30s on all 4 retries and aborted the whole run, though manual runs minutes
+// apart completed fine). Be patient: a genuinely-slow page gets 60s, and a transient
+// stall gets 6 backoff'd retries (up to ~64s apart) to let the upstream recover before
+// we fail-closed. Worst case per stuck page ~6-8min, well within the 120min CI ceiling;
+// only a truly-dead upstream (all 7 attempts fail) throws and refuses to ship partial.
+const PAGE_TIMEOUT_MS = 60_000;
+const PAGE_RETRIES = 6;
 
 async function fetchPage(cursor) {
   const url = new URL(BASE);
