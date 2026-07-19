@@ -25,9 +25,12 @@ type Health = {
   // TEMP DIAGNOSTIC (redacted): identifies WHICH key the running function reads,
   // without exposing it. sha8 of the value + its length. Remove after diagnosis.
   key_fp: string | null;
+  brevo_diag: string | null;
 };
 
 let memo: { at: number; body: Health } | null = null;
+
+let lastBrevoDiag: string | null = null; // TEMP: last non-200 Brevo status + message (redacted)
 
 async function ping(key: string): Promise<boolean | null> {
   try {
@@ -36,7 +39,11 @@ async function ping(key: string): Promise<boolean | null> {
       signal: AbortSignal.timeout(8_000),
     });
     if (res.status === 200) return true;
-    if (res.status === 401) return false; // revoked/invalid
+    // TEMP DIAGNOSTIC: record Brevo's own error message (never contains the key) so we
+    // can tell "revoked key" apart from "IP not authorized".
+    const body = await res.text().catch(() => '');
+    lastBrevoDiag = `${res.status} ${body.slice(0, 160)}`;
+    if (res.status === 401) return false; // revoked/invalid OR IP-restricted
     return null; // 429/5xx/etc: transient, not a hard "dead" signal
   } catch {
     return null; // network/timeout: unknown
@@ -55,6 +62,7 @@ async function compute(): Promise<Health> {
     api_ok,
     checked_at: new Date().toISOString(),
     key_fp: key ? `${createHash('sha256').update(key).digest('hex').slice(0, 8)}:${key.length}` : null,
+    brevo_diag: lastBrevoDiag,
   };
 }
 
