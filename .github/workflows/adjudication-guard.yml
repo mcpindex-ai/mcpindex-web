@@ -9,6 +9,7 @@ on:
   pull_request:
     paths:
       - 'data/adjudications.jsonl'
+      - 'data/preview_badges.jsonl'
       - 'scripts/check-adjudication-diff.mjs'
       - '.github/workflows/adjudication-guard.yml'
 
@@ -31,7 +32,38 @@ jobs:
       - name: Self-check the guard
         run: node scripts/check-adjudication-diff.mjs --selftest
 
+      # Vendored-guard parity: scripts/check-adjudication-diff.mjs is a VENDORED copy of the
+      # canonical in mcpindex-ai/mcpindex-trust (the pushback cron on the VM-key box runs its OWN
+      # copy, so a web compromise can't code-exec there). The two MUST stay byte-identical, else the
+      # web PR gate enforces a different contract than the cron applies. Fail-closed: if the canonical
+      # cannot be fetched, block the PR rather than let a silent divergence through.
+      - name: Vendored-guard parity (must match mcpindex-trust canonical)
+        env:
+          # Read-only access to the (private) canonical. Falls back to the workflow token if the
+          # canonical repo is public. Set the secret to activate the cross-repo gate.
+          TRUST_RO_TOKEN: ${{ secrets.MCPINDEX_TRUST_RO_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+          if ! git clone --quiet --depth 1 --filter=blob:none --sparse \
+              "https://x-access-token:${TRUST_RO_TOKEN}@github.com/mcpindex-ai/mcpindex-trust.git" _trust; then
+            echo "PARITY NOT VERIFIED: cannot fetch mcpindex-trust canonical. Set the" >&2
+            echo "MCPINDEX_TRUST_RO_TOKEN secret (read-only) to activate the cross-repo parity gate." >&2
+            exit 1
+          fi
+          git -C _trust sparse-checkout set scripts/check-adjudication-diff.mjs >/dev/null
+          if ! diff -q scripts/check-adjudication-diff.mjs _trust/scripts/check-adjudication-diff.mjs; then
+            echo "DIVERGED: the vendored guard differs from the mcpindex-trust canonical." >&2
+            echo "Re-vendor: copy mcpindex-trust/scripts/check-adjudication-diff.mjs here, then re-push." >&2
+            exit 1
+          fi
+          echo "vendored guard is byte-identical to the mcpindex-trust canonical."
+
       - name: Ledger diff guard (append-only + well-formed)
         env:
           BASE_REF: ${{ github.base_ref }} # via env, not shell interpolation
         run: node scripts/check-adjudication-diff.mjs --base "origin/$BASE_REF"
+
+      - name: Preview-badge ledger diff guard (append-only + well-formed)
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: node scripts/check-adjudication-diff.mjs --preview-base "origin/$BASE_REF"

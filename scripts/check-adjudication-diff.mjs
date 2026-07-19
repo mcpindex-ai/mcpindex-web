@@ -73,8 +73,79 @@ function badEntry(line, i) {
   return null;
 }
 
-/** Core check: returns an array of error strings (empty = OK). Pure - no I/O. */
-export function checkAppendOnly(oldText, newText) {
+// ------------------------------------------------------------------ PREVIEW-badge ledger (P3)
+// The POSITIVE preview-badge ledger (data/preview_badges.jsonl) is durable, cron-re-applied, and
+// verdict-AFFECTING exactly like the negative adjudications ledger: verdicts_push_back.sh commits/
+// pushes it and adjudicate_preview_badges.py --apply overlays it onto the freshly-rsync'd store
+// every cycle. So it needs the SAME tamper-evidence the negative ledger has - append-only prefix +
+// per-line well-formedness + a shrink floor - or a truncated/rewritten/fabricated preview ledger
+// (a well-formed line that the runtime resanitizer would accept: a deleted confirmed-drift badge, a
+// drift->clean flip, a phantom clean badge) ships to prod unchecked. Kept in sync with the write-
+// layer invariants in owner_preview_adjudication.py / owner_publish.py (_resanitize_preview_badge,
+// _SERVER_ID_FORBIDDEN_RE, _CLEARANCE_CLAIM_RE, PREVIEW_STATES, MAX_ID, _slugify).
+const PREVIEW_LEDGER = 'data/preview_badges.jsonl';
+const PREVIEW_STATES = new Set(['clean', 'drift', 'inconclusive']);
+const PREVIEW_MAX_ID = 512; // mirror tooling.cse.model.MAX_ID
+// Mirror owner_preview_adjudication._SERVER_ID_FORBIDDEN_RE (incl. the bidi-override / zero-width /
+// line-paragraph separators): ASCII control + C1, markup/quote chars, and Unicode spoof/format chars.
+const PREVIEW_SERVER_ID_FORBIDDEN_RE =
+  /[\x00-\x1f\x7f-\x9f<>"'&\u200b-\u200d\u202a-\u202e\u2066-\u2069\ufeff\u2028\u2029]/;
+// Mirror owner_publish._CLEARANCE_CLAIM_RE (word-boundary positive-clearance claim words). A preview
+// badge NEVER asserts a standalone safe/secure/verified/conforming/certified/guaranteed claim.
+const PREVIEW_CLEARANCE_CLAIM_RE = /\b(safe|secure|verified|conforming|conformant|certified|guaranteed)\b/i;
+// `at` is a full ISO timestamp (entry.decided_at) or an ISO date (the confirm date) - both accepted.
+const PREVIEW_AT_RE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/;
+// A REVOKE tombstone reason (P4): printable, bounded, no control/markup char. Mirrors
+// owner_preview_adjudication._REVOKE_REASON_FORBIDDEN_RE / _MAX_REVOKE_REASON.
+const PREVIEW_REASON_FORBIDDEN_RE = /[\x00-\x1f\x7f-\x9f<>"'&]/;
+const PREVIEW_MAX_REASON = 200;
+
+/** Faithful JS port of tooling.frontier_adjudication._slugify (== seed_registry_batch.slugify),
+ *  so a preview-ledger line's server_id must round-trip to its own slug (no id/slug spoof). */
+function slugifyPreview(name) {
+  let s = String(name).toLowerCase().split('/').join('--').split('.').join('-').split('@').join('');
+  s = s.replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+  return s;
+}
+
+/** Validate ONE added preview-ledger line against the preview schema; return an error string or null. */
+function badPreviewEntry(line, i) {
+  let e;
+  try {
+    e = JSON.parse(line);
+  } catch {
+    return `added preview line ${i + 1} is not valid JSON: ${line.slice(0, 80)}`;
+  }
+  if (e === null || typeof e !== 'object' || Array.isArray(e)) return `added preview line ${i + 1} is not a JSON object`;
+  if (typeof e.slug !== 'string' || e.slug.trim() === '') return `added preview line ${i + 1} missing/empty "slug"`;
+  const sid = e.server_id;
+  if (typeof sid !== 'string' || sid.trim() === '') return `added preview line ${i + 1} missing/empty "server_id"`;
+  if (sid.length > PREVIEW_MAX_ID) return `added preview line ${i + 1} server_id exceeds MAX_ID (${PREVIEW_MAX_ID})`;
+  if (PREVIEW_SERVER_ID_FORBIDDEN_RE.test(sid)) return `added preview line ${i + 1} server_id carries a forbidden markup/control/bidi/zero-width char`;
+  if (PREVIEW_CLEARANCE_CLAIM_RE.test(sid)) return `added preview line ${i + 1} server_id makes a positive-clearance claim`;
+  if (slugifyPreview(sid) !== e.slug) return `added preview line ${i + 1} server_id does not round-trip to slug (_slugify(server_id) != slug)`;
+  if (typeof e.at !== 'string' || !PREVIEW_AT_RE.test(e.at)) return `added preview line ${i + 1} "at" is not an ISO timestamp`;
+  // REVOKE tombstone (P4): kind "revoke" + a well-formed reason, NO badge. The overlay STRIPS the
+  // badge for this slug. Append-only + well-formed like a badge line - a truncated/rewritten ledger
+  // is still caught by the append-only prefix + floor checks; here we only validate the added line.
+  if (e.kind === 'revoke') {
+    if (typeof e.reason !== 'string' || e.reason.trim() === '') return `added preview line ${i + 1} revoke missing/empty "reason"`;
+    if (e.reason.length > PREVIEW_MAX_REASON) return `added preview line ${i + 1} revoke reason exceeds ${PREVIEW_MAX_REASON} chars`;
+    if (PREVIEW_REASON_FORBIDDEN_RE.test(e.reason)) return `added preview line ${i + 1} revoke reason carries a control/markup char`;
+    return null;
+  }
+  const badge = e.badge;
+  if (badge === null || typeof badge !== 'object' || Array.isArray(badge)) return `added preview line ${i + 1} "badge" is not a JSON object`;
+  if (!PREVIEW_STATES.has(badge.state)) return `added preview line ${i + 1} badge.state "${badge.state}" not in {clean,drift,inconclusive}`;
+  if (typeof badge.statement === 'string' && PREVIEW_CLEARANCE_CLAIM_RE.test(badge.statement)) {
+    return `added preview line ${i + 1} badge.statement makes a positive-clearance claim`;
+  }
+  return null;
+}
+
+/** Core check: returns an array of error strings (empty = OK). Pure - no I/O. `validator` picks the
+ *  per-added-line schema (badEntry for the negative ledger; badPreviewEntry for the preview ledger). */
+export function checkAppendOnly(oldText, newText, validator = badEntry) {
   const errors = [];
   const oldLines = lines(oldText);
   const newLines = lines(newText);
@@ -91,7 +162,7 @@ export function checkAppendOnly(oldText, newText) {
   }
   // (2) every ADDED line is well-formed.
   for (let i = oldLines.length; i < newLines.length; i++) {
-    const err = badEntry(newLines[i], i);
+    const err = validator(newLines[i], i);
     if (err) errors.push(err);
   }
   return errors;
@@ -184,7 +255,73 @@ function selftest() {
   const absentFloor = spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--wellformed-only', '--min-lines', '1'], { cwd: tmp, encoding: 'utf8' }).status;
   if (absentFloor !== 1) { console.error('SELFTEST FAIL: absent ledger with floor>0 must refuse'); process.exit(1); }
   fs.rmSync(tmp, { recursive: true, force: true });
-  console.log(`selftest OK (${cases.length} cases + H1 fail-closed + wellformed-only + append-only floor)`);
+
+  // ---- PREVIEW-badge ledger arm (P3) ----------------------------------------------------------
+  // (A) pure append-only + preview-wellformedness via checkAppendOnly(..., badPreviewEntry). Proves a
+  // deleted / rewritten / fabricated-invalid preview line is REJECTED while a legit append PASSES.
+  const gp = (e = {}) => JSON.stringify({
+    slug: 'stripe-mcp', server_id: 'stripe-mcp', at: '2026-07-18T00:00:00Z',
+    badge: { tier: 'preview', state: 'clean', date: '2026-07-18', server_id: 'stripe-mcp',
+      statement: 'Preview - no contract drift observed.' },
+    ...e,
+  }) + '\n';
+  const badge = (state, sid, statement) => ({ badge: { tier: 'preview', state, date: '2026-07-18', server_id: sid, statement } });
+  const pOld = gp();
+  const pAppend = gp({ slug: 'other-mcp', server_id: 'other-mcp', ...badge('drift', 'other-mcp', 'Preview - contract drift observed.') });
+  // A REVOKE tombstone line (P4): kind revoke + slug/server_id/at/reason, NO badge. Append-only.
+  const rev = (e = {}) => JSON.stringify({
+    kind: 'revoke', slug: 'stripe-mcp', server_id: 'stripe-mcp',
+    at: '2026-08-20T00:00:00Z', reason: 'drift-on-recheck:drift', ...e,
+  }) + '\n';
+  const pCases = [
+    ['preview append one good line', pOld, pOld + pAppend, 0],
+    ['preview append a well-formed revoke tombstone', pOld, pOld + rev(), 0],
+    ['preview revoke missing reason', pOld, pOld + rev({ reason: '' }), 1],
+    ['preview revoke reason with a control char', pOld, pOld + rev({ reason: 'badreason' }), 1],
+    ['preview revoke slug/server_id mismatch', pOld, pOld + rev({ slug: 'wrong' }), 1],
+    ['preview revoke non-ISO at', pOld, pOld + rev({ at: 'not-a-date' }), 1],
+    ['preview no change', pOld, pOld, 0],
+    ['preview delete a line (shrink)', pOld + pAppend, pOld, 1],
+    ['preview rewrite a prior line (drift->clean flip)', pOld, gp(badge('drift', 'stripe-mcp', 'Preview - flipped.')), 1],
+    ['preview added line not JSON', pOld, pOld + 'not json\n', 1],
+    ['preview added line missing slug', pOld, pOld + JSON.stringify({ server_id: 'z-mcp', at: '2026-07-18', badge: { state: 'clean' } }) + '\n', 1],
+    ['preview added line bad state', pOld, pOld + gp({ slug: 'z-mcp', server_id: 'z-mcp', ...badge('cleared', 'z-mcp', 'x') }), 1],
+    ['preview added line slug/server_id mismatch', pOld, pOld + gp({ slug: 'wrong', server_id: 'z-mcp', ...badge('clean', 'z-mcp', 'x') }), 1],
+    ['preview added line markup in server_id', pOld, pOld + gp({ slug: slugifyPreview('evil<x>'), server_id: 'evil<x>', ...badge('clean', 'evil<x>', 'x') }), 1],
+    ['preview added line clearance word in server_id', pOld, pOld + gp({ slug: 'safe-mcp', server_id: 'safe-mcp', ...badge('clean', 'safe-mcp', 'x') }), 1],
+    ['preview added line clearance claim in statement', pOld, pOld + gp({ slug: 'z-mcp', server_id: 'z-mcp', ...badge('clean', 'z-mcp', 'This server is certified.') }), 1],
+    ['preview added line non-ISO at', pOld, pOld + gp({ slug: 'z-mcp', server_id: 'z-mcp', at: 'not-a-date', ...badge('clean', 'z-mcp', 'x') }), 1],
+  ];
+  for (const [name, o, n, want] of pCases) {
+    const got = checkAppendOnly(o, n, badPreviewEntry).length;
+    const pass = want === 0 ? got === 0 : got > 0;
+    if (!pass) { console.error(`SELFTEST FAIL: ${name} (wanted ${want ? 'errors' : 'clean'}, got ${got})`); process.exit(1); }
+  }
+  // (B) --preview-wellformed-only integration (the cron arm): floor + per-line wellformedness on the
+  // working-tree data/preview_badges.jsonl. A fabricated-invalid line -> exit 1; a truncated ledger
+  // below the floor -> exit 1; a clean append at/above the floor -> exit 0; absent w/ floor 0 -> exit 0.
+  const ptmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pwfo-'));
+  fs.mkdirSync(path.join(ptmp, 'data'));
+  const pLedgerP = path.join(ptmp, 'data', 'preview_badges.jsonl');
+  const pwfo = (content, extra = []) => {
+    fs.writeFileSync(pLedgerP, content);
+    return spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--preview-wellformed-only', ...extra],
+      { cwd: ptmp, encoding: 'utf8' }).status;
+  };
+  if (pwfo(gp()) !== 0) { console.error('SELFTEST FAIL: --preview-wellformed-only rejected a clean preview ledger'); process.exit(1); }
+  const forged = gp() + gp({ slug: 'z-mcp', server_id: 'z-mcp', ...badge('certified', 'z-mcp', 'x') }); // bad state
+  if (pwfo(forged) !== 1) { console.error('SELFTEST FAIL: --preview-wellformed-only must reject a fabricated-invalid line'); process.exit(1); }
+  if (pwfo(gp(), ['--min-lines', '1']) !== 0) { console.error('SELFTEST FAIL: preview 1 line >= floor 1 must pass'); process.exit(1); }
+  if (pwfo(gp(), ['--min-lines', '2']) !== 1) { console.error('SELFTEST FAIL: preview 1 line < floor 2 must fail (truncation/shrink)'); process.exit(1); }
+  fs.rmSync(pLedgerP, { force: true });
+  const pAbsentFloor = spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--preview-wellformed-only', '--min-lines', '1'], { cwd: ptmp, encoding: 'utf8' }).status;
+  if (pAbsentFloor !== 1) { console.error('SELFTEST FAIL: absent preview ledger with floor>0 must refuse'); process.exit(1); }
+  const pAbsentZero = spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--preview-wellformed-only'], { cwd: ptmp, encoding: 'utf8' }).status;
+  if (pAbsentZero !== 0) { console.error('SELFTEST FAIL: absent preview ledger with floor 0 must pass (pre-first-confirm)'); process.exit(1); }
+  fs.rmSync(ptmp, { recursive: true, force: true });
+
+  console.log(`selftest OK (${cases.length} negative + ${pCases.length} preview cases + H1 fail-closed + `
+    + `wellformed-only + preview-wellformed-only + append-only floor)`);
 }
 
 // SC-8: validate EVERY non-blank line of the working-tree ledger is well-formed (valid JSON, required
@@ -198,60 +335,79 @@ function selftest() {
 // ledger to prod (the overlay would then strip every human decision and the heartbeat would still be
 // green). A fresh clone with no committed ledger passes minLines=0. This is the tamper-evidence the
 // direct path otherwise lacks (the append-only prefix check only runs on the --base CI path).
-function wellformedOnly(minLines) {
-  const p = path.join(process.cwd(), LEDGER);
+// `relPath`/`validator`/`label` pick the ledger being gated (negative adjudications or positive
+// preview badges) - the SAME floor + per-line-wellformedness discipline for both.
+function wellformedOnly(relPath, minLines, validator, label) {
+  const p = path.join(process.cwd(), relPath);
   if (!fs.existsSync(p)) {
     if (minLines > 0) {
-      console.error(`Adjudication-ledger ABSENT but ${minLines} committed entries expected - refusing (a staged deletion would wipe the ledger).`);
+      console.error(`${label} ABSENT but ${minLines} committed entries expected - refusing (a staged deletion would wipe the ledger).`);
       process.exit(1);
     }
-    console.log('ledger absent; nothing to validate (no committed entries expected)');
+    console.log(`${label} absent; nothing to validate (no committed entries expected)`);
     return;
   }
   const ls = lines(fs.readFileSync(p, 'utf8'));
   if (ls.length < minLines) {
-    console.error(`Adjudication-ledger SHRANK: ${ls.length} lines < ${minLines} committed (append-only violated - truncation/rewrite/dropped entries).`);
+    console.error(`${label} SHRANK: ${ls.length} lines < ${minLines} committed (append-only violated - truncation/rewrite/dropped entries).`);
     process.exit(1);
   }
   for (let i = 0; i < ls.length; i++) {
-    const err = badEntry(ls[i], i);
+    const err = validator(ls[i], i);
     if (err) {
-      console.error(`Adjudication-ledger WELL-FORMEDNESS FAILED: ${err}`);
+      console.error(`${label} WELL-FORMEDNESS FAILED: ${err}`);
       console.error('A conflict marker or malformed/forged line must NEVER be committed to the ledger.');
       process.exit(1);
     }
   }
-  console.log(`ledger well-formed (${ls.length} entries, floor ${minLines}).`);
+  console.log(`${label} well-formed (${ls.length} entries, floor ${minLines}).`);
 }
+
+// The --base CI arm: enforce append-only prefix + per-added-line well-formedness between the git
+// base blob and the working tree, for either ledger.
+function baseDiff(base, relPath, validator, label) {
+  const root = process.cwd();
+  const oldText = gitShow(base, relPath);
+  const newText = fs.existsSync(path.join(root, relPath)) ? fs.readFileSync(path.join(root, relPath), 'utf8') : '';
+  const errors = checkAppendOnly(oldText, newText, validator);
+  if (errors.length) {
+    console.error(`${label} guard FAILED (${errors.length}):`);
+    for (const e of errors) console.error(`  - ${e}`);
+    console.error('\nThe ledger is append-only and every added entry must be well-formed. If this is a\nlegitimate change, it did not come through the write-layer append path.');
+    process.exit(1);
+  }
+  console.log(`${label} guard OK (append-only, all added entries well-formed).`);
+}
+
+const ADJ_LABEL = 'Adjudication-ledger';
+const PREVIEW_LABEL = 'Preview-badge ledger';
 
 function main() {
   const args = process.argv.slice(2);
   if (args.includes('--selftest')) return selftest();
-  if (args.includes('--wellformed-only')) {
+  const minLines = () => {
     const mi = args.indexOf('--min-lines');
     const n = mi !== -1 ? parseInt(args[mi + 1], 10) : 0;
-    return wellformedOnly(Number.isFinite(n) && n > 0 ? n : 0);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  };
+  // Cron (direct-push) arms: floor + per-line well-formedness on the working tree.
+  if (args.includes('--wellformed-only')) return wellformedOnly(LEDGER, minLines(), badEntry, ADJ_LABEL);
+  if (args.includes('--preview-wellformed-only')) return wellformedOnly(PREVIEW_LEDGER, minLines(), badPreviewEntry, PREVIEW_LABEL);
+  // PR (CI) arms: append-only prefix + well-formedness against a base ref.
+  const pbi = args.indexOf('--preview-base');
+  if (pbi !== -1) {
+    if (!args[pbi + 1]) { console.error('usage: --preview-base <ref>'); process.exit(2); }
+    return baseDiff(args[pbi + 1], PREVIEW_LEDGER, badPreviewEntry, PREVIEW_LABEL);
   }
   const bi = args.indexOf('--base');
   if (bi === -1 || !args[bi + 1]) {
-    console.error('usage: check-adjudication-diff.mjs --base <ref> | --selftest');
+    console.error('usage: check-adjudication-diff.mjs --base <ref> | --preview-base <ref> | --wellformed-only | --preview-wellformed-only | --selftest');
     process.exit(2);
   }
-  const base = args[bi + 1];
-  const root = process.cwd();
-  const oldText = gitShow(base, LEDGER);
-  const newText = fs.existsSync(path.join(root, LEDGER)) ? fs.readFileSync(path.join(root, LEDGER), 'utf8') : '';
-  const errors = checkAppendOnly(oldText, newText);
-  if (errors.length) {
-    console.error(`Adjudication-ledger guard FAILED (${errors.length}):`);
-    for (const e of errors) console.error(`  - ${e}`);
-    console.error('\nThe ledger is append-only and every entry must be well-formed. If this is a\nlegitimate change, it did not come through frontier_adjudication.set_adjudication.');
-    process.exit(1);
-  }
-  console.log('Adjudication-ledger guard OK (append-only, all added entries well-formed).');
+  return baseDiff(args[bi + 1], LEDGER, badEntry, ADJ_LABEL);
 }
 
 // Run the CLI when invoked with a recognized flag (deterministic - not a path comparison that
 // could fail-open on an unusual argv[0]). Importing checkAppendOnly (no such flag in a test's
 // argv) never fires main().
-if (process.argv.includes('--selftest') || process.argv.includes('--base') || process.argv.includes('--wellformed-only')) main();
+if (['--selftest', '--base', '--preview-base', '--wellformed-only', '--preview-wellformed-only'].some((f) => process.argv.includes(f))) main();
