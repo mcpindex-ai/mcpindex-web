@@ -7,6 +7,7 @@ import {
   type Lead,
 } from '@/lib/brevo';
 import { checkLeadLimit } from '@/lib/ratelimit';
+import { captureLead } from '@/lib/leadCapture';
 
 function clientIp(req: NextRequest): string {
   return (
@@ -48,13 +49,15 @@ export async function POST(req: NextRequest) {
     message: message || undefined,
   };
 
-  console.log(
-    `[enterprise] ${new Date().toISOString()} ${email}` +
-      (company ? ` company=${company}` : ''),
-  );
+  const ts = new Date().toISOString();
+  console.log(`[enterprise] ${ts} ${email}` + (company ? ` company=${company}` : ''));
 
-  // Log-only when Brevo is not wired - the operator still has the Vercel log.
+  const captured = (delivery: 'sent' | 'failed' | 'logged') =>
+    captureLead({ ts, source: 'enterprise_procurement', tier: 'enterprise', email, company: company || undefined, message: message || undefined, delivery });
+
+  // Log-only when Brevo is not wired - the operator still has the Vercel log + durable store.
   if (!isBrevoConfigured()) {
+    await captured('logged');
     return Response.json({ ok: true, delivery: 'logged' });
   }
 
@@ -84,5 +87,6 @@ export async function POST(req: NextRequest) {
   // call failed, say 'failed' (the lead is still in the server log for recovery); any
   // one success still counts as 'sent'.
   const delivery = contact.ok || welcome.ok || notify.ok ? 'sent' : 'failed';
+  await captured(delivery);
   return Response.json({ ok: true, delivery });
 }

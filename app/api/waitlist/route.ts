@@ -8,6 +8,7 @@ import {
   type LeadSource,
 } from '@/lib/brevo';
 import { checkLeadLimit } from '@/lib/ratelimit';
+import { captureLead } from '@/lib/leadCapture';
 
 function clientIp(req: NextRequest): string {
   // Vercel sets x-vercel-forwarded-for at the edge (client cannot forge it);
@@ -56,10 +57,8 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'invalid_email' }, { status: 400 });
   }
 
-  console.log(
-    `[${source}] ${new Date().toISOString()} ${email}` +
-      (company ? ` company=${company}` : ''),
-  );
+  const ts = new Date().toISOString();
+  console.log(`[${source}] ${ts} ${email}` + (company ? ` company=${company}` : ''));
 
   // Rich contact leads: Brevo when configured.
   if (source === 'contact' || source === 'pricing') {
@@ -92,12 +91,17 @@ export async function POST(req: NextRequest) {
       // in the server log above for manual recovery, and the caller isn't falsely told it
       // was delivered. Any one success still counts as 'sent'.
       const delivery = contact.ok || welcome.ok || notify.ok ? 'sent' : 'failed';
+      // Durable capture regardless of Brevo outcome — a 'failed' lead is now recoverable
+      // from Upstash, not just an ephemeral log line.
+      await captureLead({ ts, source, email, company: company || undefined, message: message || undefined, delivery });
       return Response.json({ ok: true, delivery });
     }
+    await captureLead({ ts, source, email, company: company || undefined, message: message || undefined, delivery: 'logged' });
     return Response.json({ ok: true, delivery: 'logged' });
   }
 
-  // Plain waitlist: log only (RSS is the subscribe path).
+  // Plain waitlist: log only (RSS is the subscribe path) — still captured durably.
+  await captureLead({ ts, source, email, company: company || undefined, delivery: 'logged' });
   if (!ct.includes('application/json')) {
     const url = new URL(req.url);
     url.pathname = '/';

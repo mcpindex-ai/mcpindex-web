@@ -5,6 +5,7 @@ import { callRoute } from './_harness';
 import { __setScreenFetchForTest } from '../../lib/screen';
 import { __setBrevoFetchForTest } from '../../lib/brevo';
 import { __setLedgerServerRedisForTest } from '../../lib/ledgerServer';
+import { __setLeadCaptureRedisForTest, LEAD_CAPTURE_KEY } from '../../lib/leadCapture';
 import { POST as screen } from '../../app/api/v1/screen/route';
 import { POST as waitlist } from '../../app/api/waitlist/route';
 import { POST as enterprise } from '../../app/api/enterprise/route';
@@ -36,6 +37,7 @@ afterEach(() => {
   __setScreenFetchForTest(undefined);
   __setBrevoFetchForTest(undefined);
   __setLedgerServerRedisForTest(undefined);
+  __setLeadCaptureRedisForTest(undefined);
   for (const [k, v] of Object.entries(saved)) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
 });
 const obj = (r: { json: () => unknown }) => r.json() as Record<string, any>;
@@ -97,6 +99,57 @@ test('enterprise: Brevo configured but key dead (all 401) → delivery:failed', 
   const r = await callRoute(enterprise, '/api/enterprise', { method: 'POST', body: { email: 'a@b.co', company: 'Acme' } });
   assert.equal(r.status, 200);
   assert.equal(obj(r).delivery, 'failed');
+});
+
+// Durable lead capture: a lead Brevo dropped is still stored to Upstash for recovery.
+const captureRecorder = () => {
+  const pushed: string[] = [];
+  return {
+    pushed,
+    redis: { async lpush(_k: string, v: string) { pushed.push(v); return pushed.length; }, async ltrim() { return 'OK'; } } as any,
+  };
+};
+
+test('waitlist: a Brevo-failed lead is durably captured to Upstash (recovery)', async () => {
+  process.env.BREVO_API_KEY = 'revoked';
+  process.env.BREVO_LEADS_LIST_ID = '3';
+  __setBrevoFetchForTest(deadBrevoFetch);
+  const rec = captureRecorder();
+  __setLeadCaptureRedisForTest(rec.redis);
+  const r = await callRoute(waitlist, '/api/waitlist', { method: 'POST', body: { email: 'real@lead.co', source: 'contact', company: 'RealCo' } });
+  assert.equal(r.status, 200);
+  assert.equal(obj(r).delivery, 'failed');
+  assert.equal(rec.pushed.length, 1);
+  const stored = JSON.parse(rec.pushed[0]);
+  assert.equal(stored.email, 'real@lead.co');
+  assert.equal(stored.source, 'contact');
+  assert.equal(stored.company, 'RealCo');
+  assert.equal(stored.delivery, 'failed');
+});
+
+test('enterprise: captured lead carries tier + delivery', async () => {
+  process.env.BREVO_API_KEY = 'revoked';
+  process.env.BREVO_LEADS_LIST_ID = '3';
+  __setBrevoFetchForTest(deadBrevoFetch);
+  const rec = captureRecorder();
+  __setLeadCaptureRedisForTest(rec.redis);
+  const r = await callRoute(enterprise, '/api/enterprise', { method: 'POST', body: { email: 'e@corp.co', company: 'Corp' } });
+  assert.equal(r.status, 200);
+  const stored = JSON.parse(rec.pushed[0]);
+  assert.equal(stored.tier, 'enterprise');
+  assert.equal(stored.source, 'enterprise_procurement');
+  assert.equal(stored.delivery, 'failed');
+});
+
+test('capture is fail-open: Upstash unconfigured never breaks the submission', async () => {
+  process.env.BREVO_API_KEY = 'k';
+  process.env.BREVO_LEADS_LIST_ID = '3';
+  __setBrevoFetchForTest(okFetch);
+  __setLeadCaptureRedisForTest(null); // unconfigured store
+  const r = await callRoute(waitlist, '/api/waitlist', { method: 'POST', body: { email: 'a@b.co', source: 'contact' } });
+  assert.equal(r.status, 200);
+  assert.equal(obj(r).delivery, 'sent');
+  assert.ok(LEAD_CAPTURE_KEY); // key exported
 });
 
 test('ledger: enabled + valid blob → 200, no-store', async () => {
