@@ -2,11 +2,19 @@ name: Sync MCP registry snapshot
 
 on:
   schedule:
-    # Daily at 06:00 UTC (≈ 23:00 PT the previous day, ≈ 02:00 ET).
-    - cron: '0 6 * * *'
+    # Every 4h (00/04/08/12/16/20 UTC). The upstream has multi-hour SLOW stretches
+    # where a full fetch can't finish; a single daily run that lands in one of those
+    # windows fails and the directory goes stale for a day. Sampling 6 windows/day
+    # means a good window is caught even when several are bad — fail-fast + retry-often
+    # is the reliability lever for a flaky upstream, not one heroic long run. A
+    # successful run is a no-op if the snapshot is unchanged ("No registry changes").
+    - cron: '0 */4 * * *'
   workflow_dispatch: {}  # allow manual triggers from the Actions UI
 
 concurrency:
+  # Never run two syncs at once; if a slow run is still going when the next 4h trigger
+  # fires, queue it rather than cancel (cancel-in-progress:false) so a nearly-done fetch
+  # isn't thrown away.
   group: sync-registry
   cancel-in-progress: false
 
@@ -16,16 +24,13 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    # The upstream registry is cursor-paginated at a hard limit=100 (~542 sequential
-    # pages / ~54k raw records) and intermittently slow (5-11s/page). At ~5-6s/page a
-    # full fetch is ~45-55min, so the 2026-07-19 run was still cancelled at 45m. Public
-    # repo = unlimited Actions minutes, and this is a once-daily job, so use a generous
-    # 120min ceiling: fast days finish in ~1-2min, the slowest observed day fits with
-    # room, and the mcpindex-snapshot-freshness healthcheck probe pages if it ever does
-    # cross ~36h stale. (Sequential cursor pagination can't be parallelized; a larger
-    # page size is 422-rejected; so headroom is the only lever short of moving the sync
-    # off Actions to a no-timeout host.)
-    timeout-minutes: 120
+    # FAIL-FAST ceiling (paired with the every-4h schedule above). A good/decent window
+    # finishes the ~542-page fetch in ~1-30min; a run still going at 60min is stuck in a
+    # bad upstream window, so cut it and let the next 4h run try a fresh window rather than
+    # burn 120min on a doomed fetch. Per-page patience (60s x6, scripts/sync-registry.mjs)
+    # still absorbs a lone transient stall inside an otherwise-good window. The
+    # mcpindex-snapshot-freshness probe pages if every window stays bad past ~36h.
+    timeout-minutes: 60
     steps:
       # main requires PR reviews (enforce_admins=false), so the default GITHUB_TOKEN
       # (github-actions[bot], not an admin) is REJECTED on `git push` — every synced
