@@ -1,0 +1,90 @@
+{
+ "schema": "mcpindex.report.edition/1",
+ "edition": "v1",
+ "frozen_at": "2026-07-19",
+ "doi": "PENDING-SET-AT-PUBLICATION",
+ "source": {
+  "census_pinned_at": "2026-07-19",
+  "incidents_generated_at": "2026-07-20T00:00:45Z"
+ },
+ "coverage": {
+  "snapshot_count": 23,
+  "pair_count": 22,
+  "first_snapshot": "2026-06-09T04:58:04Z",
+  "last_snapshot": "2026-07-19T16:22:29Z",
+  "elapsed_days": 40,
+  "gap_spans": [
+   {
+    "after": "2026-06-20T16:22:39Z",
+    "before": "2026-07-11T17:51:40Z",
+    "days": 21.1
+   }
+  ]
+ },
+ "aggregates": {
+  "events_total": 57517,
+  "safety_events": 3058,
+  "deduped_safety_incidents": 2503,
+  "incidents_by_kind": {
+   "output-schema-changed": 992,
+   "tool-removed": 872,
+   "removed-param": 197,
+   "annotation-flip-to-destructive": 123,
+   "constraint-narrowed": 117,
+   "added-required-param": 88,
+   "type-changed": 64,
+   "enum-values-removed": 27,
+   "required-set-expanded": 23
+  },
+  "version_delta_split": {
+   "same": 1561,
+   "changed": 942,
+   "undeclared": 0
+  },
+  "silent_share_pct": 62.4,
+  "flip_segmentation": {
+   "first-labeling|changed": 5,
+   "first-labeling|same": 63,
+   "guarantee-change|changed": 30,
+   "guarantee-change|same": 25
+  }
+ },
+ "silent_share_basis": "deduped safety incidents, first-occurrence delta",
+ "removals": {
+  "deduped_removal_fp_count": 872,
+  "deduped_removal_event_count": 873,
+  "removal_scope_split": {
+   "single": 138,
+   "toolset-replaced": 734
+  }
+ },
+ "unstable": {
+  "by_signal": {
+   "occurrence_days_ge5": 0,
+   "hash_revert": 41,
+   "dynamic_metadata": 63
+  },
+  "unstable_incident_count": 102,
+  "unstable_tool_count": 76,
+  "excluded_event_share_pct": 5.8
+ },
+ "headline_excluding_unstable": {
+  "deduped_safety_incidents": 2401,
+  "incidents_by_kind": {
+   "output-schema-changed": 955,
+   "tool-removed": 870,
+   "removed-param": 167,
+   "annotation-flip-to-destructive": 117,
+   "constraint-narrowed": 107,
+   "added-required-param": 84,
+   "type-changed": 56,
+   "enum-values-removed": 25,
+   "required-set-expanded": 20
+  },
+  "version_delta_split": {
+   "same": 1522,
+   "changed": 879
+  },
+  "silent_share_pct": 63.4
+ }
+}

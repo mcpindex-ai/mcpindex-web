@@ -22,6 +22,14 @@ export function DriftReport({ ledger }: { ledger: Ledger }) {
         tools across{' '}
         <strong className="text-[var(--color-ink)]">{stat.servers.toLocaleString()}</strong> servers
         change their contract, {stat.safety_relevant.toLocaleString()} of them in a safety-relevant way.
+        {typeof stat.silent_same_version === 'number' && (
+          <>
+            {' '}
+            {stat.silent_same_version.toLocaleString()} of the{' '}
+            {stat.tools_observed_drifting.toLocaleString()} drifting tools have only ever changed
+            with their declared version unchanged, where version evidence exists.
+          </>
+        )}
         Most drift is harmless: {benign.toLocaleString()} just added an optional parameter, and a gate
         should proceed silently on those. Not crying wolf on benign change is the point. Here are the
         ones that would actually surprise an agent mid-session.

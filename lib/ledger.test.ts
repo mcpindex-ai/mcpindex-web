@@ -3,6 +3,7 @@
 // hits are not exercised here (no creds in CI).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { coerceEvent, coerceStat, ledgerEnabled, parseLedgerBlob } from './ledger';
 
 const FP = '0b4796d16feb3912c0db0824c39e9b70';
@@ -157,4 +158,47 @@ test('coerceEvent removal_scope: allowlist coercion, absent when invalid or miss
   assert.equal(coerceEvent(base)?.removal_scope, undefined);
   // The removal-context field is ADDITIVE on /2 - the schema string must not have moved.
   assert.equal(SCHEMA, 'mcpindex.drift.ledger/2');
+});
+
+test('coerceEvent version_delta: allowlist all four states; invalid/missing -> absent', () => {
+  const base = { tool_fp: FP };
+  for (const v of ['same', 'changed', 'undeclared', 'not-recorded'] as const) {
+    assert.equal(coerceEvent({ ...base, version_delta: v })?.version_delta, v);
+  }
+  assert.equal(coerceEvent({ ...base, version_delta: 'bumped' })?.version_delta, undefined);
+  assert.equal(coerceEvent(base)?.version_delta, undefined);
+});
+
+test('coerceStat silent_same_version: present only when valid; absence is not zero', () => {
+  assert.equal(coerceStat({ silent_same_version: 42 }).silent_same_version, 42);
+  assert.equal(coerceStat({ silent_same_version: 0 }).silent_same_version, 0);
+  assert.equal(coerceStat({}).silent_same_version, undefined);
+  assert.equal(coerceStat({ silent_same_version: -1 }).silent_same_version, undefined);
+  assert.equal(coerceStat({ silent_same_version: 'many' }).silent_same_version, undefined);
+});
+
+test('lede copy pin (spec 2.4b): DriftReport carries the re-pinned basis-named string, no banned framings', () => {
+  const src = fs.readFileSync(new URL('../components/DriftReport.tsx', import.meta.url), 'utf8');
+  assert.ok(src.includes('only ever changed'), 'pinned lede fragment missing');
+  assert.ok(src.includes('declared version unchanged, where version evidence exists'), 'pinned lede tail missing');
+  assert.ok(!src.includes('never shipped a change alongside a version change'), 'old v3 lede wording banned');
+  assert.ok(!/%\s*silent/.test(src), 'bare report-headline framing banned on /ledger lede');
+  assert.ok(!src.includes('version bumped'), "'bumped' asserts direction the data does not carry");
+});
+
+test('cross-plane contract (spec 2.4b): a REAL flag-on build_ledger blob survives web coercion field-complete', () => {
+  const raw = fs.readFileSync(new URL('../test/fixtures/ledger-evidence-on.json', import.meta.url), 'utf8');
+  const ledger = parseLedgerBlob(raw);
+  assert.ok(ledger, 'fixture must parse');
+  assert.equal(ledger.events.length, 5, 'no event dropped in coercion');
+  const deltas = ledger.events.map((e) => e.version_delta);
+  for (const v of ['same', 'changed', 'undeclared', 'not-recorded']) {
+    assert.ok(deltas.includes(v as never), `version_delta '${v}' must survive`);
+  }
+  assert.equal(ledger.stat.silent_same_version, 2, 'silent stat must survive');
+  const scopes = ledger.events.map((e) => e.removal_scope).filter(Boolean);
+  assert.deepEqual(scopes.sort(), ['single', 'toolset-replaced'], 'both scopes survive');
+  // Chip-variant coverage: every renderable state present in one fixture.
+  const renderable = ledger.events.filter((e) => e.version_delta && e.version_delta !== 'not-recorded');
+  assert.equal(renderable.length, 4, 'three chip variants + one suppressed (not-recorded)');
 });

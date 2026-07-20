@@ -1,0 +1,71 @@
+{
+ "events": [
+  {
+   "change_kinds": [
+    "tool-removed"
+   ],
+   "last_seen": "2026-07-19T04:00:00Z",
+   "removal_scope": "single",
+   "safety_relevant": true,
+   "server_fp": "55555555555555555555555555555555",
+   "sources": 1,
+   "tool_fp": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "version_delta": "same"
+  },
+  {
+   "change_kinds": [
+    "tool-removed"
+   ],
+   "last_seen": "2026-07-19T03:00:00Z",
+   "removal_scope": "toolset-replaced",
+   "safety_relevant": true,
+   "server_fp": "44444444444444444444444444444444",
+   "sources": 1,
+   "tool_fp": "dddddddddddddddddddddddddddddddd",
+   "version_delta": "not-recorded"
+  },
+  {
+   "change_kinds": [
+    "output-schema-changed"
+   ],
+   "last_seen": "2026-07-19T02:00:00Z",
+   "safety_relevant": false,
+   "server_fp": "33333333333333333333333333333333",
+   "sources": 1,
+   "tool_fp": "cccccccccccccccccccccccccccccccc",
+   "version_delta": "undeclared"
+  },
+  {
+   "change_kinds": [
+    "type-changed"
+   ],
+   "last_seen": "2026-07-19T01:00:00Z",
+   "safety_relevant": true,
+   "server_fp": "22222222222222222222222222222222",
+   "sources": 1,
+   "tool_fp": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+   "version_delta": "changed"
+  },
+  {
+   "change_kinds": [
+    "added-required-param"
+   ],
+   "last_seen": "2026-07-19T00:00:00Z",
+   "safety_relevant": true,
+   "server_fp": "11111111111111111111111111111111",
+   "sources": 1,
+   "tool_fp": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "version_delta": "same"
+  }
+ ],
+ "framing": "Contract changes OBSERVED by mcpindex's crawler between daily snapshots \u2014 a contract diff, not a safety verdict, and not an in-path prevention.",
+ "generated_at": "2026-07-19T12:00:00Z",
+ "schema": "mcpindex.drift.ledger/2",
+ "stat": {
+  "safety_relevant": 4,
+  "servers": 5,
+  "silent_same_version": 2,
+  "tools_observed_drifting": 5,
+  "total_contract_drifts_observed": 10
+ }
+}
