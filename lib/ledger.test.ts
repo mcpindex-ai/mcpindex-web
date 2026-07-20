@@ -185,3 +185,21 @@ test('lede copy pin (spec 2.4b): DriftReport carries the re-pinned basis-named s
   assert.ok(!/%\s*silent/.test(src), 'bare report-headline framing banned on /ledger lede');
   assert.ok(!src.includes('version bumped'), "'bumped' asserts direction the data does not carry");
 });
+
+test('cross-plane contract (spec 2.4b): a REAL flag-on build_ledger blob survives web coercion field-complete', () => {
+  const fs = require('node:fs') as typeof import('node:fs');
+  const raw = fs.readFileSync(new URL('../test/fixtures/ledger-evidence-on.json', import.meta.url), 'utf8');
+  const ledger = parseLedgerBlob(raw);
+  assert.ok(ledger, 'fixture must parse');
+  assert.equal(ledger.events.length, 5, 'no event dropped in coercion');
+  const deltas = ledger.events.map((e) => e.version_delta);
+  for (const v of ['same', 'changed', 'undeclared', 'not-recorded']) {
+    assert.ok(deltas.includes(v as never), `version_delta '${v}' must survive`);
+  }
+  assert.equal(ledger.stat.silent_same_version, 2, 'silent stat must survive');
+  const scopes = ledger.events.map((e) => e.removal_scope).filter(Boolean);
+  assert.deepEqual(scopes.sort(), ['single', 'toolset-replaced'], 'both scopes survive');
+  // Chip-variant coverage: every renderable state present in one fixture.
+  const renderable = ledger.events.filter((e) => e.version_delta && e.version_delta !== 'not-recorded');
+  assert.equal(renderable.length, 4, 'three chip variants + one suppressed (not-recorded)');
+});
