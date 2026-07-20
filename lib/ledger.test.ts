@@ -3,6 +3,7 @@
 // hits are not exercised here (no creds in CI).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { coerceEvent, coerceStat, ledgerEnabled, parseLedgerBlob } from './ledger';
 
 const FP = '0b4796d16feb3912c0db0824c39e9b70';
@@ -177,7 +178,6 @@ test('coerceStat silent_same_version: present only when valid; absence is not ze
 });
 
 test('lede copy pin (spec 2.4b): DriftReport carries the re-pinned basis-named string, no banned framings', () => {
-  const fs = require('node:fs') as typeof import('node:fs');
   const src = fs.readFileSync(new URL('../components/DriftReport.tsx', import.meta.url), 'utf8');
   assert.ok(src.includes('only ever changed'), 'pinned lede fragment missing');
   assert.ok(src.includes('declared version unchanged, where version evidence exists'), 'pinned lede tail missing');
@@ -187,7 +187,6 @@ test('lede copy pin (spec 2.4b): DriftReport carries the re-pinned basis-named s
 });
 
 test('cross-plane contract (spec 2.4b): a REAL flag-on build_ledger blob survives web coercion field-complete', () => {
-  const fs = require('node:fs') as typeof import('node:fs');
   const raw = fs.readFileSync(new URL('../test/fixtures/ledger-evidence-on.json', import.meta.url), 'utf8');
   const ledger = parseLedgerBlob(raw);
   assert.ok(ledger, 'fixture must parse');
