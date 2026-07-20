@@ -199,6 +199,9 @@ export default async function ServerPage(
                 <Link href="/screen" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
                   Screen its description →
                 </Link>
+                {/* The "claim / verify ownership" funnel lives once, in the Listing
+                    block of the right rail - the natural "is this your server?" spot,
+                    next to the provenance disclosure. Not duplicated here. */}
               </p>
             </section>
 
@@ -362,9 +365,14 @@ export default async function ServerPage(
               </dl>
             </div>
 
-            {/* Listing disclosure - these pages are scraped from the public
-                registry, not self-submitted; say so, and give the maintainer a
-                recourse channel (link-liveness spec, customer-review gate). */}
+            {/* Listing disclosure + the SINGLE claim funnel - these pages are
+                scraped from the public registry, not self-submitted; say so, and
+                route the maintainer to the real recourse. The self-serve /claim
+                flow proves control of an HTTP remote's origin, so "Verify it" is
+                offered only for a remote-having server; a package/stdio-only server
+                cannot self-verify and gets the email recourse alone. The mailto
+                stays as a fallback for maintainers who can't do the technical flow.
+                Slugs are safe registry tokens; encodeURIComponent is defense-in-depth. */}
             <div>
               <div className={RAIL_LABEL}>Listing</div>
               <p className="text-[12px] leading-[1.55] text-[var(--color-cite)]">
@@ -374,12 +382,31 @@ export default async function ServerPage(
                 ) : (
                   <>
                     Unclaimed by its maintainer.{' '}
-                    <a
-                      href={`mailto:hello@mcpindex.ai?subject=${encodeURIComponent(`Claim listing: ${server.slug}`)}`}
-                      className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
-                    >
-                      Maintainer? Claim it →
-                    </a>
+                    {remoteHref ? (
+                      <>
+                        Maintainer?{' '}
+                        <Link
+                          href={`/claim?server=${encodeURIComponent(server.slug)}`}
+                          className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                        >
+                          Verify it →
+                        </Link>{' '}
+                        ·{' '}
+                        <a
+                          href={`mailto:hello@mcpindex.ai?subject=${encodeURIComponent(`Claim listing: ${server.slug}`)}`}
+                          className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                        >
+                          or email us →
+                        </a>
+                      </>
+                    ) : (
+                      <a
+                        href={`mailto:hello@mcpindex.ai?subject=${encodeURIComponent(`Claim listing: ${server.slug}`)}`}
+                        className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                      >
+                        Maintainer? Email us →
+                      </a>
+                    )}
                   </>
                 )}
               </p>
