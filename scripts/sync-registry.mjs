@@ -8,7 +8,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const BASE = 'https://registry.modelcontextprotocol.io/v0/servers';
+// Overridable so the stall/retry behaviour can be exercised against a stub upstream
+// (see the verification in tasks/lessons.md 2026-07-20). Production passes neither.
+const BASE = process.env.SYNC_REGISTRY_BASE ?? 'https://registry.modelcontextprotocol.io/v0/servers';
 const ROOT = path.resolve(new URL('..', import.meta.url).pathname);
 const SNAP_PATH = path.join(ROOT, 'data', 'snapshot.json');
 const SNAP_DIR = path.join(ROOT, 'data', 'snapshots');
@@ -28,8 +30,18 @@ await fs.mkdir(SNAP_DIR, { recursive: true });
 // stall gets 6 backoff'd retries (up to ~64s apart) to let the upstream recover before
 // we fail-closed. Worst case per stuck page ~6-8min, well within the 120min CI ceiling;
 // only a truly-dead upstream (all 7 attempts fail) throws and refuses to ship partial.
-const PAGE_TIMEOUT_MS = 60_000;
-const PAGE_RETRIES = 6;
+const PAGE_TIMEOUT_MS = Number(process.env.SYNC_PAGE_TIMEOUT_MS ?? 60_000);
+const PAGE_RETRIES = Number(process.env.SYNC_PAGE_RETRIES ?? 6);
+
+// GLOBAL ceiling, below the workflow's timeout-minutes. Without this the script cannot
+// self-terminate: during a bad upstream window (measured 2026-07-20 at 15s/page, i.e.
+// ~135min for the full fetch) it simply crawls until CI kills it at exactly 60m00s.
+// A CI kill surfaces as "cancelled" - indistinguishable from a human cancel, and it
+// reads as benign, which is why these runs went unnoticed from ~2026-07-08 to 07-20.
+// Exiting on our own deadline makes the same event a RED failure with a diagnostic.
+const RUN_DEADLINE_MS = Number(process.env.SYNC_DEADLINE_MS ?? 45 * 60_000);
+const startedAt = Date.now();
+const elapsed = () => Date.now() - startedAt;
 
 async function fetchPage(cursor) {
   const url = new URL(BASE);
@@ -63,10 +75,27 @@ let page = 0;
 const MAX_PAGES = 2000;
 
 while (page < MAX_PAGES) {
+  if (elapsed() > RUN_DEADLINE_MS) {
+    const rate = (elapsed() / 1000 / Math.max(page, 1)).toFixed(1);
+    console.error(
+      `\n::error::Registry sync gave up: ${Math.round(elapsed() / 1000)}s elapsed at page ${page} ` +
+        `(${all.length} entries, ${rate}s/page) with a remaining cursor. A good window runs ~0.08s/page ` +
+        `and finishes in under 5min, so this window is too slow to finish. Refusing to write a partial ` +
+        `snapshot; the next 4h run will try a fresh window.`,
+    );
+    process.exit(1);
+  }
   const json = await fetchPage(cursor);
   all.push(...json.servers);
   page++;
+  // A \r-only progress line collapses the ENTIRE fetch into one log line carrying a
+  // single timestamp, which is exactly why the stalls above could not be located in
+  // time. Flush a real, timestamped line periodically so the next stall is one
+  // `grep` away; keep the \r line for local runs where it reads nicely.
   process.stdout.write(`\rPage ${page}: ${all.length} entries`);
+  if (page % 25 === 0) {
+    console.log(`\n[${new Date().toISOString()}] page ${page}, ${all.length} entries, ${Math.round(elapsed() / 1000)}s elapsed`);
+  }
   cursor = json.metadata?.nextCursor;
   if (!cursor) break;
 }
