@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { getServer, loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { computeQuality, rankByQuality } from '@/lib/quality';
 import { buildInstalls } from '@/lib/installs';
+import { getSourceLiveness, livenessSentence } from '@/lib/sourceLiveness';
 import { CATEGORY_LABELS } from '@/lib/categorize';
 import { D3_PROGRESS } from '@/lib/honest-limits';
 import { CopyField } from '@/components/CopyField';
@@ -107,6 +108,8 @@ export default async function ServerPage(
   const all = await loadServers();
   const { score, breakdown } = computeQuality(server);
   const installs = buildInstalls(server);
+  // Absent => nothing publishable, NOT 'verified healthy'.
+  const liveness = await getSourceLiveness(server.name);
   const verdictState = await loadVerdictForServer(server.slug);
   // Crawl-date framing for the post-verdict CTA; memoized snapshot, no extra fetch.
   const snapshotDay = (await loadSnapshotMeta()).fetchedAt?.slice(0, 10) ?? '';
@@ -425,14 +428,33 @@ export default async function ServerPage(
 
             {/* Links: registry-supplied third-party URLs, so nofollow - many
                 targets go dead and we can't vouch for any of them. */}
-            {(repoHref || siteHref) && (
+            {(repoHref || siteHref || liveness) && (
               <div>
                 <div className={RAIL_LABEL}>Links</div>
                 <div className="flex flex-col gap-2 font-mono text-[11px] uppercase tracking-[0.16em]">
-                  {repoHref && (
-                    <a href={repoHref} target="_blank" rel="nofollow noreferrer" className="text-[var(--color-cite)] hover:text-[var(--color-accent)]">
-                      Repository →
-                    </a>
+                  {/* A confirmed-unreachable repo replaces the link rather
+                      than sitting next to it: offering a link we know 404s
+                      is the bug PR #15 fixed. Two vantages agreed before
+                      anything renders here (lib/sourceLiveness coercion). */}
+                  {liveness ? (
+                    <div className="font-sans text-[12px] leading-[1.55] tracking-normal normal-case text-[var(--color-mute)]">
+                      {livenessSentence(liveness)}
+                      {liveness.confirmed_unavailable && (
+                        <> Confirmed {liveness.confirmed_unavailable}.</>
+                      )}{' '}
+                      <a
+                        href={`mailto:hello@mcpindex.ai?subject=${encodeURIComponent(`Dispute source-liveness flag: ${server.slug}`)}`}
+                        className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                      >
+                        Maintainer? Dispute this →
+                      </a>
+                    </div>
+                  ) : (
+                    repoHref && (
+                      <a href={repoHref} target="_blank" rel="nofollow noreferrer" className="text-[var(--color-cite)] hover:text-[var(--color-accent)]">
+                        Repository →
+                      </a>
+                    )
                   )}
                   {siteHref && (
                     <a href={siteHref} target="_blank" rel="nofollow noreferrer" className="text-[var(--color-cite)] hover:text-[var(--color-accent)]">
