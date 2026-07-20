@@ -199,33 +199,68 @@ export MCPINDEX_API_KEY="$(node -e "process.stdout.write(require(require('os').h
 # -> {"authorized":true}`}</Code>
           </Step>
 
-          <Step n={5} title="Attest your read-only tools">
+          <Step n={5} title="Get your tools' hashes">
             <p>
-              List only your{' '}
-              <strong className="text-[var(--color-ink)] font-medium">read-only tools</strong> - the
-              ones safe to probe with malformed input. mcpindex probes nothing you do not
-              attest, and re-checks the read-only heuristic on its side: a write, payment, or
-              destructive tool is refused regardless. Each tool carries four fields.
+              With the ownership grant from the previous step, ask mcpindex for your
+              server&rsquo;s live tools and the exact{' '}
+              <span className="font-mono text-[13px]">definition_hash</span> it computes for
+              each. This is a GET, authorized with your api_key - it hands you the values you
+              would otherwise have to compute.
+            </p>
+            <Code>{`curl -s https://owner.mcpindex.ai/owner/tools/io.github.you/your-server \\
+  -H "Authorization: Bearer $MCPINDEX_API_KEY"
+
+# -> {"server_id":"io.github.you/your-server",
+#     "as_of":"<iso8601>",
+#     "tools":[
+#       {"name":"search",
+#        "definition_hash":"sha256:<64-hex>",
+#        "probe_safe":true},
+#       ...]}`}</Code>
+            <p className="mt-3">
+              Each entry is a tool mcpindex currently observes live on your server, paired with
+              the exact <span className="font-mono text-[13px]">definition_hash</span> it will
+              match against - so you no longer compute the sha256 yourself. The{' '}
+              <span className="font-mono text-[13px]">probe_safe</span> flag is a heuristic hint
+              of whether the tool looks read-only, i.e. safe to send malformed test input to.
+              Attest just the tools where{' '}
+              <span className="font-mono text-[13px]">probe_safe: true</span>, copying their{' '}
+              <span className="font-mono text-[13px]">name</span> and{' '}
+              <span className="font-mono text-[13px]">definition_hash</span> verbatim into the
+              next step. If your server is unobservable, the response returns an empty{' '}
+              <span className="font-mono text-[13px]">tools</span> list with a note.
+            </p>
+            <p className="mt-3">
+              <strong className="text-[var(--color-ink)] font-medium">Honest caveat:</strong>{' '}
+              <span className="font-mono text-[13px]">probe_safe</span> is a heuristic hint, not
+              a guarantee - you confirm read-only-ness yourself, and record that human judgment
+              in the attestation tag in the next step.
+            </p>
+          </Step>
+
+          <Step n={6} title="Attest your read-only tools">
+            <p>
+              List just the{' '}
+              <strong className="text-[var(--color-ink)] font-medium">read-only tools</strong>{' '}
+              you selected above - the ones safe to probe with malformed input. mcpindex probes
+              nothing you do not attest, and re-checks the read-only heuristic on its side: a
+              write, payment, or destructive tool is refused regardless. Each tool carries four
+              fields; the first two are copied straight from the{' '}
+              <span className="font-mono text-[13px]">/owner/tools</span> response above.
             </p>
             <ul className="mt-3 space-y-2">
               <li>
                 <span className="font-mono text-[13px] text-[var(--color-ink)]">name</span> - the
-                tool&rsquo;s advertised name.
+                tool&rsquo;s advertised name, copied from the{' '}
+                <span className="font-mono text-[13px]">/owner/tools</span> response.
               </li>
               <li>
                 <span className="font-mono text-[13px] text-[var(--color-ink)]">definition_hash</span>{' '}
-                - the sha256 of that tool&rsquo;s definition as mcpindex sees it live. It must
-                match mcpindex&rsquo;s own computed hash for the tool, or the tool is skipped
-                from the behavioral check. This is the technical step: the{' '}
-                <a
-                  href="https://www.npmjs.com/package/@mcp-index/sdk"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
-                >
-                  @mcp-index/sdk
-                </a>{' '}
-                and mcpindex tooling can compute it, or advanced owners compute it themselves.
+                - copied verbatim from that same{' '}
+                <span className="font-mono text-[13px]">/owner/tools</span> response. It is the
+                sha256 of the tool&rsquo;s definition as mcpindex sees it live; because it came
+                from mcpindex, it matches mcpindex&rsquo;s own computed hash, so the tool is not
+                skipped from the behavioral check. You no longer compute it yourself.
               </li>
               <li>
                 <span className="font-mono text-[13px] text-[var(--color-ink)]">attestation</span>{' '}
@@ -248,12 +283,12 @@ export MCPINDEX_API_KEY="$(node -e "process.stdout.write(require(require('os').h
   -H "Content-Type: application/json" \\
   -d '{"server_id":"io.github.you/your-server",
        "probe_safe_tools":[{"name":"search",
-         "definition_hash":"sha256:<64-hex-of-your-tool-definition>",
+         "definition_hash":"sha256:<64-hex-copied-from-/owner/tools>",
          "attestation":"probe-attest-2026-07-19-search-human-confirmed",
          "confirmed_by":"you@example.com"}]}'`}</Code>
           </Step>
 
-          <Step n={6} title="Run the behavioral check">
+          <Step n={7} title="Run the behavioral check">
             <p>
               mcpindex runs a read-only conformance probe against the tools you attested,
               checking whether observed behavior matches the definitions you pinned. This is a
@@ -267,7 +302,7 @@ export MCPINDEX_API_KEY="$(node -e "process.stdout.write(require(require('os').h
   -d '{"server_id":"io.github.you/your-server"}'`}</Code>
           </Step>
 
-          <Step n={7} title="Request publish (consent)">
+          <Step n={8} title="Request publish (consent)">
             <p>
               Explicitly consent to publish the preview observation. Nothing is published
               without <span className="font-mono text-[13px]">consent_publish: true</span>.
@@ -278,7 +313,7 @@ export MCPINDEX_API_KEY="$(node -e "process.stdout.write(require(require('os').h
   -d '{"server_id":"io.github.you/your-server","consent_publish":true}'`}</Code>
           </Step>
 
-          <Step n={8} title="mcpindex reviews, then it may appear">
+          <Step n={9} title="mcpindex reviews, then it may appear">
             <p>
               A human operator reviews the request. If it is published, an{' '}
               <strong className="text-[var(--color-ink)] font-medium">Owner preview</strong>{' '}
