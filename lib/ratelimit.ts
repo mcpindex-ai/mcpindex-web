@@ -259,6 +259,38 @@ export async function checkLeadLimit(ip: string, now: Date): Promise<LeadLimit> 
   }
 }
 
+// Owner-verification proxy limit (/api/owner/[action]). The browser wizard relays each step
+// through this same-origin proxy to owner.mcpindex.ai. Every proxied call egresses from the
+// SHARED Vercel IP, so the upstream owner service's per-IP token bucket collapses to one source
+// and cannot throttle a single abusive browser client - this per-IP cap restores that boundary
+// at the edge. It also bounds serverless invocations (verify-behavior holds one up to ~95s) and
+// pre-auth relaying of format-valid-but-bogus keys upstream. Own `owner:*` counters so it never
+// shares (or 429-starves) the login/drift budgets. Fail-OPEN on a Redis error/unconfigured: the
+// upstream service is authoritative on auth + abuse, so the proxy limiter is defense-in-depth.
+const OWNER_PER_IP_PER_MIN = 20;
+const OWNER_GLOBAL_PER_DAY = 100_000;
+
+export async function checkOwnerLimit(ip: string, now: Date): Promise<DriftLimit> {
+  const r = redis();
+  if (!r) return { ok: true }; // fail-open: the upstream owner service is the authoritative gate
+
+  const min = now.toISOString().slice(0, 16);
+  const day = now.toISOString().slice(0, 10);
+  try {
+    const ipKey = `owner:ip:${ip}:${min}`;
+    const c = await r.incr(ipKey);
+    if (c === 1) await r.expire(ipKey, 70);
+    if (c > OWNER_PER_IP_PER_MIN) return { ok: false };
+
+    const gKey = `owner:global:${day}`;
+    const g = await r.incr(gKey);
+    if (g === 1) await r.expire(gKey, 90_000);
+    return g > OWNER_GLOBAL_PER_DAY ? { ok: false } : { ok: true };
+  } catch {
+    return { ok: true }; // fail-open on Redis error
+  }
+}
+
 export async function checkDriftReadLimit(ip: string, now: Date): Promise<DriftLimit> {
   const r = redis();
   if (!r) return { ok: true }; // fail-open

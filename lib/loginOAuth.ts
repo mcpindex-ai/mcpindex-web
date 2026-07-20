@@ -105,24 +105,42 @@ function stateKey(state: string): string {
   return `login:state:${state}`;
 }
 
-// The stored state value carries BOTH the loopback callback AND the chosen provider, so the
-// callback leg (which only has the `state` handle) knows which endpoints to use. Encoded as JSON.
-// Backward-compat: a legacy bare-string value (pre-provider) decodes as a github callback, so
-// in-flight/older states and the existing tests keep working.
+// The delivery mode chosen at start: 'cli' hands the key to a loopback listener (the gate CLI);
+// 'web' hands it to the browser (postMessage to the opener / same-origin display page). The mode
+// is persisted in the trusted state so the callback leg — which only holds the `state` handle —
+// knows how to deliver, and can never be steered by a client-supplied callback param.
+export type LoginMode = 'cli' | 'web';
+
+// The stored state value carries the delivery MODE, the (loopback) callback for cli, AND the chosen
+// provider, so the callback leg (which only has the `state` handle) knows which endpoints to use and
+// how to deliver the key. Encoded as JSON. Backward-compat: a legacy bare-string value (pre-provider)
+// decodes as a cli github callback, so in-flight/older states and the existing tests keep working.
 function encodeState(cliCallback: string, provider: LoginProvider): string {
   return JSON.stringify({ cb: cliCallback, provider });
 }
 
-function decodeState(raw: string): { cliCallback: string; provider: LoginProvider } {
+// Web mode stores NO callback (the key is delivered to the browser, not a loopback URL), so there
+// is nothing to exfiltrate via the stored callback field. `mode:'web'` is the only discriminant.
+function encodeWebState(provider: LoginProvider): string {
+  return JSON.stringify({ mode: 'web', provider });
+}
+
+function decodeState(raw: string): { mode: LoginMode; cliCallback: string; provider: LoginProvider } {
   try {
-    const parsed = JSON.parse(raw) as { cb?: unknown; provider?: unknown };
-    if (parsed && typeof parsed === 'object' && typeof parsed.cb === 'string') {
-      return { cliCallback: parsed.cb, provider: normalizeProvider(parsed.provider as string) };
+    const parsed = JSON.parse(raw) as { cb?: unknown; provider?: unknown; mode?: unknown };
+    if (parsed && typeof parsed === 'object') {
+      const provider = normalizeProvider(parsed.provider as string);
+      if (parsed.mode === 'web') {
+        return { mode: 'web', cliCallback: '', provider }; // web: no loopback callback
+      }
+      if (typeof parsed.cb === 'string') {
+        return { mode: 'cli', cliCallback: parsed.cb, provider };
+      }
     }
   } catch {
     /* not JSON -> legacy bare callback string */
   }
-  return { cliCallback: raw, provider: 'github' }; // legacy value is always a github callback
+  return { mode: 'cli', cliCallback: raw, provider: 'github' }; // legacy value is always a cli github callback
 }
 
 export function buildAuthorizeUrl(state: string, provider: LoginProvider = 'github'): string | null {
@@ -176,8 +194,35 @@ export async function startLogin(
   }
 }
 
+// BROWSER (web) start: identical OAuth machinery as `startLogin` (provider allowlist via
+// buildAuthorizeUrl, one-time state in the shared store, pepper/flag gates) but delivers the key to
+// the browser instead of a loopback listener — so there is NO cli_callback and no loopback
+// validation to perform. Additive: the loopback `startLogin` above is untouched. The callback route
+// dispatches on the stored `mode:'web'` marker.
+export async function startLoginWeb(
+  store: StateStore,
+  provider: LoginProvider = 'github',
+): Promise<StartResult> {
+  if (!loginEnabled()) return { error: 'unavailable' }; // defense in depth: the route also gates this
+  if (!loginPepper()) return { error: 'unavailable' }; // fail fast: don't burn state on a misconfigured deploy
+  const state = genState();
+  const url = buildAuthorizeUrl(state, provider);
+  if (!url) return { error: 'unavailable' }; // provider unconfigured -> inert
+  try {
+    const ok = await store.set(stateKey(state), encodeWebState(provider), STATE_TTL_SEC);
+    if (!ok) return { error: 'unavailable' };
+    return { url };
+  } catch {
+    return { error: 'unavailable' };
+  }
+}
+
+// The ok result carries the delivery `mode`. Both ok branches keep `cliCallback` (web = '') so the
+// existing loopback tests type-check byte-unchanged; the callback route dispatches on `mode` and
+// never reads `cliCallback` in web mode.
 export type CompleteResult =
-  | { ok: true; apiKey: string; cliCallback: string }
+  | { ok: true; mode: 'cli'; apiKey: string; cliCallback: string }
+  | { ok: true; mode: 'web'; apiKey: string; cliCallback: '' }
   | { error: 'invalid_state' | 'invalid_request' | 'exchange_failed' | 'issue_failed' | 'unavailable' };
 
 async function githubExchange(code: string): Promise<string | null> {
@@ -307,9 +352,11 @@ export async function completeLogin(
     return { error: 'unavailable' };
   }
   if (!raw) return { error: 'invalid_state' };
-  // Provider comes from the trusted stored state, never from a client-supplied callback param.
-  const { cliCallback, provider } = decodeState(raw);
-  if (!isLoopbackCallback(cliCallback)) return { error: 'invalid_state' };
+  // Mode + provider come from the trusted stored state, never from a client-supplied param.
+  const { mode, cliCallback, provider } = decodeState(raw);
+  // cli delivers to a loopback URL, so re-validate it loopback-only (defense in depth). web delivers
+  // to the browser (no URL), so there is nothing to re-validate here.
+  if (mode === 'cli' && !isLoopbackCallback(cliCallback)) return { error: 'invalid_state' };
 
   const token = await transport.exchangeCode(provider, code);
   if (!token) return { error: 'exchange_failed' };
@@ -324,5 +371,7 @@ export async function completeLogin(
   const apiKey = await issue(ownerHash, { tier: 'free', provider });
   if (!apiKey) return { error: 'issue_failed' }; // fail-closed: no key if not persisted
 
-  return { ok: true, apiKey, cliCallback };
+  return mode === 'web'
+    ? { ok: true, mode: 'web', apiKey, cliCallback: '' }
+    : { ok: true, mode: 'cli', apiKey, cliCallback };
 }

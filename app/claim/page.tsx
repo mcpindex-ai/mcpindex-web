@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
+import OwnerVerifyWizard from '@/components/OwnerVerifyWizard';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Claim your server',
@@ -61,6 +62,19 @@ export default function ClaimPage() {
         let mcpindex run a read-only behavioral check, and explicitly consent to publish. A
         human operator reviews before anything appears.
       </p>
+
+      {/* PRIMARY PATH: the in-browser wizard ties sign-in + the owner API into one flow. */}
+      <section className="mt-12 rule-t pt-10">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
+          Verify in your browser
+        </div>
+        <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)] mb-6">
+          The fastest path: sign in, prove control of your server’s origin, attest your read-only
+          tools, run the preview behavioral check, and consent to publish - all here, no curl. Prefer
+          the command line? The manual steps are below.
+        </p>
+        <OwnerVerifyWizard />
+      </section>
 
       {/* What it is / isn't - matches the OwnerPreviewPanel wording on /server/<slug>. */}
       <section className="mt-12 rule-t pt-10">
@@ -128,8 +142,12 @@ export default function ClaimPage() {
       {/* The flow - numbered, copy-paste curl. */}
       <section className="mt-12 rule-t pt-10">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-2">
-          The flow
+          Prefer the CLI / API? Manual steps
         </div>
+        <p className="text-[13.5px] leading-[1.6] text-[var(--color-mute)] mb-2">
+          The same flow the browser wizard above runs, step by step against the owner API - for
+          popup-blocked browsers, scripted setups, or if you would rather drive it from a terminal.
+        </p>
         <p className="text-[13.5px] leading-[1.6] text-[var(--color-mute)]">
           Every request goes to <span className="font-mono text-[var(--color-cite)]">https://owner.mcpindex.ai</span> and
           carries your api_key as a bearer token. Replace{' '}

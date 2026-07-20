@@ -6,6 +6,7 @@ import {
   isLoopbackCallback,
   loginEnabled,
   startLogin,
+  startLoginWeb,
   type IssueFn,
   type LoginTransport,
   type StateStore,
@@ -285,5 +286,88 @@ test('github path unchanged: a legacy bare-callback state still resolves to a gi
   };
   const r = await completeLogin(STATE, 'code123', store, goodTransport, issue);
   assert.ok('ok' in r && r.ok);
+  assert.ok(r.mode === 'cli', 'legacy/cli state resolves to cli mode');
   assert.ok(issued[0].endsWith(':github'), 'legacy bare-string state -> github');
+});
+
+// ---- BROWSER (web) mode: same OAuth machinery, key delivered to the browser (no loopback) --------
+
+test('web: start stores a web-mode state and returns a github authorize url (no cli_callback)', async () => {
+  setEnv();
+  const store = memStore();
+  const r = await startLoginWeb(store, 'github');
+  assert.ok('url' in r && r.url.startsWith('https://github.com/login/oauth/authorize?'));
+  assert.equal(store.data.size, 1, 'one state stored');
+  const stored = [...store.data.values()][0];
+  assert.equal(JSON.parse(stored).mode, 'web', 'state carries the web delivery marker');
+  assert.ok(!stored.includes('127.0.0.1') && !stored.includes('localhost'), 'no loopback callback in web state');
+});
+
+test('web: start is inert (unavailable) when the feature flag is off', async () => {
+  setEnv();
+  delete process.env.MCPINDEX_LOGIN_ENABLED;
+  const store = memStore();
+  const r = await startLoginWeb(store, 'github');
+  assert.deepEqual(r, { error: 'unavailable' });
+  assert.equal(store.data.size, 0, 'no state written when disabled');
+});
+
+test('web: start fails fast (no state burned) when the pepper is missing', async () => {
+  setEnv();
+  delete process.env.MCPINDEX_LOGIN_PEPPER;
+  delete process.env.DRIFT_OAUTH_PEPPER;
+  const store = memStore();
+  const r = await startLoginWeb(store, 'github');
+  assert.deepEqual(r, { error: 'unavailable' });
+  assert.equal(store.data.size, 0);
+});
+
+test('web: an unconfigured provider fails cleanly to unavailable (inert)', async () => {
+  setEnv(); // github configured, google not
+  const store = memStore();
+  const r = await startLoginWeb(store, 'google');
+  assert.deepEqual(r, { error: 'unavailable' });
+  assert.equal(store.data.size, 0);
+});
+
+test('web: complete mints a key, reports mode=web and NO callback', async () => {
+  setEnv();
+  const stored = JSON.stringify({ mode: 'web', provider: 'github' });
+  const store = memStore({ [`login:state:${STATE}`]: stored });
+  const issued: string[] = [];
+  const issue: IssueFn = async (ownerHash, opts) => {
+    issued.push(`${ownerHash}:${opts.provider}`);
+    return 'mcpk_web';
+  };
+  const r = await completeLogin(STATE, 'code123', store, goodTransport, issue);
+  assert.ok('ok' in r && r.ok, `expected ok, got ${JSON.stringify(r)}`);
+  if ('ok' in r) {
+    assert.equal(r.mode, 'web');
+    assert.equal(r.apiKey, 'mcpk_web');
+    assert.equal(r.cliCallback, '', 'web mode never carries a loopback callback');
+  }
+  assert.ok(issued[0].endsWith(':github'));
+  assert.equal(store.data.size, 0, 'state consumed (one-time)');
+});
+
+test('web: complete works with the google provider from a web state', async () => {
+  setGoogleEnv();
+  const stored = JSON.stringify({ mode: 'web', provider: 'google' });
+  const store = memStore({ [`login:state:${STATE}`]: stored });
+  const issued: string[] = [];
+  const issue: IssueFn = async (ownerHash, opts) => {
+    issued.push(`${ownerHash}:${opts.provider}`);
+    return 'mcpk_web_google';
+  };
+  const r = await completeLogin(STATE, 'code', store, googleTransport, issue);
+  assert.ok('ok' in r && r.ok);
+  if ('ok' in r) assert.equal(r.mode, 'web');
+  assert.ok(issued[0].endsWith(':google'));
+});
+
+test('web: complete still fails closed when issuance fails', async () => {
+  setEnv();
+  const store = memStore({ [`login:state:${STATE}`]: JSON.stringify({ mode: 'web', provider: 'github' }) });
+  const r = await completeLogin(STATE, 'code', store, goodTransport, async () => null);
+  assert.deepEqual(r, { error: 'issue_failed' });
 });
