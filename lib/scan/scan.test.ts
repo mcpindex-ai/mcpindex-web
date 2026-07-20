@@ -125,6 +125,103 @@ test('insecureTransport: loopback exemption cannot be spoofed by a hostname pref
   assert.equal(insecure('stdio'), false);
 });
 
+test('detection is at least as smart as redaction: secret by VALUE SHAPE', () => {
+  // the detector previously trailed the redactor: /scan would MASK sk-ant-... in the
+  // detail column while reporting the same server as carrying no credential
+  const servers = parseConfig({
+    mcpServers: {
+      blandHeader: { url: 'https://x.example/mcp', headers: { 'X-Trace': 'sk-ant-api03-AbC123XyZ9876543210' } },
+      bareKeyEnv: { command: 'srv', env: { KEY: 'sk-live-AbC123XyZ9876543210' } },
+      interpolated: { url: 'https://x.example/mcp', headers: { 'X-Thing': '${SOME_VAR}' } },
+      plainValue: { command: 'srv', env: { LOG_LEVEL: 'debug', HOME_DIR: '/Users/someone/projects' } },
+    },
+  });
+  const keys = (n: string) => [...servers.find((s) => s.name === n)!.secretKeys];
+  assert.deepEqual(keys('blandHeader'), ['header:X-Trace']);
+  assert.deepEqual(keys('bareKeyEnv'), ['KEY']);
+  assert.deepEqual(keys('interpolated'), []); // a ${VAR} placeholder is not a secret
+  assert.deepEqual(keys('plainValue'), []); // prose and paths are not secrets
+});
+
+test('detection does NOT cry wolf on realistic non-secret env values', () => {
+  // Detection uses a narrow issuer-prefix test, NOT the broad shape heuristic used
+  // for masking: an over-broad mask costs legibility, an over-broad detection is a
+  // false security claim. These all reported as credentials under the shape test.
+  const env: Record<string, string> = {
+    PUBLIC_KEY: '/etc/ssl/pub.pem',
+    KEY_PATH: '/home/u/id_rsa',
+    KEYCLOAK_URL: 'https://kc.example.com',
+    SSH_KEY_FILE: '~/.ssh/id_ed25519',
+    LANG: 'en_US.UTF-8',
+    SESSION_TIMEOUT: '3600',
+    BUILD_ID: '550e8400-e29b-41d4-a716-446655440000',
+    VERSION: '1.2.3-beta.20240101',
+  };
+  for (const [k, v] of Object.entries(env)) {
+    const [s] = parseConfig({ mcpServers: { a: { command: 'srv', env: { [k]: v } } } });
+    assert.deepEqual([...s.secretKeys], [], `${k}=${v} should not read as a credential`);
+  }
+});
+
+test('detection reports credentials carried in the URL or in args, not just env/headers', () => {
+  // The redactors masked these but detection reported nothing - the original bug
+  // ("masked yet reported clean") one layer down. Locations only, never values.
+  const k = (def: Record<string, unknown>) => [...parseConfig({ mcpServers: { a: def } })[0].secretKeys];
+  assert.deepEqual(k({ url: 'https://x.example/mcp?api_key=AbC123XyZ9876543210' }), ['url:?api_key']);
+  assert.deepEqual(k({ url: 'https://mcp.zapier.com/api/mcp/s/NjQ4LTU5NzQtNGE4Zi1hYzM4XYZ/mcp' }), ['url:path']);
+  assert.deepEqual(k({ url: 'https://u:pw@x.example/mcp' }), ['url:userinfo']);
+  assert.deepEqual(k({ command: 'npx', args: ['srv', '--api-key', 'sk-live-X'] }), ['arg:--api-key']);
+});
+
+test('insecureTransport does not fabricate findings on non-HTTP url values', () => {
+  // a `url` holding a socket path, `stdio`, or a command line is malformed, not
+  // insecure - the fail-closed schemeless branch must not claim plaintext for these
+  for (const u of ['file:///tmp/s.sock', 'unix:///var/run/m.sock', 'stdio', '/usr/local/bin/mcp', 'npx -y @modelcontextprotocol/server-filesystem', '', '   ', 'ftp://x.example/f']) {
+    const [s] = parseConfig({ mcpServers: { a: { type: 'http', url: u } } });
+    assert.equal(s.insecureTransport, false, `${JSON.stringify(u)} should not read as plaintext http`);
+  }
+});
+
+test('parseConfig reads the array form of `headers`', () => {
+  const [s] = parseConfig({
+    mcpServers: {
+      a: { url: 'https://x.example/mcp', headers: [{ name: 'Authorization', value: 'Bearer SECRETV' }] },
+    },
+  });
+  assert.deepEqual([...s.secretKeys], ['header:Authorization']);
+  assert.ok(!JSON.stringify(s).includes('SECRETV'));
+});
+
+test('insecureTransport: a schemeless URL declares no TLS, so it fails CLOSED', () => {
+  const servers = parseConfig({
+    mcpServers: {
+      schemeless: { type: 'http', url: 'mcp.example.com/mcp' },
+      schemelessLoopback: { type: 'http', url: 'localhost:8000/mcp' },
+      tls: { url: 'https://mcp.example.com/mcp' },
+      wss: { url: 'wss://mcp.example.com/mcp' },
+    },
+  });
+  const insecure = (n: string) => servers.find((s) => s.name === n)!.insecureTransport;
+  assert.equal(insecure('schemeless'), true); // previously false: silently "secure"
+  assert.equal(insecure('schemelessLoopback'), false);
+  assert.equal(insecure('tls'), false);
+  assert.equal(insecure('wss'), false);
+});
+
+test('insecureTransport: IPv4-mapped IPv6 loopback is exempt', () => {
+  const servers = parseConfig({
+    mcpServers: {
+      mapped: { url: 'http://[::ffff:127.0.0.1]/mcp' }, // normalizes to [::ffff:7f00:1]
+      v6: { url: 'http://[::1]/mcp' },
+      mappedPublic: { url: 'http://[::ffff:8.8.8.8]/mcp' },
+    },
+  });
+  const insecure = (n: string) => servers.find((s) => s.name === n)!.insecureTransport;
+  assert.equal(insecure('mapped'), false);
+  assert.equal(insecure('v6'), false);
+  assert.equal(insecure('mappedPublic'), true); // exemption must not over-apply
+});
+
 // --------------------------------------------------- value redaction (display)
 // The tool renders `url` and `command` into the results table, which users
 // screenshot and share. A secret reaching either field breaks the names-only

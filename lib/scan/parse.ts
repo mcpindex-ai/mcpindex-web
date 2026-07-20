@@ -24,6 +24,15 @@ const QUERY_SECRET_RE =
 
 const MASK = '***';
 
+/** A redacted display string plus the LOCATION names of whatever it masked. The
+ * locations feed detection, so a credential in a URL or an arg is reported as
+ * carried, not merely hidden - masking a value while reporting the server carries
+ * nothing was the original defect, one layer down. */
+interface Redacted {
+  readonly text: string;
+  readonly found: readonly string[];
+}
+
 /** A value that looks like a credential by SHAPE rather than by the name beside it -
  * the only defense for a secret embedded in a URL path (`/s/<token>/mcp`, the shape
  * Zapier and several hosted providers ship) or passed as a bare positional arg.
@@ -50,51 +59,65 @@ function scrubFreeText(s: string): string {
 /** Redact a URL by its STRUCTURE, not as flat text: clear userinfo, mask query
  * values whose name or shape says credential, mask token-shaped path segments.
  * Masking (rather than deleting) preserves the signal that a credential was there. */
-function redactUrl(raw: string): string {
+function redactUrl(raw: string): Redacted {
+  const found: string[] = [];
   let u: URL;
   try {
     u = new URL(raw);
   } catch {
-    return scrubFreeText(raw);
+    return { text: scrubFreeText(raw), found };
   }
   if (u.username || u.password) {
     u.username = MASK;
     u.password = '';
+    found.push('url:userinfo');
   }
   for (const k of [...u.searchParams.keys()]) {
     const v = u.searchParams.get(k) ?? '';
-    if (QUERY_SECRET_RE.test(k) || looksLikeSecretToken(v)) u.searchParams.set(k, MASK);
+    if (QUERY_SECRET_RE.test(k) || looksLikeSecretToken(v)) {
+      u.searchParams.set(k, MASK);
+      found.push(`url:?${k}`);
+    }
   }
   u.pathname = u.pathname
     .split('/')
-    .map((seg) => (looksLikeSecretToken(seg) ? MASK : seg))
+    .map((seg) => {
+      if (!looksLikeSecretToken(seg)) return seg;
+      found.push('url:path');
+      return MASK;
+    })
     .join('/');
-  return u.toString();
+  return { text: u.toString(), found };
 }
 
 /** Redact command args POSITIONALLY, before joining. Joining first is what made
  * `--api-key sk-live-…` unmaskable: once flattened, only a `=` separator is left to
  * key off, and the space-separated form is the more common one in real configs. */
-function redactArgs(args: readonly string[]): string[] {
+function redactArgs(args: readonly string[]): Redacted {
   const out: string[] = [];
+  const found: string[] = [];
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     const eq = a.indexOf('=');
     if (eq > 0 && FLAG_SECRET_RE.test(a.slice(0, eq))) {
       out.push(`${a.slice(0, eq + 1)}${MASK}`); // --api-key=VALUE
+      found.push(`arg:${a.slice(0, eq)}`);
       continue;
     }
     // A path is never a credential, and paths are the most common long arg
     // (`/Volumes/…`, `@scope/pkg`), so shape-matching skips them.
     const pathish = a.includes('/') || a.includes('\\');
-    out.push(!pathish && looksLikeSecretToken(a) ? MASK : a);
+    const bareSecret = !pathish && looksLikeSecretToken(a);
+    if (bareSecret) found.push('arg:positional');
+    out.push(bareSecret ? MASK : a);
     // --api-key VALUE : the secret is the NEXT token. A following flag is not a value.
     if (FLAG_SECRET_RE.test(a) && eq === -1 && i + 1 < args.length && !args[i + 1].startsWith('-')) {
       out.push(MASK);
+      found.push(`arg:${a}`);
       i++;
     }
   }
-  return out;
+  return { text: out.join(' ').trim(), found };
 }
 
 function isObj(v: unknown): v is Record<string, unknown> {
@@ -154,17 +177,42 @@ function secretKeysIn(
     .map(([k]) => `${prefix}${k}`);
 }
 
+/** Clients disagree on the `headers` shape: an object map in most, an array of
+ * {name, value} in some. Normalize so detection sees both - an array silently
+ * fell through the isObj guard and reported the server as carrying nothing. */
+function normalizeHeaders(v: unknown): Record<string, unknown> {
+  if (isObj(v)) return v;
+  if (!Array.isArray(v)) return {};
+  const out: Record<string, unknown> = {};
+  for (const h of v) if (isObj(h) && typeof h['name'] === 'string') out[h['name'] as string] = h['value'];
+  return out;
+}
+
+// Issuer prefixes for real credentials. DETECTION deliberately uses this narrow,
+// high-precision test rather than the broad `looksLikeSecretToken` used for
+// redaction: the two have opposite failure costs. An over-broad MASK only costs
+// legibility, but an over-broad DETECTION is a false security claim - the tool
+// telling you a server carries a credential when it carries a UUID. High recall
+// for masking, high precision for reporting.
+const KNOWN_SECRET_VALUE_RE =
+  /^(sk-|rk_|pk_live_|ghp_|gho_|ghu_|ghs_|ghr_|github_pat_|xox[baprse]-|glpat-|figd_|dop_v1_|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|ya29\.|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.)/;
+
+/** A value that betrays itself as a credential whatever the name beside it says:
+ * an auth scheme prefix (`Bearer …`) or a recognizable issuer prefix. */
+function isSecretValue(v: unknown): boolean {
+  return typeof v === 'string' && (AUTH_VALUE_RE.test(v) || KNOWN_SECRET_VALUE_RE.test(v));
+}
+
 /** Secret-looking key names across BOTH credential locations. Remote servers
  * authenticate via `headers`, so an env-only scan called them clean. Key names
  * only - values are never returned. */
 function secretKeys(def: Record<string, unknown>): string[] {
   return [
-    ...secretKeysIn(def['env'], '', (k) => SECRET_KEY_RE.test(k)),
+    ...secretKeysIn(def['env'], '', (k, v) => SECRET_KEY_RE.test(k) || isSecretValue(v)),
     ...secretKeysIn(
-      def['headers'],
+      normalizeHeaders(def['headers']),
       'header:',
-      (k, v) =>
-        SECRET_KEY_RE.test(k) || AUTH_HEADER_RE.test(k) || (typeof v === 'string' && AUTH_VALUE_RE.test(v)),
+      (k, v) => SECRET_KEY_RE.test(k) || AUTH_HEADER_RE.test(k) || isSecretValue(v),
     ),
   ];
 }
@@ -173,6 +221,11 @@ function secretKeys(def: Record<string, unknown>): string[] {
  * the machine, and `http://localhost` is the normal way to run a local server. */
 function isLoopbackHost(host: string): boolean {
   const h = host.toLowerCase().replace(/^\[|\]$/g, '');
+  // IPv4-mapped IPv6: WHATWG URL normalizes `::ffff:127.0.0.1` to `::ffff:7f00:1`,
+  // so the dotted form never survives parsing - match the compressed hex and check
+  // the high octet. Both spellings are handled; only the second one actually occurs.
+  const mapped = /^::ffff:([0-9a-f]{1,4}):[0-9a-f]{1,4}$/.exec(h);
+  if (mapped) return (parseInt(mapped[1], 16) >>> 8) === 127;
   // Fully anchored: an unanchored /^127\./ would treat the registrable domain
   // `127.0.0.1.evil.com` as loopback and suppress the plaintext finding on an
   // attacker-controlled host. `.localhost` is reserved (RFC 6761), not delegated.
@@ -180,7 +233,7 @@ function isLoopbackHost(host: string): boolean {
     h === 'localhost' ||
     h.endsWith('.localhost') ||
     h === '::1' ||
-    /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h)
+    /^(::ffff:)?127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h)
   );
 }
 
@@ -192,21 +245,38 @@ function isInsecureTransport(def: Record<string, unknown>): boolean {
   if (transportOf(def) !== 'remote') return false;
   const raw = def['url'];
   if (typeof raw !== 'string') return false;
+  const s = raw.trim();
+  const scheme = /^([a-z][a-z0-9+.-]*):\/\//i.exec(s)?.[1]?.toLowerCase();
+  // An explicit scheme settles it. Anything that is not http/ws is either TLS or
+  // not an HTTP transport at all (file://, unix://) - claiming "plaintext http"
+  // about those would be fabricating a finding.
+  if (scheme) {
+    if (scheme !== 'http' && scheme !== 'ws') return false;
+    try {
+      return !isLoopbackHost(new URL(s).hostname);
+    } catch {
+      return false;
+    }
+  }
+  // Schemeless. Only claim plaintext when the value actually looks like a host
+  // authority: a `url` holding `stdio`, a filesystem path, or a command line is
+  // malformed, not insecure. `localhost:8000/mcp` also lands here, because it
+  // PARSES as scheme `localhost:` with an empty hostname rather than throwing.
+  if (!/^([a-z0-9-]+(\.[a-z0-9-]+)+|localhost)(:\d+)?(\/.*)?$/i.test(s)) return false;
   try {
-    const u = new URL(raw);
-    return (u.protocol === 'http:' || u.protocol === 'ws:') && !isLoopbackHost(u.hostname);
+    return !isLoopbackHost(new URL(`http://${s}`).hostname);
   } catch {
     return false;
   }
 }
 
-function commandString(def: Record<string, unknown>): string | null {
+function commandString(def: Record<string, unknown>): Redacted | null {
   if (typeof def['command'] !== 'string') return null;
   // Stringify non-string args as JSON (not "[object Object]") so embedded text stays legible.
   const args = Array.isArray(def['args'])
     ? def['args'].map((a) => (typeof a === 'string' ? a : JSON.stringify(a)))
     : [];
-  return redactArgs([def['command'] as string, ...args]).join(' ').trim();
+  return redactArgs([def['command'] as string, ...args]);
 }
 
 /** Normalize a pasted MCP config into a server inventory. Total. */
@@ -216,12 +286,16 @@ export function parseConfig(root: unknown): ScannedServer[] {
   const out: ScannedServer[] = [];
   for (const [name, defRaw] of Object.entries(map)) {
     if (!isObj(defRaw)) continue;
+    const u = typeof defRaw['url'] === 'string' ? redactUrl(defRaw['url'] as string) : null;
+    const c = commandString(defRaw);
     out.push({
       name: String(name),
       transport: transportOf(defRaw),
-      url: typeof defRaw['url'] === 'string' ? redactUrl(defRaw['url'] as string) : null,
-      command: commandString(defRaw),
-      secretKeys: secretKeys(defRaw),
+      url: u?.text ?? null,
+      command: c?.text ?? null,
+      // Every credential LOCATION, not just env/headers: whatever the redactors
+      // had to mask is by definition a credential this server carries.
+      secretKeys: [...secretKeys(defRaw), ...(u?.found ?? []), ...(c?.found ?? [])],
       insecureTransport: isInsecureTransport(defRaw),
     });
   }
