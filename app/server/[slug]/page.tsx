@@ -362,6 +362,29 @@ export default async function ServerPage(
               </dl>
             </div>
 
+            {/* Listing disclosure - these pages are scraped from the public
+                registry, not self-submitted; say so, and give the maintainer a
+                recourse channel (link-liveness spec, customer-review gate). */}
+            <div>
+              <div className={RAIL_LABEL}>Listing</div>
+              <p className="text-[12px] leading-[1.55] text-[var(--color-cite)]">
+                Listed from the official MCP registry.{' '}
+                {previewBadge ? (
+                  'Maintainer-attested (preview).'
+                ) : (
+                  <>
+                    Unclaimed by its maintainer.{' '}
+                    <a
+                      href={`mailto:hello@mcpindex.ai?subject=${encodeURIComponent(`Claim listing: ${server.slug}`)}`}
+                      className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                    >
+                      Maintainer? Claim it →
+                    </a>
+                  </>
+                )}
+              </p>
+            </div>
+
             {/* Provenance - the OTS / Bitcoin-anchored history signal (npm's
                 provenance badge analog). The current verdict renders here; the
                 OTS anchor proof is public and recomputable offline. */}
