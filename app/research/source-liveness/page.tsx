@@ -1,0 +1,183 @@
+import Link from 'next/link';
+import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo';
+
+export const metadata: Metadata = pageMetadata({
+  title: 'Source liveness: 2,073 listed MCP servers point at source that is no longer public',
+  description:
+    'A 2026-07-20 census of every repository and website URL in the official MCP registry: 1,834 of 13,105 referenced GitHub repositories are no longer publicly accessible, affecting 2,073 of 17,673 listed servers. Full method, limits, and the deleted-vs-private caveat.',
+  path: '/research/source-liveness',
+});
+
+// Figures are quoted from the sweep receipt (sweep-20260720T065010Z, store
+// digest 943f1a25, OpenTimestamps-stamped) rather than recomputed here, so the
+// page states exactly what the anchored artifact states.
+const FIG = {
+  serversTotal: '17,673',
+  reposTotal: '13,105',
+  reposUnreachable: '1,834',
+  serversAffected: '2,073',
+  sitesUnreachable: '306',
+  sampleSize: '150',
+  egressBlocked: '178',
+  sweepDate: '2026-07-20',
+};
+
+const CELL = 'py-2.5 pr-6 align-top';
+
+export default function SourceLivenessPage() {
+  return (
+    <article className="site-container pt-16 pb-24 max-w-[52rem]">
+      <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
+        Research · census of {FIG.sweepDate}
+      </div>
+      <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
+        {FIG.serversAffected} listed MCP servers point at source code that is no
+        longer publicly accessible.
+      </h1>
+
+      <p className="mt-6 text-[16px] leading-[1.65] text-[var(--color-cite)]">
+        On {FIG.sweepDate} we checked every repository and website URL carried by
+        the {FIG.serversTotal} servers in the official MCP registry.{' '}
+        {FIG.reposUnreachable} of the {FIG.reposTotal} distinct GitHub
+        repositories those servers reference could not be reached — one in seven.
+        The packages themselves still install. What has gone is the ability to
+        read the code before you hand it to an agent.
+      </p>
+
+      <p className="mt-4 text-[16px] leading-[1.65] text-[var(--color-cite)]">
+        Every MCP registry has this problem, mcpindex&rsquo;s own catalog
+        included — these are our listings. The difference is that we measure it
+        and publish the measurement.
+      </p>
+
+      <h2 className="mt-12 t-h2 font-medium text-[var(--color-ink)]">What we found</h2>
+      <div className="mt-4 overflow-x-auto">
+        <table className="w-full text-[14px] leading-[1.5] text-[var(--color-cite)]">
+          <tbody>
+            <tr className="rule-b">
+              <td className={CELL}>Servers listed in the registry</td>
+              <td className={`${CELL} font-mono text-[var(--color-ink)]`}>{FIG.serversTotal}</td>
+            </tr>
+            <tr className="rule-b">
+              <td className={CELL}>Distinct GitHub repositories referenced</td>
+              <td className={`${CELL} font-mono text-[var(--color-ink)]`}>{FIG.reposTotal}</td>
+            </tr>
+            <tr className="rule-b">
+              <td className={CELL}>
+                Repositories not publicly accessible (HTTP 404; one HTTP 451)
+              </td>
+              <td className={`${CELL} font-mono text-[var(--color-ink)]`}>{FIG.reposUnreachable}</td>
+            </tr>
+            <tr className="rule-b">
+              <td className={CELL}>Servers affected by an unreachable repository</td>
+              <td className={`${CELL} font-mono text-[var(--color-ink)]`}>{FIG.serversAffected}</td>
+            </tr>
+            <tr className="rule-b">
+              <td className={CELL}>
+                Website URLs unreachable (single vantage — see limits)
+              </td>
+              <td className={`${CELL} font-mono text-[var(--color-ink)]`}>{FIG.sitesUnreachable}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 className="mt-12 t-h2 font-medium text-[var(--color-ink)]">
+        Why &ldquo;not publicly accessible&rdquo; and not &ldquo;deleted&rdquo;
+      </h2>
+      <p className="mt-4 text-[15px] leading-[1.65] text-[var(--color-cite)]">
+        GitHub returns the same 404 for a repository that was deleted and one
+        that was made private. We cannot tell those apart, so we do not claim to.
+        Both mean the same thing for the reader who matters: the source backing a
+        tool your agent may call can no longer be audited by anyone. A maintainer
+        who took a repository private on purpose has done nothing wrong, and the
+        wording on every affected listing says so.
+      </p>
+
+      <h2 className="mt-12 t-h2 font-medium text-[var(--color-ink)]">Method</h2>
+      <ol className="mt-4 space-y-3 text-[15px] leading-[1.65] text-[var(--color-cite)] list-decimal pl-5">
+        <li>
+          Every <code>repositoryUrl</code> and <code>websiteUrl</code> in the{' '}
+          {FIG.sweepDate} registry snapshot, de-duplicated to distinct URLs
+          ({FIG.reposTotal} repositories from {FIG.serversTotal} servers).
+        </li>
+        <li>
+          Each repository probed with <code>git ls-remote</code>, then — this
+          matters — corroborated through the authenticated GitHub API. Anonymous
+          git answers a missing repository with a credential prompt rather than a
+          404, so a checker that trusts anonymous git alone reports zero
+          casualties and looks healthy doing it. That bug hid all{' '}
+          {FIG.reposUnreachable} of these from our own first two passes.
+        </li>
+        <li>
+          Only HTTP 404, 410, 451 and NXDOMAIN count as unreachable. Rate limits,
+          timeouts, 401s, 403s and 5xx are recorded as <em>unknown</em> and never
+          counted against a project.
+        </li>
+        <li>
+          A random sample of 150 was re-checked by hand through a different
+          method (unauthenticated web), a different network, and no
+          credentials. All {FIG.sampleSize} agreed, which bounds the
+          false-positive rate at 2.0% (95% confidence).
+        </li>
+        <li>
+          The sweep&rsquo;s result digest is stamped to Bitcoin via
+          OpenTimestamps, so the date of this measurement is independently
+          verifiable and cannot be backdated — including by us.
+        </li>
+      </ol>
+
+      <h2 className="mt-12 t-h2 font-medium text-[var(--color-ink)]">Limits</h2>
+      <ul className="mt-4 space-y-3 text-[15px] leading-[1.65] text-[var(--color-cite)] list-disc pl-5">
+        <li>
+          <strong>Point in time.</strong> These are the counts on{' '}
+          {FIG.sweepDate}. Per-listing flags carry a stricter bar than this
+          aggregate: two failed checks at least 48 hours apart, plus agreement
+          from a second independent vantage, before anything appears on a server
+          page.
+        </li>
+        <li>
+          <strong>Deleted and private are indistinguishable.</strong> Some share
+          of the {FIG.reposUnreachable} are deliberate, not abandoned.
+        </li>
+        <li>
+          <strong>{FIG.egressBlocked} websites are invisible to us.</strong>{' '}
+          They refuse connections from datacenter networks, so we record them as
+          unknown rather than guessing. The website figure above comes from a
+          single vantage and is not used for any per-listing flag.
+        </li>
+        <li>
+          <strong>Repositories only.</strong> A reachable repository proves
+          nothing about a running server — it proves a URL resolves. Liveness is
+          only ever evidence against, never evidence for.
+        </li>
+      </ul>
+
+      <h2 className="mt-12 t-h2 font-medium text-[var(--color-ink)]">
+        What to do about it
+      </h2>
+      <p className="mt-4 text-[15px] leading-[1.65] text-[var(--color-cite)]">
+        If you install MCP servers as packages, an unreachable repository is a
+        real audit gap: pin the version you already reviewed, because you can no
+        longer diff what you are running against anything. If you connect to a
+        hosted server, the repository was never the code that executes — treat it
+        as context, not as a reason to disconnect. Affected listings say which
+        case applies, and maintainers can dispute any flag from the listing
+        itself.
+      </p>
+
+      <p className="mt-10 text-[14px] leading-[1.6] text-[var(--color-mute)]">
+        Method and limits:{' '}
+        <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+          how a verdict is produced
+        </Link>
+        . Corrections and disputes:{' '}
+        <a href="mailto:hello@mcpindex.ai?subject=Source%20liveness%20census" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+          hello@mcpindex.ai
+        </a>
+        .
+      </p>
+    </article>
+  );
+}
