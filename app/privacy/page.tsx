@@ -17,7 +17,7 @@ export default function PrivacyPage() {
         Privacy.
       </h1>
       <p className="mt-2 font-mono text-[11.5px] text-[var(--color-mute)]">
-        Last updated: 2026-07-12
+        Last updated: 2026-07-20
       </p>
 
       <div className="mt-10 space-y-6 text-[14.5px] leading-[1.65] text-[var(--color-cite)]">
@@ -70,16 +70,44 @@ export default function PrivacyPage() {
           a future richer tier and behaves identically today.) Unset the variable to stop.
         </p>
         <p>
-          Call receipts (the <span className="inline-code">mcpindex-gate</span> client,{' '}
-          <span className="inline-code">emit_receipts=True</span>): the gate emits a compact,
-          credential-blind receipt for each gated tool call - a hash of the tool identity, the
-          gate verdict, and the action class (read / write / execute). It{' '}
-          <strong>never</strong> includes tool arguments, result content, server names, or
-          URLs. Receipts are linked by a random per-install token generated on first run and
-          stored locally; the token is not tied to any account or identity and is not joined to
-          your IP. Set{' '}
+          Call receipts (the <span className="inline-code">mcpindex-gate</span> client):{' '}
+          <strong>on by default</strong>. After each gated tool call the gate emits a compact,
+          credential-blind receipt. Here is the complete list of what a receipt contains: a
+          random receipt id; the tool contract hash (a sha256 of the tool&rsquo;s public
+          contract); the gate verdict; a closed-vocabulary action classification (read / write
+          / execute class, resource kind, reversibility); a closed-vocabulary run context
+          (autonomy level, task-intent class, a human-in-the-loop flag, framework name); a
+          closed-vocabulary outcome (status, side-effect class, a reverted flag, a coarse
+          latency bucket); a yes/no/unclear &ldquo;justified&rdquo; flag; and a timestamp
+          rounded to the hour. Every field is an enum from a fixed list, a hash, or a boolean -
+          by construction there is <strong>no field that can hold free text</strong>, so a
+          receipt <strong>never</strong> contains tool arguments, results, prompts, server
+          names, or URLs. The ingest schema is strict and rejects anything else.
+        </p>
+        <p>
+          What the hash lets us do, stated plainly: receipts include the tool contract hash,
+          which we can match to servers in our public index. That tells us{' '}
+          <em>which indexed tools an install gates</em> - never what you did with them, and
+          nothing for tools we have not indexed. Receipts are linked by a random per-install
+          token (<span className="inline-code">install_id</span>) generated on first run and
+          stored locally. It is <strong>pseudonymous, not anonymous</strong>: it is a random
+          token not derived from you or your machine and is never joined to your IP, but it
+          does link one install&rsquo;s receipts together over time. Keyless installs have no
+          account link; if you sign in and configure an{' '}
+          <span className="inline-code">api_key</span>, receipts from that install are
+          associated with your key. Set{' '}
           <span className="inline-code">MCPINDEX_RECEIPT_INGEST_ENABLED=0</span> to suppress
-          receipt egress entirely.
+          receipt egress entirely; your per-install call log is visible (to anyone holding the
+          token) at <span className="inline-code">mcpindex.ai/receipts?id=&lt;install-id&gt;</span>.
+        </p>
+        <p>
+          First-run disclosure: from gate <strong>v0.9.0</strong>, the first run on a machine
+          prints a one-line notice of exactly this behavior to stderr and sends{' '}
+          <strong>nothing</strong> that session - emission starts on run 2, so no receipt is
+          sent before the disclosure and the opt-out were visible. Earlier gate versions emit
+          without the runtime notice, per the packaging README. The gate&rsquo;s other local
+          lines (the ambient &ldquo;noted&rdquo; lines and the weekly summary line) are
+          rendered from local state and send nothing anywhere.
         </p>
         <p>
           Cookies and similar storage: the site itself does not set first-party advertising
