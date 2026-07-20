@@ -190,6 +190,10 @@ export async function POST(
       headers,
       body: json !== undefined ? JSON.stringify(json) : undefined,
       signal: AbortSignal.timeout(plan.timeoutMs),
+      // Never auto-follow an upstream redirect: a 3xx from a compromised/misconfigured owner
+      // service must not be chased to an arbitrary Location (and a followed 3xx->2xx would
+      // dodge the status strips below). Matches the redirect:'manual' convention in loginOAuth.
+      redirect: 'manual',
     });
   } catch (e) {
     // Network failure or timeout -> generic, no upstream detail. Distinguish only the
@@ -198,7 +202,12 @@ export async function POST(
     return reply({ error: 'upstream unavailable' }, timedOut ? 504 : 502);
   }
 
-  // Upstream 5xx: never echo the (possibly verbose) upstream body -> generic 502.
+  // A 3xx (only reachable now via redirect:'manual') is not a valid owner-API response ->
+  // treat as unavailable rather than passing it through. Upstream 5xx: never echo the (possibly
+  // verbose) upstream body -> generic 502.
+  if (upstream.status >= 300 && upstream.status < 400) {
+    return reply({ error: 'upstream unavailable' }, 502);
+  }
   if (upstream.status >= 500) {
     return reply({ error: 'upstream unavailable' }, 502);
   }
@@ -216,7 +225,9 @@ export async function POST(
   // echoes, internal identifiers, a 409's cross-record hints) from reaching the browser.
   if (upstream.status >= 400) {
     const obj = data as Record<string, unknown> | null;
-    const err = obj && typeof obj.error === 'string' ? obj.error : 'request rejected';
+    // Cap the length: the wizard only needs a short human hint, and a bounded string limits the
+    // blast radius of any verbose detail an upstream error message might accidentally carry.
+    const err = obj && typeof obj.error === 'string' ? obj.error.slice(0, 300) : 'request rejected';
     return reply({ error: err }, upstream.status);
   }
   // 2xx: the intended success payload the wizard renders — pass through.

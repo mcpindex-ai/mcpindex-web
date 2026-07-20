@@ -64,7 +64,9 @@ jobs:
   # 5xx/timeout or any real violation fails the run.
   contrast:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    # Fail-fast: don't burn the browser download + full build if lint/typecheck/tests already broke.
+    needs: verify
     steps:
       - uses: actions/checkout@v4
 
@@ -80,7 +82,14 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Build
+        # NEXT_PUBLIC_* flags are inlined at build time; without them the data-backed pages
+        # (/ledger, /drift-report, /dashboard) render notFound() and the audit skips them - the
+        # pages with the most colored verdict chips. Enable them so they are actually audited;
+        # they degrade to a 200 empty state without Redis (no secrets needed to render).
         run: npm run build
+        env:
+          NEXT_PUBLIC_DRIFT_LEDGER: '1'
+          NEXT_PUBLIC_DRIFT_REPORT: '1'
 
       - name: Start server + WCAG AA contrast audit
         run: |

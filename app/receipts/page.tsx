@@ -18,7 +18,7 @@ export default async function ReceiptsPage({ searchParams }: PageProps) {
 
   if (!id || !INSTALL_ID_RE.test(id)) {
     return (
-      <article className="site-container pt-16 pb-24 bg-[var(--color-bg)]">
+      <article className="site-container pt-16 pb-24 bg-[var(--color-paper)]">
         <header>
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
             Gate Activity
@@ -40,7 +40,7 @@ export default async function ReceiptsPage({ searchParams }: PageProps) {
   const receipts = await getInstallReceipts(id);
 
   return (
-    <article className="site-container pt-16 pb-24 bg-[var(--color-bg)]">
+    <article className="site-container pt-16 pb-24 bg-[var(--color-paper)]">
       <header>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
           Gate Activity

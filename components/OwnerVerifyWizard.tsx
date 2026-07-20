@@ -188,9 +188,22 @@ export default function OwnerVerifyWizard() {
   const clearKey = useCallback(() => {
     setApiKey('');
     setPasteKey('');
-    // Return to the key screen: clearing the key from a later step would otherwise
-    // strand the user on a step whose actions all 400 with no in-UI way back to sign-in.
+    // Clearing the key means starting over (often for a DIFFERENT server), so reset the whole
+    // flow back to step 0. Stale downstream results (a prior server's behavioral observation or
+    // publish status) must NOT carry into the next run - for a trust product, showing server A's
+    // "no drift observed" while the user is now on server B is a correctness/integrity bug.
     setStep(0);
+    setServerId('');
+    setChallenge(null);
+    setTools(null);
+    setChecked({});
+    setAck(false);
+    setConfirmedBy('');
+    setAttestResult(null);
+    setBehavior(null);
+    setConsent(false);
+    setPublished(null);
+    setError('');
     try {
       sessionStorage.removeItem(SESSION_KEY);
     } catch {
@@ -241,7 +254,11 @@ export default function OwnerVerifyWizard() {
         setKeyError('sign-in did not complete - try again, or paste your key.');
       }
     }, 500);
-    const timeout = setTimeout(() => setAwaitingKey(false), 300_000);
+    const timeout = setTimeout(() => {
+      popupRef.current = null;
+      setAwaitingKey(false);
+      setKeyError('sign-in timed out - try again, or paste your key.');
+    }, 300_000);
     return () => {
       window.removeEventListener('message', onMessage);
       clearInterval(poll);

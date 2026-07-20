@@ -31,7 +31,7 @@ const ROUTES = [
   '/guides', '/best', '/search', '/about', '/trust', '/accessibility',
   '/changelog', '/brand', '/which-mcpindex', '/drift-report', '/servers',
   '/claim', '/dashboard', '/privacy', '/terms', '/research/source-liveness',
-  '/servers/page/2', NOT_FOUND_PROBE,
+  '/servers/page/2', '/receipts', NOT_FOUND_PROBE,
 ];
 
 // Dynamic templates: resolved to a real slug at runtime so the audit covers
@@ -236,16 +236,29 @@ const page = await browser.newPage({
   reducedMotion: 'reduce',
 });
 
-// Discover one live slug per dynamic template from its index page.
+// Discover one live slug per dynamic template from its index page. A template that yields NO
+// slug is a silent coverage hole (its /server, /guides, or /best page never gets audited), so
+// track it and fail closed at the end - the same posture as unparsedColors. These indexes are
+// SSG from committed data, so a real miss means a markup/data break worth catching, not a
+// transient absence.
 const discovered = [];
+const uncoveredTemplates = [];
 for (const { index, pattern } of DYNAMIC_SOURCES) {
+  let found = null;
   try {
     const res = await page.goto(`${BASE}${index}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    if (!res || !res.ok()) continue;
-    const match = (await page.content()).match(pattern);
-    if (match) discovered.push(match[0]);
+    if (res && res.ok()) {
+      const match = (await page.content()).match(pattern);
+      if (match) found = match[0];
+    }
   } catch {
-    // An unreachable index just means no dynamic sample for this template.
+    // fall through to uncovered
+  }
+  if (found) {
+    discovered.push(found);
+  } else {
+    uncoveredTemplates.push(index);
+    console.log(`WARN ${index} — no dynamic slug discovered; its template is UNAUDITED`);
   }
 }
 if (discovered.length) console.log(`dynamic samples: ${discovered.join(', ')}\n`);
@@ -327,6 +340,12 @@ if (errored > 0) {
   // A page that could not be audited (5xx/timeout/crash) must not be reported as a pass:
   // silence over a broken page looks identical to "clean."
   console.error(`\ncontrast: ${errored} route(s) could not be audited (server error / timeout).`);
+  process.exit(1);
+}
+if (uncoveredTemplates.length > 0) {
+  // A dynamic template with no discoverable slug was never audited - fail rather than report a
+  // green run over incomplete coverage.
+  console.error(`\ncontrast: ${uncoveredTemplates.length} dynamic template(s) had no slug to audit: ${uncoveredTemplates.join(', ')}.`);
   process.exit(1);
 }
 console.log('\ncontrast: all audited routes meet WCAG AA (resting state).');
