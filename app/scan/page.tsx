@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 const UNDERLINE =
-  'underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]';
+  'underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]';
 
 // Service JSON-LD so LLM answers + search can surface the free tool. Typed as
 // Service (not SoftwareApplication) because it is an in-browser tool with nothing

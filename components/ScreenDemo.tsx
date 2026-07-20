@@ -103,7 +103,7 @@ export function ScreenDemo() {
               key={ex.label}
               type="button"
               onClick={() => setText(ex.text)}
-              className="font-mono text-[11px] text-[var(--color-cite)] border border-[var(--color-rule)] bg-white px-2 py-0.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
+              className="font-mono text-[11px] text-[var(--color-cite)] border border-[var(--color-rule)] bg-white px-2 py-0.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] transition-colors"
             >
               {ex.label}
             </button>
@@ -131,7 +131,7 @@ export function ScreenDemo() {
             type="button"
             onClick={run}
             disabled={loading || !text.trim()}
-            className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-ink)] border border-[var(--color-rule)] px-3 py-1.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-ink)] border border-[var(--color-rule)] px-3 py-1.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? 'screening…' : 'screen it →'}
           </button>

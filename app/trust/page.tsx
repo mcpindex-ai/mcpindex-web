@@ -66,7 +66,7 @@ export default function TrustPage() {
             href="https://opentimestamps.org"
             target="_blank"
             rel="noreferrer"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             OpenTimestamps
           </a>
@@ -100,7 +100,7 @@ export default function TrustPage() {
               href="https://github.com/mcpindex-ai/mcpindex-web"
               target="_blank"
               rel="noreferrer"
-              className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+              className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
             >
               GitHub
             </a>
@@ -180,7 +180,7 @@ export default function TrustPage() {
             queries the network so it can warn you on the first call. Never a schema, argument,
             description, URL, or server/tool name. Fail-open: it never blocks or changes a call.
             Full disclosure on{' '}
-            <Link href="/privacy" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">privacy</Link>.
+            <Link href="/privacy" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">privacy</Link>.
           </Edge>
           <Edge head="Sub-processors.">
             None in the default local deployment - nothing leaves the host,
@@ -220,7 +220,7 @@ export default function TrustPage() {
           requirement,{' '}
           <a
             href="mailto:hello@mcpindex.ai"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             tell us what you need
           </a>{' '}
@@ -251,14 +251,14 @@ export default function TrustPage() {
           Report a vulnerability to{' '}
           <a
             href="mailto:security@mcpindex.ai"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             security@mcpindex.ai
           </a>{' '}
           (or{' '}
           <a
             href="mailto:hello@mcpindex.ai"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             hello@mcpindex.ai
           </a>
@@ -276,7 +276,7 @@ export default function TrustPage() {
           verdict, email{' '}
           <a
             href="mailto:hello@mcpindex.ai"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             hello@mcpindex.ai
           </a>
@@ -303,7 +303,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 function Edge({ head, children }: { head: string; children: React.ReactNode }) {
   return (
     <li>
-      <span className="text-[var(--color-accent)] font-mono">·</span>{' '}
+      <span className="text-[var(--color-accent-strong)] font-mono">·</span>{' '}
       <strong className="text-[var(--color-ink)] font-medium">{head}</strong>{' '}
       {children}
     </li>
@@ -314,7 +314,7 @@ function TLink({ href, children }: { href: string; children: React.ReactNode }) 
   return (
     <Link
       href={href}
-      className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+      className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
     >
       {children}
     </Link>

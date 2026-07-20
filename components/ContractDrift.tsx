@@ -52,7 +52,7 @@ export function ContractDrift({ serverId }: { serverId: string }) {
     <section className="mt-14">
       <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
         Contract drift&nbsp;·&nbsp;crawler-observed&nbsp;·&nbsp;
-        <Link href="/ledger" className="hover:text-[var(--color-accent)]">
+        <Link href="/ledger" className="hover:text-[var(--color-accent-strong)]">
           ledger
         </Link>
       </div>

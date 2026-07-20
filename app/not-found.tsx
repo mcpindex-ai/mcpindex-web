@@ -22,19 +22,19 @@ export default function NotFound() {
       <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
         <Link
           href="/"
-          className="font-mono text-[12.5px] uppercase tracking-[0.14em] text-[var(--color-ink)] border border-[var(--color-rule)] px-5 py-3 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
+          className="font-mono text-[12.5px] uppercase tracking-[0.14em] text-[var(--color-ink)] border border-[var(--color-rule)] px-5 py-3 hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] transition-colors"
         >
           Back home →
         </Link>
         <Link
           href="/docs"
-          className="font-mono text-[12px] uppercase tracking-[0.14em] text-[var(--color-mute)] hover:text-[var(--color-accent)] transition-colors"
+          className="font-mono text-[12px] uppercase tracking-[0.14em] text-[var(--color-mute)] hover:text-[var(--color-accent-strong)] transition-colors"
         >
           Docs →
         </Link>
         <Link
           href="/screen"
-          className="font-mono text-[12px] uppercase tracking-[0.14em] text-[var(--color-mute)] hover:text-[var(--color-accent)] transition-colors"
+          className="font-mono text-[12px] uppercase tracking-[0.14em] text-[var(--color-mute)] hover:text-[var(--color-accent-strong)] transition-colors"
         >
           Screen a tool →
         </Link>

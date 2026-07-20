@@ -43,9 +43,9 @@ function toneOf(t: ScannedTool): 'high' | 'warn' | 'calm' {
 
 const LABEL = 'font-mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-mute)]';
 const BTN =
-  'font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-ink)] border border-[var(--color-rule)] px-3 py-1.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors';
+  'font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-ink)] border border-[var(--color-rule)] px-3 py-1.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors';
 const CHIP =
-  'font-mono text-[11px] text-[var(--color-cite)] border border-[var(--color-rule)] bg-white px-2 py-0.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors';
+  'font-mono text-[11px] text-[var(--color-cite)] border border-[var(--color-rule)] bg-white px-2 py-0.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] transition-colors';
 
 function Stat({ n, label, tone }: { n: number; label: string; tone?: 'accent' | 'ink' }) {
   return (
@@ -172,7 +172,7 @@ export function ScanTool() {
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+              className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
             >
               choose a file
             </button>
@@ -226,7 +226,7 @@ export function ScanTool() {
 
         {/* Where's my file? */}
         <details className="mt-5 rule-t pt-4">
-          <summary className={`${LABEL} cursor-pointer select-none hover:text-[var(--color-accent)]`}>
+          <summary className={`${LABEL} cursor-pointer select-none hover:text-[var(--color-accent-strong)]`}>
             Where&apos;s my file?
           </summary>
           <div className="mt-3 flex flex-wrap gap-1.5">
@@ -235,7 +235,7 @@ export function ScanTool() {
                 key={cl}
                 type="button"
                 onClick={() => setClient(cl)}
-                className={`${CHIP} ${cl === client ? 'border-[var(--color-accent)] text-[var(--color-accent)]' : ''}`}
+                className={`${CHIP} ${cl === client ? 'border-[var(--color-accent)] text-[var(--color-accent-strong)]' : ''}`}
               >
                 {cl}
               </button>
@@ -247,7 +247,7 @@ export function ScanTool() {
                 key={o}
                 type="button"
                 onClick={() => setOs(o)}
-                className={`${CHIP} ${o === os ? 'border-[var(--color-accent)] text-[var(--color-accent)]' : ''}`}
+                className={`${CHIP} ${o === os ? 'border-[var(--color-accent)] text-[var(--color-accent-strong)]' : ''}`}
               >
                 {o}
               </button>
@@ -259,7 +259,7 @@ export function ScanTool() {
               <button
                 type="button"
                 onClick={() => copy(help.reveal, 'reveal')}
-                className="mt-2 font-mono text-[11px] text-[var(--color-cite)] hover:text-[var(--color-accent)] underline decoration-[var(--color-rule)] underline-offset-4"
+                className="mt-2 font-mono text-[11px] text-[var(--color-cite)] hover:text-[var(--color-accent-strong)] underline decoration-[var(--color-rule)] underline-offset-4"
               >
                 {copyLabel('reveal', 'copy reveal command')}
               </button>
@@ -366,7 +366,7 @@ export function ScanTool() {
               <button
                 type="button"
                 onClick={() => copy('uvx --from mcpindex-gate mcpindex-report --json', 'dump')}
-                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
               >
                 {copyLabel('dump', 'copy the one-liner')}
               </button>{' '}
@@ -441,7 +441,7 @@ export function ScanTool() {
                       <td className="px-3 py-2.5 text-[12px] text-[var(--color-cite)]">
                         {s.secretKeys.length > 0 ? s.secretKeys.join(', ') : EMPTY}
                         {s.insecureTransport ? (
-                          <span className="block text-[var(--color-accent)]">over plaintext http</span>
+                          <span className="block text-[var(--color-accent-strong)]">over plaintext http</span>
                         ) : null}
                       </td>
                     </tr>
@@ -467,7 +467,7 @@ export function ScanTool() {
               <button
                 type="button"
                 onClick={() => copy(`${window.location.origin}${cardPath}`, 'card')}
-                className="mt-2 block font-mono text-[11px] text-[var(--color-cite)] hover:text-[var(--color-accent)] underline decoration-[var(--color-rule)] underline-offset-4"
+                className="mt-2 block font-mono text-[11px] text-[var(--color-cite)] hover:text-[var(--color-accent-strong)] underline decoration-[var(--color-rule)] underline-offset-4"
               >
                 {copyLabel('card', 'copy card image link')}
               </button>

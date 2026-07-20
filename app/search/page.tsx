@@ -32,21 +32,21 @@ export default async function SearchPage({
           verdict, maturity score, and install commands. New to picking a server?{' '}
           <Link
             href="/guides/find-mcp-server-by-task"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             Find the right one by task
           </Link>
           . Prefer to browse?{' '}
           <Link
             href="/best"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             By category
           </Link>{' '}
           or the{' '}
           <Link
             href="/leaderboard"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             maturity rankings
           </Link>

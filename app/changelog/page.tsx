@@ -58,7 +58,7 @@ export default async function Changelog() {
           </span>
           <span>
             Subscribe:{' '}
-            <Link href="/changelog.rss" className="text-[var(--color-accent)] hover:underline">
+            <Link href="/changelog.rss" className="text-[var(--color-accent-strong)] hover:underline">
               RSS
             </Link>
           </span>
@@ -80,7 +80,7 @@ export default async function Changelog() {
                   <li key={s.slug} className="text-[14px]">
                     <Link
                       href={`/server/${s.slug}`}
-                      className="font-medium text-[var(--color-ink)] hover:text-[var(--color-accent)]"
+                      className="font-medium text-[var(--color-ink)] hover:text-[var(--color-accent-strong)]"
                     >
                       {s.title}
                     </Link>

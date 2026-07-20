@@ -116,11 +116,11 @@ export default async function StatusPage() {
 
       <p className="mt-10 font-mono text-[12px] text-[var(--color-mute)]">
         More numbers at{' '}
-        <Link href="/stats" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+        <Link href="/stats" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
           /stats
         </Link>
         {' · '}
-        <Link href="/trust" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+        <Link href="/trust" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
           trust model
         </Link>
       </p>

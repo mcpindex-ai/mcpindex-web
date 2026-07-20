@@ -70,7 +70,7 @@ export function PromoVideos({ variant = 'both', showDemoLink = false }: PromoVid
         <p className="font-mono text-[12px]">
           <Link
             href="/demo"
-            className="text-[var(--color-cite)] hover:text-[var(--color-accent)] underline decoration-[var(--color-rule)] underline-offset-4"
+            className="text-[var(--color-cite)] hover:text-[var(--color-accent-strong)] underline decoration-[var(--color-rule)] underline-offset-4"
           >
             Full demo page (interactive gate + embed snippet) →
           </Link>

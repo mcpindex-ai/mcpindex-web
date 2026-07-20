@@ -424,7 +424,7 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
         >
           <div
             className="font-mono text-[10.5px] uppercase tracking-[0.16em]"
-            style={{ color: 'var(--color-accent)' }}
+            style={{ color: 'var(--color-accent-strong)' }}
           >
             One call · pick + trust
           </div>
@@ -790,7 +790,7 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
           <a
             href="mailto:hello@mcpindex.ai"
             className="underline hover:no-underline"
-            style={{ color: 'var(--color-accent)' }}
+            style={{ color: 'var(--color-accent-strong)' }}
           >
             hello@mcpindex.ai
           </a>
@@ -852,7 +852,7 @@ function UseCase({
       <div className="flex items-baseline gap-3">
         <span
           className="text-[11px] font-semibold uppercase tracking-[0.18em]"
-          style={{ fontFamily: FONT_MONO, color: 'var(--color-accent)' }}
+          style={{ fontFamily: FONT_MONO, color: 'var(--color-accent-strong)' }}
         >
           {letter}
         </span>
@@ -966,7 +966,7 @@ function Row({
 function Cell({ value, tone, note }: CellSpec) {
   const color =
     tone === 'pos'
-      ? 'var(--color-accent)'
+      ? 'var(--color-accent-strong)'
       : tone === 'neg'
         ? '#9a3412'
         : 'var(--color-cite)';
@@ -1018,7 +1018,7 @@ function Ext({
       href={href}
       target={isExternal ? '_blank' : undefined}
       rel={isExternal ? 'noreferrer' : undefined}
-      className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] hover:decoration-[var(--color-accent)]"
+      className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)] hover:decoration-[var(--color-accent-strong)]"
       style={{ color: 'var(--color-cite)' }}
     >
       {children}

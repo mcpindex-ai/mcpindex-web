@@ -266,7 +266,7 @@ export default async function LedgerPage() {
             Showing the {MAX_ROWS} most recently-observed of{' '}
             {events.length.toLocaleString()} contract changes. The complete, machine-readable
             ledger is at{' '}
-            <Link href="/api/v1/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+            <Link href="/api/v1/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
               /api/v1/ledger
             </Link>
             .
@@ -281,7 +281,7 @@ export default async function LedgerPage() {
         As of 2026-07-19 the ledger also counts tool removals; earlier totals exclude them. Most
         removals arrive as full toolset replacements, not single-tool deletions. Removal entries
         are historical observations - a same-named tool may have since returned. Details on{' '}
-        <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+        <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
           /methodology
         </Link>
         .

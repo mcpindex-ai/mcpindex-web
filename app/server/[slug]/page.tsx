@@ -166,7 +166,7 @@ export default async function ServerPage(
       <div className="site-container pt-12 pb-24">
         <Link
           href="/leaderboard"
-          className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-mute)] hover:text-[var(--color-accent)]"
+          className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-mute)] hover:text-[var(--color-accent-strong)]"
         >
           ← Index
         </Link>
@@ -177,12 +177,12 @@ export default async function ServerPage(
             <h1 className="t-page-h1 font-medium text-[var(--color-ink)]">{server.title}</h1>
             <div className="mt-3 font-mono text-[12px] text-[var(--color-mute)] flex flex-wrap items-center gap-x-3 gap-y-1">
               <span>{server.name}</span>
-              <span className="text-[var(--color-rule)]">·</span>
+              <span aria-hidden="true" className="inline-block w-px h-3 bg-[var(--color-rule)]" />
               <span>v{server.version}</span>
-              <span className="text-[var(--color-rule)]">·</span>
+              <span aria-hidden="true" className="inline-block w-px h-3 bg-[var(--color-rule)]" />
               <Link
                 href={`/best/${server.category}`}
-                className="text-[var(--color-cite)] hover:text-[var(--color-accent)]"
+                className="text-[var(--color-cite)] hover:text-[var(--color-accent-strong)]"
               >
                 {CATEGORY_LABELS[server.category] ?? server.category}
               </Link>
@@ -199,14 +199,14 @@ export default async function ServerPage(
             <section className="mt-10">
               <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
                 Trust verdict&nbsp;·&nbsp;v1 advisory&nbsp;·&nbsp;
-                <Link href="/methodology" className="hover:text-[var(--color-accent)]">
+                <Link href="/methodology" className="hover:text-[var(--color-accent-strong)]">
                   method
                 </Link>
               </div>
               <TrustVerdictPanel state={verdictState} />
               <p className="mt-3 font-mono text-[11px] text-[var(--color-mute)]">
                 Own this server?{' '}
-                <Link href="/screen" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+                <Link href="/screen" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
                   Screen its description →
                 </Link>
                 {/* The "claim / verify ownership" funnel lives once, in the Listing
@@ -261,7 +261,7 @@ export default async function ServerPage(
                     >
                       <code className="font-mono text-[13px] text-[var(--color-ink)]">{v.name}</code>
                       <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-mute)] flex gap-2">
-                        {v.isRequired && <span className="text-[var(--color-accent)]">required</span>}
+                        {v.isRequired && <span className="text-[var(--color-accent-strong)]">required</span>}
                         {v.isSecret && <span>secret</span>}
                       </div>
                       <p className="text-[13px] text-[var(--color-cite)]">
@@ -279,7 +279,7 @@ export default async function ServerPage(
             <section className="mt-14">
               <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
                 MCP quality score&nbsp;·&nbsp;maturity, not trust&nbsp;·&nbsp;
-                <Link href="/methodology" className="hover:text-[var(--color-accent)]">
+                <Link href="/methodology" className="hover:text-[var(--color-accent-strong)]">
                   methodology
                 </Link>
               </div>
@@ -311,7 +311,7 @@ export default async function ServerPage(
                       href={`/server/${a.slug}`}
                       className="block rule-b py-4 px-2 hover:bg-[var(--color-accent-soft)]/40 transition-colors group"
                     >
-                      <div className="font-medium text-[15px] text-[var(--color-ink)] group-hover:text-[var(--color-accent)]">
+                      <div className="font-medium text-[15px] text-[var(--color-ink)] group-hover:text-[var(--color-accent-strong)]">
                         {a.title}
                       </div>
                       <div className="mt-0.5 font-mono text-[11px] text-[var(--color-mute)]">
@@ -397,14 +397,14 @@ export default async function ServerPage(
                         Maintainer?{' '}
                         <Link
                           href={`/claim?server=${encodeURIComponent(server.slug)}`}
-                          className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                          className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
                         >
                           Verify it →
                         </Link>{' '}
                         ·{' '}
                         <a
                           href={`mailto:hello@mcpindex.ai?subject=${encodeURIComponent(`Claim listing: ${server.slug}`)}`}
-                          className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                          className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
                         >
                           or email us →
                         </a>
@@ -412,7 +412,7 @@ export default async function ServerPage(
                     ) : (
                       <a
                         href={`mailto:hello@mcpindex.ai?subject=${encodeURIComponent(`Claim listing: ${server.slug}`)}`}
-                        className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                        className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
                       >
                         Maintainer? Email us →
                       </a>
@@ -451,20 +451,20 @@ export default async function ServerPage(
                       )}{' '}
                       <a
                         href={`mailto:hello@mcpindex.ai?subject=${encodeURIComponent(`Dispute source-liveness flag: ${server.slug}`)}`}
-                        className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                        className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
                       >
                         Maintainer? Dispute this →
                       </a>
                     </div>
                   ) : (
                     repoHref && (
-                      <a href={repoHref} target="_blank" rel="nofollow noreferrer" className="text-[var(--color-cite)] hover:text-[var(--color-accent)]">
+                      <a href={repoHref} target="_blank" rel="nofollow noreferrer" className="text-[var(--color-cite)] hover:text-[var(--color-accent-strong)]">
                         Repository →
                       </a>
                     )
                   )}
                   {siteHref && (
-                    <a href={siteHref} target="_blank" rel="nofollow noreferrer" className="text-[var(--color-cite)] hover:text-[var(--color-accent)]">
+                    <a href={siteHref} target="_blank" rel="nofollow noreferrer" className="text-[var(--color-cite)] hover:text-[var(--color-accent-strong)]">
                       Website →
                     </a>
                   )}
@@ -493,7 +493,7 @@ function RailRow({ k, v, href }: { k: string; v: string; href?: string }) {
       <dt className="text-[var(--color-mute)] uppercase tracking-[0.12em] text-[10.5px]">{k}</dt>
       <dd className="text-right text-[var(--color-ink)] truncate">
         {href ? (
-          <Link href={href} className="hover:text-[var(--color-accent)]">
+          <Link href={href} className="hover:text-[var(--color-accent-strong)]">
             {v}
           </Link>
         ) : (
@@ -619,7 +619,7 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
           REVIEW or UNVERIFIED, never a clearing ALLOW. Until a verdict is
           recorded, an agent should treat this tool as not-yet-cleared and fall
           back to its own checks. Method:{' '}
-          <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+          <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
             the eval, four-state verdict, honest limits
           </Link>
           .

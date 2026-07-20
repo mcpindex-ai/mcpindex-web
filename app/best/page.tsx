@@ -27,7 +27,7 @@ export default async function BestIndex() {
         </h1>
         <p className="mt-4 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
           {ALL_CATEGORIES.length} categories. Each page ranks the top servers by{' '}
-          <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+          <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
             MCP Quality Score
           </Link>
           .
@@ -39,9 +39,9 @@ export default async function BestIndex() {
           <li key={c}>
             <Link
               href={`/best/${c}`}
-              className="rule-b flex items-baseline justify-between py-4 hover:text-[var(--color-accent)] transition-colors group"
+              className="rule-b flex items-baseline justify-between py-4 hover:text-[var(--color-accent-strong)] transition-colors group"
             >
-              <span className="text-[15px] text-[var(--color-ink)] group-hover:text-[var(--color-accent)]">
+              <span className="text-[15px] text-[var(--color-ink)] group-hover:text-[var(--color-accent-strong)]">
                 {CATEGORY_LABELS[c] ?? c}
               </span>
               <span className="font-mono text-[11px] text-[var(--color-mute)] tabular-nums">

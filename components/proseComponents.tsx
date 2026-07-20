@@ -46,14 +46,14 @@ export const md: Components = {
   a: ({ href, children }) => (
     <a
       href={href}
-      className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] hover:decoration-[var(--color-accent)]"
+      className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)] hover:decoration-[var(--color-accent-strong)]"
       {...(href && /^https?:\/\//.test(href) ? { target: '_blank', rel: 'noreferrer' } : {})}
     >
       {children}
     </a>
   ),
   ul: ({ children }) => (
-    <ul className="mt-4 space-y-2 list-disc pl-5 marker:text-[var(--color-accent)]">{children}</ul>
+    <ul className="mt-4 space-y-2 list-disc pl-5 marker:text-[var(--color-accent-strong)]">{children}</ul>
   ),
   ol: ({ children }) => (
     <ol className="mt-4 space-y-2 list-decimal pl-5 marker:font-mono marker:text-[var(--color-mute)]">

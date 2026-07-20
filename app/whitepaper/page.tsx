@@ -66,7 +66,7 @@ export default function WhitepaperPage() {
             href={PDF_HREF}
             target="_blank"
             rel="noreferrer"
-            className="font-mono text-[12px] uppercase tracking-[0.14em] text-[var(--color-ink)] border border-[var(--color-rule)] px-5 py-2.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
+            className="font-mono text-[12px] uppercase tracking-[0.14em] text-[var(--color-ink)] border border-[var(--color-rule)] px-5 py-2.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] transition-colors"
           >
             Open in new tab &rarr;
           </a>

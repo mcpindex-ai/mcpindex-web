@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "node scripts/check-graduation-honesty.mjs && next build",
     "check:honesty": "node scripts/check-graduation-honesty.mjs",
+    "check:contrast": "node scripts/check-contrast.mjs",
     "start": "next start",
     "lint": "eslint",
     "test": "npm run test:lib && npm run test:routes",

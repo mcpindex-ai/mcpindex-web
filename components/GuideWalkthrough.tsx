@@ -28,7 +28,7 @@ export function GuideWalkthrough({ guide }: { guide: Guide }) {
       {guide.impatient && (
         <a
           href={`#${guide.impatient.targetId}`}
-          className="mt-4 inline-flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-[0.1em] text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+          className="mt-4 inline-flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-[0.1em] text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
         >
           {guide.impatient.label}
           <span aria-hidden>↓</span>
@@ -45,7 +45,7 @@ export function GuideWalkthrough({ guide }: { guide: Guide }) {
         {steps.map((step, i) => (
           <li key={step.id} id={step.id} className="scroll-mt-24 rule-t py-8">
             <div className="flex items-baseline gap-3">
-              <span className="font-mono text-[12px] text-[var(--color-accent)]">
+              <span className="font-mono text-[12px] text-[var(--color-accent-strong)]">
                 {String(i + 1).padStart(2, '0')}
               </span>
               <h2 className="group t-h3 font-medium text-[var(--color-ink)]">
@@ -53,7 +53,7 @@ export function GuideWalkthrough({ guide }: { guide: Guide }) {
                 <a
                   href={`#${step.id}`}
                   aria-label={`Link to: ${step.heading}`}
-                  className="ml-2 align-middle font-mono text-[13px] text-[var(--color-rule)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-[var(--color-accent)]"
+                  className="ml-2 align-middle font-mono text-[13px] text-[var(--color-mute)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-[var(--color-accent-strong)]"
                 >
                   #
                 </a>
@@ -95,7 +95,7 @@ export function GuideWalkthrough({ guide }: { guide: Guide }) {
           </span>
           <span
             aria-hidden
-            className="font-mono text-[16px] text-[var(--color-accent)] transition-transform group-hover:translate-x-0.5"
+            className="font-mono text-[16px] text-[var(--color-accent-strong)] transition-transform group-hover:translate-x-0.5"
           >
             →
           </span>

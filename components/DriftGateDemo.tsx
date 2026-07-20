@@ -204,7 +204,7 @@ export default function DriftGateDemo() {
                 className={`font-mono text-[11px] uppercase tracking-[0.12em] border px-2.5 py-1 transition-colors ${
                   on
                     ? 'border-[var(--color-ink)] text-[var(--color-ink)] bg-[var(--color-accent-soft)]'
-                    : 'border-[var(--color-rule)] text-[var(--color-mute)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]'
+                    : 'border-[var(--color-rule)] text-[var(--color-mute)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)]'
                 }`}
               >
                 {p.label}
@@ -246,8 +246,8 @@ export default function DriftGateDemo() {
                 aria-pressed={on}
                 className={`font-mono text-[11px] border px-2.5 py-1 transition-colors text-left ${
                   on
-                    ? 'border-[var(--color-accent)] text-[var(--color-accent)] bg-[var(--color-accent-soft)]'
-                    : 'border-[var(--color-rule)] text-[var(--color-cite)] bg-white hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]'
+                    ? 'border-[var(--color-accent)] text-[var(--color-accent-strong)] bg-[var(--color-accent-soft)]'
+                    : 'border-[var(--color-rule)] text-[var(--color-cite)] bg-white hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)]'
                 }`}
               >
                 {d.label}
@@ -264,7 +264,7 @@ export default function DriftGateDemo() {
           <button
             type="button"
             onClick={reset}
-            className="mt-3 font-mono text-[10.5px] uppercase tracking-[0.14em] text-[var(--color-mute)] hover:text-[var(--color-accent)] transition-colors"
+            className="mt-3 font-mono text-[10.5px] uppercase tracking-[0.14em] text-[var(--color-mute)] hover:text-[var(--color-accent-strong)] transition-colors"
           >
             ← reset to pinned
           </button>
@@ -289,7 +289,7 @@ export default function DriftGateDemo() {
 
       {active && repinned && (
         <div className="rule-t px-5 py-5 font-mono text-[12px] text-[var(--color-cite)]">
-          <span className="text-[var(--color-accent)]">▸</span> re-pinned - the changed contract is now your
+          <span className="text-[var(--color-accent-strong)]">▸</span> re-pinned - the changed contract is now your
           baseline, so the next call proceeds. The gate only holds a change against what you pinned.
         </div>
       )}
@@ -297,7 +297,7 @@ export default function DriftGateDemo() {
       {/* honest framing */}
       <div className="rule-t px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10.5px] text-[var(--color-mute)]">
         <span>contract-diff, not a safety verdict</span>
-        <span className="text-[var(--color-rule)]">·</span>
+        <span aria-hidden="true" className="inline-block w-px h-3 bg-[var(--color-rule)]" />
         <span>this is the same deterministic gate that runs in your agent</span>
       </div>
     </div>
@@ -368,7 +368,7 @@ function HeldVerdict({
     <div className="rule-t rule-b rule-l rule-r bg-white elevate p-5 sm:p-6">
       {/* the verdict token - amber is reserved for this */}
       <div className="flex flex-wrap items-center gap-3">
-        <span className="inline-flex items-center border border-[var(--color-accent)] bg-[var(--color-accent-soft)] px-3 py-1.5 font-mono text-[15px] font-medium tracking-wide text-[var(--color-accent)]">
+        <span className="inline-flex items-center border border-[var(--color-accent)] bg-[var(--color-accent-soft)] px-3 py-1.5 font-mono text-[15px] font-medium tracking-wide text-[var(--color-accent-strong)]">
           {isInconclusive ? 'HELD · needs behavioral check' : 'HELD'}
         </span>
         <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
@@ -397,7 +397,7 @@ function HeldVerdict({
         <button
           type="button"
           onClick={onRepin}
-          className="font-mono text-[11px] border border-[var(--color-rule)] bg-white px-2.5 py-1 text-[var(--color-cite)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
+          className="font-mono text-[11px] border border-[var(--color-rule)] bg-white px-2.5 py-1 text-[var(--color-cite)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] transition-colors"
         >
           Re-pin
         </button>

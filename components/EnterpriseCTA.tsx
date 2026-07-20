@@ -83,7 +83,7 @@ export function EnterpriseCTA({
                   Something went wrong. Try again, or email{' '}
                   <a
                     href="mailto:hello@mcpindex.ai"
-                    className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                    className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
                   >
                     hello@mcpindex.ai
                   </a>

@@ -84,11 +84,11 @@ export function ServerSearch({ initialQuery = '' }: { initialQuery?: string }) {
       {state === 'done' && results.length === 0 && (
         <p className="mt-4 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
           No servers matched. Try a broader term, or browse{' '}
-          <Link href="/best" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+          <Link href="/best" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
             by category
           </Link>{' '}
           or the{' '}
-          <Link href="/leaderboard" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+          <Link href="/leaderboard" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
             maturity rankings
           </Link>
           .

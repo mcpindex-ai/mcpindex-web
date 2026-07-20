@@ -125,7 +125,7 @@ export default async function GuidePage(
         dangerouslySetInnerHTML={{ __html: jsonLd }}
       />
       <nav className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
-        <Link href="/guides" className="hover:text-[var(--color-accent)]">
+        <Link href="/guides" className="hover:text-[var(--color-accent-strong)]">
           Guides
         </Link>
       </nav>
@@ -166,7 +166,7 @@ export default async function GuidePage(
               <li key={s.slug}>
                 <Link
                   href={`/server/${s.slug}`}
-                  className="text-[15px] text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                  className="text-[15px] text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
                 >
                   {s.name}
                 </Link>

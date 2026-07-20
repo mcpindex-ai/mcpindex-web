@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 const DL =
-  'inline-flex items-center gap-1.5 font-mono text-[12px] text-[var(--color-cite)] border border-[var(--color-rule)] px-2.5 py-1.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors';
+  'inline-flex items-center gap-1.5 font-mono text-[12px] text-[var(--color-cite)] border border-[var(--color-rule)] px-2.5 py-1.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] transition-colors';
 const LABEL = 'font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]';
 
 function Swatch({ name, hex, ink = false }: { name: string; hex: string; ink?: boolean }) {
@@ -167,7 +167,7 @@ export default function BrandPage() {
       </section>
 
       <p className="mt-10 font-mono text-[12px] text-[var(--color-mute)]">
-        Questions? <a href="mailto:hello@mcpindex.ai" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">hello@mcpindex.ai</a>
+        Questions? <a href="mailto:hello@mcpindex.ai" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">hello@mcpindex.ai</a>
       </p>
     </article>
   );

@@ -67,7 +67,7 @@ export default async function Leaderboard() {
           maturity-leaders aren&rsquo;t screened yet.{' '}
           <Link
             href="/methodology"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)] hover:decoration-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)] hover:decoration-[var(--color-accent-strong)]"
           >
             Methodology
           </Link>{' '}
@@ -98,7 +98,7 @@ export default async function Leaderboard() {
               <div className="min-w-0">
                 <Link
                   href={`/server/${row.server.slug}`}
-                  className="block font-medium text-[15.5px] text-[var(--color-ink)] group-hover:text-[var(--color-accent)] truncate transition-colors"
+                  className="block font-medium text-[15.5px] text-[var(--color-ink)] group-hover:text-[var(--color-accent-strong)] truncate transition-colors"
                 >
                   {row.server.title}
                 </Link>
@@ -136,7 +136,7 @@ export default async function Leaderboard() {
           <span className="text-[var(--color-ink)] tabular-nums">{screened.length}</span> servers.{' '}
           <Link
             href="/best"
-            className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             browse the evidence →
           </Link>

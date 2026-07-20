@@ -31,7 +31,7 @@ export default function WhichMcpindexPage() {
           contract when your agent first sees it, holds the call when that contract silently
           changes, and publishes contract-change observations from a daily crawl of the reachable
           MCP registry at{' '}
-          <Link href="/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+          <Link href="/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
             /ledger
           </Link>
           . The gate installs as the PyPI package{' '}
@@ -42,7 +42,7 @@ export default function WhichMcpindexPage() {
           and the SDKs live under the npm scope{' '}
           <code className="font-mono text-[13.5px] text-[var(--color-ink)]">@mcp-index</code>. The
           GitHub org is{' '}
-          <a href="https://github.com/mcpindex-ai" target="_blank" rel="noreferrer" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+          <a href="https://github.com/mcpindex-ai" target="_blank" rel="noreferrer" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
             github.com/mcpindex-ai
           </a>
           .
@@ -65,7 +65,7 @@ export default function WhichMcpindexPage() {
 
       <p className="mt-10 font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
         Questions:{' '}
-        <a href="mailto:hello@mcpindex.ai" className="hover:text-[var(--color-accent)]">
+        <a href="mailto:hello@mcpindex.ai" className="hover:text-[var(--color-accent-strong)]">
           hello@mcpindex.ai
         </a>
       </p>

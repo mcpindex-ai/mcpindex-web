@@ -169,11 +169,11 @@ export default function SourceLivenessPage() {
 
       <p className="mt-10 text-[14px] leading-[1.6] text-[var(--color-mute)]">
         Method and limits:{' '}
-        <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+        <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
           how a verdict is produced
         </Link>
         . Corrections and disputes:{' '}
-        <a href="mailto:hello@mcpindex.ai?subject=Source%20liveness%20census" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+        <a href="mailto:hello@mcpindex.ai?subject=Source%20liveness%20census" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
           hello@mcpindex.ai
         </a>
         .

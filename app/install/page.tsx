@@ -22,7 +22,7 @@ export const metadata: Metadata = pageMetadata({
 });
 
 const UNDERLINE =
-  'underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]';
+  'underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]';
 
 const KICKER = 'font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]';
 
@@ -99,7 +99,7 @@ export default function InstallPage() {
           </span>
           <span
             aria-hidden
-            className="font-mono text-[16px] text-[var(--color-accent)] transition-transform group-hover:translate-x-0.5"
+            className="font-mono text-[16px] text-[var(--color-accent-strong)] transition-transform group-hover:translate-x-0.5"
           >
             →
           </span>

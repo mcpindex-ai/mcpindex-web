@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 const UNDERLINE =
-  'underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]';
+  'underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]';
 
 export default function ScreenPage() {
   return (

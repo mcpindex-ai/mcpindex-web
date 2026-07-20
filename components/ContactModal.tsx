@@ -125,7 +125,7 @@ function ContactModal({ onClose }: { onClose: () => void }) {
               <Field label="Company" name="company" placeholder="Acme Inc." />
               <Field label="Message" name="message" textarea placeholder="What are you building?" />
               {state === 'error' && (
-                <p className="font-mono text-[12px] text-[var(--color-accent)]">
+                <p className="font-mono text-[12px] text-[var(--color-accent-strong)]">
                   {'Something went wrong. Try again, or email hello@mcpindex.ai.'}
                 </p>
               )}

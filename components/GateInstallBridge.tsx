@@ -13,7 +13,7 @@ export function GateInstallBridge({ serverTitle }: { serverTitle: string }) {
       className="mt-10 rule-t rule-b rule-l rule-r border-[var(--color-accent)] bg-[var(--color-accent-soft)] p-4 sm:p-5"
       aria-labelledby="gate-install-bridge-heading"
     >
-      <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-accent)] mb-2 flex items-center gap-2">
+      <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-accent-strong)] mb-2 flex items-center gap-2">
         <Mark size={12} />
         In-path gate · all MCP tools
       </div>
@@ -40,13 +40,13 @@ export function GateInstallBridge({ serverTitle }: { serverTitle: string }) {
       <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[11.5px] uppercase tracking-[0.12em]">
         <Link
           href="/docs#install-the-gate"
-          className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+          className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
         >
           Auditable install path →
         </Link>
         <Link
           href="/#demo"
-          className="text-[var(--color-mute)] hover:text-[var(--color-accent)]"
+          className="text-[var(--color-mute)] hover:text-[var(--color-accent-strong)]"
         >
           Watch it hold a drift →
         </Link>

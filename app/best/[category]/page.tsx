@@ -94,7 +94,7 @@ export default async function BestCategory(
       <article className="site-container pt-16 pb-24">
         <Link
           href="/leaderboard"
-          className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-mute)] hover:text-[var(--color-accent)]"
+          className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-mute)] hover:text-[var(--color-accent-strong)]"
         >
           ← Index
         </Link>
@@ -108,7 +108,7 @@ export default async function BestCategory(
           <p className="mt-4 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
             {inCategory.length} active servers indexed in this category.
             Ranked by{' '}
-            <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+            <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
               MCP Quality Score
             </Link>
             . Updates daily.
@@ -118,11 +118,11 @@ export default async function BestCategory(
         {ranked.length === 0 ? (
           <p className="mt-12 text-[14px] text-[var(--color-mute)]">
             No active servers indexed in this category yet.{' '}
-            <Link href="/" className="underline hover:text-[var(--color-accent)]">
+            <Link href="/" className="underline hover:text-[var(--color-accent-strong)]">
               Search all servers
             </Link>{' '}
             or browse the{' '}
-            <Link href="/leaderboard" className="underline hover:text-[var(--color-accent)]">
+            <Link href="/leaderboard" className="underline hover:text-[var(--color-accent-strong)]">
               full leaderboard
             </Link>
             .
@@ -140,7 +140,7 @@ export default async function BestCategory(
                 <div className="min-w-0">
                   <Link
                     href={`/server/${row.server.slug}`}
-                    className="block font-medium text-[15.5px] text-[var(--color-ink)] group-hover:text-[var(--color-accent)] truncate transition-colors"
+                    className="block font-medium text-[15.5px] text-[var(--color-ink)] group-hover:text-[var(--color-accent-strong)] truncate transition-colors"
                   >
                     {row.server.title}
                   </Link>
@@ -166,7 +166,7 @@ export default async function BestCategory(
               <Link
                 key={c}
                 href={`/best/${c}`}
-                className="font-mono text-[11px] text-[var(--color-cite)] border border-[var(--color-rule)] px-2 py-1 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
+                className="font-mono text-[11px] text-[var(--color-cite)] border border-[var(--color-rule)] px-2 py-1 hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] transition-colors"
               >
                 {CATEGORY_LABELS[c] ?? c}
               </Link>
@@ -246,7 +246,7 @@ async function FilesystemEvidence() {
       <article className="site-container pt-16 pb-24">
         <Link
           href="/best"
-          className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-mute)] hover:text-[var(--color-accent)]"
+          className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-mute)] hover:text-[var(--color-accent-strong)]"
         >
           ← All categories
         </Link>
@@ -263,14 +263,14 @@ async function FilesystemEvidence() {
             hidden instructions (semantic screen, advisory, status PARTIAL). A
             clean result means the description is not lying - <em>not</em> that
             the tool is safe to grant filesystem access. Method:{' '}
-            <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+            <Link href="/methodology" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
               how a finding is produced
             </Link>
             .
           </p>
           <p className="mt-3 text-[14px] text-[var(--color-cite)]">
             Own a filesystem MCP server?{' '}
-            <Link href="/screen" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+            <Link href="/screen" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
               Screen its description →
             </Link>
           </p>
@@ -295,7 +295,7 @@ async function FilesystemEvidence() {
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                   <Link
                     href={`/server/${slug}`}
-                    className="font-medium text-[15.5px] text-[var(--color-ink)] group-hover:text-[var(--color-accent)] transition-colors"
+                    className="font-medium text-[15.5px] text-[var(--color-ink)] group-hover:text-[var(--color-accent-strong)] transition-colors"
                   >
                     {srv?.title ?? verdict.title ?? slug}
                   </Link>
@@ -372,7 +372,7 @@ async function FilesystemEvidence() {
               <Link
                 key={c}
                 href={`/best/${c}`}
-                className="font-mono text-[11px] text-[var(--color-cite)] border border-[var(--color-rule)] px-2 py-1 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
+                className="font-mono text-[11px] text-[var(--color-cite)] border border-[var(--color-rule)] px-2 py-1 hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] transition-colors"
               >
                 {CATEGORY_LABELS[c] ?? c}
               </Link>

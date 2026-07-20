@@ -33,7 +33,7 @@ export default function AboutPage() {
             href="https://registry.modelcontextprotocol.io"
             target="_blank"
             rel="noreferrer"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             registry.modelcontextprotocol.io
           </a>{' '}
@@ -99,7 +99,7 @@ export default function AboutPage() {
           records every contract that drifts, and the gate can query that record to
           warn you on the first call - crawler-corroborated and opt-in. That
           record is public in the{' '}
-          <Link href="/ledger" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">live drift ledger</Link>.
+          <Link href="/ledger" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">live drift ledger</Link>.
           The deeper tier-1 corpus lookup the gate queries before it decides is still
           held off by default. The gate alone is copyable, and open source by design.
           What compounds is behind it: the growing record of drift, the corpus of
@@ -108,7 +108,7 @@ export default function AboutPage() {
         </p>
         <p>
           Three primitives are exposed:{' '}
-          <Link href="/llms.txt" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+          <Link href="/llms.txt" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
             an agent-readable index
           </Link>
           , the verdict surface on every server page, and a{' '}
@@ -116,17 +116,17 @@ export default function AboutPage() {
             href="https://www.npmjs.com/package/mcp-server-mcpindex"
             target="_blank"
             rel="noreferrer"
-            className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             drop-in MCP server
           </a>{' '}
           that exposes check_tool_trust to your agent. Architecture and
           integration notes are in{' '}
-          <Link href="/docs" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+          <Link href="/docs" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
             /docs
           </Link>
           ; the eval method and honest limits are at{' '}
-          <Link href="/methodology" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+          <Link href="/methodology" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
             /methodology
           </Link>
           .
@@ -143,7 +143,7 @@ export default function AboutPage() {
         <p className="mt-3 text-[15px] leading-[1.6] text-[var(--color-cite)]">
           Writes about agent infrastructure, platform design, and the MCP
           ecosystem. Reach the project at{' '}
-          <a href="mailto:hello@mcpindex.ai" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+          <a href="mailto:hello@mcpindex.ai" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
             hello@mcpindex.ai
           </a>
           .

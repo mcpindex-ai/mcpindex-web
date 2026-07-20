@@ -47,7 +47,7 @@ export function GateLoop({ compact = false }: { compact?: boolean }) {
           key={s.n}
           className="rule-b grid grid-cols-[48px_1fr] sm:grid-cols-[72px_1fr_minmax(180px,220px)] gap-5 sm:gap-10 py-9 px-2 group hover:bg-[var(--color-accent-soft)]/30 transition-colors"
         >
-          <div className="font-mono text-[12px] text-[var(--color-accent)] tabular-nums pt-1" aria-hidden="true">
+          <div className="font-mono text-[12px] text-[var(--color-accent-strong)] tabular-nums pt-1" aria-hidden="true">
             {s.n}
           </div>
           <div>

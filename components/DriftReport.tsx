@@ -60,7 +60,7 @@ export function DriftReport({ ledger }: { ledger: Ledger }) {
         A contract diff, observed between snapshots. Not a safety verdict, not a claim any change is
         malicious, and not prevention: the ledger observes, the gate holds. Every entry is a
         fingerprint, never a named server. Numbers update daily and are self-verifiable at{' '}
-        <Link href="/api/v1/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+        <Link href="/api/v1/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
           /api/v1/ledger
         </Link>
         .
@@ -69,7 +69,7 @@ export function DriftReport({ ledger }: { ledger: Ledger }) {
       <div className="mt-5">
         <Link
           href="/demo"
-          className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-ink)] border border-[var(--color-rule)] px-3 py-1.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
+          className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-ink)] border border-[var(--color-rule)] px-3 py-1.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] transition-colors"
         >
           pin and HOLD drift in your setup →
         </Link>

@@ -122,7 +122,7 @@ export function VerdictReveal({ items }: { items: RevealItem[] }) {
           </div>
           <Link
             href={`/server/${item.slug}`}
-            className="block font-mono text-[13.5px] text-[var(--color-ink)] hover:text-[var(--color-accent)] truncate"
+            className="block font-mono text-[13.5px] text-[var(--color-ink)] hover:text-[var(--color-accent-strong)] truncate"
           >
             {item.name}
           </Link>

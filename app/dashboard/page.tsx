@@ -64,7 +64,7 @@ export default async function DashboardPage() {
           Why it matters: every server the crawler covers, and every install that opts in, is a tool
           the gate can warn you about on call 1 - coverage is the network growing. What opt-in
           telemetry sends is on{' '}
-          <a href="/privacy" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">privacy</a>.
+          <a href="/privacy" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">privacy</a>.
         </p>
       </header>
 

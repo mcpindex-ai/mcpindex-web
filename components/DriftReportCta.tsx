@@ -27,7 +27,7 @@ export function DriftReportCta() {
         <Link
           href="/guides/install-the-gate-first-hold"
           onClick={() => trackCtaClick('drift_report_cta')}
-          className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-ink)] border border-[var(--color-rule)] px-3 py-1.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
+          className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-ink)] border border-[var(--color-rule)] px-3 py-1.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] transition-colors"
         >
           See your first HOLD in 2 minutes →
         </Link>

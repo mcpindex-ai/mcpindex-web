@@ -455,7 +455,7 @@ export default async function DriftReportPage() {
           The full pipeline, taxonomy, and disclosure history:{' '}
           <Link
             href="/methodology"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             /methodology
           </Link>
@@ -511,7 +511,7 @@ export default async function DriftReportPage() {
           is a deterministic contract diff, never a safety verdict, and the{' '}
           <Link
             href="/methodology"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             methodology
           </Link>{' '}
@@ -522,7 +522,7 @@ export default async function DriftReportPage() {
           <ObfuscatedEmail
             user="gb"
             domain="mcpindex.ai"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           />{' '}
           - early design partners get input on the roadmap.
         </p>

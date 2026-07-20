@@ -168,14 +168,14 @@ export default async function Home() {
       {/* §00 HERO - install in-fold (no scroll tax). */}
       <section className="rule-b bg-[var(--color-accent-soft)]">
         <div className="site-container pt-14 pb-16 sm:pt-20 sm:pb-24">
-          <div className="hero-rise hero-rise-1 font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-accent)] mb-6">
+          <div className="hero-rise hero-rise-1 font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-accent-strong)] mb-6">
             In-path trust gate for agent tool calls
           </div>
           <h1 className="hero-rise hero-rise-2 font-medium text-[var(--color-ink)] leading-[1.06] tracking-[-0.02em] text-[clamp(2.2rem,1.2rem+3.4vw,3.4rem)]">
             The tool your agent trusted on Monday can change on Tuesday -{' '}
             <span className="italic font-normal">silently</span>.
             <br />
-            <span className="font-semibold text-[var(--color-accent)]">
+            <span className="font-semibold text-[var(--color-accent-strong)]">
               mcpindex holds the call before your agent acts on the change.
             </span>
           </h1>
@@ -196,7 +196,7 @@ export default async function Home() {
             <InstallCtaButton />
             <a
               href="#demo"
-              className="font-mono text-[12.5px] uppercase tracking-[0.14em] text-[var(--color-ink)] border border-[var(--color-rule)] px-6 py-3.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
+              className="font-mono text-[12.5px] uppercase tracking-[0.14em] text-[var(--color-ink)] border border-[var(--color-rule)] px-6 py-3.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] transition-colors"
             >
               Watch it hold a drift →
             </a>
@@ -218,28 +218,28 @@ export default async function Home() {
               the directory MCP client.{' '}
               <Link
                 href="/guides/install-the-gate-first-hold"
-                className="underline decoration-[var(--color-accent)] underline-offset-4 hover:text-[var(--color-accent)]"
+                className="underline decoration-[var(--color-accent-strong)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
               >
                 New here? Walk through it →
               </Link>
               {' · '}
               <Link
                 href="#install-paths"
-                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
               >
                 Discovery one-liners ↓
               </Link>
               {' · '}
               <Link
                 href="/docs#install-the-gate"
-                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
               >
                 auditable uv path
               </Link>
               {' · '}
               <Link
                 href="/install"
-                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
               >
                 all install options →
               </Link>
@@ -268,7 +268,7 @@ export default async function Home() {
             Persona walkthrough &amp; embed:{' '}
             <Link
               href="/demo"
-              className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+              className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
             >
               Videos &amp; embed →
             </Link>
@@ -322,7 +322,7 @@ export default async function Home() {
               path - is in the{' '}
               <Link
                 href="/docs#install-the-gate"
-                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
               >
                 docs
               </Link>
@@ -357,7 +357,9 @@ export default async function Home() {
       {/* Dark trust band - short. */}
       <section className="rule-t bg-[var(--color-ink)]">
         <div className="reveal site-container py-16 sm:py-20">
-          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-500 mb-3">
+          {/* zinc-400 (7.72:1 on ink), not zinc-500 (4.10:1 — under the 4.5 AA
+              floor at this size). */}
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-400 mb-3">
             Trust, stated plainly
           </div>
           <h2 className="t-h3 font-medium text-white">
@@ -368,6 +370,8 @@ export default async function Home() {
             HOLD on doubt, and <strong className="text-zinc-300">never holds your keys</strong>.
           </p>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+            {/* On ink, plain accent is the compliant hover (5.56:1); the
+                -strong variant used everywhere else would drop this to 3.82:1. */}
             <Link
               href="/trust"
               className="font-mono text-[12.5px] uppercase tracking-[0.14em] text-white border border-zinc-700 px-5 py-3 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
@@ -419,7 +423,7 @@ export default async function Home() {
               <strong>&ldquo;this contract changed,&rdquo;</strong> never &ldquo;this is safe.&rdquo;{' '}
               <Link
                 href="/methodology"
-                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
               >
                 Read the methodology
               </Link>
@@ -440,7 +444,7 @@ export default async function Home() {
               crawler-corroborated drift never moves the decision. Every catch is public in the{' '}
               <Link
                 href="/ledger"
-                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
               >
                 live drift ledger
               </Link>
@@ -454,19 +458,19 @@ export default async function Home() {
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
               <Link
                 href="/leaderboard"
-                className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-cite)] hover:text-[var(--color-accent)]"
+                className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-cite)] hover:text-[var(--color-accent-strong)]"
               >
                 Maturity Rankings →
               </Link>
               <Link
                 href="/screen"
-                className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-cite)] hover:text-[var(--color-accent)]"
+                className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-cite)] hover:text-[var(--color-accent-strong)]"
               >
                 Screen →
               </Link>
               <Link
                 href="/search"
-                className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-cite)] hover:text-[var(--color-accent)]"
+                className="font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-cite)] hover:text-[var(--color-accent-strong)]"
               >
                 Search →
               </Link>
@@ -480,14 +484,14 @@ export default async function Home() {
             Overview films:{' '}
             <Link
               href="/demo"
-              className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+              className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
             >
               Concept &amp; persona videos →
             </Link>
             {' · '}
             <Link
               href="/whitepaper"
-              className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+              className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
             >
               Whitepaper →
             </Link>

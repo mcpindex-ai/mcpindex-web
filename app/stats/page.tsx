@@ -54,7 +54,7 @@ export default async function StatsPage() {
             href="https://github.com/mcpindex-ai"
             target="_blank"
             rel="noreferrer"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             github.com/mcpindex-ai
           </a>
@@ -117,7 +117,7 @@ export default async function StatsPage() {
               silent tool-contract change in the{' '}
               <Link
                 href="/ledger"
-                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
               >
                 public ledger
               </Link>
@@ -135,7 +135,7 @@ export default async function StatsPage() {
 
       <p className="mt-10 font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
         Page revalidates every hour ·{' '}
-        <Link href="/api/registry-count" className="hover:text-[var(--color-accent)]">
+        <Link href="/api/registry-count" className="hover:text-[var(--color-accent-strong)]">
           /api/registry-count
         </Link>
       </p>

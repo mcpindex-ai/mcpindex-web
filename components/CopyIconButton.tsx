@@ -43,7 +43,7 @@ export function CopyIconButton({ value, label }: { value: string; label: string 
       type="button"
       onClick={copy}
       aria-label={`Copy ${label}`}
-      className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-mute)] hover:text-[var(--color-accent)] transition-colors"
+      className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-mute)] hover:text-[var(--color-accent-strong)] transition-colors"
     >
       {copied ? <Check /> : <Clip />}
       {copied ? 'copied' : label}

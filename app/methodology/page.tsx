@@ -70,7 +70,7 @@ export default function MethodologyPage() {
           table; the reproducible scenario battery is documented in the{' '}
           <Link
             href="/whitepaper"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             whitepaper
           </Link>
@@ -97,10 +97,10 @@ export default function MethodologyPage() {
           Honest limits (the gate)
         </div>
         <ul className="space-y-3 text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Contract-diff, not a safety verdict.</strong> A HOLD means &ldquo;this tool&rsquo;s contract changed vs what you pinned&rdquo; - not that the new contract is unsafe. You review the before/after and re-pin if the change is expected.</li>
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Advisory in judgment, in-path in effect.</strong> The gate does not assert a tool is safe; it asserts what changed. Because it sits in the call path, that judgment can actually HOLD the call - a passive scanner can only alert after the fact.</li>
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Deterministic tier-0 live; tiers 1-3 built but held off by default.</strong> The contract-diff is deterministic, runs first, and is the live, deterministic leg. Above it the ladder is built as in-path seams - a cloud tier-1 corpus lookup (a contract judged once clears or condemns it everywhere), a tier-2 LLM consult on the ambiguous, and a tier-3 behavioral verifier that exercises a changed tool to clear or refute the change - but each is held off by default and requires explicit opt-in; the default build egresses nothing and stays fail-closed. When enabled, the behavioral tier clears or refutes a contract change; it is not a proof of safety, and confidence is reported but not yet calibrated (calibrated=false at v1).</li>
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Fail-closed.</strong> A tool with no pin, an unreadable contract, or a diff the gate cannot complete holds rather than proceeds. The gate never silently allows what it could not verify.</li>
+          <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Contract-diff, not a safety verdict.</strong> A HOLD means &ldquo;this tool&rsquo;s contract changed vs what you pinned&rdquo; - not that the new contract is unsafe. You review the before/after and re-pin if the change is expected.</li>
+          <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Advisory in judgment, in-path in effect.</strong> The gate does not assert a tool is safe; it asserts what changed. Because it sits in the call path, that judgment can actually HOLD the call - a passive scanner can only alert after the fact.</li>
+          <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Deterministic tier-0 live; tiers 1-3 built but held off by default.</strong> The contract-diff is deterministic, runs first, and is the live, deterministic leg. Above it the ladder is built as in-path seams - a cloud tier-1 corpus lookup (a contract judged once clears or condemns it everywhere), a tier-2 LLM consult on the ambiguous, and a tier-3 behavioral verifier that exercises a changed tool to clear or refute the change - but each is held off by default and requires explicit opt-in; the default build egresses nothing and stays fail-closed. When enabled, the behavioral tier clears or refutes a contract change; it is not a proof of safety, and confidence is reported but not yet calibrated (calibrated=false at v1).</li>
+          <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Fail-closed.</strong> A tool with no pin, an unreadable contract, or a diff the gate cannot complete holds rather than proceeds. The gate never silently allows what it could not verify.</li>
         </ul>
       </section>
 
@@ -116,13 +116,13 @@ export default function MethodologyPage() {
           this contract drifting? If it has, you are warned on the first call - a contract-diff
           advisory that rides alongside the verdict and never moves PROCEED or HOLD. Every drift the
           crawler catches is public in the{' '}
-          <Link href="/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">drift ledger</Link>.
+          <Link href="/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">drift ledger</Link>.
         </p>
         <ul className="space-y-3 text-[14.5px] leading-[1.6] text-[var(--color-cite)] mt-5">
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Crawler-corroborated, not crowd-sourced.</strong> The public corroboration count floors at the crawler (one first-party source); forgeable install reports are excluded from the public number. The warning is real today because the crawler sees the drift, not because other installs reported it.</li>
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Opt-in, privacy-by-construction.</strong> Off by default. When enabled, the only thing that leaves is a salted (HMAC) fingerprint plus closed-vocabulary fields (change type, safety flag, hour-rounded time) - never a schema, argument, description, URL, or server/tool name. Fail-open: it never blocks or changes a call.</li>
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Advisory, never the decision.</strong> The fleet advisory informs; the gate&rsquo;s deterministic contract-diff still decides. The network can raise your attention; it cannot move a PROCEED or a HOLD.</li>
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Tool removals counted (as of 2026-07-19).</strong> The ledger also records when a tool present in one snapshot is absent from the next, scoped to servers reachable in both (a server going offline is never counted as removals). Earlier totals exclude removals. Most removals arrive as full toolset replacements rather than single-tool deletions, and the ledger labels them so. Removal entries are historical observations - a same-named tool may have since returned.</li>
+          <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Crawler-corroborated, not crowd-sourced.</strong> The public corroboration count floors at the crawler (one first-party source); forgeable install reports are excluded from the public number. The warning is real today because the crawler sees the drift, not because other installs reported it.</li>
+          <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Opt-in, privacy-by-construction.</strong> Off by default. When enabled, the only thing that leaves is a salted (HMAC) fingerprint plus closed-vocabulary fields (change type, safety flag, hour-rounded time) - never a schema, argument, description, URL, or server/tool name. Fail-open: it never blocks or changes a call.</li>
+          <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Advisory, never the decision.</strong> The fleet advisory informs; the gate&rsquo;s deterministic contract-diff still decides. The network can raise your attention; it cannot move a PROCEED or a HOLD.</li>
+          <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Tool removals counted (as of 2026-07-19).</strong> The ledger also records when a tool present in one snapshot is absent from the next, scoped to servers reachable in both (a server going offline is never counted as removals). Earlier totals exclude removals. Most removals arrive as full toolset replacements rather than single-tool deletions, and the ledger labels them so. Removal entries are historical observations - a same-named tool may have since returned.</li>
         </ul>
       </section>
 
@@ -164,12 +164,12 @@ export default function MethodologyPage() {
           Honest limits (v1)
         </div>
         <ul className="space-y-3 text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Definition, not runtime.</strong> The eval is bound to the tool definition (description + schema) at evaluation time. Runtime behavior on a specific call is not covered.</li>
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Conformance built, not yet run; monitored, not enforced.</strong> The deterministic conformance probe has not run on the public corpus, so no published screen verdict carries a conformance result today. When it runs, a conformance result is reported in the verdict and the public surface, not enforced on the wire.</li>
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">OTS cadence bound = confirmation latency.</strong> The OTS anchor proves the verdict existed by some Bitcoin block; it does not prove minute-level ordering inside the confirmation window.</li>
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">calibrated = false at v1.</strong> Confidence scores are reported but not calibrated against a held-out adversarial corpus yet.</li>
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Advisory, not blocking.</strong> mcpindex publishes the verdict. The agent or IDE decides whether to act.</li>
-          <li><span className="text-[var(--color-accent)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">D3 graduation gate.</strong> &gt;={D3_REQUIRED_LABELS} conforming labels with FP upper-95 &lt;=2%. Current: {D3_PROGRESS}.</li>
+          <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Definition, not runtime.</strong> The eval is bound to the tool definition (description + schema) at evaluation time. Runtime behavior on a specific call is not covered.</li>
+          <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Conformance built, not yet run; monitored, not enforced.</strong> The deterministic conformance probe has not run on the public corpus, so no published screen verdict carries a conformance result today. When it runs, a conformance result is reported in the verdict and the public surface, not enforced on the wire.</li>
+          <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">OTS cadence bound = confirmation latency.</strong> The OTS anchor proves the verdict existed by some Bitcoin block; it does not prove minute-level ordering inside the confirmation window.</li>
+          <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">calibrated = false at v1.</strong> Confidence scores are reported but not calibrated against a held-out adversarial corpus yet.</li>
+          <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Advisory, not blocking.</strong> mcpindex publishes the verdict. The agent or IDE decides whether to act.</li>
+          <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">D3 graduation gate.</strong> &gt;={D3_REQUIRED_LABELS} conforming labels with FP upper-95 &lt;=2%. Current: {D3_PROGRESS}.</li>
         </ul>
         <p className="mt-6 text-[14px] text-[var(--color-cite)] leading-[1.6]">
           The honest-limits list is a contract. If any of these stops being
@@ -193,7 +193,7 @@ export default function MethodologyPage() {
             href="https://github.com/mcpindex-ai/mcpindex-web/blob/main/lib/quality.ts"
             target="_blank"
             rel="noreferrer"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             lib/quality.ts
           </a>
@@ -211,7 +211,7 @@ https://mcpindex.ai/methodology`}</code>
         </pre>
         <p className="mt-4 text-[13.5px] text-[var(--color-cite)]">
           Or just{' '}
-          <Link href="/leaderboard" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+          <Link href="/leaderboard" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
             link to a server&apos;s detail page
           </Link>
           . The verdict surface and the score breakdown both render there.

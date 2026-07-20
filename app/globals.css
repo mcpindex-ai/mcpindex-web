@@ -11,12 +11,21 @@
   --color-paper: #ffffff;
   --color-rule: #e7e5e4;
   --color-mute: #78716c;
+  /* Brand amber. NOT a text color on paper: 3.56:1 on white, 3.35:1 on
+     --color-accent-soft, both under the 4.5:1 AA floor for normal text. Use it
+     for fills, rules, markers, bars, focus outlines, and the logo/OG marks
+     (where it is also hardcoded, so this value must not drift). It IS the
+     correct accent text color on --color-ink (5.56:1), where -strong would
+     fail at 3.82:1. */
   --color-accent: #ea580c;
   --color-accent-soft: #fff7ed;
-  /* Darker accent (orange-700, 5.18:1 on white) for white-text CTA backgrounds.
-     --color-accent (3.56:1) stays the reserved verdict amber for markers/hover/
-     bars; use -strong only where white text sits on a filled accent button so it
-     meets WCAG 2.2 AA for normal text (the /accessibility stated target). */
+  /* Accent as TEXT on a light surface, and as a filled background under white
+     text. orange-700: 5.18:1 on white, 4.88:1 on --color-accent-soft, 4.5:1+
+     under white text — clears WCAG 2.2 AA for normal text (the /accessibility
+     stated target). Rule of thumb: accent-strong is the accent text color on
+     paper; plain accent is the accent text color on ink.
+     `npm run check:contrast` enforces this for RESTING state only — :hover and
+     other interaction states are not measured, so check those by hand. */
   --color-accent-strong: #c2410c;
   --color-cite: #0f172a;
 }

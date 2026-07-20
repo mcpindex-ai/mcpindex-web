@@ -38,7 +38,7 @@ export default function AccessibilityPage() {
           <ObfuscatedEmail
             user="hello"
             domain="mcpindex.ai"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           />{' '}
           with the page URL and what you were trying to do. We take those reports seriously.
         </p>
@@ -46,14 +46,14 @@ export default function AccessibilityPage() {
           Related:{' '}
           <Link
             href="/privacy"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             Privacy
           </Link>
           {' · '}
           <Link
             href="/terms"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             Terms
           </Link>

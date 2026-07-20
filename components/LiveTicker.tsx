@@ -23,12 +23,12 @@ export async function LiveTicker() {
             Tracking <span className="text-[var(--color-cite)] tabular-nums">{servers.length.toLocaleString()}</span>
           </span>
           <span>
-            7-day delta <span className="text-[var(--color-accent)] tabular-nums">+{fresh}</span>
+            7-day delta <span className="text-[var(--color-accent-strong)] tabular-nums">+{fresh}</span>
           </span>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <Link href="/changelog" className="hover:text-[var(--color-accent)]">/changelog</Link>
-          <Link href="/api/registry-count" className="hidden sm:inline hover:text-[var(--color-accent)]">
+          <Link href="/changelog" className="hover:text-[var(--color-accent-strong)]">/changelog</Link>
+          <Link href="/api/registry-count" className="hidden sm:inline hover:text-[var(--color-accent-strong)]">
             /api/registry-count
           </Link>
         </div>

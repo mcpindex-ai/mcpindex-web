@@ -31,7 +31,7 @@ function Step({
   return (
     <li className="rule-b py-6 px-2">
       <div className="flex items-baseline gap-3">
-        <span className="font-mono text-[12px] tabular-nums text-[var(--color-accent)]">
+        <span className="font-mono text-[12px] tabular-nums text-[var(--color-accent-strong)]">
           {String(n).padStart(2, '0')}
         </span>
         <span className="text-[15px] font-medium text-[var(--color-ink)]">{title}</span>
@@ -69,40 +69,40 @@ export default function ClaimPage() {
         </div>
         <ul className="space-y-3 text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
           <li>
-            <span className="text-[var(--color-accent)] font-mono">·</span>{' '}
+            <span className="text-[var(--color-accent-strong)] font-mono">·</span>{' '}
             <strong className="text-[var(--color-ink)] font-medium">A preview observation, not a guarantee.</strong>{' '}
             It states what a read-only probe observed (&ldquo;no contract drift
             observed&rdquo;). It is not a certification and never asserts your server is
             safe, secure, or verified-safe. No such claim is made or implied.
           </li>
           <li>
-            <span className="text-[var(--color-accent)] font-mono">·</span>{' '}
+            <span className="text-[var(--color-accent-strong)] font-mono">·</span>{' '}
             <strong className="text-[var(--color-ink)] font-medium">Owner-attested and consented.</strong>{' '}
             It is published at your request, on tools you attest as read-only, and
             human-confirmed by an mcpindex operator before it renders.
           </li>
           <li>
-            <span className="text-[var(--color-accent)] font-mono">·</span>{' '}
+            <span className="text-[var(--color-accent-strong)] font-mono">·</span>{' '}
             <strong className="text-[var(--color-ink)] font-medium">Subordinate to screening.</strong>{' '}
             It lives on its own axis, below and separate from mcpindex&rsquo;s own screening
             verdict. It never overrides, upgrades, or substitutes for that verdict. See the{' '}
             <Link
               href="/methodology"
-              className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+              className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
             >
               methodology
             </Link>
             .
           </li>
           <li>
-            <span className="text-[var(--color-accent)] font-mono">·</span>{' '}
+            <span className="text-[var(--color-accent-strong)] font-mono">·</span>{' '}
             <strong className="text-[var(--color-ink)] font-medium">Re-checked, and revoked on drift.</strong>{' '}
             The observation is bound to the exact tool definitions you attested. If a
             contract drifts, the badge is re-checked and revoked - it is not a standing
             claim.
           </li>
           <li>
-            <span className="text-[var(--color-accent)] font-mono">·</span>{' '}
+            <span className="text-[var(--color-accent-strong)] font-mono">·</span>{' '}
             <strong className="text-[var(--color-ink)] font-medium">Preview, and evolving.</strong>{' '}
             This flow and the read-only probe are still being tuned. Treat the badge as a
             preview signal, not a finished product.
@@ -148,7 +148,7 @@ export default function ClaimPage() {
                 href="https://www.npmjs.com/package/@mcp-index/sdk"
                 target="_blank"
                 rel="noreferrer"
-                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
               >
                 @mcp-index/sdk
               </a>{' '}
@@ -335,7 +335,7 @@ export MCPINDEX_API_KEY="$(node -e "process.stdout.write(require(require('os').h
             href="https://www.npmjs.com/package/@mcp-index/sdk"
             target="_blank"
             rel="noreferrer"
-            className="text-[var(--color-cite)] hover:text-[var(--color-accent)]"
+            className="text-[var(--color-cite)] hover:text-[var(--color-accent-strong)]"
           >
             Get a free api_key (self-serve login) →
           </a>
@@ -343,11 +343,11 @@ export MCPINDEX_API_KEY="$(node -e "process.stdout.write(require(require('os').h
             href="https://owner.mcpindex.ai"
             target="_blank"
             rel="noreferrer"
-            className="text-[var(--color-cite)] hover:text-[var(--color-accent)]"
+            className="text-[var(--color-cite)] hover:text-[var(--color-accent-strong)]"
           >
             owner.mcpindex.ai (the owner API) →
           </a>
-          <Link href="/search" className="text-[var(--color-cite)] hover:text-[var(--color-accent)]">
+          <Link href="/search" className="text-[var(--color-cite)] hover:text-[var(--color-accent-strong)]">
             Find your server in the index →
           </Link>
         </div>

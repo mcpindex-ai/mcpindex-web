@@ -60,7 +60,7 @@ export default async function GuidesIndex() {
                       className="group flex items-baseline justify-between gap-4 py-4 hover:bg-[var(--color-accent-soft)]"
                     >
                       <span>
-                        <span className="text-[16px] font-medium text-[var(--color-ink)] group-hover:text-[var(--color-accent)]">
+                        <span className="text-[16px] font-medium text-[var(--color-ink)] group-hover:text-[var(--color-accent-strong)]">
                           {g.title}
                         </span>
                         {g.outcome && (
@@ -93,7 +93,7 @@ export default async function GuidesIndex() {
                   <li key={g.slug}>
                     <Link
                       href={`/guides/${g.slug}`}
-                      className="text-[16px] text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+                      className="text-[16px] text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
                     >
                       {g.title}
                     </Link>

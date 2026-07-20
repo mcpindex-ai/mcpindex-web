@@ -17,11 +17,11 @@ export function ServersBrowse({ data }: { data: BrowsePage }) {
         <p className="mt-4 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
           {data.totalServers.toLocaleString('en-US')} MCP servers from the official registry
           snapshot, A to Z. Rankings live on the{' '}
-          <Link href="/leaderboard" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+          <Link href="/leaderboard" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
             leaderboard
           </Link>
           ; curated picks under{' '}
-          <Link href="/best" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">
+          <Link href="/best" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
             Best of
           </Link>
           .
@@ -33,9 +33,9 @@ export function ServersBrowse({ data }: { data: BrowsePage }) {
           <li key={s.slug} className="break-inside-avoid">
             <Link
               href={`/server/${s.slug}`}
-              className="rule-b block py-3 hover:text-[var(--color-accent)] transition-colors group"
+              className="rule-b block py-3 hover:text-[var(--color-accent-strong)] transition-colors group"
             >
-              <span className="block text-[14px] leading-snug text-[var(--color-ink)] group-hover:text-[var(--color-accent)]">
+              <span className="block text-[14px] leading-snug text-[var(--color-ink)] group-hover:text-[var(--color-accent-strong)]">
                 {s.title || s.name}
               </span>
               <span className="mt-0.5 block font-mono text-[10.5px] text-[var(--color-mute)]">
@@ -60,7 +60,7 @@ function Pagination({ page, totalPages }: { page: number; totalPages: number }) 
   // whole hub is reachable in O(log n) hops from page 1.
   const window: number[] = [];
   for (let n = Math.max(1, page - 3); n <= Math.min(totalPages, page + 3); n++) window.push(n);
-  const cls = 'px-2 py-1 hover:text-[var(--color-accent)]';
+  const cls = 'px-2 py-1 hover:text-[var(--color-accent-strong)]';
   const current = 'px-2 py-1 text-[var(--color-ink)] font-medium';
   return (
     <nav aria-label="Pagination" className="mt-10 flex flex-wrap items-center gap-1 font-mono text-[12px] text-[var(--color-mute)]">

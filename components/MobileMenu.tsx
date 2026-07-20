@@ -66,7 +66,7 @@ export function MobileMenu({
                   key={item.href}
                   href={item.href}
                   onClick={() => setOpen(false)}
-                  className="border-b border-[var(--color-rule)] py-3.5 font-mono text-[14px] tracking-tight text-[var(--color-ink)] last:border-b-0 hover:text-[var(--color-accent)]"
+                  className="border-b border-[var(--color-rule)] py-3.5 font-mono text-[14px] tracking-tight text-[var(--color-ink)] last:border-b-0 hover:text-[var(--color-accent-strong)]"
                 >
                   {item.label}
                 </Link>

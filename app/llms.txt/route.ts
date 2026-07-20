@@ -23,7 +23,7 @@ export async function GET(req: Request) {
   ]);
   const body = `# mcpindex.ai
 
-The in-path trust gate for agent tool calls. Pins each MCP tool contract and HOLDs the call when it silently drifts - before your agent acts. Zero credentials. Fail-closed. Not a safety oracle.
+> The in-path trust gate for agent tool calls. Pins each MCP tool contract and HOLDs the call when it silently drifts - before your agent acts. Zero credentials. Fail-closed. Not a safety oracle.
 
 Secondary: a public directory of MCP servers with advisory screening verdicts (REVIEW / UNVERIFIED at v1) so you can check a tool before you wire it.
 
@@ -61,7 +61,7 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 - Exposure: anonymous calls return the current verdict (directive, status, dimension verdicts, severity, expires_at). Free, no key required - nothing on this API is paid-tier.
 - Graduation gate (D3): >=${D3_REQUIRED_LABELS} conforming labels with FP upper-95 <=2%. Current: ${D3_PROGRESS}. Terminal-v1 trigger 2026-09-01: under 50 conforming = ships calibrated=false as terminal (v2 graduation, not v1).
 - Deployment posture: advisory. mcpindex publishes the verdict; the agent or IDE decides whether to act on it.
-- Full method: https://mcpindex.ai/methodology
+- Full method: [mcpindex.ai/methodology](https://mcpindex.ai/methodology)
 
 ## Drift Network (crawler-corroborated; warns you on call 1)
 
@@ -73,8 +73,8 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 ## Whitepaper
 
 - Full architecture of the in-path trust gate (and the trust-to-act category it belongs to): threat model, tiered ladder, methodology, dogfood proof, and the honest limits (contract-diff not safety oracle; calibrated=false; tiers 1-3 held off by default).
-- Public, free to read in full, with a free PDF (no email required): https://mcpindex.ai/whitepaper
-- PDF: https://mcpindex.ai/whitepaper.pdf
+- Public, free to read in full, with a free PDF (no email required): [mcpindex.ai/whitepaper](https://mcpindex.ai/whitepaper)
+- PDF: [mcpindex.ai/whitepaper.pdf](https://mcpindex.ai/whitepaper.pdf)
 
 ## Endpoints an agent can call
 
@@ -97,7 +97,7 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 npm install -g mcp-server-mcpindex
 \`\`\`
 
-Or connect remotely (no install): point any MCP client that supports remote servers at https://mcpindex.ai/api/mcp (Streamable HTTP, no credentials) - same six tools.
+Or connect remotely (no install): point any MCP client that supports remote servers at [mcpindex.ai/api/mcp](https://mcpindex.ai/api/mcp) (Streamable HTTP, no credentials) - same six tools.
 
 Add to Claude Desktop / Claude Code / Cursor / Gemini CLI / Cline / Zed. Prefer CLI one-liners when available:
 
@@ -114,22 +114,21 @@ This is the advisory directory client - not the in-path gate (\`mcpindex-gate\` 
 
 ## Project pages
 
-- /docs                     How it works, how to wire it into Claude/Cursor/Gemini/Cline/Zed, response anatomy.
-- /scan                     Paste your mcp.json; see each tool's blast radius (action, reversibility, off-machine egress) in the browser. Nothing uploaded.
-- /screen                   Paste a tool description; the live LLM judge returns an advisory REVIEW/UNVERIFIED verdict.
-- /server/<slug>            Per-server detail (${servers} pages, JSON-LD typed, verdict surfaced when available).
-- /guides                   Practical guides: trust/security reviews, comparisons, integration how-tos.
-- /guides/<slug>            Individual guide (intent pages grounded in registry + trust data).
-- /best/<category>          Curated picks per category.
-- /leaderboard              Top 50 by MCP Quality Score.
-- /ledger                   Public drift ledger: contract changes the crawler observed across public MCP servers.
-- /dashboard                Drift network coverage + opt-in telemetry adoption (honest: opt-in counts are not all users).
-- /changelog                Daily diff of registry changes.
-- /changelog.rss            RSS 2.0 feed of the above.
-- /trust                    Trust model + honest limits: contract-diff, not a safety verdict; where the gate runs, what leaves the machine.
-- /methodology              The eval (semantic-only today; conformance probe built but not yet run), four-state verdict, honest limits.
-- /whitepaper               Architecture whitepaper: gate, threat model, methodology, honest limits. Public; free PDF, no email wall.
-- /about                    Why this exists.
+- [Docs](https://mcpindex.ai/docs): How it works, how to wire it into Claude/Cursor/Gemini/Cline/Zed, response anatomy.
+- [Scan](https://mcpindex.ai/scan): Paste your mcp.json; see each tool's blast radius (action, reversibility, off-machine egress) in the browser. Nothing uploaded.
+- [Screen](https://mcpindex.ai/screen): Paste a tool description; the live LLM judge returns an advisory REVIEW/UNVERIFIED verdict.
+- [Servers](https://mcpindex.ai/servers): A-Z browse hub over all ${servers} per-server detail pages (JSON-LD typed, verdict surfaced when available); individual pages live at /server/<slug>.
+- [Guides](https://mcpindex.ai/guides): Practical guides: trust/security reviews, comparisons, integration how-tos; individual guides at /guides/<slug>.
+- [Best by category](https://mcpindex.ai/best): Curated picks per category, at /best/<category>.
+- [Leaderboard](https://mcpindex.ai/leaderboard): Top 50 by MCP Quality Score.
+- [Drift ledger](https://mcpindex.ai/ledger): Public drift ledger: contract changes the crawler observed across public MCP servers.
+- [Dashboard](https://mcpindex.ai/dashboard): Drift network coverage + opt-in telemetry adoption (honest: opt-in counts are not all users).
+- [Changelog](https://mcpindex.ai/changelog): Daily diff of registry changes.
+- [Changelog RSS](https://mcpindex.ai/changelog.rss): RSS 2.0 feed of the above.
+- [Trust model](https://mcpindex.ai/trust): Trust model + honest limits: contract-diff, not a safety verdict; where the gate runs, what leaves the machine.
+- [Methodology](https://mcpindex.ai/methodology): The eval (semantic-only today; conformance probe built but not yet run), four-state verdict, honest limits.
+- [Whitepaper](https://mcpindex.ai/whitepaper): Architecture whitepaper: gate, threat model, methodology, honest limits. Public; free PDF, no email wall.
+- [About](https://mcpindex.ai/about): Why this exists.
 
 Unofficial. Not affiliated with Anthropic.
 `;

@@ -5,7 +5,7 @@ import { ContactTrigger } from './ContactModal';
 const COLUMN_LABEL =
   'font-mono text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-mute)] mb-4';
 const LINK =
-  'block py-1 text-[13.5px] text-[var(--color-cite)] hover:text-[var(--color-accent)] transition-colors';
+  'block py-1 text-[13.5px] text-[var(--color-cite)] hover:text-[var(--color-accent-strong)] transition-colors';
 
 export function Footer() {
   return (

@@ -16,11 +16,11 @@ export function GuideDeepLink({
 }) {
   const external = /^https?:\/\//.test(href);
   const linkClass =
-    'font-medium text-[var(--color-ink)] underline decoration-[var(--color-accent)] underline-offset-4 hover:text-[var(--color-accent)]';
+    'font-medium text-[var(--color-ink)] underline decoration-[var(--color-accent-strong)] underline-offset-4 hover:text-[var(--color-accent-strong)]';
 
   return (
     <div className="mt-5 flex gap-3 border-l-2 border-[var(--color-accent)] bg-[var(--color-accent-soft)] pl-4 pr-4 py-3">
-      <span aria-hidden className="mt-0.5 font-mono text-[12px] text-[var(--color-accent)]">
+      <span aria-hidden className="mt-0.5 font-mono text-[12px] text-[var(--color-accent-strong)]">
         →
       </span>
       <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)]">

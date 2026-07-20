@@ -47,7 +47,7 @@ export default function DemoPage() {
         Overview and persona films below. For the interactive drift gate, use the{' '}
         <Link
           href="/#demo"
-          className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+          className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
         >
           homepage demo
         </Link>
@@ -57,19 +57,19 @@ export default function DemoPage() {
       <div className="mt-10 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[12px]">
         <a
           href="#overview"
-          className="text-[var(--color-cite)] hover:text-[var(--color-accent)] underline decoration-[var(--color-rule)] underline-offset-4"
+          className="text-[var(--color-cite)] hover:text-[var(--color-accent-strong)] underline decoration-[var(--color-rule)] underline-offset-4"
         >
           Overview film (~70s) →
         </a>
         <Link
           href="/#demo"
-          className="text-[var(--color-cite)] hover:text-[var(--color-accent)] underline decoration-[var(--color-rule)] underline-offset-4"
+          className="text-[var(--color-cite)] hover:text-[var(--color-accent-strong)] underline decoration-[var(--color-rule)] underline-offset-4"
         >
           Try the interactive gate →
         </Link>
         <Link
           href="/#install"
-          className="text-[var(--color-cite)] hover:text-[var(--color-accent)] underline decoration-[var(--color-rule)] underline-offset-4"
+          className="text-[var(--color-cite)] hover:text-[var(--color-accent-strong)] underline decoration-[var(--color-rule)] underline-offset-4"
         >
           Install now →
         </Link>
@@ -95,17 +95,17 @@ export default function DemoPage() {
           <code>{EMBED_SNIPPET}</code>
         </pre>
         <div className="mt-5 flex flex-wrap gap-x-8 gap-y-2 font-mono text-[12.5px]">
-          <a className="text-[var(--color-cite)] hover:text-[var(--color-accent)]" href="/promo/mcpindex-promo.mp4">
+          <a className="text-[var(--color-cite)] hover:text-[var(--color-accent-strong)]" href="/promo/mcpindex-promo.mp4">
             Overview video (.mp4) →
           </a>
-          <a className="text-[var(--color-cite)] hover:text-[var(--color-accent)]" href="/promo/mcpindex-demo.mp4">
+          <a className="text-[var(--color-cite)] hover:text-[var(--color-accent-strong)]" href="/promo/mcpindex-demo.mp4">
             Persona video (.mp4) →
           </a>
-          <a className="text-[var(--color-cite)] hover:text-[var(--color-accent)]" href={EMBED_URL}>
+          <a className="text-[var(--color-cite)] hover:text-[var(--color-accent-strong)]" href={EMBED_URL}>
             Embed page →
           </a>
           <a
-            className="text-[var(--color-cite)] hover:text-[var(--color-accent)]"
+            className="text-[var(--color-cite)] hover:text-[var(--color-accent-strong)]"
             href="https://twitter.com/intent/tweet?text=The%20in-path%20trust%20gate%20for%20agent%20tool%20calls.&url=https%3A%2F%2Fmcpindex.ai%2Fdemo"
             target="_blank"
             rel="noreferrer"

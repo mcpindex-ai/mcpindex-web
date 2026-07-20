@@ -26,13 +26,13 @@ export default function TermsPage() {
           Protocol (MCP) tool calls (pin contracts, HOLD on silent drift), plus an advisory
           screen, an index of public MCP servers, and a recommendation API on top of that
           index. Use is free subject to the rate limit published at{' '}
-          <a href="/docs" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]">/docs</a>.
+          <a href="/docs" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">/docs</a>.
         </p>
         <p>
           Server metadata is sourced from{' '}
           <a
             href="https://registry.modelcontextprotocol.io"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             registry.modelcontextprotocol.io
           </a>{' '}
@@ -51,7 +51,7 @@ export default function TermsPage() {
           <ObfuscatedEmail
             user="hello"
             domain="mcpindex.ai"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           />{' '}
           if you need higher limits.
         </p>

@@ -33,7 +33,7 @@ export default function PrivacyPage() {
           <ObfuscatedEmail
             user="hello"
             domain="mcpindex.ai"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           />
           .
         </p>
@@ -119,7 +119,7 @@ export default function PrivacyPage() {
             href="https://vercel.com/docs/analytics/privacy-policy"
             target="_blank"
             rel="noreferrer"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
             Vercel Analytics privacy
           </a>
@@ -131,7 +131,7 @@ export default function PrivacyPage() {
           <ObfuscatedEmail
             user="hello"
             domain="mcpindex.ai"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent)]"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           />{' '}
           to request deletion of any personal data tied to you.
         </p>
