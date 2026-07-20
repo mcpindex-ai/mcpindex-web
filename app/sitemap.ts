@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { ALL_CATEGORIES } from '@/lib/categorize';
+import { browseTotalPages } from '@/lib/serversBrowse';
 import { loadGuides } from '@/lib/guides-content';
 
 export const revalidate = 86400;
@@ -51,13 +52,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
       changeFrequency: 'weekly',
     }));
+    // The A-Z browse hub: page 1 at /servers, the rest under /servers/page/n.
+    // These give every server page a crawlable incoming internal link.
+    const browsePages = browseTotalPages(servers.length);
+    const browseRoutes: MetadataRoute.Sitemap = [
+      { url: `${base}/servers`, priority: 0.6, changeFrequency: 'daily' },
+      ...Array.from({ length: Math.max(0, browsePages - 1) }, (_, i) => ({
+        url: `${base}/servers/page/${i + 2}`,
+        priority: 0.3,
+        changeFrequency: 'weekly' as const,
+      })),
+    ];
     const serverRoutes: MetadataRoute.Sitemap = servers.map((s) => ({
       url: `${base}/server/${s.slug}`,
       lastModified: new Date(s.updatedAt),
       priority: 0.6,
       changeFrequency: 'weekly',
     }));
-    baseEntries = [...staticRoutes, ...categoryRoutes, ...serverRoutes];
+    baseEntries = [...staticRoutes, ...categoryRoutes, ...browseRoutes, ...serverRoutes];
     baseCache = { version: meta.version, entries: baseEntries };
   }
 

@@ -31,10 +31,29 @@ function runtimePlatformOf(server: IndexedServer): string | undefined {
 //   repo-backed -> SoftwareSourceCode (links the catalog entry to its source entity)
 //   remote-only -> WebAPI (a callable endpoint, not source)
 //   neither     -> WebPage about the server
+/**
+ * True when a "website" URL is actually an MCP endpoint: it equals the entry's
+ * remote endpoint, or its path ends in the conventional /mcp or /sse transport
+ * segments. An MCP endpoint is an API URL, not a web page - a browser GET
+ * 4xxes even on live servers - so it must never be published as a navigable
+ * website link (page anchor or JSON-LD sameAs).
+ */
+export function isEndpointShaped(url: string, remoteUrl?: string): boolean {
+  if (remoteUrl && url === remoteUrl) return true;
+  try {
+    const p = new URL(url).pathname.replace(/\/+$/, '');
+    return p.endsWith('/mcp') || p.endsWith('/sse');
+  } catch {
+    return false;
+  }
+}
+
 export function buildServerJsonLd(server: IndexedServer): Record<string, unknown> {
   const repoHref = isSafeHref(server.repositoryUrl) ? server.repositoryUrl : undefined;
-  const siteHref = isSafeHref(server.websiteUrl) ? server.websiteUrl : undefined;
+  const siteHrefRaw = isSafeHref(server.websiteUrl) ? server.websiteUrl : undefined;
   const remoteHref = isSafeHref(server.remoteUrl) ? server.remoteUrl : undefined;
+  const siteHref =
+    siteHrefRaw && !isEndpointShaped(siteHrefRaw, remoteHref) ? siteHrefRaw : undefined;
   const url = `https://mcpindex.ai/server/${server.slug}`;
   const runtimePlatform = runtimePlatformOf(server);
 

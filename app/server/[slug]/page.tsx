@@ -22,7 +22,7 @@ import { ContractDrift } from '@/components/ContractDrift';
 import { GateInstallBridge } from '@/components/GateInstallBridge';
 import { ServerVerdictCta } from '@/components/ServerVerdictCta';
 import { jsonLdSafe } from '@/lib/jsonLd';
-import { buildServerJsonLd, isSafeHref } from '@/lib/serverJsonLd';
+import { buildServerJsonLd, isEndpointShaped, isSafeHref } from '@/lib/serverJsonLd';
 
 // Trust verdict shape (public projection of the v1.0.0 verdict contract).
 // Full back-history is not surfaced on this public page; the current verdict
@@ -120,8 +120,15 @@ export default async function ServerPage(
   const jsonLd = buildServerJsonLd(server);
 
   const repoHref = isSafeHref(server.repositoryUrl) ? server.repositoryUrl : undefined;
-  const siteHref = isSafeHref(server.websiteUrl) ? server.websiteUrl : undefined;
   const remoteHref = isSafeHref(server.remoteUrl) ? server.remoteUrl : undefined;
+  // Some registry entries put their MCP endpoint in the website field. An MCP
+  // endpoint is an API URL, not a web page - a browser GET 4xxes even on live
+  // servers (the same reason remoteHref below is copy-only, never an <a>), and
+  // hyperlinking it reads as a broken outlink to every crawler. Endpoint-shaped
+  // website URLs are therefore never rendered as links.
+  const siteHrefRaw = isSafeHref(server.websiteUrl) ? server.websiteUrl : undefined;
+  const siteHref =
+    siteHrefRaw && !isEndpointShaped(siteHrefRaw, remoteHref) ? siteHrefRaw : undefined;
 
   // Operator / publisher, npm "publisher" analog: repo owner, else name namespace.
   let operator: string | null = null;

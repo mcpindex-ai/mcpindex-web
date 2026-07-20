@@ -41,6 +41,7 @@ export function Footer() {
             <Link href="/claim" className={LINK}>Claim your server</Link>
             <Link href="/leaderboard" className={LINK}>Maturity Rankings</Link>
             <Link href="/best" className={LINK}>Best of</Link>
+            <Link href="/servers" className={LINK}>All servers</Link>
             <Link href="/changelog" className={LINK}>Changelog</Link>
             <Link href="/guides" className={LINK}>Guides</Link>
           </div>
@@ -60,6 +61,7 @@ export function Footer() {
             <div className={COLUMN_LABEL}>Project</div>
             <Link href="/about" className={LINK}>About</Link>
             <Link href="/brand" className={LINK}>Brand</Link>
+            <Link href="/which-mcpindex" className={LINK}>Which mcpindex?</Link>
             <a
               href="https://github.com/mcpindex-ai"
               target="_blank"
