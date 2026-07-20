@@ -310,11 +310,18 @@ export function ScanTool() {
             </p>
           )}
           {summary.level !== 'tool' && (
-            <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 rule-t border-[var(--color-rule)] divide-y sm:divide-y-0">
+            <div
+              className={`mt-3 grid grid-cols-2 ${
+                c.insecureRemotes > 0 ? 'sm:grid-cols-5' : 'sm:grid-cols-4'
+              } rule-t border-[var(--color-rule)] divide-y sm:divide-y-0`}
+            >
               <Stat n={c.servers} label="MCP servers connected" />
               <Stat n={c.remoteServers} label="remote - can change on you" tone="accent" />
               <Stat n={c.localServers} label="spawn a local process" />
               <Stat n={c.serversWithSecrets} label="carry a credential" />
+              {c.insecureRemotes > 0 && (
+                <Stat n={c.insecureRemotes} label="reached over plaintext http" tone="accent" />
+              )}
             </div>
           )}
 
@@ -432,7 +439,10 @@ export function ScanTool() {
                         {s.url ?? s.command ?? EMPTY}
                       </td>
                       <td className="px-3 py-2.5 text-[12px] text-[var(--color-cite)]">
-                        {s.envSecretKeys.length > 0 ? s.envSecretKeys.join(', ') : EMPTY}
+                        {s.secretKeys.length > 0 ? s.secretKeys.join(', ') : EMPTY}
+                        {s.insecureTransport ? (
+                          <span className="block text-[var(--color-accent)]">over plaintext http</span>
+                        ) : null}
                       </td>
                     </tr>
                   ))}

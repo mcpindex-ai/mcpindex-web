@@ -11,19 +11,90 @@ import type { ScannedServer, Transport } from './types';
 const SECRET_KEY_RE =
   /(^|[_-])(token|api[_-]?key|apikey|secret|password|passwd|bearer|credential|creds?|access[_-]?key|private[_-]?key|pat)($|[_-])/i;
 
-// A secret-looking `key=value` (or `key: value`) segment inside a command string or
-// URL query, so we can mask the VALUE before display and honor the "key names only"
-// promise even when a token is passed as a CLI flag or query param.
-const SECRET_ASSIGN_RE =
-  /([\w.-]*(?:token|api[_-]?key|apikey|secret|password|passwd|bearer|credential|access[_-]?key|private[_-]?key|pat)[\w.-]*\s*[=:]\s*)(\S+)/gi;
+// Secret-looking names get their own pattern PER NAMESPACE rather than one shared
+// regex, because the false-positive cost differs by namespace: `session` had to be
+// dropped from env names (SESSION_TIMEOUT), but as an exact-match query parameter
+// it is a real credential; bare `key`/`auth` are noise as a substring but are the
+// common spelling for a CLI flag.
+const FLAG_SECRET_RE =
+  /(^|[_-])(token|api[_-]?key|apikey|key|secret|password|passwd|bearer|credential|creds?|auth|access[_-]?key|private[_-]?key|pat)($|[_-])/i;
 
-/** Mask secret-looking values inside a free string (command args, URL query), and
- * drop URL userinfo. Display-only defense so a token passed as `--token=…` or
- * `?apikey=…` is never rendered even though the whole tool is client-side. */
-function redactSecrets(s: string): string {
+const QUERY_SECRET_RE =
+  /^(key|api[_-]?key|apikey|token|access[_-]?token|refresh[_-]?token|secret|password|passwd|auth|authorization|sig|signature|code|credential|session|session[_-]?id)$/i;
+
+const MASK = '***';
+
+/** A value that looks like a credential by SHAPE rather than by the name beside it -
+ * the only defense for a secret embedded in a URL path (`/s/<token>/mcp`, the shape
+ * Zapier and several hosted providers ship) or passed as a bare positional arg.
+ * Deliberately biased toward masking: a masked path segment costs legibility, an
+ * unmasked one publishes a live token into any screenshot of the results table. */
+function looksLikeSecretToken(s: string): boolean {
+  if (s.length < 20 || !/^[A-Za-z0-9._~+-]+$/.test(s)) return false;
+  if (/^[0-9a-f]{32,}$/i.test(s)) return true; // long hex key
+  if (!/\d/.test(s) || !/[a-zA-Z]/.test(s)) return false; // prose/slug, not a token
+  // Mixed case or unusually long: keeps `2024-11-05-release-notes` legible while
+  // catching base64/UUID/prefixed-key shapes.
+  return /[A-Z]/.test(s) || s.length >= 28;
+}
+
+/** Linear, backtracking-free fallback for strings we cannot parse structurally.
+ * Splits on delimiters (kept via the capture group) and masks token-shaped parts. */
+function scrubFreeText(s: string): string {
   return s
-    .replace(/(\/\/)[^/@\s]*@/, '$1***@') // strip userinfo: https://user:pw@h -> https://***@h
-    .replace(SECRET_ASSIGN_RE, '$1***');
+    .split(/([/?&=:@\s])/)
+    .map((t) => (looksLikeSecretToken(t) ? MASK : t))
+    .join('');
+}
+
+/** Redact a URL by its STRUCTURE, not as flat text: clear userinfo, mask query
+ * values whose name or shape says credential, mask token-shaped path segments.
+ * Masking (rather than deleting) preserves the signal that a credential was there. */
+function redactUrl(raw: string): string {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return scrubFreeText(raw);
+  }
+  if (u.username || u.password) {
+    u.username = MASK;
+    u.password = '';
+  }
+  for (const k of [...u.searchParams.keys()]) {
+    const v = u.searchParams.get(k) ?? '';
+    if (QUERY_SECRET_RE.test(k) || looksLikeSecretToken(v)) u.searchParams.set(k, MASK);
+  }
+  u.pathname = u.pathname
+    .split('/')
+    .map((seg) => (looksLikeSecretToken(seg) ? MASK : seg))
+    .join('/');
+  return u.toString();
+}
+
+/** Redact command args POSITIONALLY, before joining. Joining first is what made
+ * `--api-key sk-live-…` unmaskable: once flattened, only a `=` separator is left to
+ * key off, and the space-separated form is the more common one in real configs. */
+function redactArgs(args: readonly string[]): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    const eq = a.indexOf('=');
+    if (eq > 0 && FLAG_SECRET_RE.test(a.slice(0, eq))) {
+      out.push(`${a.slice(0, eq + 1)}${MASK}`); // --api-key=VALUE
+      continue;
+    }
+    // A path is never a credential, and paths are the most common long arg
+    // (`/Volumes/…`, `@scope/pkg`), so shape-matching skips them.
+    const pathish = a.includes('/') || a.includes('\\');
+    out.push(!pathish && looksLikeSecretToken(a) ? MASK : a);
+    // --api-key VALUE : the secret is the NEXT token. A following flag is not a value.
+    if (FLAG_SECRET_RE.test(a) && eq === -1 && i + 1 < args.length && !args[i + 1].startsWith('-')) {
+      out.push(MASK);
+      i++;
+    }
+  }
+  return out;
 }
 
 function isObj(v: unknown): v is Record<string, unknown> {
@@ -64,10 +135,69 @@ function transportOf(def: Record<string, unknown>): Transport {
   return 'unknown';
 }
 
-function envSecretKeys(def: Record<string, unknown>): string[] {
-  const env = def['env'];
-  if (!isObj(env)) return [];
-  return Object.keys(env).filter((k) => SECRET_KEY_RE.test(k));
+/** Header names that carry a credential without matching SECRET_KEY_RE
+ * ('authorization' contains none of token/key/secret/...). */
+const AUTH_HEADER_RE = /^(proxy-)?authorization$|^authentication$|^cookie$|^x-auth(-|$)/i;
+
+/** A header VALUE that is self-evidently a credential even under a bland name
+ * (`X-Thing: Bearer ...`). Matched against the value, reported as the key name. */
+const AUTH_VALUE_RE = /^\s*(bearer|basic|token)\s+\S/i;
+
+function secretKeysIn(
+  obj: unknown,
+  prefix: string,
+  isSecret: (key: string, value: unknown) => boolean,
+): string[] {
+  if (!isObj(obj)) return [];
+  return Object.entries(obj)
+    .filter(([k, v]) => isSecret(k, v))
+    .map(([k]) => `${prefix}${k}`);
+}
+
+/** Secret-looking key names across BOTH credential locations. Remote servers
+ * authenticate via `headers`, so an env-only scan called them clean. Key names
+ * only - values are never returned. */
+function secretKeys(def: Record<string, unknown>): string[] {
+  return [
+    ...secretKeysIn(def['env'], '', (k) => SECRET_KEY_RE.test(k)),
+    ...secretKeysIn(
+      def['headers'],
+      'header:',
+      (k, v) =>
+        SECRET_KEY_RE.test(k) || AUTH_HEADER_RE.test(k) || (typeof v === 'string' && AUTH_VALUE_RE.test(v)),
+    ),
+  ];
+}
+
+/** Loopback hosts are exempt from the plaintext finding - traffic never leaves
+ * the machine, and `http://localhost` is the normal way to run a local server. */
+function isLoopbackHost(host: string): boolean {
+  const h = host.toLowerCase().replace(/^\[|\]$/g, '');
+  // Fully anchored: an unanchored /^127\./ would treat the registrable domain
+  // `127.0.0.1.evil.com` as loopback and suppress the plaintext finding on an
+  // attacker-controlled host. `.localhost` is reserved (RFC 6761), not delegated.
+  return (
+    h === 'localhost' ||
+    h.endsWith('.localhost') ||
+    h === '::1' ||
+    /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h)
+  );
+}
+
+/** true when the server is reached over plaintext http:// on a non-loopback host:
+ * the credential and every tool argument cross the network readable. Gated on
+ * transport so a stdio server carrying a stray `url` is not reported as an
+ * insecure remote - it never speaks HTTP. */
+function isInsecureTransport(def: Record<string, unknown>): boolean {
+  if (transportOf(def) !== 'remote') return false;
+  const raw = def['url'];
+  if (typeof raw !== 'string') return false;
+  try {
+    const u = new URL(raw);
+    return (u.protocol === 'http:' || u.protocol === 'ws:') && !isLoopbackHost(u.hostname);
+  } catch {
+    return false;
+  }
 }
 
 function commandString(def: Record<string, unknown>): string | null {
@@ -76,7 +206,7 @@ function commandString(def: Record<string, unknown>): string | null {
   const args = Array.isArray(def['args'])
     ? def['args'].map((a) => (typeof a === 'string' ? a : JSON.stringify(a)))
     : [];
-  return redactSecrets([def['command'] as string, ...args].join(' ').trim());
+  return redactArgs([def['command'] as string, ...args]).join(' ').trim();
 }
 
 /** Normalize a pasted MCP config into a server inventory. Total. */
@@ -89,9 +219,10 @@ export function parseConfig(root: unknown): ScannedServer[] {
     out.push({
       name: String(name),
       transport: transportOf(defRaw),
-      url: typeof defRaw['url'] === 'string' ? redactSecrets(defRaw['url'] as string) : null,
+      url: typeof defRaw['url'] === 'string' ? redactUrl(defRaw['url'] as string) : null,
       command: commandString(defRaw),
-      envSecretKeys: envSecretKeys(defRaw),
+      secretKeys: secretKeys(defRaw),
+      insecureTransport: isInsecureTransport(defRaw),
     });
   }
   return out;

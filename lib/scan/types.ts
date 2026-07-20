@@ -13,7 +13,13 @@ export interface ScannedServer {
   readonly transport: Transport; // remote = can change server-side; local = spawns a process
   readonly url: string | null;
   readonly command: string | null; // command + args, joined; for local servers
-  readonly envSecretKeys: readonly string[]; // env key NAMES that look like secrets
+  // Secret-looking KEY NAMES from `env` AND from `headers` (header-derived keys are
+  // prefixed `header:`). Remote servers carry their credential in a header far more
+  // often than in env, so scanning only `env` reported them as clean.
+  readonly secretKeys: readonly string[];
+  // Remote over plaintext http:// to a non-loopback host: the credential above and
+  // every tool argument cross the network in the clear.
+  readonly insecureTransport: boolean;
 }
 
 /** One tool, graded by the vendored blast-radius classifier. */
@@ -33,6 +39,7 @@ export interface ScanCounts {
   readonly remoteServers: number; // can change server-side = the drift risk
   readonly localServers: number; // spawn a local process = code-exec surface
   readonly serversWithSecrets: number;
+  readonly insecureRemotes: number; // plaintext http:// to a non-loopback host
   readonly tools: number;
   readonly irreversible: number;
   readonly egressExternal: number;
