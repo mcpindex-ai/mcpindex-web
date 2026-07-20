@@ -57,3 +57,38 @@ jobs:
 
       - name: Test
         run: npm test
+
+  # WCAG AA text-contrast audit over the real rendered pages. Separate job (needs a browser +
+  # a running server) so a contrast regression can no longer ship unnoticed - scripts/check-contrast.mjs
+  # was previously manual-only. A 404 (data-backed page without its runtime env) is skipped; a
+  # 5xx/timeout or any real violation fails the run.
+  contrast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Install Chromium (Playwright)
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      - name: Start server + WCAG AA contrast audit
+        run: |
+          npx next start -p 3000 &
+          server_pid=$!
+          trap 'kill $server_pid 2>/dev/null || true' EXIT
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null http://localhost:3000/; then break; fi
+            sleep 1
+          done
+          node scripts/check-contrast.mjs http://localhost:3000

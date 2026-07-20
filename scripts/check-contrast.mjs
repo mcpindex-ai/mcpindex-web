@@ -252,6 +252,7 @@ if (discovered.length) console.log(`dynamic samples: ${discovered.join(', ')}\n`
 
 let failed = 0;
 let unparsedColors = 0;
+let errored = 0; // pages that could not be audited due to a real error (5xx / timeout / nav failure)
 for (const route of [...ROUTES, ...discovered]) {
   const url = `${BASE}${route}`;
   try {
@@ -259,13 +260,25 @@ for (const route of [...ROUTES, ...discovered]) {
     const res = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
     // NOT_FOUND_PROBE is expected to 404 — that response IS the page under test.
     const expected404 = route === NOT_FOUND_PROBE && res && res.status() === 404;
+    // A plain 404 (non-probe) means the route is not available in THIS environment (e.g. a
+    // data-backed page like /ledger without its runtime env) — skip it visibly, do not audit,
+    // do not fail. But a 5xx / no-response is a BROKEN page: audit it we cannot, so fail the run
+    // rather than silently pass — otherwise a page that errors during the audit reports green.
+    if (res && res.status() === 404 && !expected404) {
+      console.log(`SKIP ${route} (HTTP 404 — not available in this environment)`);
+      continue;
+    }
     if (!res || (!res.ok() && !expected404)) {
-      console.log(`SKIP ${route} (HTTP ${res ? res.status() : 'no response'})`);
+      errored += 1;
+      console.log(`ERROR ${route} (HTTP ${res ? res.status() : 'no response'} — cannot audit)`);
       continue;
     }
     await page.waitForTimeout(1_500); // let client components paint
   } catch (err) {
-    console.log(`SKIP ${route} (${err.message.split('\n')[0]})`);
+    // A navigation timeout / crash is a real failure, not a skip: a hung or erroring page must
+    // not pass the audit by default.
+    errored += 1;
+    console.log(`ERROR ${route} (${err.message.split('\n')[0]})`);
     continue;
   }
 
@@ -308,6 +321,12 @@ if (unparsedColors > 0) {
 }
 if (failed > 0) {
   console.error(`\ncontrast: ${failed} violation(s) below WCAG AA.`);
+  process.exit(1);
+}
+if (errored > 0) {
+  // A page that could not be audited (5xx/timeout/crash) must not be reported as a pass:
+  // silence over a broken page looks identical to "clean."
+  console.error(`\ncontrast: ${errored} route(s) could not be audited (server error / timeout).`);
   process.exit(1);
 }
 console.log('\ncontrast: all audited routes meet WCAG AA (resting state).');

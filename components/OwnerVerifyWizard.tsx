@@ -138,9 +138,10 @@ export default function OwnerVerifyWizard() {
   );
   const countdown = useCountdown(challenge?.expiresAt ?? null);
 
-  // TOOLS
+  // TOOLS. `checked` is keyed by list INDEX, not tool name: MCP does not forbid two tools
+  // sharing a name, and a name-keyed map would collapse their checkbox state into one.
   const [tools, setTools] = useState<OwnerTool[] | null>(null);
-  const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [checked, setChecked] = useState<Record<number, boolean>>({});
   const [ack, setAck] = useState(false);
 
   // ATTEST
@@ -187,6 +188,9 @@ export default function OwnerVerifyWizard() {
   const clearKey = useCallback(() => {
     setApiKey('');
     setPasteKey('');
+    // Return to the key screen: clearing the key from a later step would otherwise
+    // strand the user on a step whose actions all 400 with no in-UI way back to sign-in.
+    setStep(0);
     try {
       sessionStorage.removeItem(SESSION_KEY);
     } catch {
@@ -225,7 +229,24 @@ export default function OwnerVerifyWizard() {
       popupRef.current = null;
     }
     window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
+    // Recover if the popup is closed/dismissed without delivering a key (or the message
+    // is dropped, e.g. a misconfigured site origin): otherwise awaitingKey would stay true
+    // forever and both sign-in buttons would be permanently disabled. The closed-poll is the
+    // primary recovery; the timeout is a backstop for when the popup handle is unavailable
+    // (COOP can sever it so .closed never flips).
+    const poll = setInterval(() => {
+      if (popupRef.current && popupRef.current.closed) {
+        popupRef.current = null;
+        setAwaitingKey(false);
+        setKeyError('sign-in did not complete - try again, or paste your key.');
+      }
+    }, 500);
+    const timeout = setTimeout(() => setAwaitingKey(false), 300_000);
+    return () => {
+      window.removeEventListener('message', onMessage);
+      clearInterval(poll);
+      clearTimeout(timeout);
+    };
   }, [awaitingKey, storeKey]);
 
   function signIn(provider: 'github' | 'google') {
@@ -257,7 +278,10 @@ export default function OwnerVerifyWizard() {
       const res = await fetch(`/api/owner/${action}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey, serverId, ...extra }),
+        // Trim the server id at the boundary: a leading/trailing space from a copy-paste
+        // passes the wizard's own trimmed validation but would fail the proxy's charset
+        // regex, 400-ing every step with a misleading "check the server id" error.
+        body: JSON.stringify({ apiKey, serverId: serverId.trim(), ...extra }),
       });
       let data: Record<string, unknown> = {};
       try {
@@ -338,16 +362,16 @@ export default function OwnerVerifyWizard() {
         };
       });
       setTools(parsed);
-      // probe_safe:true PRE-CHECKED; probe_safe:false starts unchecked.
-      const init: Record<string, boolean> = {};
-      for (const t of parsed) init[t.name] = t.probe_safe;
+      // probe_safe:true PRE-CHECKED; probe_safe:false starts unchecked. Keyed by index.
+      const init: Record<number, boolean> = {};
+      parsed.forEach((t, i) => (init[i] = t.probe_safe));
       setChecked(init);
     } finally {
       setBusy(false);
     }
   }
 
-  const selectedTools = (tools ?? []).filter((t) => checked[t.name]);
+  const selectedTools = (tools ?? []).filter((_, i) => checked[i]);
 
   async function attest() {
     if (!confirmedBy.trim()) {
@@ -373,11 +397,19 @@ export default function OwnerVerifyWizard() {
         setError(errorLine(r));
         return;
       }
-      setAttestResult({
-        attested: r.data.attested === true,
-        count: typeof r.data.count === 'number' ? r.data.count : probe_safe_tools.length,
-      });
-      setStep(5);
+      const attested = r.data.attested === true;
+      const count = typeof r.data.count === 'number' ? r.data.count : probe_safe_tools.length;
+      setAttestResult({ attested, count });
+      // Only advance when something was actually attested: mcpindex can refuse a selected
+      // tool (write/destructive) and still return a 2xx envelope with attested:false/count:0,
+      // which must not carry the user into a behavioral check over zero attested tools.
+      if (attested && count > 0) {
+        setStep(5);
+      } else {
+        setError(
+          'none of the selected tools were attested - mcpindex refused them (likely not read-only). Pick read-only tools and retry.',
+        );
+      }
     } finally {
       setBusy(false);
     }
@@ -689,8 +721,8 @@ export default function OwnerVerifyWizard() {
                     <label className="flex items-start gap-3 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={!!checked[t.name]}
-                        onChange={(e) => setChecked((c) => ({ ...c, [t.name]: e.target.checked }))}
+                        checked={!!checked[i]}
+                        onChange={(e) => setChecked((c) => ({ ...c, [i]: e.target.checked }))}
                         className="mt-1 accent-[var(--color-accent)]"
                       />
                       <span className="min-w-0">
@@ -775,8 +807,8 @@ export default function OwnerVerifyWizard() {
             <div className="mt-4">
               <div className={`${LABEL} mb-2`}>will attest {selectedTools.length} tool(s)</div>
               <ul className="rule-t">
-                {selectedTools.map((t) => (
-                  <li key={t.name} className="rule-b py-2.5">
+                {selectedTools.map((t, i) => (
+                  <li key={`${t.name}-${i}`} className="rule-b py-2.5">
                     <div className="font-mono text-[12.5px] text-[var(--color-ink)] break-all">{t.name}</div>
                     <div className="mt-0.5 font-mono text-[10.5px] text-[var(--color-mute)] break-all">
                       {buildAttestation(t.name, confirmedBy.trim(), new Date().toISOString().slice(0, 10))}

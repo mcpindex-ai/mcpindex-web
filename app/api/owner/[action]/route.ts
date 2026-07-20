@@ -15,7 +15,7 @@
 // it is an operator-set constant (NOT user input), so it never widens the SSRF surface.
 // Default: https://owner.mcpindex.ai.
 import type { NextRequest } from 'next/server';
-import { checkOwnerLimit } from '@/lib/ratelimit';
+import { checkOwnerLimit, checkOwnerBehaviorLimit } from '@/lib/ratelimit';
 
 const OWNER_API_BASE = process.env.MCPINDEX_OWNER_API_BASE ?? 'https://owner.mcpindex.ai';
 
@@ -137,10 +137,18 @@ export async function POST(
   if (!plan) return reply({ error: 'unknown action' }, 404);
 
   // Per-IP rate limit BEFORE parsing the body / relaying upstream: the shared Vercel egress IP
-  // would otherwise defeat the owner service's per-IP bucket. Fail-open inside checkOwnerLimit.
-  const limit = await checkOwnerLimit(clientIp(req), new Date());
+  // would otherwise defeat the owner service's per-IP bucket. Fail-open inside the limiters.
+  const ip = clientIp(req);
+  const now = new Date();
+  const limit = await checkOwnerLimit(ip, now);
   if (!limit.ok) {
     return reply({ error: 'rate_limited' }, 429);
+  }
+  // verify-behavior holds a ~90s serverless invocation while the upstream runs a live crawl,
+  // so it gets a MUCH tighter per-IP cap on top of the general one (cost/DoS amplification).
+  if (action === 'verify-behavior') {
+    const heavy = await checkOwnerBehaviorLimit(ip, now);
+    if (!heavy.ok) return reply({ error: 'rate_limited' }, 429);
   }
 
   let body: OwnerBody;
@@ -195,8 +203,7 @@ export async function POST(
     return reply({ error: 'upstream unavailable' }, 502);
   }
 
-  // 2xx AND 4xx (401/403/404/409/429 + {error} messages) pass through to the wizard so it
-  // can guide the user. Re-parse + re-emit as JSON so a non-JSON upstream body never leaks.
+  // Re-parse + re-emit as JSON so a non-JSON upstream body never leaks.
   const raw = await upstream.text();
   let data: unknown;
   try {
@@ -204,5 +211,14 @@ export async function POST(
   } catch {
     return reply({ error: 'upstream unavailable' }, 502);
   }
+  // On a 4xx the wizard only ever reads {error} + the status (via errorLine/statusHint), so
+  // reduce the response to exactly that. This prevents any upstream 4xx body detail (validation
+  // echoes, internal identifiers, a 409's cross-record hints) from reaching the browser.
+  if (upstream.status >= 400) {
+    const obj = data as Record<string, unknown> | null;
+    const err = obj && typeof obj.error === 'string' ? obj.error : 'request rejected';
+    return reply({ error: err }, upstream.status);
+  }
+  // 2xx: the intended success payload the wizard renders — pass through.
   return reply(data, upstream.status);
 }

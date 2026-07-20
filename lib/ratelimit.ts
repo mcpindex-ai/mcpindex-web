@@ -291,6 +291,36 @@ export async function checkOwnerLimit(ip: string, now: Date): Promise<DriftLimit
   }
 }
 
+// Owner BEHAVIORAL-check limit (/api/owner/verify-behavior only) - a MUCH tighter per-IP cap
+// stacked on top of checkOwnerLimit. This action holds a ~90s serverless invocation while the
+// upstream runs a live crawl of the caller's origin, so it is the real cost/DoS amplifier: a
+// valid free key aimed at a slow origin ties up Vercel concurrency + billing and upstream
+// crawler load per request. Own `owner:behavior:*` counters. Fail-OPEN like its siblings (the
+// upstream owner service is authoritative and itself ownership-gates + per-IP-limits this call).
+const OWNER_BEHAVIOR_PER_IP_PER_MIN = 6;
+const OWNER_BEHAVIOR_GLOBAL_PER_DAY = 5_000;
+
+export async function checkOwnerBehaviorLimit(ip: string, now: Date): Promise<DriftLimit> {
+  const r = redis();
+  if (!r) return { ok: true }; // fail-open: the upstream owner service is the authoritative gate
+
+  const min = now.toISOString().slice(0, 16);
+  const day = now.toISOString().slice(0, 10);
+  try {
+    const ipKey = `owner:behavior:ip:${ip}:${min}`;
+    const c = await r.incr(ipKey);
+    if (c === 1) await r.expire(ipKey, 70);
+    if (c > OWNER_BEHAVIOR_PER_IP_PER_MIN) return { ok: false };
+
+    const gKey = `owner:behavior:global:${day}`;
+    const g = await r.incr(gKey);
+    if (g === 1) await r.expire(gKey, 90_000);
+    return g > OWNER_BEHAVIOR_GLOBAL_PER_DAY ? { ok: false } : { ok: true };
+  } catch {
+    return { ok: true }; // fail-open on Redis error
+  }
+}
+
 export async function checkDriftReadLimit(ip: string, now: Date): Promise<DriftLimit> {
   const r = redis();
   if (!r) return { ok: true }; // fail-open
