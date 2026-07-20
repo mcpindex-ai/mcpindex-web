@@ -108,8 +108,10 @@ test('coercion: version_delta_split keeps only the four classes; absent keys sta
       version_delta_split: { same: 10, bumped: 99, undeclared: 0, junk: 1 },
     },
   });
-  assert.deepEqual(out?.aggregates.version_delta_split, { same: 10, undeclared: 0 });
+  // .changed checked BEFORE deepEqual: deepEqual's `asserts actual is T` narrows
+  // the split to {same, undeclared}, which makes a later .changed access TS2339.
   assert.equal(out?.aggregates.version_delta_split.changed, undefined); // absent is not zero
+  assert.deepEqual(out?.aggregates.version_delta_split, { same: 10, undeclared: 0 });
 });
 
 test('coercion: flip_segmentation keys must be class|delta shaped; hostile keys dropped', () => {
