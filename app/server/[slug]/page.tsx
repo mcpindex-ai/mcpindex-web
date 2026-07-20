@@ -373,27 +373,32 @@ export default async function ServerPage(
               </p>
             </div>
 
-            {/* Links */}
-            {(repoHref || siteHref || remoteHref) && (
+            {/* Links: registry-supplied third-party URLs, so nofollow - many
+                targets go dead and we can't vouch for any of them. */}
+            {(repoHref || siteHref) && (
               <div>
                 <div className={RAIL_LABEL}>Links</div>
                 <div className="flex flex-col gap-2 font-mono text-[11px] uppercase tracking-[0.16em]">
                   {repoHref && (
-                    <a href={repoHref} target="_blank" rel="noreferrer" className="text-[var(--color-cite)] hover:text-[var(--color-accent)]">
+                    <a href={repoHref} target="_blank" rel="nofollow noreferrer" className="text-[var(--color-cite)] hover:text-[var(--color-accent)]">
                       Repository →
                     </a>
                   )}
                   {siteHref && (
-                    <a href={siteHref} target="_blank" rel="noreferrer" className="text-[var(--color-cite)] hover:text-[var(--color-accent)]">
+                    <a href={siteHref} target="_blank" rel="nofollow noreferrer" className="text-[var(--color-cite)] hover:text-[var(--color-accent)]">
                       Website →
                     </a>
                   )}
-                  {remoteHref && (
-                    <a href={remoteHref} target="_blank" rel="noreferrer" className="text-[var(--color-cite)] hover:text-[var(--color-accent)]">
-                      Remote endpoint →
-                    </a>
-                  )}
                 </div>
+              </div>
+            )}
+
+            {/* Remote endpoint is an MCP API URL, not a web page - a browser
+                GET 4xxes even on live servers, so it's copy-only, never an <a>. */}
+            {remoteHref && (
+              <div>
+                <div className={RAIL_LABEL}>Remote endpoint</div>
+                <CopyField value={remoteHref} />
               </div>
             )}
           </aside>
