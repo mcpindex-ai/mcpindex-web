@@ -5,7 +5,7 @@ import 'server-only';
 import { Redis } from '@upstash/redis';
 import { INSTALL_ID, sha256hex, verifyToken } from './driftIdentity';
 import { redisUrl, redisToken } from './env';
-import { flag, logFlagStates } from './flags';
+import { logFlagStates } from './flags';
 
 export const OAUTH_STATE = /^[0-9a-f]{64}$/;
 
@@ -13,7 +13,8 @@ const STATE_TTL_SEC = 600;
 
 export function oauthEnabled(): boolean {
   logFlagStates();
-  return flag('DRIFT_OAUTH_UPGRADE');
+  // Literal comparison: guarded needle in check-graduation-honesty.mjs (see driftIdentity.ts).
+  return process.env.DRIFT_OAUTH_UPGRADE === '1';
 }
 
 let _redis: Redis | null | undefined;

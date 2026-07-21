@@ -4,7 +4,7 @@
 import 'server-only';
 import { Redis } from '@upstash/redis';
 import { redisUrl, redisToken } from './env';
-import { flag, logFlagStates } from './flags';
+import { logFlagStates } from './flags';
 
 export const INSTALL_ID = /^[0-9a-f]{32}$/;
 
@@ -18,7 +18,11 @@ export const MAX_AUTHED_VERIFY_PER_BATCH = 32;
 
 export function driftIdentityEnabled(): boolean {
   logFlagStates();
-  return flag('DRIFT_IDENTITY');
+  // Literal comparison, NOT the flag() helper: scripts/check-graduation-honesty.mjs
+  // greps for this exact needle as a build-blocking tripwire that the drift-network
+  // stays OFF by default. A dumb literal grep is the point - it cannot be fooled by
+  // indirection - so route the state through logFlagStates() and leave this inline.
+  return process.env.DRIFT_IDENTITY === '1';
 }
 
 let _redis: Redis | null | undefined;
