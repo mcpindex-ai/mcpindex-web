@@ -178,7 +178,9 @@ export default function OwnerVerifyWizard() {
 
   // ATTEST
   const [confirmedBy, setConfirmedBy] = useState('');
-  const [attestResult, setAttestResult] = useState<{ attested: boolean; count: number } | null>(null);
+  // The owner service returns {attested: [<tool names accepted>], count}. `attested` is a LIST,
+  // never a boolean - keep the accepted-name list so the UI can show exactly what went through.
+  const [attestResult, setAttestResult] = useState<{ attested: string[]; count: number } | null>(null);
 
   // BEHAVIORAL
   const [behavior, setBehavior] = useState<{
@@ -522,18 +524,21 @@ export default function OwnerVerifyWizard() {
         setError(errorLine(r));
         return;
       }
-      const attested = r.data.attested === true;
-      const count = typeof r.data.count === 'number' ? r.data.count : probe_safe_tools.length;
+      // The owner service accepts the WHOLE batch or rejects it (400) on a grammar violation - it
+      // does not silently drop individual tools. A 2xx means every submitted tool was accepted:
+      // {attested: [<name>, ...], count}. `attested` is a LIST of accepted names, never a boolean.
+      const attested = Array.isArray(r.data.attested)
+        ? r.data.attested.filter((n): n is string => typeof n === 'string')
+        : [];
+      const count = typeof r.data.count === 'number' ? r.data.count : attested.length;
       setAttestResult({ attested, count });
-      // Only advance when something was actually attested: mcpindex can refuse a selected
-      // tool (write/destructive) and still return a 2xx envelope with attested:false/count:0,
-      // which must not carry the user into a behavioral check over zero attested tools.
-      if (attested && count > 0) {
+      if (count > 0) {
         setStep(5);
       } else {
-        setError(
-          'none of the selected tools were attested - mcpindex refused them (likely not read-only). Pick read-only tools and retry.',
-        );
+        // A 2xx with an empty list is unexpected (the service is all-or-nothing on 2xx), but
+        // handle it defensively rather than silently advancing to a behavioral check over
+        // zero attested tools.
+        setError('mcpindex accepted the request but attested no tools - retry, or pick different tools.');
       }
     } finally {
       setBusy(false);
@@ -549,34 +554,43 @@ export default function OwnerVerifyWizard() {
         setError(errorLine(r));
         return;
       }
+      // The owner service returns an OwnerVerificationResult: {server_id, method, as_of, note,
+      // tools: [{name, definition_hash, label, severity, blast_radius, malformed_probed,
+      // credentialed, evidence}], summary: {label: count}} - there is NO top-level state/statement.
+      // Derive the headline state with EXACTLY the server's own map_result_to_preview rule (never
+      // a rosier/harsher client-side read than the source data supports):
+      //   any tool labeled "violating"                                -> drift
+      //   else any tool actually probed AND labeled conforming/inconclusive -> clean (no drift observed)
+      //   else (nothing observed / everything unverified)             -> inconclusive
       const d = r.data;
-      const rawState = String(d.state ?? '').toLowerCase();
-      const state: PreviewState =
-        rawState === 'clean' || rawState === 'drift' ? (rawState as PreviewState) : 'inconclusive';
-      const perToolRaw = Array.isArray(d.per_tool)
-        ? (d.per_tool as unknown[])
-        : Array.isArray(d.tools)
-          ? (d.tools as unknown[])
-          : [];
-      const perTool = perToolRaw.map((t) => {
+      const toolsRaw = Array.isArray(d.tools) ? (d.tools as unknown[]) : [];
+      const tools = toolsRaw.map((t) => {
         const o = (t ?? {}) as Record<string, unknown>;
-        const summary =
-          typeof o.summary === 'string'
-            ? o.summary
-            : typeof o.state === 'string'
-              ? o.state
-              : typeof o.result === 'string'
-                ? o.result
-                : typeof o.status === 'string'
-                  ? o.status
-                  : '';
-        return { name: typeof o.name === 'string' ? o.name : '', summary };
+        return {
+          name: typeof o.name === 'string' ? o.name : '',
+          label: typeof o.label === 'string' ? o.label : 'unverified',
+          malformedProbed: o.malformed_probed === true,
+          evidence: Array.isArray(o.evidence) ? o.evidence.filter((e): e is string => typeof e === 'string') : [],
+        };
       });
-      setBehavior({
-        state,
-        statement: typeof d.statement === 'string' ? d.statement : '',
-        perTool,
-      });
+      const drifted = tools.filter((t) => t.label === 'violating');
+      const observed = tools.filter(
+        (t) => t.malformedProbed && (t.label === 'conforming' || t.label === 'inconclusive'),
+      );
+      const state: PreviewState = drifted.length > 0 ? 'drift' : observed.length > 0 ? 'clean' : 'inconclusive';
+      const note = typeof d.note === 'string' ? d.note : '';
+      const statement =
+        note ||
+        (state === 'drift'
+          ? `${drifted.length} tool(s) diverged from their pinned definition during the live check.`
+          : state === 'clean'
+            ? `${observed.length} tool(s) were probed and showed no contract drift.`
+            : 'no tool could be conclusively observed during the live check.');
+      const perTool = tools.map((t) => ({
+        name: t.name,
+        summary: t.evidence[0] || t.label,
+      }));
+      setBehavior({ state, statement, perTool });
       setStep(6);
     } finally {
       setBusy(false);
@@ -1083,8 +1097,8 @@ export default function OwnerVerifyWizard() {
 
           {attestResult && (
             <p className="mt-4 font-mono text-[12px] text-[var(--color-cite)]">
-              <span className="text-[var(--color-accent-strong)]">▸</span> attested:{' '}
-              {String(attestResult.attested)} · count: {attestResult.count}
+              <span className="text-[var(--color-accent-strong)]">▸</span> attested {attestResult.count} tool
+              {attestResult.count === 1 ? '' : 's'}: {attestResult.attested.join(', ')}
             </p>
           )}
         </div>
