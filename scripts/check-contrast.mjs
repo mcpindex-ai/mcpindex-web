@@ -346,77 +346,103 @@ for (const { index, pattern } of DYNAMIC_SOURCES) {
 }
 if (discovered.length) console.log(`dynamic samples: ${discovered.join(', ')}\n`);
 
+// Audit every route at both widths: responsive type can cross the large-text
+// threshold (3:1 vs 4.5:1) between them, and below `md` the nav collapses into a
+// disclosure whose contents only a mobile-width pass can reach.
+const VIEWPORTS = [
+  { name: 'desktop', width: 1280, height: 900 },
+  { name: 'mobile', width: 390, height: 844 },
+];
+
 let failed = 0;
 let unparsedColors = 0;
 let errored = 0; // pages that could not be audited due to a real error (5xx / timeout / nav failure)
 for (const route of [...ROUTES, ...discovered]) {
-  const url = `${BASE}${route}`;
-  try {
-    // Not `networkidle`: pages with a live ticker keep polling and never idle.
-    const res = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    // NOT_FOUND_PROBE is expected to 404 — that response IS the page under test.
-    const expected404 = route === NOT_FOUND_PROBE && res && res.status() === 404;
-    // A plain 404 (non-probe) means the route is not available in THIS environment (e.g. a
-    // data-backed page like /ledger without its runtime env) — skip it visibly, do not audit,
-    // do not fail. But a 5xx / no-response is a BROKEN page: audit it we cannot, so fail the run
-    // rather than silently pass — otherwise a page that errors during the audit reports green.
-    if (res && res.status() === 404 && !expected404) {
-      console.log(`SKIP ${route} (HTTP 404 — not available in this environment)`);
-      continue;
-    }
-    if (!res || (!res.ok() && !expected404)) {
-      errored += 1;
-      console.log(`ERROR ${route} (HTTP ${res ? res.status() : 'no response'} — cannot audit)`);
-      continue;
-    }
-    await page.waitForTimeout(1_500); // let client components paint
-  } catch (err) {
-    // A navigation timeout / crash is a real failure, not a skip: a hung or erroring page must
-    // not pass the audit by default.
-    errored += 1;
-    console.log(`ERROR ${route} (${err.message.split('\n')[0]})`);
-    continue;
-  }
-
-  // Walk the page so any viewport-triggered content mounts before auditing.
-  await page.evaluate(async () => {
-    for (let y = 0; y < document.body.scrollHeight; y += window.innerHeight) {
-      window.scrollTo(0, y);
-      await new Promise((r) => setTimeout(r, 60));
-    }
-    window.scrollTo(0, 0);
-  });
-
-  const { violations, unparsed } = await page.evaluate(auditPage);
-  if (unparsed.length) {
-    unparsedColors += unparsed.length;
-    console.log(`WARN ${route} — unparsed color(s), NOT audited: ${unparsed.join(', ')}`);
-  }
-
-  // Hover pass runs regardless of the resting result — a page can be clean at
-  // rest and fail only on hover, which is the exact gap this closes.
-  let hoverViolations = [];
-  if (cdp) {
+  for (const view of VIEWPORTS) {
+    const label = `${route} [${view.name}]`;
+    await page.setViewportSize({ width: view.width, height: view.height });
+    const url = `${BASE}${route}`;
     try {
-      hoverViolations = await auditHover(violations);
+      // Not `networkidle`: pages with a live ticker keep polling and never idle.
+      const res = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+      // NOT_FOUND_PROBE is expected to 404 — that response IS the page under test.
+      const expected404 = route === NOT_FOUND_PROBE && res && res.status() === 404;
+      // A plain 404 (non-probe) means the route is not available in THIS environment (e.g. a
+      // data-backed page like /ledger without its runtime env) — skip it visibly, do not audit,
+      // do not fail. But a 5xx / no-response is a BROKEN page: audit it we cannot, so fail the run
+      // rather than silently pass — otherwise a page that errors during the audit reports green.
+      if (res && res.status() === 404 && !expected404) {
+        console.log(`SKIP ${label} (HTTP 404 — not available in this environment)`);
+        continue;
+      }
+      if (!res || (!res.ok() && !expected404)) {
+        errored += 1;
+        console.log(`ERROR ${label} (HTTP ${res ? res.status() : 'no response'} — cannot audit)`);
+        continue;
+      }
+      await page.waitForTimeout(1_500); // let client components paint
     } catch (err) {
+      // A navigation timeout / crash is a real failure, not a skip: a hung or erroring page must
+      // not pass the audit by default.
       errored += 1;
-      console.log(`ERROR ${route} (hover pass: ${err.message.split('\n')[0]})`);
+      console.log(`ERROR ${label} (${err.message.split('\n')[0]})`);
+      continue;
     }
-  }
 
-  if (violations.length === 0 && hoverViolations.length === 0) {
-    console.log(`PASS ${route}`);
-    continue;
+    // Below `md` the nav is a closed disclosure; open it so its links + CTA are
+    // rendered and audited. Absent (or already open) on some pages — tolerate both.
+    if (view.name === 'mobile') {
+      try {
+        const toggle = page.locator('button[aria-label="Open menu"]').first();
+        if ((await toggle.count()) > 0) {
+          await toggle.click({ timeout: 2_000 });
+          await page.waitForTimeout(150);
+        }
+      } catch {
+        /* no mobile nav on this page, or not clickable — nothing to open */
+      }
+    }
+
+    // Walk the page so any viewport-triggered content mounts before auditing.
+    await page.evaluate(async () => {
+      for (let y = 0; y < document.body.scrollHeight; y += window.innerHeight) {
+        window.scrollTo(0, y);
+        await new Promise((r) => setTimeout(r, 60));
+      }
+      window.scrollTo(0, 0);
+    });
+
+    const { violations, unparsed } = await page.evaluate(auditPage);
+    if (unparsed.length) {
+      unparsedColors += unparsed.length;
+      console.log(`WARN ${label} — unparsed color(s), NOT audited: ${unparsed.join(', ')}`);
+    }
+
+    // Hover pass runs regardless of the resting result — a page can be clean at
+    // rest and fail only on hover, which is the exact gap this closes.
+    let hoverViolations = [];
+    if (cdp) {
+      try {
+        hoverViolations = await auditHover(violations);
+      } catch (err) {
+        errored += 1;
+        console.log(`ERROR ${label} (hover pass: ${err.message.split('\n')[0]})`);
+      }
+    }
+
+    if (violations.length === 0 && hoverViolations.length === 0) {
+      console.log(`PASS ${label}`);
+      continue;
+    }
+    failed += violations.length + hoverViolations.length;
+    console.log(
+      `FAIL ${label} — ${violations.length} resting` +
+        (cdp ? ` + ${hoverViolations.length} hover` : '') +
+        ` violation(s)`,
+    );
+    for (const v of violations) printViolation(v);
+    for (const v of hoverViolations) printViolation(v, ' [hover]');
   }
-  failed += violations.length + hoverViolations.length;
-  console.log(
-    `FAIL ${route} — ${violations.length} resting` +
-      (cdp ? ` + ${hoverViolations.length} hover` : '') +
-      ` violation(s)`,
-  );
-  for (const v of violations) printViolation(v);
-  for (const v of hoverViolations) printViolation(v, ' [hover]');
 }
 
 await browser.close();
