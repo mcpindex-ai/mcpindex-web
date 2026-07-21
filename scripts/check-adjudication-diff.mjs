@@ -20,6 +20,7 @@
 //   node scripts/check-adjudication-diff.mjs --base origin/main   # CI (reads git)
 //   node scripts/check-adjudication-diff.mjs --selftest           # unit self-check
 import { execFileSync, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -100,12 +101,18 @@ const PREVIEW_AT_RE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}
 const PREVIEW_REASON_FORBIDDEN_RE = /[\x00-\x1f\x7f-\x9f<>"'&]/;
 const PREVIEW_MAX_REASON = 200;
 
-/** Faithful JS port of tooling.frontier_adjudication._slugify (== seed_registry_batch.slugify),
- *  so a preview-ledger line's server_id must round-trip to its own slug (no id/slug spoof). */
+/** Faithful JS port of tooling.slug_identity.slugify + slug_binds_server_id. */
 function slugifyPreview(name) {
   let s = String(name).toLowerCase().split('/').join('--').split('.').join('-').split('@').join('');
   s = s.replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
   return s;
+}
+
+function slugBindsServerId(serverId, slug) {
+  const base = slugifyPreview(serverId);
+  if (slug === base) return true;
+  const hash = createHash('sha256').update(String(serverId), 'utf8').digest('hex').slice(0, 12);
+  return slug === `${base}-${hash}`;
 }
 
 /** Validate ONE added preview-ledger line against the preview schema; return an error string or null. */
@@ -123,7 +130,7 @@ function badPreviewEntry(line, i) {
   if (sid.length > PREVIEW_MAX_ID) return `added preview line ${i + 1} server_id exceeds MAX_ID (${PREVIEW_MAX_ID})`;
   if (PREVIEW_SERVER_ID_FORBIDDEN_RE.test(sid)) return `added preview line ${i + 1} server_id carries a forbidden markup/control/bidi/zero-width char`;
   if (PREVIEW_CLEARANCE_CLAIM_RE.test(sid)) return `added preview line ${i + 1} server_id makes a positive-clearance claim`;
-  if (slugifyPreview(sid) !== e.slug) return `added preview line ${i + 1} server_id does not round-trip to slug (_slugify(server_id) != slug)`;
+  if (!slugBindsServerId(sid, e.slug)) return `added preview line ${i + 1} server_id does not round-trip to slug (_slugify(server_id) != slug)`;
   if (typeof e.at !== 'string' || !PREVIEW_AT_RE.test(e.at)) return `added preview line ${i + 1} "at" is not an ISO timestamp`;
   // REVOKE tombstone (P4): kind "revoke" + a well-formed reason, NO badge. The overlay STRIPS the
   // badge for this slug. Append-only + well-formed like a badge line - a truncated/rewritten ledger
