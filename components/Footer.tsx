@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { PRIORITY_GUIDES, GUIDES_HUB } from '@/lib/priority-guides';
 import { Mark } from './Mark';
 import { ContactTrigger } from './ContactModal';
 
@@ -11,7 +12,7 @@ export function Footer() {
   return (
     <footer className="rule-t mt-32" role="contentinfo">
       <div className="site-container py-16">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-10">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-10">
           <div className="col-span-2 md:col-span-1 max-w-[260px]">
             <div className="flex items-center gap-2 text-[var(--color-ink)]">
               <Mark size={18} />
@@ -43,7 +44,18 @@ export function Footer() {
             <Link href="/best" className={LINK}>Best of</Link>
             <Link href="/servers" className={LINK}>All servers</Link>
             <Link href="/changelog" className={LINK}>Changelog</Link>
-            <Link href="/guides" className={LINK}>Guides</Link>
+          </div>
+
+          <div>
+            <div className={COLUMN_LABEL}>Guides</div>
+            {PRIORITY_GUIDES.map((g) => (
+              <Link key={g.href} href={g.href} className={LINK}>
+                {g.label}
+              </Link>
+            ))}
+            <Link href={GUIDES_HUB.href} className={LINK}>
+              {GUIDES_HUB.label}
+            </Link>
           </div>
 
           <div>

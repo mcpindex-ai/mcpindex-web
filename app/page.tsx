@@ -18,6 +18,7 @@ import { GateEdges } from '@/components/home/GateEdges';
 import { Disclose } from '@/components/Disclose';
 import { Mark } from '@/components/Mark';
 import { Seal } from '@/components/Seal';
+import { PriorityGuides } from '@/components/PriorityGuides';
 import { listScreened } from '@/lib/verdicts';
 import type { Metadata } from 'next';
 
@@ -291,6 +292,12 @@ export default async function Home() {
             the call goes through.
           </p>
           <GateLoop compact />
+          <div className="mt-12 rule-t pt-10">
+            <PriorityGuides
+              kicker="Read next"
+              intro="Practical guides on silent drift, lockfiles, and how to screen a server before you wire it — then install the gate."
+            />
+          </div>
         </div>
       </section>
 

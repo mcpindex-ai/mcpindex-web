@@ -32,6 +32,22 @@ export function DriftReportCta() {
           See your first HOLD in 2 minutes →
         </Link>
       </p>
+      <p className="mt-4 text-[13px] leading-[1.55] text-[var(--color-mute)] max-w-2xl">
+        Background:{' '}
+        <Link
+          href="/guides/mcp-silent-contract-drift"
+          className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+        >
+          MCP rug pulls &amp; silent contract drift
+        </Link>
+        {' · '}
+        <Link
+          href="/guides/mcp-lock"
+          className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+        >
+          mcp.lock
+        </Link>
+      </p>
     </section>
   );
 }

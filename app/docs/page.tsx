@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
 import { ArchDiagram } from '@/components/ArchDiagram';
 import { Disclose } from '@/components/Disclose';
+import { PriorityGuides } from '@/components/PriorityGuides';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Documentation',
@@ -36,6 +37,11 @@ export default function DocsPage() {
           and a recommendation endpoint for discovery - direct HTTP, drop-in MCP server, or
           embedded.
         </p>
+        <PriorityGuides
+          className="mt-10"
+          kicker="Guides"
+          intro="Shorter how-tos for rug pulls, lockfiles, and screening a server before you install."
+        />
       </header>
 
       {/* §01 - Install the gate */}

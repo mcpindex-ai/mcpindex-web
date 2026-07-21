@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
 import { ProvenanceBadge } from '@/components/ProvenanceBadge';
+import { PriorityGuides } from '@/components/PriorityGuides';
 import { Seal } from '@/components/Seal';
 import { D3_CONFORMING_LABELS, D3_REQUIRED_LABELS } from '@/lib/honest-limits';
 
@@ -36,6 +37,12 @@ export default function TrustPage() {
       <div className="mt-6">
         <ProvenanceBadge />
       </div>
+
+      <PriorityGuides
+        className="mt-10"
+        kicker="Practical guides"
+        intro="How to decide whether to connect a server, how to screen it, and what a silent contract change looks like in the wild."
+      />
 
       <Section label="How a verdict is produced">
         <p>

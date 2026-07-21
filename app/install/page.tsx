@@ -3,6 +3,7 @@ import { pageMetadata } from '@/lib/seo';
 import Link from 'next/link';
 import { CopyField } from '@/components/CopyField';
 import { DirectoryInstall } from '@/components/install/DirectoryInstall';
+import { PriorityGuides } from '@/components/PriorityGuides';
 import { jsonLdSafe } from '@/lib/jsonLd';
 import {
   GATE_METHODS,
@@ -104,6 +105,12 @@ export default function InstallPage() {
             →
           </span>
         </Link>
+
+        <PriorityGuides
+          className="mt-10"
+          kicker="Before you wire more servers"
+          intro="Screen and trust guides first — then come back to the install commands below."
+        />
 
         {/* ---- 1. The gate (the product) -------------------------------- */}
         <section className="mt-14 rule-t pt-8">
