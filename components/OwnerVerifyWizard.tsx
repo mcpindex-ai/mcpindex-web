@@ -67,13 +67,14 @@ function originOf(url: string): string {
   }
 }
 
-// Map one /api/v1/search result to a ServerHit (installs.remote is the HTTP remote URL; name is
-// the registry id). Returns null for a result with no registry id.
+// Map a registry result to a ServerHit. Handles both shapes: the claimable finder returns a flat
+// `remote`; the /api/v1/search deep-link returns `installs.remote`. `name` is the registry id.
 function toServerHit(r: Record<string, unknown>): ServerHit | null {
   const serverId = typeof r.name === 'string' ? r.name : '';
   if (!serverId) return null;
   const installs = (r.installs ?? {}) as Record<string, unknown>;
-  const remoteUrl = typeof installs.remote === 'string' ? installs.remote : '';
+  const remoteUrl =
+    typeof r.remote === 'string' ? r.remote : typeof installs.remote === 'string' ? installs.remote : '';
   const slug = typeof r.slug === 'string' ? r.slug : '';
   const title = typeof r.title === 'string' && r.title ? r.title : serverId;
   return { serverId, slug, title, remoteUrl, remoteOrigin: originOf(remoteUrl) };
@@ -274,7 +275,9 @@ export default function OwnerVerifyWizard() {
     const ctrl = new AbortController();
     const t = setTimeout(() => {
       setSearching(true);
-      fetch(`/api/v1/search?q=${encodeURIComponent(q)}&limit=8`, { signal: ctrl.signal })
+      // Claimable-only, name-ranked finder - so the owner's own server surfaces instead of being
+      // buried under unrelated servers that share a common token like "github".
+      fetch(`/api/registry/claimable?q=${encodeURIComponent(q)}&limit=8`, { signal: ctrl.signal })
         .then((res) => res.json())
         .then((data: { results?: Array<Record<string, unknown>> }) => {
           const hits = (data.results ?? []).map(toServerHit).filter((h): h is ServerHit => h !== null);
