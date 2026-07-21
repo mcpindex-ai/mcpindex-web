@@ -106,6 +106,7 @@ export default async function DriftReportPage() {
       'contract diff, not a safety verdict.',
     url: 'https://mcpindex.ai/drift-report',
     creator: { '@type': 'Organization', name: 'mcpindex', url: 'https://mcpindex.ai' },
+    license: 'https://creativecommons.org/licenses/by/4.0/',
     isAccessibleForFree: true,
   };
 

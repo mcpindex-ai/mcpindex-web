@@ -7,7 +7,6 @@ import { callRoute, FIX, snapshotEnv } from './_harness';
 
 import { POST as screen } from '../../app/api/v1/screen/route';
 import { POST as waitlist } from '../../app/api/waitlist/route';
-import { POST as enterprise } from '../../app/api/enterprise/route';
 import { GET as healthBrevo } from '../../app/api/health/brevo/route';
 import { GET as healthGroq } from '../../app/api/health/groq/route';
 import { GET as cron } from '../../app/api/cron/sync-registry/route';
@@ -56,7 +55,7 @@ test('screen: no Groq key → 503 UNAVAILABLE (fail-closed, advisory)', async ()
   assert.equal(b.advisory, true);
 });
 
-// ---- B10 waitlist / B11 enterprise (no Brevo → fail-soft) ----
+// ---- B10 waitlist (no Brevo → fail-soft) ----
 test('waitlist: invalid email → 400', async () => {
   const r = await callRoute(waitlist, '/api/waitlist', { method: 'POST', body: { email: 'nope' } });
   assert.equal(r.status, 400);
@@ -73,16 +72,6 @@ test('waitlist: form POST → 303 redirect', async () => {
   assert.equal(r.status, 303);
   assert.match(r.location ?? '', /joined=1/);
 });
-test('enterprise: invalid email → 400', async () => {
-  const r = await callRoute(enterprise, '/api/enterprise', { method: 'POST', body: { email: 'nope' } });
-  assert.equal(r.status, 400);
-});
-test('enterprise: valid email, no Brevo → 200 logged', async () => {
-  const r = await callRoute(enterprise, '/api/enterprise', { method: 'POST', body: { email: 'a@b.co', company: 'Acme' } });
-  assert.equal(r.status, 200);
-  assert.equal(obj(r).delivery, 'logged');
-});
-
 // ---- B12/B13 health (unconfigured) ----
 test('health/brevo: unconfigured → 503', async () => {
   const r = await callRoute(healthBrevo, '/api/health/brevo');

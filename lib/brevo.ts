@@ -13,13 +13,11 @@ import 'server-only'; // holds BREVO_API_KEY; hard-fail any accidental client im
 const API = 'https://api.brevo.com/v3';
 const TIMEOUT_MS = 5_000;
 
-export type LeadSource = 'waitlist' | 'pricing' | 'contact' | 'enterprise_procurement';
-export type LeadTier = 'enterprise';
+export type LeadSource = 'waitlist' | 'contact';
 
 export interface Lead {
   email: string;
   source: LeadSource;
-  tier?: LeadTier;
   company?: string;
   message?: string;
 }
@@ -112,7 +110,6 @@ export async function upsertLeadContact(lead: Lead): Promise<BrevoResult> {
     email: lead.email,
     updateEnabled: true,
     attributes: {
-      TIER: lead.tier ?? '',
       COMPANY: lead.company ?? '',
       MESSAGE: lead.message ?? '',
       SOURCE: lead.source,
@@ -139,8 +136,6 @@ export async function sendWelcomeEmail(lead: Lead): Promise<BrevoResult> {
   if (lead.source === 'waitlist') {
     intro =
       'Thanks for joining the mcpindex list. We will email product updates only - nothing else.';
-  } else if (lead.source === 'pricing' || lead.source === 'enterprise_procurement') {
-    intro = 'Thanks for reaching out about Enterprise. We have your note and will be in touch shortly.';
   } else {
     intro = 'Thanks for reaching out. We have your message and will get back to you shortly.';
   }
@@ -158,7 +153,6 @@ export async function notifyOperator(lead: Lead): Promise<BrevoResult> {
   const rows: Array<[string, string]> = [
     ['Email', lead.email],
     ['Source', lead.source],
-    ['Tier', lead.tier ?? '-'],
     ['Company', lead.company || '-'],
     ['Message', lead.message || '-'],
   ];
@@ -167,7 +161,7 @@ export async function notifyOperator(lead: Lead): Promise<BrevoResult> {
     .join('');
   const html =
     `<div style="font-family:ui-monospace,monospace;font-size:14px;color:#0a0a0a">` +
-    `<p><strong>New ${esc(lead.source)} lead${lead.tier ? ` (${esc(lead.tier)})` : ''}</strong></p>` +
+    `<p><strong>New ${esc(lead.source)} lead</strong></p>` +
     `<table>${table}</table></div>`;
   return call('/smtp/email', {
     sender: sender(),

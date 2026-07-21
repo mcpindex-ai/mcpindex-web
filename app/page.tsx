@@ -90,7 +90,7 @@ export default async function Home() {
         publisher: { '@id': 'https://mcpindex.ai/#org' },
       },
       {
-        // The gate is free, open-source software distributed as a package. Typed as
+        // The gate is free, source-available software distributed as a package. Typed as
         // SoftwareSourceCode (not SoftwareApplication) so it stays out of Google's app
         // rich-result program, which requires a user rating we cannot honestly supply.
         // codeRepository/isAccessibleForFree carry the "free, installable" signal to LLMs.

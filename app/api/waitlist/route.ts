@@ -24,7 +24,7 @@ function clientIp(req: NextRequest): string {
 /**
  * Contact / list capture.
  * - Footer "Contact" (JSON + source=contact): Brevo contact lead + welcome + operator notify.
- * - Simple email-only / legacy forms: log-only waitlist (changelog RSS is the subscribe path).
+ * - Simple email-only forms: log-only update list (changelog RSS is the subscribe path).
  * Fail-soft: always logs; Brevo best-effort; never 500s the visitor when Brevo is down.
  */
 export async function POST(req: NextRequest) {
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     email = body.email ?? '';
     company = (body.company ?? '').trim().slice(0, 200);
     message = (body.message ?? '').trim().slice(0, 2000);
-    if (body.source === 'contact' || body.source === 'pricing') {
+    if (body.source === 'contact') {
       source = body.source;
     }
   } else {
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
   console.log(`[${source}] ${ts} ${email}` + (company ? ` company=${company}` : ''));
 
   // Rich contact leads: Brevo when configured.
-  if (source === 'contact' || source === 'pricing') {
+  if (source === 'contact') {
     const lead: Lead = {
       email,
       source,

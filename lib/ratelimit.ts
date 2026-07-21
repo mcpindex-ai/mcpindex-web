@@ -219,7 +219,7 @@ export async function checkReceiptLimit(ip: string, now: Date): Promise<DriftLim
   }
 }
 
-// Lead-form send limit (/api/waitlist source=contact|pricing, /api/enterprise).
+// Lead-form send limit (/api/waitlist source=contact).
 // These are UNAUTHENTICATED and, when Brevo is wired, send a welcome email to the
 // CALLER-SUPPLIED address and notify the operator inbox on every accepted call.
 // Without a distributed cap an IP-rotating attacker can email-bomb arbitrary victims

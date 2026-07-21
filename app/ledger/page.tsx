@@ -69,6 +69,7 @@ export default async function LedgerPage() {
       'registry snapshots. A contract diff, not a safety verdict.',
     url: 'https://mcpindex.ai/ledger',
     creator: { '@type': 'Organization', name: 'mcpindex', url: 'https://mcpindex.ai' },
+    license: 'https://creativecommons.org/licenses/by/4.0/',
     isAccessibleForFree: true,
   };
 

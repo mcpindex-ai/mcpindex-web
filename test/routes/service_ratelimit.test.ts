@@ -14,7 +14,6 @@ import { POST as receiptsPost } from '../../app/api/v1/receipts/route';
 import { GET as ledger } from '../../app/api/v1/ledger/route';
 import { GET as loginStart } from '../../app/api/auth/login/start/route';
 import { POST as waitlist } from '../../app/api/waitlist/route';
-import { POST as enterprise } from '../../app/api/enterprise/route';
 
 let restore: () => void;
 beforeEach(() => {
@@ -85,15 +84,4 @@ test('waitlist (contact, Brevo on): over-limit → 429 before send', async () =>
   });
   assert.equal(r.status, 429);
   assert.ok(r.headers.get('retry-after'));
-});
-
-test('enterprise (Brevo on): over-limit → 429 before send', async () => {
-  process.env.BREVO_API_KEY = 'k';
-  process.env.BREVO_LEADS_LIST_ID = '3';
-  const r = await callRoute(enterprise, '/api/enterprise', {
-    method: 'POST',
-    body: { email: 'a@b.co', company: 'Acme' },
-    ip: '9.9.9.9',
-  });
-  assert.equal(r.status, 429);
 });

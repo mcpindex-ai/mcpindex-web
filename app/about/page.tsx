@@ -2,6 +2,10 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
 
+// Dated on purpose: the commercial-status statement is a point-in-time claim, so a
+// reader can tell whether it is current. Bump it only when the status actually changes.
+const COMMERCIAL_STATUS_DATE = '20 July 2026';
+
 export const metadata: Metadata = {
   title: 'About',
   description:
@@ -101,7 +105,7 @@ export default function AboutPage() {
           record is public in the{' '}
           <Link href="/ledger" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">live drift ledger</Link>.
           The deeper tier-1 corpus lookup the gate queries before it decides is still
-          held off by default. The gate alone is copyable, and open source by design.
+          held off by default. The gate alone is copyable, and source-available by design.
           What compounds is behind it: the growing record of drift, the corpus of
           verdicts, and the published methodology that governs them. A competitor can
           re-implement a contract-diff in a weekend; they cannot re-implement the record.
@@ -162,6 +166,38 @@ export default function AboutPage() {
           and trust verdicts are produced locally from public artifacts (the
           tool description and schema). The deterministic behavioral probe is
           built but has not yet run on the public corpus.
+        </p>
+      </section>
+
+      <section className="mt-12 rule-t pt-10">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
+          Commercial status
+        </div>
+        <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
+          As of {COMMERCIAL_STATUS_DATE}, mcpindex is a personal research
+          project and not a commercial product. Nothing here is for sale. There
+          is no paid tier, no subscription, no support contract, and no company
+          selling it. Everything published - the directory, the drift ledger,
+          the verdict API, the datasets - is free to use, and the running costs
+          are paid personally.
+        </p>
+        <p className="mt-4 text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
+          Licensing is per artifact, and &ldquo;source-available&rdquo; is the
+          accurate umbrella term rather than &ldquo;open source.&rdquo; This site
+          and the TypeScript SDK are{' '}
+          <a
+            href="https://polyformproject.org/licenses/noncommercial/1.0.0"
+            target="_blank"
+            rel="noreferrer"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+          >
+            PolyForm Noncommercial 1.0.0
+          </a>
+          , which permits noncommercial use and reserves commercial rights. The
+          in-path gate, the discovery client, and the Mastra binding are MIT.
+          The published datasets are CC BY 4.0. Each package states its own
+          license; that statement governs. If any of this changes, it will be
+          said here rather than discovered.
         </p>
       </section>
     </article>

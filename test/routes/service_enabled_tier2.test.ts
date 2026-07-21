@@ -8,7 +8,6 @@ import { __setLedgerServerRedisForTest } from '../../lib/ledgerServer';
 import { __setLeadCaptureRedisForTest, LEAD_CAPTURE_KEY } from '../../lib/leadCapture';
 import { POST as screen } from '../../app/api/v1/screen/route';
 import { POST as waitlist } from '../../app/api/waitlist/route';
-import { POST as enterprise } from '../../app/api/enterprise/route';
 import { GET as ledger } from '../../app/api/v1/ledger/route';
 
 // A Groq-shaped response whose JSON content is the given judge verdict object.
@@ -71,15 +70,6 @@ test('waitlist: Brevo configured + source contact → 200 delivery:sent', async 
   assert.equal(obj(r).delivery, 'sent');
 });
 
-test('enterprise: Brevo configured → 200 delivery:sent', async () => {
-  process.env.BREVO_API_KEY = 'k';
-  process.env.BREVO_LEADS_LIST_ID = '3';
-  __setBrevoFetchForTest(okFetch);
-  const r = await callRoute(enterprise, '/api/enterprise', { method: 'POST', body: { email: 'a@b.co', company: 'Acme' } });
-  assert.equal(r.status, 200);
-  assert.equal(obj(r).delivery, 'sent');
-});
-
 // A revoked/dead Brevo key: every call 401s. The response must NOT claim 'sent'.
 const deadBrevoFetch: typeof fetch = (async () => new Response('unauthorized', { status: 401 })) as unknown as typeof fetch;
 
@@ -88,15 +78,6 @@ test('waitlist: Brevo configured but key dead (all 401) → delivery:failed (not
   process.env.BREVO_LEADS_LIST_ID = '3';
   __setBrevoFetchForTest(deadBrevoFetch);
   const r = await callRoute(waitlist, '/api/waitlist', { method: 'POST', body: { email: 'a@b.co', source: 'contact' } });
-  assert.equal(r.status, 200);
-  assert.equal(obj(r).delivery, 'failed');
-});
-
-test('enterprise: Brevo configured but key dead (all 401) → delivery:failed', async () => {
-  process.env.BREVO_API_KEY = 'revoked';
-  process.env.BREVO_LEADS_LIST_ID = '3';
-  __setBrevoFetchForTest(deadBrevoFetch);
-  const r = await callRoute(enterprise, '/api/enterprise', { method: 'POST', body: { email: 'a@b.co', company: 'Acme' } });
   assert.equal(r.status, 200);
   assert.equal(obj(r).delivery, 'failed');
 });
@@ -124,20 +105,6 @@ test('waitlist: a Brevo-failed lead is durably captured to Upstash (recovery)', 
   assert.equal(stored.email, 'real@lead.co');
   assert.equal(stored.source, 'contact');
   assert.equal(stored.company, 'RealCo');
-  assert.equal(stored.delivery, 'failed');
-});
-
-test('enterprise: captured lead carries tier + delivery', async () => {
-  process.env.BREVO_API_KEY = 'revoked';
-  process.env.BREVO_LEADS_LIST_ID = '3';
-  __setBrevoFetchForTest(deadBrevoFetch);
-  const rec = captureRecorder();
-  __setLeadCaptureRedisForTest(rec.redis);
-  const r = await callRoute(enterprise, '/api/enterprise', { method: 'POST', body: { email: 'e@corp.co', company: 'Corp' } });
-  assert.equal(r.status, 200);
-  const stored = JSON.parse(rec.pushed[0]);
-  assert.equal(stored.tier, 'enterprise');
-  assert.equal(stored.source, 'enterprise_procurement');
   assert.equal(stored.delivery, 'failed');
 });
 

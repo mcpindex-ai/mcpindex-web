@@ -34,7 +34,7 @@ const CAP = 10_000; // keep the most recent 10k leads; bounds Upstash memory (LT
 
 export type CapturedLead = {
   ts: string; // ISO submission time
-  source: string; // contact | pricing | enterprise_procurement | waitlist
+  source: string; // contact | waitlist
   email: string;
   company?: string;
   message?: string;
