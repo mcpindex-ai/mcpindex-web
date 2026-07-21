@@ -33,6 +33,10 @@ export const DEFAULT_SITE_ORIGIN = 'https://mcpindex.ai' as const;
 // wildcard or a malformed string.
 const ORIGIN_RE = /^https:\/\/[a-z0-9.-]+(?::\d{1,5})?$/i;
 
+// Canonical production hosts, used ONLY by the misconfig tripwire below — never for an
+// authorization decision (the wizard's real security check is event.origin === window.location.origin).
+const CANONICAL_PRODUCTION_ORIGINS: readonly string[] = [DEFAULT_SITE_ORIGIN, 'https://www.mcpindex.ai'];
+
 /**
  * The exact site origin to use as the postMessage `targetOrigin` for web-mode key delivery.
  * Reads `MCPINDEX_SITE_ORIGIN` (per-environment: prod vs preview), falling back to the prod
@@ -41,5 +45,20 @@ const ORIGIN_RE = /^https:\/\/[a-z0-9.-]+(?::\d{1,5})?$/i;
  */
 export function siteOrigin(env: Record<string, string | undefined> = process.env): string {
   const raw = (env[SITE_ORIGIN_ENV] ?? '').trim();
-  return raw && raw !== '*' && ORIGIN_RE.test(raw) ? raw : DEFAULT_SITE_ORIGIN;
+  const resolved = raw && raw !== '*' && ORIGIN_RE.test(raw) ? raw : DEFAULT_SITE_ORIGIN;
+  // Production misconfig tripwire: a SYNTACTICALLY VALID but WRONG origin (a typo, or a staging
+  // URL accidentally set in prod) passes ORIGIN_RE above and is returned as-is — the regex can
+  // only catch "malformed", never "wrong". The real-world failure mode: the postMessage
+  // targetOrigin silently mismatches window.location.origin in the browser, delivery is refused,
+  // and every web sign-in quietly degrades to the copy-paste fallback with NO server-side signal
+  // anything is wrong. Surface it loudly in Vercel's runtime logs instead — purely additive, never
+  // changes the returned value or any security check.
+  if (env.VERCEL_ENV === 'production' && !CANONICAL_PRODUCTION_ORIGINS.includes(resolved)) {
+    console.error(
+      `[webLoginContract] MCPINDEX_SITE_ORIGIN misconfig: resolved to "${resolved}" in production, ` +
+        `expected one of ${CANONICAL_PRODUCTION_ORIGINS.join(', ')}. Web sign-in key delivery will ` +
+        'silently degrade to copy-paste for every user until this is fixed.',
+    );
+  }
+  return resolved;
 }
