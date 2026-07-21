@@ -4,6 +4,7 @@
 import 'server-only';
 import { Redis } from '@upstash/redis';
 import { redisUrl, redisToken } from './env';
+import { flag, logFlagStates } from './flags';
 
 export const INSTALL_ID = /^[0-9a-f]{32}$/;
 
@@ -16,7 +17,8 @@ const DUMMY_TOKEN_SHA256 = '0'.repeat(64);
 export const MAX_AUTHED_VERIFY_PER_BATCH = 32;
 
 export function driftIdentityEnabled(): boolean {
-  return process.env.DRIFT_IDENTITY === '1';
+  logFlagStates();
+  return flag('DRIFT_IDENTITY');
 }
 
 let _redis: Redis | null | undefined;

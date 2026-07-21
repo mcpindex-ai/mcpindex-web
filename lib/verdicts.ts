@@ -246,7 +246,24 @@ export function applyExpiryOverlay(v: Verdict, now: number = Date.now()): Verdic
   return { ...withLimit, status: 'STALE' };
 }
 
+let _loadInflight: Promise<Record<string, Verdict>> | null = null;
+
+// De-dup concurrent cold loads, mirroring registry.ts's _resolveInflight. Without this, N
+// simultaneous callers on a cold instance EACH read and JSON.parse the 12.7MB verdict store
+// and normalize ~10.6k records. /api/v1/preflight resolves this store AND the 24.5MB registry
+// snapshot in one request, so a traffic spike or a parallel crawl multiplied that footprint
+// per in-flight request - the same shape as the OOM that made registry.ts adopt the pattern.
+// Sharing one load also guarantees concurrent callers see the SAME store generation.
 async function loadAll(): Promise<Record<string, Verdict>> {
+  if (_cache) return _cache;
+  if (_loadInflight) return _loadInflight;
+  _loadInflight = loadAllUncached().finally(() => {
+    _loadInflight = null;
+  });
+  return _loadInflight;
+}
+
+async function loadAllUncached(): Promise<Record<string, Verdict>> {
   if (_cache) return _cache;
   let raw: Record<string, RawVerdict> = {};
   try {
@@ -314,7 +331,13 @@ export async function listScreened(): Promise<Array<{ slug: string; verdict: Ver
   const all = await loadAll();
   const now = Date.now();
   return Object.entries(all)
-    .filter(([slug, v]) => validSlugs.has(slug) && !v.fixture)
+    // `!v.unscreened` matters as much as `!v.fixture`: a preview-only record is a minted
+    // owner badge for a server the platform never screened. Counting it as "screened" would
+    // inflate verdict_coverage.screened_servers in the public machine descriptor
+    // (/.well-known/mcp-index.json) - i.e. overstate our own coverage, the one number a
+    // trust product must never round up. Zero such records exist today; the owner P1-P4
+    // flow is live, so the first external claim would have started the drift.
+    .filter(([slug, v]) => validSlugs.has(slug) && !v.fixture && !v.unscreened)
     .map(([slug, v]) => ({ slug, verdict: applyExpiryOverlay(v, now) }))
     .sort((a, b) => a.slug.localeCompare(b.slug));
 }

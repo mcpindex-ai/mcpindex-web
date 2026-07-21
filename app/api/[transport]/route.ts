@@ -12,6 +12,10 @@
 import { createMcpHandler } from 'mcp-handler';
 import { z } from 'zod';
 
+// In-process /api/v1 dispatch (no self-fetch); see lib/v1Dispatch.ts.
+import { callV1 } from '@/lib/v1Dispatch';
+
+
 // Shared single source of truth for tool name/title/description (also used by the
 // stdio CLI, mcp-server-mcpindex/src/index.mjs) so the two can't drift.
 import TOOL_META from '../../../mcp-server-mcpindex/src/tools-meta.json';
@@ -21,23 +25,16 @@ const tmeta = (name: string) => {
   return { title: m.title, description: m.description };
 };
 
-// Same convention as the CLI: query the public API. The tools call /api/v1/*
-// only (never /api/mcp), so there is no self-recursion.
-const API_BASE = process.env.MCPINDEX_API_BASE || 'https://mcpindex.ai';
+// The tools resolve /api/v1/* IN-PROCESS via lib/v1Dispatch (which imports and calls those
+// route handlers directly) instead of fetching https://mcpindex.ai over the network. That kills
+// the rate-limit self-starvation from the shared Vercel egress ip, makes preview deployments
+// answer from their OWN data, and drops a DNS/TLS failure mode. Full rationale in v1Dispatch.ts.
+// `api()` keeps its previous signature and throw-on-non-2xx contract, so the five tool call
+// sites below are unchanged.
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- thin adapter over external JSON */
 
-async function api(path: string): Promise<any> {
-  // 8s per-fetch timeout so a slow upstream can't hold the (unauthenticated)
-  // serverless invocation open up to maxDuration, esp. under compare_servers fan-out.
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'User-Agent': 'mcpindex-remote-mcp/1.0', Accept: 'application/json' },
-    signal: AbortSignal.timeout(8000),
-  });
-  // Status only - never echo the upstream body (avoids surfacing a verbose 5xx to callers).
-  if (!res.ok) throw new Error(`mcpindex API ${res.status}`);
-  return res.json();
-}
+const api = (path: string): Promise<any> => callV1<any>(path);
 
 // Defense-in-depth: the base host is fixed, but keep path-segment inputs from
 // walking the /api/v1 path (reject traversal / control chars). Block-list, not

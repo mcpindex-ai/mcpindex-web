@@ -1,14 +1,26 @@
 import { NextRequest } from 'next/server';
 import { timingSafeEqual } from 'node:crypto';
-import { fetchAllPages } from '@/lib/registry';
+import { readBundledSnapshot } from '@/lib/registry';
 import { kvConfigured, snapshotVersion, writeKVSnapshot } from '@/lib/snapshotStore';
 
-// NO LONGER SCHEDULED. The Vercel cron was removed (2026-07-19): a full registry
-// fetch (~542 sequential pages, 25-50min) can't finish within maxDuration=300s, so
-// the cron never wrote KV. The canonical sync is the GitHub Actions workflow
-// (.github/workflows/sync-registry.yml), which commits data/snapshot.json to main;
-// readers fall back to that bundled snapshot on KV miss. This route is kept (auth-gated,
-// CRON_SECRET) for manual/on-demand invocation; a successful fetch still writes KV.
+// NOT SCHEDULED, AND NO LONGER FETCHES UPSTREAM. This is a manual "republish the cache"
+// lever, not a sync.
+//
+// The canonical refresh is .github/workflows/sync-registry.yml: it pulls ~542 sequential
+// pages every 4h and commits data/snapshot.json to main, and readers fall back to that
+// bundled file on a KV miss. This route used to attempt the SAME upstream fetch, which
+// cannot finish inside maxDuration=300s (measured 34s on a good window, ~135min on a bad
+// one), so it almost always died partway - an endpoint that could start but not complete.
+//
+// Worse, on the rare success it wrote KV with NO expiry, and the read path prefers KV
+// unconditionally: one manual invocation could pin the live site to that blob forever while
+// the workflow kept committing fresh snapshots that nothing read. (writeKVSnapshot now sets
+// a 6h TTL, which bounds that; this change removes the trap at the source.)
+//
+// So it now republishes the ALREADY-COMMITTED snapshot into KV. That completes in
+// milliseconds, always finishes, and is the only thing a manual button here can usefully do:
+// force the cache to match the repo. To pull NEW servers from upstream, run the workflow
+// (`gh workflow run sync-registry.yml`) - that is the job that owns the slow fetch.
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 
@@ -33,18 +45,16 @@ export async function GET(req: NextRequest) {
   }
   const start = Date.now();
   try {
-    const all = await fetchAllPages(500);
-    const latest = all.filter(
-      (e) => e._meta?.['io.modelcontextprotocol.registry/official']?.isLatest,
-    );
+    const bundled = await readBundledSnapshot();
+    const latest = bundled.servers;
     const writtenAt = new Date().toISOString();
-    const version = snapshotVersion(latest);
+    const version = bundled.snapshot_version || snapshotVersion(latest);
     const persisted = await writeKVSnapshot({
-      fetchedAt: writtenAt,
-      totalEntries: all.length,
+      fetchedAt: bundled.fetchedAt, // preserve WHEN the data was actually fetched upstream...
+      totalEntries: bundled.totalEntries,
       servers: latest,
       snapshot_version: version,
-      snapshot_written_at: writtenAt,
+      snapshot_written_at: writtenAt, // ...and record separately when this copy was published
     });
     const elapsed = Date.now() - start;
     // KV write was EXPECTED if both Upstash env vars are present. If it
@@ -60,7 +70,7 @@ export async function GET(req: NextRequest) {
         {
           ok: false,
           error: 'kv_write_failed',
-          totalEntries: all.length,
+          totalEntries: bundled.totalEntries,
           latestServers: latest.length,
           elapsedMs: elapsed,
           persisted: false,
@@ -72,20 +82,21 @@ export async function GET(req: NextRequest) {
     }
     return Response.json({
       ok: true,
-      totalEntries: all.length,
+      totalEntries: bundled.totalEntries,
       latestServers: latest.length,
       elapsedMs: elapsed,
       persisted,
       kv_configured: kvExpected,
+      source: 'bundled-snapshot', // never upstream; see the header comment
       snapshot_version: version,
       snapshot_written_at: writtenAt,
     });
   } catch (err) {
     // Log full error server-side; return generic body to avoid leaking
     // upstream registry hostnames / DNS errors / TLS strings to callers.
-    console.error('cron/sync-registry: fetch failed', err);
+    console.error('cron/sync-registry: republish failed', err);
     return Response.json(
-      { ok: false, error: 'registry_fetch_failed' },
+      { ok: false, error: 'snapshot_republish_failed' },
       { status: 500 },
     );
   }

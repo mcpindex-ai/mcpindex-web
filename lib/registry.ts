@@ -120,7 +120,10 @@ type LoadedSnapshot = {
 
 let _cache: { servers: IndexedServer[]; loaded: LoadedSnapshot } | null = null;
 
-async function readBundledSnapshot(): Promise<StoredSnapshot> {
+// Exported so /api/cron/sync-registry can republish the COMMITTED snapshot into KV without
+// re-fetching upstream (which cannot finish inside maxDuration). Reads the file every call -
+// no cache - so a manual refresh always publishes what is actually on disk right now.
+export async function readBundledSnapshot(): Promise<StoredSnapshot> {
   const raw = await fs.readFile(SNAPSHOT_PATH, 'utf8');
   const json: unknown = JSON.parse(raw);
   const parsed = SnapshotZ.safeParse(json);

@@ -14,6 +14,7 @@ import 'server-only';
 import { z } from 'zod';
 import { Redis } from '@upstash/redis';
 import { redisUrl, redisToken } from './env';
+import { flag } from './flags';
 
 const HEX32 = /^[0-9a-f]{32}$/;
 const HASH = /^[a-z0-9]+:[0-9a-f]{32,128}$/; // e.g. sha256:<64 hex>
@@ -122,7 +123,7 @@ export async function recordDriftBatch(
       );
     }
 
-    if (process.env.DRIFT_RECRAWL_HINTS === '1' && drifts.length) {
+    if (flag('DRIFT_RECRAWL_HINTS') && drifts.length) {
       const fps = [...new Set(drifts.map((s) => s.tool_fp))];
       p.sadd(RECRAWL_HINTS_KEY, ...(fps as [string, ...string[]]));
       // NX: set the TTL only if the key has none yet. A bare `expire` on every batch SLID

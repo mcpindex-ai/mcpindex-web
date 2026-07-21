@@ -12,15 +12,24 @@
 
 import type { NextRequest } from 'next/server';
 import { getScreenedVerdict } from '@/lib/verdicts';
+import { ADVISORY_FLOOR } from '@/lib/honest-limits';
 
 export const revalidate = 300;
 
-const FLOOR = [
-  'conformance_monitored_not_enforced',
-  'calibrated_false_v1',
-  'advisory_deployment',
-] as const;
+// Import the floor, never re-declare it. This route used to carry its own copy of the
+// three tokens; the values matched, but a local literal is an unguarded drift seam against
+// what lib/honest-limits.ts calls the "single source of truth".
+const FLOOR = ADVISORY_FLOOR;
 const NO_VERDICT_LIMITS = [...FLOOR, 'no_verdict_data_in_v1_advisory'];
+
+// `tool_name` is validated for SHAPE and then never checked for EXISTENCE - today's
+// verdicts are description-level, so the server's screen is returned for any tool name a
+// caller supplies. That is the documented design, but it means an agent that hallucinates
+// a tool gets `verdict: PASS` back, and the loudest consumer of this route is
+// check_tool_trust over the remote MCP endpoint. State the limit on the wire instead of
+// only in a header comment: the response now says, in machine-readable form, that we did
+// not confirm this tool is in the screened contract.
+const TOOL_UNVERIFIED_LIMIT = 'tool_name_not_independently_verified';
 
 const MAX_PARAM_LEN = 256;
 
@@ -50,9 +59,12 @@ export async function GET(
   // Preview-only records are NOT a screening result - same guard the server-level
   // route applies, hoisted so the two endpoints cannot disagree on one subject.
   const v = await getScreenedVerdict(server_id);
+  // tool_verified:false is stated on BOTH branches - the caveat is a property of how this
+  // endpoint resolves tools, not of whether a verdict happened to exist.
+  const subject = { server_id, tool_name, tool_verified: false };
   const body = v
     ? {
-        subject: { server_id, tool_name },
+        subject,
         status: v.status,
         directive: v.directive.decision,
         granularity: v.granularity ?? null,
@@ -62,17 +74,17 @@ export async function GET(
           severity: d.severity,
         })),
         expires_at: v.directive.expires_at || null,
-        honest_limits: v.honest_limits ?? [...FLOOR],
+        honest_limits: [...new Set([...(v.honest_limits ?? [...FLOOR]), TOOL_UNVERIFIED_LIMIT])],
         verdict_contract_version: '1.0.0',
       }
     : {
-        subject: { server_id, tool_name },
+        subject,
         status: 'ERROR',
         directive: 'UNVERIFIED',
         granularity: null,
         dimensions: [],
         expires_at: null,
-        honest_limits: NO_VERDICT_LIMITS,
+        honest_limits: [...NO_VERDICT_LIMITS, TOOL_UNVERIFIED_LIMIT],
         verdict_contract_version: '1.0.0',
       };
 

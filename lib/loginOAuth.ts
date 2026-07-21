@@ -24,6 +24,7 @@
 import 'server-only';
 import { createHash, randomBytes } from 'node:crypto';
 import { issueApiKey } from './issueKey';
+import { flag, logFlagStates } from './flags';
 
 const STATE_TTL_SEC = 600;
 const LOGIN_STATE = /^[0-9a-f]{64}$/;
@@ -42,7 +43,8 @@ export function normalizeProvider(p: string | null | undefined): LoginProvider {
 }
 
 export function loginEnabled(): boolean {
-  return process.env.MCPINDEX_LOGIN_ENABLED === '1';
+  logFlagStates();
+  return flag('MCPINDEX_LOGIN_ENABLED');
 }
 
 export function isLoopbackCallback(cb: string): boolean {

@@ -16,6 +16,7 @@ import 'server-only';
 import { Redis } from '@upstash/redis';
 import { coerceChangeKinds } from './changeKinds';
 import { redisUrl, redisToken } from './env';
+import { flag } from './flags';
 
 export const FP_RE = /^[0-9a-f]{32}$/;
 export const MAX_FPS = 256; // batch cap
@@ -124,7 +125,7 @@ export async function lookupCorroborated(fps: string[]): Promise<Record<string, 
     // installs plane is served ONLY at go-live. Default OFF -> non-crawl members are "not observed
     // drifting" (the pre-installs-plane behavior), so the web never serves the installs plane on
     // the honor system that the drain did not write it (defense-in-depth, not honor-system).
-    if (nonCrawl.length && process.env.DRIFT_DARK_CORROBORATION !== '1') {
+    if (nonCrawl.length && !flag('DRIFT_DARK_CORROBORATION')) {
       for (const fp of nonCrawl) out[fp] = { drifted: false };
     } else if (nonCrawl.length) {
       const installMembers = await Promise.all(

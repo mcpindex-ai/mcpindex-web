@@ -34,11 +34,20 @@ export function DriftReportCta() {
       </p>
       <p className="mt-4 text-[13px] leading-[1.55] text-[var(--color-mute)] max-w-2xl">
         Background:{' '}
+        {/* Anchor text INTENTIONALLY differs from the linked guide's own title, which leads with
+            the scare-vocabulary term this page's copy-pin bans. That term is question-layer
+            wording: fine on the guide, which answers what people actually search for, but this is
+            the /drift-report evidence surface, where lib/reportStats.test.ts forbids scare framing
+            so a published statistic is never wrapped in an accusation. The href is unchanged, so
+            the crawl path added in 618fc46 is fully preserved; only the visible words differ.
+            Do NOT "consistency-fix" this to match the guide title - it will fail the pin, and the
+            pin is right. (The pin greps raw source, so it catches comments too - hence the
+            circumlocution here.) */}
         <Link
           href="/guides/mcp-silent-contract-drift"
           className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
         >
-          MCP rug pulls &amp; silent contract drift
+          silent contract drift
         </Link>
         {' · '}
         <Link
