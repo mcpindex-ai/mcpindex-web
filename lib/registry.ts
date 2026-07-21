@@ -154,6 +154,14 @@ function resolveSnapshot(): Promise<LoadedSnapshot> {
   return _resolveInflight;
 }
 
+// KV wins over the bundled snapshot when present. That preference is safe ONLY because
+// writeKVSnapshot now sets a 6h TTL (snapshotStore.KV_TTL_SECONDS): a KV blob can be at
+// most one missed 4h sync behind the committed snapshot, and then it expires and the
+// bundled file takes over. Deliberately NOT doing a written_at comparison of the two:
+// that would require reading AND zod-parsing the 24.5MB bundled snapshot on every cold
+// resolve in addition to the ~21MB KV blob, which is the exact double-parse that caused
+// the OOM the _resolveInflight dedup above exists to prevent. Bounded staleness is the
+// cheaper correct answer here; revisit only if the sync cadence goes above the TTL.
 async function resolveSnapshotUncached(): Promise<LoadedSnapshot> {
   const kv = await readKVSnapshot();
   if (kv) {

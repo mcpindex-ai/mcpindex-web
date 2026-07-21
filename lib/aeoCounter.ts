@@ -1,4 +1,5 @@
 import { Redis } from '@upstash/redis';
+import { redisUrl, redisToken } from './env';
 
 // Bounded-window instrumentation to answer decision (a): do AI crawlers actually fetch
 // /llms.txt and /llms-full.txt? Those routes are CDN-cached, so edge-served fetches never
@@ -71,8 +72,8 @@ export function classifyAeoBot(ua: string | null | undefined): string | null {
 let _redis: Redis | null | undefined;
 function redis(): Redis | null {
   if (_redis !== undefined) return _redis;
-  const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+  const url = redisUrl();
+  const token = redisToken();
   _redis = url && token ? new Redis({ url, token }) : null;
   return _redis;
 }

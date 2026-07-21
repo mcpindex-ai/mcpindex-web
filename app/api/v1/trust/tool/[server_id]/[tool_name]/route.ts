@@ -11,7 +11,7 @@
 // UNVERIFIED as fail-CLOSED. Cache: 5 minutes.
 
 import type { NextRequest } from 'next/server';
-import { getVerdict } from '@/lib/verdicts';
+import { getScreenedVerdict } from '@/lib/verdicts';
 
 export const revalidate = 300;
 
@@ -47,7 +47,9 @@ export async function GET(
     return Response.json({ error: 'invalid path parameters' }, { status: 400 });
   }
 
-  const v = await getVerdict(server_id);
+  // Preview-only records are NOT a screening result - same guard the server-level
+  // route applies, hoisted so the two endpoints cannot disagree on one subject.
+  const v = await getScreenedVerdict(server_id);
   const body = v
     ? {
         subject: { server_id, tool_name },

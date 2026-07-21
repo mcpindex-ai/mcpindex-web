@@ -6,7 +6,7 @@
   "meta_description": "A walkthrough of the mcpindex drift ledger: open it, read a fingerprint-only event row, spot a safety-relevant contract change, and read the coverage dashboard. About 3 minutes.",
   "h1": "Read the public drift ledger and dashboard",
   "project": "mcpindex",
-  "updated": "2026-07-19",
+  "updated": "2026-07-21",
   "est_minutes": 3,
   "outcome": "You can read the public drift ledger and dashboard: what the crawler saw change, how to spot a safety-relevant diff, and what the coverage numbers do (and do not) mean.",
   "body": "The ledger is public proof of the problem the gate solves. mcpindex crawls the public MCP registry every day and records which tool contracts silently change between snapshots. No login, no per-user data, and no server pays to be listed. Here is how to read it.",

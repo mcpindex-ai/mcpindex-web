@@ -6,7 +6,7 @@
   "meta_description": "Every gated tool call leaves a private receipt. This walkthrough shows how to find your install id, open your Gate Activity, and read each row, and what is deliberately never recorded.",
   "h1": "Read your Gate Activity (receipts)",
   "project": "mcpindex",
-  "updated": "2026-07-19",
+  "updated": "2026-07-21",
   "est_minutes": 2,
   "outcome": "Your install's private receipt log, decoded: which tool ran, the verdict, and the action on each row, with the guarantee that no arguments or content are ever stored.",
   "body": "The gate keeps a running record of what it saw: one receipt per gated call, private to your install. It is credential-blind by design. Here is how to find it and read it.",

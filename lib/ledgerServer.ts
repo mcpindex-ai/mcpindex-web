@@ -5,14 +5,15 @@
 import 'server-only';
 import { Redis } from '@upstash/redis';
 import { ledgerEnabled, parseLedgerBlob, type Ledger } from './ledger';
+import { redisUrl, redisToken } from './env';
 
 const LEDGER_KEY = 'drift:ledger';
 
 let _redis: Redis | null | undefined;
 function redis(): Redis | null {
   if (_redis !== undefined) return _redis;
-  const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+  const url = redisUrl();
+  const token = redisToken();
   _redis = url && token ? new Redis({ url, token }) : null;
   return _redis;
 }

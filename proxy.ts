@@ -51,7 +51,11 @@ export function proxy(req: NextRequest) {
   // per Next's "verify inside, don't rely on the matcher alone" guidance. Keep it.
   // Rate-limited surfaces: public /api/v1/*; lead forms (/api/waitlist,
   // /api/enterprise); /api/beacon; /api/health/* (outbound liveness);
-  // /.well-known/mcpindex-challenge (unauthenticated, uncached, one Redis GET per hit).
+  // /.well-known/mcpindex-challenge (unauthenticated, uncached, one Redis GET per hit);
+  // /api/mcp (the hosted remote-MCP endpoint - unauthenticated, and one compare_servers
+  // call fans out 5 upstream /api/v1 fetches, so it is the highest-amplification surface
+  // we expose. It sat OUTSIDE this matcher entirely until 2026-07-21 and carries no
+  // Upstash limiter of its own, unlike /api/owner/* and /api/auth/login/start).
   const p = req.nextUrl.pathname;
   if (
     !p.startsWith('/api/v1/') &&
@@ -60,6 +64,7 @@ export function proxy(req: NextRequest) {
     p !== '/api/beacon' &&
     !p.startsWith('/api/health/') &&
     p !== '/.well-known/mcpindex-challenge' &&
+    p !== '/api/mcp' &&
     // AEO measurement window: /llms.txt and /llms-full.txt are temporarily uncached (dynamic)
     // so fetches can be counted. Un-caching removed their CDN shield, so bring them under the
     // same per-IP limit to cap abuse of the now-per-request 4MB /llms-full.txt render.
@@ -80,12 +85,22 @@ export function proxy(req: NextRequest) {
   // Namespace the limit bucket by route class so the temporary /llms.* window does NOT deplete
   // the same per-IP budget as /api/v1/* (a client pulling /llms-full.txt must not 429 its own
   // /api/v1/search). Coarse two-class split keeps the map bounded.
+  // `mcp` is its own class so one agent driving the remote-MCP endpoint cannot exhaust the
+  // /api/v1 budget for browser/API users on the same instance (and vice versa).
+  // KNOWN, DELIBERATELY NOT FIXED HERE: the /api/mcp handler self-fetches API_BASE
+  // (https://mcpindex.ai/api/v1/...), so those re-entrant hops arrive from the shared Vercel
+  // EGRESS ip and all land in one `api:<egress-ip>` bucket. Bucketing them by User-Agent
+  // would be an evasion hole (spoof the UA, get a private bucket), so the real fix is to call
+  // the libs in-process instead of over HTTP - a refactor of the 5 `api()` call sites, out of
+  // scope for a rate-limit change on a live public endpoint. Tracked in the audit doc.
   const routeClass =
     p === '/llms.txt' || p === '/llms-full.txt'
       ? 'llms'
       : p === '/.well-known/mcpindex-challenge'
         ? 'wellknown'
-        : 'api';
+        : p === '/api/mcp'
+          ? 'mcp'
+          : 'api';
   const bucketKey = `${routeClass}:${ip}`;
 
   const now = Date.now();
@@ -129,5 +144,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/v1/:path*', '/api/waitlist', '/api/enterprise', '/api/beacon', '/api/health/:path*', '/llms.txt', '/llms-full.txt', '/.well-known/mcpindex-challenge'],
+  matcher: ['/api/v1/:path*', '/api/waitlist', '/api/enterprise', '/api/beacon', '/api/health/:path*', '/llms.txt', '/llms-full.txt', '/.well-known/mcpindex-challenge', '/api/mcp'],
 };

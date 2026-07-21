@@ -25,6 +25,7 @@
 import 'server-only';
 import { z } from 'zod';
 import { Redis } from '@upstash/redis';
+import { redisUrl, redisToken } from './env';
 
 // --- id / hash / ts / install patterns - byte-for-byte from tooling.cse.receipt_vocab + the
 // --- action_class Pydantic patterns. (Anchored to the WHOLE string; the Python `re` patterns
@@ -221,8 +222,8 @@ export function __setReceiptIngestRedisForTest(client: Redis | null | undefined)
 
 function redis(): Redis | null {
   if (_redis !== undefined) return _redis;
-  const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+  const url = redisUrl();
+  const token = redisToken();
   // retries:1 bounds the REST client's default 5-retry exponential backoff - a Redis incident
   // must not stack ~11s of retries onto the ingest response (see EXEC_TIMEOUT_MS below).
   _redis = url && token ? new Redis({ url, token, retry: { retries: 1 } }) : null;

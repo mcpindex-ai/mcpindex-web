@@ -10,7 +10,7 @@
 // Cache: 5 minutes - the refresh window verdicts roll out on.
 
 import type { NextRequest } from 'next/server';
-import { getVerdict } from '@/lib/verdicts';
+import { getScreenedVerdict } from '@/lib/verdicts';
 import { ADVISORY_FLOOR as FLOOR } from '@/lib/honest-limits';
 
 export const revalidate = 300;
@@ -43,13 +43,9 @@ export async function GET(
     return Response.json({ error: 'invalid path parameters' }, { status: 400 });
   }
 
-  const v = await getVerdict(server_id);
-  // A preview-only record (owner-consented preview badge minted for a server the platform
-  // has NOT screened) carries no real screening verdict: normalize() coerced its absent
-  // status to ERROR and its absent directive to REVIEW. Reporting that as a screening result
-  // would diverge from the /server page, which routes such a record to the honest
-  // "not yet screened" state. Treat it EXACTLY like a genuinely-absent server on the wire.
-  const screened = v && !v.unscreened ? v : null;
+  // getScreenedVerdict drops preview-only records (see lib/verdicts.ts) so a minted-but-
+  // unscreened server reads as genuinely-absent on the wire, matching the /server page.
+  const screened = await getScreenedVerdict(server_id);
   const body = screened
     ? {
         subject: { server_id, tool_name: null },

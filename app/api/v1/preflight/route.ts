@@ -18,7 +18,7 @@
 import type { NextRequest } from 'next/server';
 import { loadServers } from '@/lib/registry';
 import { rankServers, toRecommendations } from '@/lib/recommend';
-import { getVerdict } from '@/lib/verdicts';
+import { getScreenedVerdict } from '@/lib/verdicts';
 import { ADVISORY_FLOOR } from '@/lib/honest-limits';
 
 export const revalidate = 300;
@@ -48,7 +48,8 @@ export async function GET(req: NextRequest) {
   // null when that server has not been screened yet (the honest, common case
   // today: ~158 of ~10k screened). The client renders that as "not screened".
   const top = recommendations[0];
-  const full = top ? await getVerdict(top.slug) : null;
+  // Preview-only records carry no screen; never rank one as a real verdict.
+  const full = top ? await getScreenedVerdict(top.slug) : null;
   // Explicit field whitelist (not a spread): only opt-in fields reach the public
   // wire, so a future internal verdict field (origin, model id, ...) can't leak.
   // Keeps rationale (already public on /server/[slug]); drops per-dimension

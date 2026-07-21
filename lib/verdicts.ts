@@ -282,6 +282,29 @@ export async function getVerdict(slug: string): Promise<Verdict | null> {
   return applyExpiryOverlay(v);
 }
 
+/**
+ * getVerdict, minus preview-only records — the accessor every JSON API must use.
+ *
+ * A preview-only record (an owner-consented preview badge minted for a server the
+ * platform has NOT screened) carries no screening verdict: normalize() coerced its
+ * absent status to ERROR and its absent directive to REVIEW. Returning that verbatim
+ * reports `REVIEW` on the wire, which implies a screen ran.
+ *
+ * This guard lived inline in /api/v1/trust/server ONLY, so that route answered
+ * UNVERIFIED (correct) while /api/v1/trust/tool and /api/v1/preflight answered REVIEW
+ * for the SAME subject. Hoisted here so the three cannot drift again. Latent until the
+ * owner P1-P4 flow mints its first badge for an unscreened server — which is live now
+ * on owner.mcpindex.ai, so this stops being theoretical on the first external claim.
+ *
+ * NOT folded into getVerdict itself: the /server page, the OG image, and the badge
+ * legitimately need the unscreened record so they can route it to the honest
+ * "not yet screened" presentation rather than a 404.
+ */
+export async function getScreenedVerdict(slug: string): Promise<Verdict | null> {
+  const v = await getVerdict(slug);
+  return v && !v.unscreened ? v : null;
+}
+
 // Screened real servers: only registry subjects whose final slug has a store key.
 // Orphan / bare-colliding store keys never appear (fail-closed).
 // O(n+m): Set membership against store entries — not getVerdict-per-server (that was O(n²)).

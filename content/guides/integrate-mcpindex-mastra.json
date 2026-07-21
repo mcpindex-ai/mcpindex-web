@@ -6,7 +6,7 @@
  "meta_description": "A walkthrough for gating a Mastra agent's MCP tool calls with mcpindex: install the hook, add it to your agent in one line, choose warn vs enforce, and read the honest v1 limits. About 3 minutes.",
  "h1": "Gate your Mastra agent's MCP tool calls",
  "project": "mcpindex",
- "updated": "2026-07-20",
+ "updated": "2026-07-21",
  "est_minutes": 3,
  "outcome": "Your Mastra agent asks mcpindex whether an MCP tool is vetted before it invokes it, warning you (or blocking the call) on your terms, fail-closed.",
  "body": "By default a Mastra agent calls whatever tools an MCP server hands it, trusting each tool's own description. The @mcp-index/mastra package adds a second opinion at the moment of the call: a beforeToolCall hook that checks mcpindex's advisory screen first. It is a client of the advisory screen (has this tool been vetted?), not the in-path drift gate (did this contract change since I pinned it?).",

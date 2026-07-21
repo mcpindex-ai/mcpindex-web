@@ -13,6 +13,7 @@
 import 'server-only';
 import { z } from 'zod';
 import { Redis } from '@upstash/redis';
+import { redisUrl, redisToken } from './env';
 
 const HEX32 = /^[0-9a-f]{32}$/;
 const HASH = /^[a-z0-9]+:[0-9a-f]{32,128}$/; // e.g. sha256:<64 hex>
@@ -69,8 +70,8 @@ export function __setDriftIngestRedisForTest(client: Redis | null | undefined): 
 
 function redis(): Redis | null {
   if (_redis !== undefined) return _redis;
-  const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+  const url = redisUrl();
+  const token = redisToken();
   // retries:1 bounds the REST client's default 5-retry exponential backoff - a Redis incident
   // must not stack ~11s of retries onto the ingest response (see EXEC_TIMEOUT_MS below).
   _redis = url && token ? new Redis({ url, token, retry: { retries: 1 } }) : null;
@@ -124,7 +125,11 @@ export async function recordDriftBatch(
     if (process.env.DRIFT_RECRAWL_HINTS === '1' && drifts.length) {
       const fps = [...new Set(drifts.map((s) => s.tool_fp))];
       p.sadd(RECRAWL_HINTS_KEY, ...(fps as [string, ...string[]]));
-      p.expire(RECRAWL_HINTS_KEY, RECRAWL_HINTS_TTL_S);
+      // NX: set the TTL only if the key has none yet. A bare `expire` on every batch SLID
+      // the window forward continuously, so under steady drift traffic the 24h bound was
+      // never reached and the set grew to whatever the recrawl worker failed to consume.
+      // With NX the 24h is measured from the FIRST hint, which is what bounds the set.
+      p.expire(RECRAWL_HINTS_KEY, RECRAWL_HINTS_TTL_S, 'NX');
     }
 
     // Bound how long the counter write can hold the ingest response. The route awaits this

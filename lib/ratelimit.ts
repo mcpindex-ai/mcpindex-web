@@ -10,6 +10,7 @@
 
 import 'server-only'; // build-time tripwire: this module holds the Upstash REST token; never bundle to the client
 import { Redis } from '@upstash/redis';
+import { redisUrl, redisToken } from './env';
 
 let _redis: Redis | null | undefined;
 function redis(): Redis | null {
@@ -17,8 +18,8 @@ function redis(): Redis | null {
   // Accept both naming conventions: Upstash-native (UPSTASH_REDIS_REST_*) and
   // Vercel Marketplace / KV (KV_REST_API_*). The integration injects one or the
   // other depending on how it's added; tolerate both so provisioning "just works".
-  const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+  const url = redisUrl();
+  const token = redisToken();
   _redis = url && token ? new Redis({ url, token }) : null;
   return _redis;
 }

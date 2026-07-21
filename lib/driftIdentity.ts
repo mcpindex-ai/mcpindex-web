@@ -3,6 +3,7 @@
 
 import 'server-only';
 import { Redis } from '@upstash/redis';
+import { redisUrl, redisToken } from './env';
 
 export const INSTALL_ID = /^[0-9a-f]{32}$/;
 
@@ -27,8 +28,8 @@ export function __setDriftIdentityRedisForTest(client: Redis | null | undefined)
 
 function redis(): Redis | null {
   if (_redis !== undefined) return _redis;
-  const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+  const url = redisUrl();
+  const token = redisToken();
   _redis = url && token ? new Redis({ url, token, retry: { retries: 1 } }) : null;
   return _redis;
 }

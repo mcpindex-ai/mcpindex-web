@@ -15,6 +15,7 @@
 import 'server-only';
 import { Redis } from '@upstash/redis';
 import { coerceChangeKinds } from './changeKinds';
+import { redisUrl, redisToken } from './env';
 
 export const FP_RE = /^[0-9a-f]{32}$/;
 export const MAX_FPS = 256; // batch cap
@@ -44,8 +45,8 @@ export function __setDriftQueryRedisForTest(client: Redis | null | undefined): v
 
 function redis(): Redis | null {
   if (_redis !== undefined) return _redis;
-  const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+  const url = redisUrl();
+  const token = redisToken();
   _redis = url && token ? new Redis({ url, token, retry: { retries: 1 } }) : null;
   return _redis;
 }
