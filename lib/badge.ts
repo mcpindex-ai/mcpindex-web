@@ -10,7 +10,7 @@
 // "ALLOW" state - none exists pre-conformance. "screened" means we ran the
 // description poison-screen and it passed, nothing more.
 
-import { SCHEMA_CONTENT_DIMENSION_ID, type Verdict } from './verdicts';
+import { SCHEMA_CONTENT_DIMENSION_ID, isVerdictExpired, type Verdict } from './verdicts';
 
 export type BadgeState = 'screened' | 'flagged' | 'review' | 'not-screened' | 'stale';
 
@@ -28,10 +28,10 @@ export const BADGE_STYLE: Record<BadgeState, Style> = {
 };
 
 // State is derived from the same signals the page uses (status + dimensions +
-// human adjudication), NOT an independent expiry clock - the site does not
-// expire verdicts on render, so neither does the badge (keeps them in lockstep).
-// Fail-closed: no verdict, an errored verdict, or any dimension FAIL never
-// resolves to "screened" on its own.
+// human adjudication + directive.expires_at). Expiry demotes only a *clean*
+// presentation to "stale"; it never hides flagged / held review (accusation-first).
+// Fail-closed: no verdict, an errored verdict (after the accusation gate), or any
+// dimension FAIL never resolves to "screened" on its own.
 //
 // THE ACCUSATION GATE: a raw SCREEN flag never publicly accuses a server. Only a
 // human-`confirmed` adjudication renders "flagged"; a `cleared` adjudication
@@ -54,15 +54,14 @@ export function splitFlags(v: Verdict): { schemaContentFail: boolean; screenFail
   };
 }
 
-export function computeBadgeState(v: Verdict | null): BadgeState {
+export function computeBadgeState(v: Verdict | null, now: number = Date.now()): BadgeState {
   if (!v) return 'not-screened';
-  if (v.status === 'STALE') return 'stale';
-  if (v.status === 'ERROR') return 'not-screened';
 
   // A deterministic schema-content FAIL must NEVER be auto-cleared by a `cleared` screen
   // adjudication (a fail-OPEN: a poisoned schema silently passed) nor auto-escalated to
   // public "flagged" by a `confirmed` one. It independently HOLDS the badge at "review".
   const { schemaContentFail, screenFail: screenFlagged } = splitFlags(v);
+  const expired = v.status === 'STALE' || isVerdictExpired(v, now);
 
   if (screenFlagged) {
     // A `confirmed` screen flag renders "flagged" EVEN IF a schema-content FAIL is
@@ -73,12 +72,22 @@ export function computeBadgeState(v: Verdict | null): BadgeState {
     // on schemaContentFail (page.tsx), and the held-adjudication healthcheck probe
     // holds the record until the schema axis is reviewed. Do NOT downgrade this to
     // "review" - that would hide a human-confirmed accusation. (badge.test.ts pins it.)
+    // Accusation-first: confirmed/unreviewed FAIL never become stale or not-screened
+    // solely due to expiry or ERROR status.
     if (v.adjudication?.decision === 'confirmed') return 'flagged';
     // a cleared SCREEN flag still cannot clear an unreviewed schema-content FAIL
-    if (v.adjudication?.decision === 'cleared') return schemaContentFail ? 'review' : 'screened';
+    if (v.adjudication?.decision === 'cleared') {
+      if (schemaContentFail) return 'review';
+      return expired ? 'stale' : 'screened';
+    }
     return 'review'; // unreviewed screen flag - held, never a public accusation
   }
   if (schemaContentFail) return 'review'; // deterministic FAIL holds review, ungoverned by adjudication
+
+  // ERROR after accusation gate: a confirmed FAIL above already returned flagged;
+  // unparseable/errored clean records stay gray.
+  if (v.status === 'ERROR') return 'not-screened';
+  if (expired) return 'stale';
 
   const integ = v.dimensions.find((d) => d.id === 'mcpindex.integrity.description');
   if (integ && integ.verdict === 'PASS') return 'screened';

@@ -7,6 +7,7 @@
 
 import path from 'node:path';
 import { promises as fsp } from 'node:fs';
+import { loadServers } from './registry';
 
 export type Decision = 'ALLOW' | 'DENY' | 'REVIEW';
 export type VerdictStatus = 'EVALUATED' | 'PARTIAL' | 'STALE' | 'ERROR';
@@ -17,6 +18,9 @@ export type Severity = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 // so the badge gate and the server page reference ONE id (no string drift on a
 // load-bearing dimension contract). Mirrors the producer's schema_scan._DIM_ID.
 export const SCHEMA_CONTENT_DIMENSION_ID = 'mcpindex.integrity.schema_content';
+
+/** Honest-limits token appended when directive.expires_at is in the past. */
+export const EXPIRED_VERDICT_LIMIT = 'expired_verdict';
 
 export type Dimension = {
   id: string;
@@ -210,6 +214,38 @@ function normalize(raw: RawVerdict): Verdict {
   };
 }
 
+/** True when directive.expires_at is a finite time at or before `now`. Empty/invalid → false. */
+export function isVerdictExpired(v: Verdict, now: number = Date.now()): boolean {
+  const raw = v.directive.expires_at;
+  if (!raw) return false;
+  const t = Date.parse(raw);
+  if (!Number.isFinite(t)) return false;
+  return now >= t;
+}
+
+function hasFailAxis(v: Verdict): boolean {
+  return v.dimensions.some((d) => d.verdict === 'FAIL');
+}
+
+function withExpiredLimit(v: Verdict): Verdict {
+  const limits = v.honest_limits ?? [];
+  if (limits.includes(EXPIRED_VERDICT_LIMIT)) return v;
+  return { ...v, honest_limits: [...limits, EXPIRED_VERDICT_LIMIT] };
+}
+
+/**
+ * Read-time expiry overlay (not load-time): warm process caches must flip after the clock.
+ * Clean expired → status STALE + expired_verdict token.
+ * Expired with any FAIL axis → append token only (never coerce status away from accusation signal).
+ */
+export function applyExpiryOverlay(v: Verdict, now: number = Date.now()): Verdict {
+  if (!isVerdictExpired(v, now)) return v;
+  const withLimit = withExpiredLimit(v);
+  if (hasFailAxis(v)) return withLimit;
+  if (withLimit.status === 'STALE') return withLimit;
+  return { ...withLimit, status: 'STALE' };
+}
+
 async function loadAll(): Promise<Record<string, Verdict>> {
   if (_cache) return _cache;
   let raw: Record<string, RawVerdict> = {};
@@ -231,25 +267,33 @@ async function loadAll(): Promise<Record<string, Verdict>> {
   return out;
 }
 
-// A real registry server's verdict by slug. Returns null when there is no
-// verdict OR when the slug is a fixture (fixtures are never real servers and
-// must not render on /server/[slug]).
+// Bind a verdict to a registry subject by FINAL slug only. No base-key fallback:
+// slugify collisions are disambiguated in loadServers; store keys under the retired
+// bare slug must not attach to either twin (wrong-subject PASS).
 export async function getVerdict(slug: string): Promise<Verdict | null> {
+  const servers = await loadServers();
+  const subject = servers.find((s) => s.slug === slug);
+  if (!subject) return null;
   const all = await loadAll();
   // Object.hasOwn guards against prototype keys (e.g. "__proto__") resolving to
   // the prototype object rather than a real verdict.
-  const v = Object.hasOwn(all, slug) ? all[slug] : undefined;
+  const v = Object.hasOwn(all, subject.slug) ? all[subject.slug] : undefined;
   if (!v || v.fixture) return null;
-  return v;
+  return applyExpiryOverlay(v);
 }
 
-// All screened real servers (non-fixture), as [slug, verdict], slug-sorted.
+// Screened real servers: only registry subjects whose final slug has a store key.
+// Orphan / bare-colliding store keys never appear (fail-closed).
+// O(n+m): Set membership against store entries — not getVerdict-per-server (that was O(n²)).
 export async function listScreened(): Promise<Array<{ slug: string; verdict: Verdict }>> {
+  const servers = await loadServers();
+  const validSlugs = new Set(servers.map((s) => s.slug));
   const all = await loadAll();
+  const now = Date.now();
   return Object.entries(all)
-    .filter(([, v]) => !v.fixture)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([slug, verdict]) => ({ slug, verdict }));
+    .filter(([slug, v]) => validSlugs.has(slug) && !v.fixture)
+    .map(([slug, v]) => ({ slug, verdict: applyExpiryOverlay(v, now) }))
+    .sort((a, b) => a.slug.localeCompare(b.slug));
 }
 
 // The labeled adversarial fixtures (NOT real servers) for the showcase.

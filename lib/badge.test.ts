@@ -12,11 +12,15 @@ const DESC = 'mcpindex.integrity.description';
 
 type DimInput = { id: string; verdict: Dimension['verdict']; severity?: Dimension['severity'] };
 
-function mkVerdict(dims: DimInput[], adj?: AdjudicationDecision): Verdict {
+function mkVerdict(
+  dims: DimInput[],
+  adj?: AdjudicationDecision,
+  expires_at = '',
+): Verdict {
   return {
     schema_version: '1.0',
     status: 'PARTIAL',
-    directive: { decision: 'REVIEW', rationale: '', expires_at: '' },
+    directive: { decision: 'REVIEW', rationale: '', expires_at },
     dimensions: dims.map((d) => ({ severity: 'INFO', ...d })),
     fixture: false,
     ...(adj ? { adjudication: { decision: adj, reason: '', by: '', at: '' } } : {}),
@@ -93,6 +97,45 @@ test('null -> not-screened; STALE -> stale; ERROR -> not-screened', () => {
   const v = mkVerdict([{ id: DESC, verdict: 'PASS' }]);
   assert.equal(computeBadgeState({ ...v, status: 'STALE' }), 'stale');
   assert.equal(computeBadgeState({ ...v, status: 'ERROR' }), 'not-screened');
+});
+
+test('expired PASS -> stale (read-time clock)', () => {
+  const v = mkVerdict([{ id: DESC, verdict: 'PASS' }], undefined, '2020-01-01T00:00:00Z');
+  assert.equal(computeBadgeState(v, Date.parse('2026-07-21T00:00:00Z')), 'stale');
+});
+
+test('future expires_at PASS -> screened', () => {
+  const v = mkVerdict([{ id: DESC, verdict: 'PASS' }], undefined, '2099-01-01T00:00:00Z');
+  assert.equal(computeBadgeState(v, Date.parse('2026-07-21T00:00:00Z')), 'screened');
+});
+
+test('expired confirmed FAIL -> flagged (accusation-first; never hide behind stale)', () => {
+  const v = mkVerdict([{ id: DESC, verdict: 'FAIL' }], 'confirmed', '2020-01-01T00:00:00Z');
+  assert.equal(computeBadgeState(v, Date.parse('2026-07-21T00:00:00Z')), 'flagged');
+});
+
+test('expired unreviewed FAIL -> review (hold beats stale)', () => {
+  const v = mkVerdict([{ id: DESC, verdict: 'FAIL' }], undefined, '2020-01-01T00:00:00Z');
+  assert.equal(computeBadgeState(v, Date.parse('2026-07-21T00:00:00Z')), 'review');
+});
+
+test('ERROR + confirmed FAIL -> flagged (ERROR after accusation gate)', () => {
+  const v = {
+    ...mkVerdict([{ id: DESC, verdict: 'FAIL' }], 'confirmed'),
+    status: 'ERROR' as const,
+  };
+  assert.equal(computeBadgeState(v), 'flagged');
+});
+
+test('expired cleared FAIL -> stale (clean path demotes)', () => {
+  const v = mkVerdict([{ id: DESC, verdict: 'FAIL' }], 'cleared', '2020-01-01T00:00:00Z');
+  assert.equal(computeBadgeState(v, Date.parse('2026-07-21T00:00:00Z')), 'stale');
+});
+
+test('same verdict flips screened -> stale when now advances past expires_at', () => {
+  const v = mkVerdict([{ id: DESC, verdict: 'PASS' }], undefined, '2026-07-01T00:00:00Z');
+  assert.equal(computeBadgeState(v, Date.parse('2026-06-30T00:00:00Z')), 'screened');
+  assert.equal(computeBadgeState(v, Date.parse('2026-07-01T00:00:00Z')), 'stale');
 });
 
 test('splitFlags separates the schema-content axis from the screen axis', () => {

@@ -19,6 +19,9 @@ const REGISTRY_BASE = 'https://registry.modelcontextprotocol.io/v0/servers';
 const SNAPSHOT_PATH = path.join(process.cwd(), 'data', 'snapshot.json');
 
 // Slug: name "vendor.domain/sub" -> "vendor-domain--sub", reversible-ish.
+// Lossy: case, `_`, and `/`/`.` separators can collapse distinct names onto one
+// base slug. Callers that index by slug MUST run disambiguateSlugs() (or
+// loadServers) so colliding subjects never share a public identity.
 export function slugify(name: string): string {
   const slug = name
     .toLowerCase()
@@ -32,6 +35,30 @@ export function slugify(name: string): string {
   // Names that contain only non-slug characters would collapse to ''.
   // Fall back to a deterministic hash so the index never carries an empty slug.
   return 'srv-' + createHash('sha256').update(name).digest('hex').slice(0, 12);
+}
+
+// When slugify() maps two distinct names to the same base, append a short hash of
+// the *name* to EVERY member of the colliding set. Retires the ambiguous bare
+// slug rather than first-wins (which would misattribute trust verdicts).
+export function disambiguateSlugs(servers: IndexedServer[]): IndexedServer[] {
+  const byBase = new Map<string, IndexedServer[]>();
+  for (const s of servers) {
+    const group = byBase.get(s.slug);
+    if (group) group.push(s);
+    else byBase.set(s.slug, [s]);
+  }
+  const out: IndexedServer[] = [];
+  for (const [base, group] of byBase) {
+    if (group.length === 1) {
+      out.push(group[0]!);
+      continue;
+    }
+    for (const s of group) {
+      const hash = createHash('sha256').update(s.name).digest('hex').slice(0, 12);
+      out.push({ ...s, slug: `${base}-${hash}` });
+    }
+  }
+  return out;
 }
 
 function safeUrl(u: string | undefined): string | undefined {
@@ -191,12 +218,18 @@ export async function loadServers(): Promise<IndexedServer[]> {
     )
     .map(normalize)
     .filter((s) => s.description && s.name && s.slug);
-  // Dedup guard: the publisher's isLatest filter should already yield one entry per
-  // name, but nine public surfaces render servers.length and slugs collide on name -
-  // a publisher regression must never silently double-count (the crawler's seeded
-  // list once carried 407 duplicate names; first entry wins, matching getServer).
-  const seen = new Set<string>();
-  const servers = filtered.filter((s) => (seen.has(s.name) ? false : (seen.add(s.name), true)));
+  // Dedup by name first (publisher isLatest regressions / crawler dupes; first wins).
+  const seenName = new Set<string>();
+  const uniqueByName = filtered.filter((s) =>
+    seenName.has(s.name) ? false : (seenName.add(s.name), true),
+  );
+  // Then disambiguate slugify collisions so distinct names never share a public slug
+  // (trust verdicts are keyed by slug — a shared slug is wrong-subject PASS).
+  const disambiguated = disambiguateSlugs(uniqueByName);
+  const seenSlug = new Set<string>();
+  const servers = disambiguated.filter((s) =>
+    seenSlug.has(s.slug) ? false : (seenSlug.add(s.slug), true),
+  );
   _cache = { servers, loaded };
   // Return from _cache (not the local `servers`) so a caller's servers and a later loadSnapshotMeta()
   // version always come from the same winning snapshot even if a concurrent cold caller reassigned _cache.
