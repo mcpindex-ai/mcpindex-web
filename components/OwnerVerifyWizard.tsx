@@ -228,6 +228,7 @@ export default function OwnerVerifyWizard() {
     setRemoteOrigin('');
     setServerQuery('');
     setServerResults([]);
+    setSearching(false);
     setManualMode(false);
     setChallenge(null);
     setTools(null);

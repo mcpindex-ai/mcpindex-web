@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     const servers = await loadServers();
     const found = servers.find((s) => s.slug === slug);
     return Response.json(
-      { query: '', total: found ? 1 : 0, results: found ? [toListItem(found)] : [] },
+      { query: slug, total: found ? 1 : 0, results: found ? [toListItem(found)] : [] },
       {
         headers: {
           'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
