@@ -42,6 +42,29 @@ const DYNAMIC_SOURCES = [
   { index: '/best', pattern: /\/best\/[a-z0-9-]+/i },
 ];
 
+// Anything whose contrast can change on hover: native interactive elements, ARIA
+// widgets, focusable nodes, and — the reason this exists — anything carrying a
+// Tailwind hover: utility (which also matches group-hover:, so a child recolored
+// by an ancestor's hover is covered too).
+const HOVER_SELECTOR =
+  'a, button, summary, label, [role="button"], [role="link"], [tabindex], [class*="hover:"]';
+
+// Hover doubles the wall-clock (a second measurement pass per route). On by
+// default so local and CI enforce the same thing; opt out for fast iteration.
+const SKIP_HOVER = process.env.CONTRAST_SKIP_HOVER === '1';
+
+// Identity of a violation independent of the state it was found in, so a failure
+// present at REST and under hover is reported once (at rest), not twice.
+const keyOf = (v) => `${v.selector}|${v.text}|${v.px}`;
+
+const printViolation = (v, tag = '') => {
+  console.log(
+    `      ${v.ratio}:1 (needs ${v.required}) ${v.fg} on ${v.bg} ` +
+      `${v.px}px${v.bold ? ' bold' : ''}${tag}\n` +
+      `        ${v.selector}\n        "${v.text}"`,
+  );
+};
+
 // Runs in the page. Walks every element owning a non-empty text node, resolves
 // the nearest opaque ancestor background, and applies the AA threshold.
 function auditPage() {
@@ -159,6 +182,20 @@ function auditPage() {
     for (let n = el; n; n = n.parentElement) yield n;
   }
 
+  // A group opacity (< 1) on el or an ancestor composites the WHOLE subtree —
+  // text and its background together — over whatever is behind the OUTERMOST
+  // such ancestor. That backdrop, not the element's own background, is what the
+  // dimmed pixels blend toward. (This is what `hover:opacity-90` on a solid CTA
+  // does: it fades the button over the page, lightening the bg under the text.)
+  const backdropBehindOpacityGroup = (el) => {
+    let outer = null;
+    for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
+      if (Number(getComputedStyle(n).opacity) < 1) outer = n;
+    }
+    const above = outer ? outer.parentElement : el.parentElement;
+    return firstOpaque([...ancestorsOf(above)]) ?? [255, 255, 255, 1];
+  };
+
   const ratio = (a, b) => {
     const la = luminance(a);
     const lb = luminance(b);
@@ -193,21 +230,32 @@ function auditPage() {
     if (el.closest(':disabled')) continue;
 
     // Fully transparent text is invisible to everyone, so it carries no
-    // contrast obligation. Partially transparent text does — composite it.
+    // contrast obligation.
     const opacity = effectiveOpacity(el);
     if (opacity === 0) continue;
 
     const rawFg = parseColor(cs.color);
     if (!rawFg || rawFg[3] === 0) continue;
     const bg = backgroundOf(el);
-    const fg = flatten([rawFg[0], rawFg[1], rawFg[2], rawFg[3] * opacity], bg);
+
+    // Text over its own opaque background, honoring the text color's own alpha.
+    const textOverBg = flatten(rawFg, bg);
+    let fg = textOverBg;
+    let bgEff = bg;
+    if (opacity < 1) {
+      // Group opacity dims text AND bg toward the same backdrop — not the text
+      // toward the bg. Model both, or a faded solid CTA scores wrong.
+      const backdrop = backdropBehindOpacityGroup(el);
+      fg = [0, 1, 2].map((i) => opacity * textOverBg[i] + (1 - opacity) * backdrop[i]);
+      bgEff = [0, 1, 2].map((i) => opacity * bg[i] + (1 - opacity) * backdrop[i]);
+    }
 
     const px = parseFloat(cs.fontSize);
     const bold = Number(cs.fontWeight) >= 700;
     // WCAG "large text": >=24px, or >=18.66px when bold.
     const large = px >= 24 || (bold && px >= 18.66);
     const required = large ? 3 : 4.5;
-    const measured = ratio(fg, bg);
+    const measured = ratio(fg, bgEff);
 
     // 0.005 absorbs float noise around the threshold (4.495 is not a real fail).
     if (measured + 0.005 < required) {
@@ -215,7 +263,7 @@ function auditPage() {
         selector: selectorFor(el),
         text: el.textContent.trim().replace(/\s+/g, ' ').slice(0, 60),
         fg: `rgb(${fg.slice(0, 3).map(Math.round).join(',')})`,
-        bg: `rgb(${bg.slice(0, 3).join(',')})`,
+        bg: `rgb(${bgEff.slice(0, 3).map(Math.round).join(',')})`,
         px,
         bold,
         ratio: Number(measured.toFixed(2)),
@@ -235,6 +283,41 @@ const page = await browser.newPage({
   // its final opacity — the state we actually need to measure.
   reducedMotion: 'reduce',
 });
+
+// One CDP session, reused across routes, to force :hover without a real cursor —
+// so every hover-styled element is measured in one pass instead of hovering each.
+const cdp = SKIP_HOVER ? null : await page.context().newCDPSession(page);
+if (cdp) {
+  await cdp.send('DOM.enable');
+  await cdp.send('CSS.enable');
+}
+
+// Force :hover on every hover-capable element, then re-audit. Transitions are
+// killed first so getComputedStyle reads the settled hovered color, not a frame
+// mid-animation. Forced state and the injected <style> live only on the current
+// document, so navigation to the next route resets both — no teardown needed.
+async function auditHover(restingViolations) {
+  await page.addStyleTag({
+    content: '*,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important}',
+  });
+  const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
+  const { nodeIds } = await cdp.send('DOM.querySelectorAll', {
+    nodeId: root.nodeId,
+    selector: HOVER_SELECTOR,
+  });
+  for (const nodeId of nodeIds) {
+    // A node can go stale between query and force (async client component); skip it.
+    try {
+      await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: ['hover'] });
+    } catch {
+      /* stale node */
+    }
+  }
+  const restingKeys = new Set(restingViolations.map(keyOf));
+  const { violations } = await page.evaluate(auditPage);
+  // Only failures INTRODUCED by hover; ones that also fail at rest are counted there.
+  return violations.filter((v) => !restingKeys.has(keyOf(v)));
+}
 
 // Discover one live slug per dynamic template from its index page. A template that yields NO
 // slug is a silent coverage hole (its /server, /guides, or /best page never gets audited), so
@@ -309,19 +392,31 @@ for (const route of [...ROUTES, ...discovered]) {
     unparsedColors += unparsed.length;
     console.log(`WARN ${route} — unparsed color(s), NOT audited: ${unparsed.join(', ')}`);
   }
-  if (violations.length === 0) {
+
+  // Hover pass runs regardless of the resting result — a page can be clean at
+  // rest and fail only on hover, which is the exact gap this closes.
+  let hoverViolations = [];
+  if (cdp) {
+    try {
+      hoverViolations = await auditHover(violations);
+    } catch (err) {
+      errored += 1;
+      console.log(`ERROR ${route} (hover pass: ${err.message.split('\n')[0]})`);
+    }
+  }
+
+  if (violations.length === 0 && hoverViolations.length === 0) {
     console.log(`PASS ${route}`);
     continue;
   }
-  failed += violations.length;
-  console.log(`FAIL ${route} — ${violations.length} violation(s)`);
-  for (const v of violations) {
-    console.log(
-      `      ${v.ratio}:1 (needs ${v.required}) ${v.fg} on ${v.bg} ` +
-        `${v.px}px${v.bold ? ' bold' : ''}\n` +
-        `        ${v.selector}\n        "${v.text}"`,
-    );
-  }
+  failed += violations.length + hoverViolations.length;
+  console.log(
+    `FAIL ${route} — ${violations.length} resting` +
+      (cdp ? ` + ${hoverViolations.length} hover` : '') +
+      ` violation(s)`,
+  );
+  for (const v of violations) printViolation(v);
+  for (const v of hoverViolations) printViolation(v, ' [hover]');
 }
 
 await browser.close();
@@ -348,4 +443,6 @@ if (uncoveredTemplates.length > 0) {
   console.error(`\ncontrast: ${uncoveredTemplates.length} dynamic template(s) had no slug to audit: ${uncoveredTemplates.join(', ')}.`);
   process.exit(1);
 }
-console.log('\ncontrast: all audited routes meet WCAG AA (resting state).');
+console.log(
+  `\ncontrast: all audited routes meet WCAG AA (${cdp ? 'resting + hover' : 'resting'} state).`,
+);

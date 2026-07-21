@@ -57,7 +57,7 @@ export function MobileMenu({
                   key={item.href}
                   href={item.href}
                   onClick={() => setOpen(false)}
-                  className="my-2 py-3 text-center font-mono text-[13px] uppercase tracking-[0.14em] text-white bg-[var(--color-accent-strong)] hover:opacity-90"
+                  className="my-2 py-3 text-center font-mono text-[13px] uppercase tracking-[0.14em] text-white bg-[var(--color-accent-strong)] transition-colors hover:bg-[var(--color-accent-deep)]"
                 >
                   {item.label}
                 </Link>

@@ -24,9 +24,12 @@
      under white text — clears WCAG 2.2 AA for normal text (the /accessibility
      stated target). Rule of thumb: accent-strong is the accent text color on
      paper; plain accent is the accent text color on ink.
-     `npm run check:contrast` enforces this for RESTING state only — :hover and
-     other interaction states are not measured, so check those by hand. */
+     `npm run check:contrast` enforces this in both resting and :hover state. */
   --color-accent-strong: #c2410c;
+  /* Hover state for filled accent-strong buttons. Darken, never fade:
+     `hover:opacity-90` lightens the fill under the white label to ~4.42:1
+     (fails AA on hover). orange-800 keeps white text at 7.31:1. */
+  --color-accent-deep: #9a3412;
   --color-cite: #0f172a;
 }
 

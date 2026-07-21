@@ -47,7 +47,7 @@ export function InstallCtaButton() {
       <button
         type="button"
         onClick={handleClick}
-        className="font-mono text-[12.5px] uppercase tracking-[0.14em] text-white bg-[var(--color-accent-strong)] px-6 py-3.5 hover:opacity-90 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+        className="font-mono text-[12.5px] uppercase tracking-[0.14em] text-white bg-[var(--color-accent-strong)] px-6 py-3.5 hover:bg-[var(--color-accent-deep)] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
       >
         Install now →
       </button>

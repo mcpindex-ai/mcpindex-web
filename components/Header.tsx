@@ -29,7 +29,7 @@ export function Header() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="font-mono text-[12px] uppercase tracking-[0.14em] text-white bg-[var(--color-accent-strong)] px-4 py-2 transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                  className="font-mono text-[12px] uppercase tracking-[0.14em] text-white bg-[var(--color-accent-strong)] px-4 py-2 transition-colors hover:bg-[var(--color-accent-deep)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
                 >
                   {item.label}
                 </Link>
