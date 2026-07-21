@@ -54,6 +54,31 @@ type PreviewState = 'clean' | 'drift' | 'inconclusive';
 
 type ProxyResult = { ok: boolean; status: number; data: Record<string, unknown> };
 
+// A claimable server as resolved from the public registry search. The owner picks one and the
+// wizard derives BOTH the registry id and the remote origin from it - so the owner never has to
+// know their exact `io.github.you/...` id or figure out where to serve the challenge.
+type ServerHit = { serverId: string; slug: string; title: string; remoteUrl: string; remoteOrigin: string };
+
+function originOf(url: string): string {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return '';
+  }
+}
+
+// Map one /api/v1/search result to a ServerHit (installs.remote is the HTTP remote URL; name is
+// the registry id). Returns null for a result with no registry id.
+function toServerHit(r: Record<string, unknown>): ServerHit | null {
+  const serverId = typeof r.name === 'string' ? r.name : '';
+  if (!serverId) return null;
+  const installs = (r.installs ?? {}) as Record<string, unknown>;
+  const remoteUrl = typeof installs.remote === 'string' ? installs.remote : '';
+  const slug = typeof r.slug === 'string' ? r.slug : '';
+  const title = typeof r.title === 'string' && r.title ? r.title : serverId;
+  return { serverId, slug, title, remoteUrl, remoteOrigin: originOf(remoteUrl) };
+}
+
 // Map the proxy's HTTP status to the exact per-step guidance the task calls for. The
 // upstream {error} string (already re-emitted as JSON by the proxy) is shown alongside.
 function statusHint(status: number): string {
@@ -129,8 +154,14 @@ export default function OwnerVerifyWizard() {
   const [keyError, setKeyError] = useState('');
   const popupRef = useRef<Window | null>(null);
 
-  // SERVER ID
+  // SERVER — searched + picked from the registry so the owner never types an exact id or looks up
+  // their remote origin: the pick supplies both (serverId + remoteOrigin).
   const [serverId, setServerId] = useState('');
+  const [remoteOrigin, setRemoteOrigin] = useState(''); // origin of the picked server's remote URL
+  const [serverQuery, setServerQuery] = useState('');
+  const [serverResults, setServerResults] = useState<ServerHit[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [manualMode, setManualMode] = useState(false); // fallback: type the registry id directly
 
   // CHALLENGE
   const [challenge, setChallenge] = useState<{ token: string; wellKnownPath: string; expiresAt: string } | null>(
@@ -194,6 +225,10 @@ export default function OwnerVerifyWizard() {
     // "no drift observed" while the user is now on server B is a correctness/integrity bug.
     setStep(0);
     setServerId('');
+    setRemoteOrigin('');
+    setServerQuery('');
+    setServerResults([]);
+    setManualMode(false);
     setChallenge(null);
     setTools(null);
     setChecked({});
@@ -210,6 +245,75 @@ export default function OwnerVerifyWizard() {
       /* ignore */
     }
   }, []);
+
+  // ---- server pick (locks in serverId + remoteOrigin from one registry result) ----------
+  const pickServer = useCallback((hit: ServerHit) => {
+    setServerId(hit.serverId);
+    setRemoteOrigin(hit.remoteOrigin);
+    setServerQuery(hit.title || hit.serverId);
+    setServerResults([]);
+    setManualMode(false);
+    setError('');
+  }, []);
+
+  const changeServer = useCallback(() => {
+    setServerId('');
+    setRemoteOrigin('');
+    setServerResults([]);
+  }, []);
+
+  // ---- debounced registry search (kills the "what's my id / my origin" friction) --------
+  // All state writes happen inside the debounce timer / async callbacks, never synchronously in
+  // the effect body; stale results are hidden at render by the query-length guard, so there is no
+  // synchronous clear to do here. When a server is locked in / manual mode, the search box isn't
+  // rendered at all, so no search runs.
+  useEffect(() => {
+    const q = serverQuery.trim();
+    if (serverId || manualMode || q.length < 2) return;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => {
+      setSearching(true);
+      fetch(`/api/v1/search?q=${encodeURIComponent(q)}&limit=8`, { signal: ctrl.signal })
+        .then((res) => res.json())
+        .then((data: { results?: Array<Record<string, unknown>> }) => {
+          const hits = (data.results ?? []).map(toServerHit).filter((h): h is ServerHit => h !== null);
+          setServerResults(hits);
+        })
+        .catch(() => {
+          /* aborted / network: leave prior results */
+        })
+        .finally(() => setSearching(false));
+    }, 250);
+    return () => {
+      ctrl.abort();
+      clearTimeout(t);
+    };
+  }, [serverQuery, serverId, manualMode]);
+
+  // ---- deep-link prefill: /claim?server=<slug> (from the server page's "Verify it" link) ----
+  useEffect(() => {
+    let slug = '';
+    try {
+      slug = new URLSearchParams(window.location.search).get('server')?.trim() ?? '';
+    } catch {
+      slug = '';
+    }
+    if (!slug) return;
+    const ctrl = new AbortController();
+    // Exact slug lookup (?slug=) - deterministic, never a wrong-server fallback.
+    fetch(`/api/v1/search?slug=${encodeURIComponent(slug)}`, { signal: ctrl.signal })
+      .then((res) => res.json())
+      .then((data: { results?: Array<Record<string, unknown>> }) => {
+        const row = (data.results ?? [])[0];
+        const hit = row ? toServerHit(row) : null;
+        // Only auto-select a claimable server (one with a resolvable remote origin).
+        if (hit && hit.remoteOrigin) pickServer(hit);
+      })
+      .catch(() => {
+        /* ignore: user can still search manually */
+      });
+    return () => ctrl.abort();
+  }, [pickServer]);
 
   // ---- postMessage receiver (LOAD-BEARING SECURITY) -------------------------
   // Trust a delivered key ONLY when ALL THREE hold (see lib/webLoginContract RECEIVER
@@ -622,27 +726,137 @@ export default function OwnerVerifyWizard() {
         </div>
       )}
 
-      {/* ---- STEP 1: SERVER ID ----------------------------------------------- */}
+      {/* ---- STEP 1: FIND YOUR SERVER --------------------------------------- */}
       {step === 1 && (
         <div className="px-5 py-6">
-          <StepTitle n={1} title="Your server id" />
-          <p className="mt-3 text-[13.5px] leading-[1.6] text-[var(--color-cite)]">
-            Enter your server’s MCP-registry name. Only registry-listed servers that expose an{' '}
-            <strong className="text-[var(--color-ink)] font-medium">HTTP remote</strong> are claimable
-            - verification proves you control that remote’s origin.
-          </p>
-          <label htmlFor="server-id" className={`block mt-4 mb-1.5 ${LABEL}`}>
-            server_id
-          </label>
-          <input
-            id="server-id"
-            type="text"
-            spellCheck={false}
-            value={serverId}
-            onChange={(e) => setServerId(e.target.value)}
-            placeholder="io.github.you/your-server"
-            className={INPUT}
-          />
+          <StepTitle n={1} title="Find your server" />
+
+          {serverId && remoteOrigin ? (
+            // Locked-in pick: id + origin are resolved, so the owner never had to know either.
+            <div className="mt-4 border border-[var(--color-accent)] bg-[var(--color-accent-soft)] px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-mono text-[13px] text-[var(--color-ink)] break-all">
+                  {serverQuery || serverId}
+                </span>
+                <button type="button" onClick={changeServer} className={CHIP}>
+                  change
+                </button>
+              </div>
+              <div className="mt-1 font-mono text-[10.5px] text-[var(--color-cite)] break-all">{serverId}</div>
+              <div className="mt-1 font-mono text-[11px] text-[var(--color-mute)]">
+                you’ll prove control of{' '}
+                <span className="text-[var(--color-accent-strong)] break-all">{remoteOrigin}</span>
+              </div>
+            </div>
+          ) : manualMode ? (
+            // Fallback: type the registry id directly (origin then falls back to generic guidance).
+            <>
+              <p className="mt-3 text-[13.5px] leading-[1.6] text-[var(--color-cite)]">
+                Enter your MCP-registry id exactly (e.g.{' '}
+                <span className="font-mono text-[12px]">io.github.you/your-server</span>). Only servers
+                with an HTTP remote are claimable.
+              </p>
+              <label htmlFor="server-id" className={`block mt-4 mb-1.5 ${LABEL}`}>
+                server_id
+              </label>
+              <input
+                id="server-id"
+                type="text"
+                spellCheck={false}
+                value={serverId}
+                onChange={(e) => setServerId(e.target.value)}
+                placeholder="io.github.you/your-server"
+                className={INPUT}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setManualMode(false);
+                  setServerId('');
+                }}
+                className="mt-3 font-mono text-[10.5px] text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+              >
+                ← back to search
+              </button>
+            </>
+          ) : (
+            // Primary: search the registry by name; picking fills in the id AND the remote origin.
+            <>
+              <p className="mt-3 text-[13.5px] leading-[1.6] text-[var(--color-cite)]">
+                Search the registry for your server. Pick it and we fill in the id and your remote
+                origin automatically - no need to look either up.
+              </p>
+              <label htmlFor="server-search" className={`block mt-4 mb-1.5 ${LABEL}`}>
+                search by name
+              </label>
+              <input
+                id="server-search"
+                type="text"
+                spellCheck={false}
+                autoComplete="off"
+                value={serverQuery}
+                onChange={(e) => setServerQuery(e.target.value)}
+                placeholder="e.g. your server or org name"
+                className={INPUT}
+              />
+              {searching && (
+                <p className="mt-2 font-mono text-[11px] text-[var(--color-mute)]" role="status">
+                  searching…
+                </p>
+              )}
+              {serverQuery.trim().length >= 2 && serverResults.length > 0 && (
+                <ul className="mt-3 rule-t max-h-72 overflow-y-auto">
+                  {serverResults.map((h) => (
+                    <li key={h.slug || h.serverId} className="rule-b">
+                      <button
+                        type="button"
+                        disabled={!h.remoteOrigin}
+                        onClick={() => pickServer(h)}
+                        className="w-full text-left px-1.5 py-2.5 disabled:opacity-45 disabled:cursor-not-allowed hover:bg-[var(--color-accent-soft)] transition-colors"
+                      >
+                        <span className="block font-mono text-[13px] text-[var(--color-ink)] break-all">{h.title}</span>
+                        <span className="block mt-0.5 font-mono text-[10px] text-[var(--color-mute)] break-all">
+                          {h.serverId}
+                        </span>
+                        <span
+                          className={`block mt-0.5 font-mono text-[10px] break-all ${
+                            h.remoteOrigin ? 'text-[var(--color-accent-strong)]' : 'text-[var(--color-mute)]'
+                          }`}
+                        >
+                          {h.remoteOrigin || 'no HTTP remote - not claimable'}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {serverQuery.trim().length >= 2 && !searching && serverResults.length === 0 && (
+                <p className="mt-3 font-mono text-[11.5px] text-[var(--color-mute)]">
+                  no matches yet - keep typing, or{' '}
+                  <button
+                    type="button"
+                    onClick={() => setManualMode(true)}
+                    className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+                  >
+                    enter the id manually
+                  </button>
+                  .
+                </p>
+              )}
+              <p className="mt-4 font-mono text-[10.5px] text-[var(--color-mute)]">
+                Can’t find it?{' '}
+                <button
+                  type="button"
+                  onClick={() => setManualMode(true)}
+                  className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+                >
+                  enter the registry id manually
+                </button>
+                .
+              </p>
+            </>
+          )}
+
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <button type="button" onClick={() => setStep(0)} className={CHIP}>
               ← back
@@ -658,14 +872,27 @@ export default function OwnerVerifyWizard() {
       {step === 2 && challenge && (
         <div className="px-5 py-6">
           <StepTitle n={2} title="Prove control of your origin" />
-          <p className="mt-3 text-[13.5px] leading-[1.6] text-[var(--color-cite)]">
-            Serve this exact token as plain text at{' '}
-            <span className="font-mono text-[12.5px] text-[var(--color-ink)]">{challenge.wellKnownPath}</span>{' '}
-            on the origin of your server’s remote URL - if your remote is{' '}
-            <span className="font-mono text-[12.5px]">https://mcp.example.com/sse</span>, the token must
-            be readable at{' '}
-            <span className="font-mono text-[12.5px]">https://mcp.example.com{challenge.wellKnownPath}</span>.
-          </p>
+          {remoteOrigin ? (
+            <>
+              <p className="mt-3 text-[13.5px] leading-[1.6] text-[var(--color-cite)]">
+                Serve the token below as plain text at this exact URL (it’s on your remote’s origin).
+                mcpindex fetches it to confirm you control the origin.
+              </p>
+              <div className="mt-4">
+                <div className={`${LABEL} mb-1.5`}>serve the token at this URL</div>
+                <TokenField value={`${remoteOrigin}${challenge.wellKnownPath}`} />
+              </div>
+            </>
+          ) : (
+            <p className="mt-3 text-[13.5px] leading-[1.6] text-[var(--color-cite)]">
+              Serve this exact token as plain text at{' '}
+              <span className="font-mono text-[12.5px] text-[var(--color-ink)]">{challenge.wellKnownPath}</span>{' '}
+              on the origin of your server’s remote URL - if your remote is{' '}
+              <span className="font-mono text-[12.5px]">https://mcp.example.com/sse</span>, the token must
+              be readable at{' '}
+              <span className="font-mono text-[12.5px]">https://mcp.example.com{challenge.wellKnownPath}</span>.
+            </p>
+          )}
 
           <div className="mt-4">
             <div className={`${LABEL} mb-1.5`}>challenge token</div>

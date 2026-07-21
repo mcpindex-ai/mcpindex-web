@@ -12,6 +12,31 @@ const MAX_Q_LEN = 256;
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get('q')?.trim() ?? '';
   const category = req.nextUrl.searchParams.get('category')?.trim();
+
+  // Exact slug resolution (?slug=<exact>): returns the single matching server, or an empty result
+  // set. Free-text search over a hyphenated slug does NOT reliably surface its own server, so the
+  // claim wizard's deep-link (/claim?server=<slug>) needs a deterministic lookup. Additive: same
+  // { query, total, results } shape as the search path.
+  const slug = req.nextUrl.searchParams.get('slug')?.trim();
+  if (slug) {
+    if (slug.length > MAX_Q_LEN) {
+      return Response.json(
+        { error: 'slug too long' },
+        { status: 400, headers: { 'Cache-Control': 'no-store' } },
+      );
+    }
+    const servers = await loadServers();
+    const found = servers.find((s) => s.slug === slug);
+    return Response.json(
+      { query: '', total: found ? 1 : 0, results: found ? [toListItem(found)] : [] },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+          'X-Source': 'mcpindex.ai',
+        },
+      },
+    );
+  }
   // Bound the limit to [1, 50]; garbage/NaN falls back to the default. A negative or NaN
   // limit must never reach search()'s slice() (slice(0,-1) would leak all-but-one, NaN -> []).
   const rawLimit = parseInt(req.nextUrl.searchParams.get('limit') ?? '', 10);
