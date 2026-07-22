@@ -10,6 +10,7 @@ let page = 0;
 while (true) {
   const url = new URL(BASE);
   url.searchParams.set('limit', '100');
+  url.searchParams.set('version', 'latest');
   if (cursor) url.searchParams.set('cursor', cursor);
   const res = await fetch(url);
   if (!res.ok) {

@@ -6,11 +6,12 @@ import { kvConfigured, snapshotVersion, writeKVSnapshot } from '@/lib/snapshotSt
 // NOT SCHEDULED, AND NO LONGER FETCHES UPSTREAM. This is a manual "republish the cache"
 // lever, not a sync.
 //
-// The canonical refresh is .github/workflows/sync-registry.yml: it pulls ~542 sequential
-// pages every 4h and commits data/snapshot.json to main, and readers fall back to that
-// bundled file on a KV miss. This route used to attempt the SAME upstream fetch, which
-// cannot finish inside maxDuration=300s (measured 34s on a good window, ~135min on a bad
-// one), so it almost always died partway - an endpoint that could start but not complete.
+// The canonical refresh is .github/workflows/sync-registry.yml: it pulls ~180 sequential
+// version=latest pages every 4h and commits data/snapshot.json to main, and readers fall
+// back to that bundled file on a KV miss. This route used to attempt the SAME upstream
+// fetch, which cannot finish inside maxDuration=300s (measured 34s on a good window,
+// tens of minutes on a bad one), so it almost always died partway - an endpoint that
+// could start but not complete.
 //
 // Worse, on the rare success it wrote KV with NO expiry, and the read path prefers KV
 // unconditionally: one manual invocation could pin the live site to that blob forever while

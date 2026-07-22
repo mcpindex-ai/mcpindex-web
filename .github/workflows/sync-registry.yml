@@ -25,22 +25,23 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     # FAIL-FAST ceiling (paired with the every-4h schedule above). A good window finishes
-    # the ~542-page fetch in well under 5min; a run still going at 60min is stuck in a bad
-    # upstream window, so cut it and let the next 4h run try a fresh window rather than
-    # burn 120min on a doomed fetch. Per-page patience (60s x6, scripts/sync-registry.mjs)
-    # still absorbs a lone transient stall inside an otherwise-good window. The
-    # mcpindex-snapshot-freshness probe pages if every window stays bad past ~36h.
+    # the ~180-page version=latest fetch in well under 5min; a run still going at 60min is
+    # stuck in a bad upstream window, so cut it and let the next 4h run try a fresh window.
+    # Per-page patience (60s x6, scripts/sync-registry.mjs) still absorbs a lone transient
+    # stall inside an otherwise-good window. The mcpindex-snapshot-freshness probe pages if
+    # every window stays bad past ~36h.
     #
-    # MEASURED 2026-07-20, confirming the above: the last 10 successful runs took 34s-4m41s
-    # (~0.08s/page), while a local run during a bad window sustained 15s/page - which is
-    # 135min for 542 pages, unfinishable under any sane ceiling. Note the bad-window runs
-    # log ZERO fetch retries: each page still completes inside its 60s timeout, it is just
-    # slow, so there is no error to see. Do not read "no retries" as "not a slow window".
+    # MEASURED 2026-07-20: good windows took 34s-4m41s (~0.08s/page) for the old unfiltered
+    # ~560-page fetch; bad windows sustained 15s/page. Since 2026-07-22 we pass
+    # version=latest (API filter) so the page count drops ~3x (~18k latest vs ~56k raw),
+    # which is what makes a 9s/page slow window finishable under the 45min script deadline.
+    # The script also early-aborts after ~10 pages when the projected finish exceeds that
+    # deadline, so a doomed window fails in ~2min instead of burning 45min.
     #
-    # The script now self-terminates at SYNC_DEADLINE_MS (45min, under this ceiling) with a
-    # red failure naming the page reached. Reason: a CI timeout reports as "cancelled",
-    # which is indistinguishable from a human cancel and reads as benign - these runs had
-    # been failing this way since ~2026-07-08 unnoticed. This ceiling is now the backstop.
+    # Bad-window runs log ZERO fetch retries: each page still completes inside its 60s
+    # timeout, it is just slow. Do not read "no retries" as "not a slow window".
+    # SYNC_DEADLINE_MS (45min) self-terminates with a red failure (CI timeout="cancelled"
+    # was silent for weeks). This ceiling is the backstop.
     timeout-minutes: 60
     steps:
       # main requires PR reviews (enforce_admins=false), so the default GITHUB_TOKEN

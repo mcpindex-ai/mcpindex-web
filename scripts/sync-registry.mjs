@@ -20,32 +20,43 @@ await fs.mkdir(SNAP_DIR, { recursive: true });
 // The upstream registry is cursor-paginated at a hard limit=100 and has become
 // intermittently slow (individual pages have been observed taking 10s+). A single
 // `fetch` with no timeout + `process.exit(1)` on the first blip meant one slow or
-// flaky page aborted the whole ~160-page run and discarded everything already
-// fetched — which, combined with the 10-min CI timeout, is why daily syncs started
-// silently failing. Fetch each page with a per-request timeout and bounded retries
-// so a transient stall no longer kills the run.
+// flaky page aborted the whole run and discarded everything already fetched.
+// Fetch each page with a per-request timeout and bounded retries so a transient
+// stall no longer kills the run.
 // The upstream intermittently stalls a single page HARD (observed 2026-07-19: page 12
 // exceeded 30s on all 4 retries and aborted the whole run, though manual runs minutes
 // apart completed fine). Be patient: a genuinely-slow page gets 60s, and a transient
 // stall gets 6 backoff'd retries (up to ~64s apart) to let the upstream recover before
-// we fail-closed. Worst case per stuck page ~6-8min, well within the 120min CI ceiling;
-// only a truly-dead upstream (all 7 attempts fail) throws and refuses to ship partial.
+// we fail-closed. Worst case per stuck page ~6-8min; only a truly-dead upstream
+// (all 7 attempts fail) throws and refuses to ship partial.
 const PAGE_TIMEOUT_MS = Number(process.env.SYNC_PAGE_TIMEOUT_MS ?? 60_000);
 const PAGE_RETRIES = Number(process.env.SYNC_PAGE_RETRIES ?? 6);
 
 // GLOBAL ceiling, below the workflow's timeout-minutes. Without this the script cannot
-// self-terminate: during a bad upstream window (measured 2026-07-20 at 15s/page, i.e.
-// ~135min for the full fetch) it simply crawls until CI kills it at exactly 60m00s.
-// A CI kill surfaces as "cancelled" - indistinguishable from a human cancel, and it
-// reads as benign, which is why these runs went unnoticed from ~2026-07-08 to 07-20.
-// Exiting on our own deadline makes the same event a RED failure with a diagnostic.
+// self-terminate: during a bad upstream window (measured 2026-07-20 at 15s/page) it
+// crawls until CI kills it at exactly 60m00s. A CI kill surfaces as "cancelled" -
+// indistinguishable from a human cancel. Exiting on our own deadline makes the same
+// event a RED failure with a diagnostic.
 const RUN_DEADLINE_MS = Number(process.env.SYNC_DEADLINE_MS ?? 45 * 60_000);
+// Projected-page budget for the early slow-window bail. With version=latest the
+// corpus is ~18k servers (~180 pages); 250 leaves headroom as the registry grows.
+// After PAGE_RATE_SAMPLE pages, if rate * EXPECTED_PAGES_CEIL > RUN_DEADLINE_MS we
+// abort immediately instead of burning the full 45min on a doomed window.
+const EXPECTED_PAGES_CEIL = Number(process.env.SYNC_EXPECTED_PAGES ?? 250);
+const PAGE_RATE_SAMPLE = Number(process.env.SYNC_RATE_SAMPLE_PAGES ?? 10);
 const startedAt = Date.now();
 const elapsed = () => Date.now() - startedAt;
 
 async function fetchPage(cursor) {
   const url = new URL(BASE);
   url.searchParams.set('limit', '100');
+  // Server-side latest filter (API max limit stays 100). Without this we paginate
+  // every historical version (~56k rows / ~560 pages as of 2026-07-21) and then
+  // drop ~2/3 client-side via isLatest. version=latest cuts the fetch to ~18k /
+  // ~180 pages — the difference between finishing a 9s/page slow window under the
+  // 45min deadline vs dying at page ~300. Keep the client isLatest filter below as
+  // a safety net if the upstream filter ever regresses.
+  url.searchParams.set('version', 'latest');
   if (cursor) url.searchParams.set('cursor', cursor);
   let lastErr;
   for (let attempt = 0; attempt <= PAGE_RETRIES; attempt++) {
@@ -68,10 +79,10 @@ async function fetchPage(cursor) {
 const all = [];
 let cursor;
 let page = 0;
-// Headroom well above the real registry size (~542 pages / 54k raw records as of
-// 2026-07-18). This is a runaway guard, NOT a size limit: hitting it is treated as a
-// hard failure below (never ship a truncated snapshot). Raise it if the registry ever
-// legitimately approaches this many pages.
+// Headroom well above the real latest-only registry size (~180 pages / ~18k
+// servers as of 2026-07-22). This is a runaway guard, NOT a size limit: hitting
+// it is treated as a hard failure below (never ship a truncated snapshot).
+// Raise it if the registry ever legitimately approaches this many pages.
 const MAX_PAGES = 2000;
 
 while (page < MAX_PAGES) {
@@ -88,6 +99,24 @@ while (page < MAX_PAGES) {
   const json = await fetchPage(cursor);
   all.push(...json.servers);
   page++;
+  // Early slow-window bail: once we have a stable per-page rate, project whether the
+  // expected latest-only corpus can finish under RUN_DEADLINE_MS. Aborting at page 10
+  // of a 15s/page window frees the concurrency lock in ~2min instead of crawling to
+  // the 45min hard deadline (and emailing only after that long burn).
+  if (page === PAGE_RATE_SAMPLE) {
+    const rateMs = elapsed() / page;
+    const projectedMs = rateMs * EXPECTED_PAGES_CEIL;
+    if (projectedMs > RUN_DEADLINE_MS) {
+      const rate = (rateMs / 1000).toFixed(1);
+      console.error(
+        `\n::error::Registry sync aborting early: ${rate}s/page after ${page} pages projects ` +
+          `${Math.round(projectedMs / 1000)}s for ${EXPECTED_PAGES_CEIL} pages ` +
+          `(deadline ${Math.round(RUN_DEADLINE_MS / 1000)}s). Upstream window is too slow; ` +
+          `next 4h run will try a fresh window.`,
+      );
+      process.exit(1);
+    }
+  }
   // A \r-only progress line collapses the ENTIRE fetch into one log line carrying a
   // single timestamp, which is exactly why the stalls above could not be located in
   // time. Flush a real, timestamped line periodically so the next stall is one
@@ -99,7 +128,7 @@ while (page < MAX_PAGES) {
   cursor = json.metadata?.nextCursor;
   if (!cursor) break;
 }
-console.log(`\nTotal raw entries: ${all.length}`);
+console.log(`\nTotal fetched entries (version=latest): ${all.length}`);
 
 // If we stopped because of the page cap while the registry still had a cursor, the
 // snapshot is TRUNCATED — servers past the cap would be silently missing (this exact bug
