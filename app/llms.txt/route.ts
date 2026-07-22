@@ -29,9 +29,9 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 
 ## Scale
 
-- Servers indexed: ${servers}
+- How many MCP servers are there? ${servers} active, latest-version entries in the official registry (methodology + live count: [mcpindex.ai/stats](https://mcpindex.ai/stats)).
 - Categories: ${categories}
-- Source: registry.modelcontextprotocol.io (canonical), enriched with quality scoring, semantic search, and advisory screen verdicts.
+- Source: registry.modelcontextprotocol.io (canonical), enriched with quality scoring, semantic search, and advisory screen verdicts. Delisted and superseded versions are excluded so the same server never counts twice.
 
 ## Drift Gate (in-path; tier-0 live, tiers 1-3 held off by default)
 
@@ -127,6 +127,7 @@ This is the advisory directory client - not the in-path gate (\`mcpindex-gate\` 
 - [Changelog RSS](https://mcpindex.ai/changelog.rss): RSS 2.0 feed of the above.
 - [Trust model](https://mcpindex.ai/trust): Trust model + honest limits: contract-diff, not a safety verdict; where the gate runs, what leaves the machine.
 - [Methodology](https://mcpindex.ai/methodology): The eval (semantic-only today; conformance probe built but not yet run), four-state verdict, honest limits.
+- [Stats](https://mcpindex.ai/stats): How many MCP servers are there? Live official-registry count with stated methodology (what counts as a server).
 - [Whitepaper](https://mcpindex.ai/whitepaper): Architecture whitepaper: gate, threat model, methodology, honest limits. Public; free PDF, no email wall.
 - [About](https://mcpindex.ai/about): Why this exists.
 
