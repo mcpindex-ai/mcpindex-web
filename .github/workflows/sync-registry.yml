@@ -34,13 +34,14 @@ jobs:
     # MEASURED 2026-07-20: good windows took 34s-4m41s (~0.08s/page) for the old unfiltered
     # ~560-page fetch; bad windows sustained 15s/page. Since 2026-07-22 we pass
     # version=latest (API filter) so the page count drops ~3x (~18k latest vs ~56k raw),
-    # which is what makes a 9s/page slow window finishable under the 45min script deadline.
-    # The script also early-aborts after ~10 pages when the projected finish exceeds that
-    # deadline, so a doomed window fails in ~2min instead of burning 45min.
+    # which is what makes a ~15s/page slow window finishable under the 55min script
+    # deadline (~180 pages). The script also early-aborts after ~10 pages when the
+    # projected finish for ~200 pages exceeds that deadline, so a 20s+/page window
+    # fails in ~2min instead of burning the full budget.
     #
     # Bad-window runs log ZERO fetch retries: each page still completes inside its 60s
     # timeout, it is just slow. Do not read "no retries" as "not a slow window".
-    # SYNC_DEADLINE_MS (45min) self-terminates with a red failure (CI timeout="cancelled"
+    # SYNC_DEADLINE_MS (55min) self-terminates with a red failure (CI timeout="cancelled"
     # was silent for weeks). This ceiling is the backstop.
     timeout-minutes: 60
     steps:

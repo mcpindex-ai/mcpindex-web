@@ -37,12 +37,14 @@ const PAGE_RETRIES = Number(process.env.SYNC_PAGE_RETRIES ?? 6);
 // crawls until CI kills it at exactly 60m00s. A CI kill surfaces as "cancelled" -
 // indistinguishable from a human cancel. Exiting on our own deadline makes the same
 // event a RED failure with a diagnostic.
-const RUN_DEADLINE_MS = Number(process.env.SYNC_DEADLINE_MS ?? 45 * 60_000);
+const RUN_DEADLINE_MS = Number(process.env.SYNC_DEADLINE_MS ?? 55 * 60_000);
 // Projected-page budget for the early slow-window bail. With version=latest the
-// corpus is ~18k servers (~180 pages); 250 leaves headroom as the registry grows.
+// corpus is ~18k servers (~180 pages); 200 leaves modest headroom as it grows.
 // After PAGE_RATE_SAMPLE pages, if rate * EXPECTED_PAGES_CEIL > RUN_DEADLINE_MS we
-// abort immediately instead of burning the full 45min on a doomed window.
-const EXPECTED_PAGES_CEIL = Number(process.env.SYNC_EXPECTED_PAGES ?? 250);
+// abort immediately instead of burning the full deadline on a doomed window.
+// Paired with the 55min deadline: a measured 15s/page bad window can still finish
+// ~180 latest pages (~45min), while a 20s+/page window early-bails.
+const EXPECTED_PAGES_CEIL = Number(process.env.SYNC_EXPECTED_PAGES ?? 200);
 const PAGE_RATE_SAMPLE = Number(process.env.SYNC_RATE_SAMPLE_PAGES ?? 10);
 const startedAt = Date.now();
 const elapsed = () => Date.now() - startedAt;
@@ -101,8 +103,8 @@ while (page < MAX_PAGES) {
   page++;
   // Early slow-window bail: once we have a stable per-page rate, project whether the
   // expected latest-only corpus can finish under RUN_DEADLINE_MS. Aborting at page 10
-  // of a 15s/page window frees the concurrency lock in ~2min instead of crawling to
-  // the 45min hard deadline (and emailing only after that long burn).
+  // of a 20s+/page window frees the concurrency lock in ~2min instead of crawling to
+  // the hard deadline.
   if (page === PAGE_RATE_SAMPLE) {
     const rateMs = elapsed() / page;
     const projectedMs = rateMs * EXPECTED_PAGES_CEIL;
