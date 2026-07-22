@@ -37,13 +37,13 @@ const PAGE_RETRIES = Number(process.env.SYNC_PAGE_RETRIES ?? 6);
 // crawls until CI kills it at exactly 60m00s. A CI kill surfaces as "cancelled" -
 // indistinguishable from a human cancel. Exiting on our own deadline makes the same
 // event a RED failure with a diagnostic.
-const RUN_DEADLINE_MS = Number(process.env.SYNC_DEADLINE_MS ?? 55 * 60_000);
+const RUN_DEADLINE_MS = Number(process.env.SYNC_DEADLINE_MS ?? 80 * 60_000);
 // Projected-page budget for the early slow-window bail. With version=latest the
 // corpus is ~18k servers (~180 pages); 200 leaves modest headroom as it grows.
 // After PAGE_RATE_SAMPLE pages, if rate * EXPECTED_PAGES_CEIL > RUN_DEADLINE_MS we
 // abort immediately instead of burning the full deadline on a doomed window.
-// Paired with the 55min deadline: a measured 15s/page bad window can still finish
-// ~180 latest pages (~45min), while a 20s+/page window early-bails.
+// Paired with the 80min deadline (workflow timeout 90): a ~20s/page window can
+// finish ~180 latest pages (~60min), while a 30s+/page window early-bails.
 const EXPECTED_PAGES_CEIL = Number(process.env.SYNC_EXPECTED_PAGES ?? 200);
 const PAGE_RATE_SAMPLE = Number(process.env.SYNC_RATE_SAMPLE_PAGES ?? 10);
 const startedAt = Date.now();
