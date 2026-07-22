@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getServer, loadServers, loadSnapshotMeta } from '@/lib/registry';
@@ -23,6 +23,7 @@ import { GateInstallBridge } from '@/components/GateInstallBridge';
 import { ServerVerdictCta } from '@/components/ServerVerdictCta';
 import { jsonLdSafe } from '@/lib/jsonLd';
 import { buildServerJsonLd, isEndpointShaped, isSafeHref } from '@/lib/serverJsonLd';
+import { isGoneSlug, resolveServerRedirect } from '@/lib/serverRemovals';
 
 // Trust verdict shape (public projection of the v1.0.0 verdict contract).
 // Full back-history is not surfaced on this public page; the current verdict
@@ -74,7 +75,12 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { slug } = await ctx.params;
   const server = await getServer(slug);
-  if (!server) return { title: 'Server not found' };
+  if (!server) {
+    if (isGoneSlug(slug)) {
+      return { title: 'Gone', robots: { index: false, follow: false } };
+    }
+    return { title: 'Server not found', robots: { index: false, follow: false } };
+  }
   const deprecated = server.status === 'deprecated';
   return {
     // ~half of registry servers have title === name; emitting "X - X" duplicated the
@@ -107,7 +113,13 @@ export default async function ServerPage(
 ) {
   const { slug } = await ctx.params;
   const server = await getServer(slug);
-  if (!server) notFound();
+  if (!server) {
+    const active = new Set((await loadServers()).map((s) => s.slug));
+    const dest = resolveServerRedirect(slug, active);
+    if (dest) permanentRedirect(`/server/${dest}`);
+    // Gone slugs are answered 410 in proxy.ts; this is the RSC fallback.
+    notFound();
+  }
 
   const all = await loadServers();
   const { score, breakdown } = computeQuality(server);

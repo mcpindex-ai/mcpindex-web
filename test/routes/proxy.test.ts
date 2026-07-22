@@ -46,3 +46,26 @@ test('proxy: exhausting the llms budget does NOT 429 the same IP on /api/v1 (rou
   const api = proxy(new NextRequest('https://mcpindex.ai/api/v1/search?q=x', { headers }));
   assert.notEqual(api.status, 429, 'api bucket must be independent of the llms bucket');
 });
+
+test('proxy: known-gone /server/<slug> → 410 (GSC drop signal)', () => {
+  const res = proxy(new NextRequest('https://mcpindex.ai/server/net-csclear-venue'));
+  assert.equal(res.status, 410);
+  assert.equal(res.headers.get('x-robots-tag'), 'noindex, nofollow');
+});
+
+test('proxy: seeded rename /server/<slug> → 308 to successor', () => {
+  const res = proxy(
+    new NextRequest('https://mcpindex.ai/server/eu-ansvar-eu-regulations-mcp'),
+  );
+  assert.equal(res.status, 308);
+  assert.equal(
+    res.headers.get('location'),
+    'https://mcpindex.ai/server/eu-ansvar-eu-regulations',
+  );
+});
+
+test('proxy: live /server/<slug> passes through (no 410/308)', () => {
+  const res = proxy(new NextRequest('https://mcpindex.ai/server/eu-ansvar-romanian-law-mcp'));
+  assert.notEqual(res.status, 410);
+  assert.notEqual(res.status, 308);
+});

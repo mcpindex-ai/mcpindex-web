@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import {
+  getSeededRedirect,
+  goneHtml,
+  isGoneSlug,
+} from '@/lib/serverRemovals';
 
 // Per-IP rate limit on /api/v1/*. Sliding window in-memory map (per-instance).
 // Production-grade limit should use Upstash Redis - this is good enough for
@@ -42,7 +47,42 @@ function sweepBuckets(now: number) {
   }
 }
 
+function serverSlugFromPath(pathname: string): string | null {
+  const m = /^\/server\/([^/]+)\/?$/.exec(pathname);
+  if (!m) return null;
+  try {
+    return decodeURIComponent(m[1]!);
+  } catch {
+    return m[1]!;
+  }
+}
+
 export function proxy(req: NextRequest) {
+  const p = req.nextUrl.pathname;
+
+  // SEO: former /server/<slug> URLs that left the registry. Answer before RSC so
+  // crawlers see a real 410/308 instead of a soft-404 HTML page. Seeded map only
+  // (no registry I/O on the edge) — dynamic alias resolution stays in the page.
+  const serverSlug = serverSlugFromPath(p);
+  if (serverSlug) {
+    const dest = getSeededRedirect(serverSlug);
+    if (dest) {
+      const url = req.nextUrl.clone();
+      url.pathname = `/server/${dest}`;
+      return NextResponse.redirect(url, 308);
+    }
+    if (isGoneSlug(serverSlug)) {
+      return new NextResponse(goneHtml(serverSlug), {
+        status: 410,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'public, max-age=86400',
+          'X-Robots-Tag': 'noindex, nofollow',
+        },
+      });
+    }
+  }
+
   // Defense-in-depth, NOT dead code: Next 16 invokes proxy for every route,
   // gated only by `config.matcher`, and the docs warn that a matcher change or
   // refactor can silently broaden coverage (node_modules/next/dist/docs/.../
@@ -56,7 +96,6 @@ export function proxy(req: NextRequest) {
   // call fans out 5 upstream /api/v1 fetches, so it is the highest-amplification surface
   // we expose. It sat OUTSIDE this matcher entirely until 2026-07-21 and carries no
   // Upstash limiter of its own, unlike /api/owner/* and /api/auth/login/start).
-  const p = req.nextUrl.pathname;
   if (
     !p.startsWith('/api/v1/') &&
     p !== '/api/waitlist' &&
@@ -144,5 +183,16 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/v1/:path*', '/api/waitlist', '/api/enterprise', '/api/beacon', '/api/health/:path*', '/llms.txt', '/llms-full.txt', '/.well-known/mcpindex-challenge', '/api/mcp'],
+  matcher: [
+    '/server/:slug',
+    '/api/v1/:path*',
+    '/api/waitlist',
+    '/api/enterprise',
+    '/api/beacon',
+    '/api/health/:path*',
+    '/llms.txt',
+    '/llms-full.txt',
+    '/.well-known/mcpindex-challenge',
+    '/api/mcp',
+  ],
 };

@@ -203,13 +203,77 @@ const snapshot = {
 };
 const day = new Date().toISOString().slice(0, 10);
 
+// SEO removals: when an active slug disappears from the corpus entirely (not
+// merely deprecated — those stay addressable), append it to server-removals.json
+// so /server/<slug> can answer 410 instead of a recurring GSC soft-404.
+const REMOVALS_PATH = path.join(ROOT, 'data', 'server-removals.json');
+function slugifyName(name) {
+  const slug = String(name ?? '')
+    .toLowerCase()
+    .replaceAll('/', '--')
+    .replaceAll('.', '-')
+    .replaceAll('@', '')
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  return slug || null;
+}
+function activeSlugSet(servers) {
+  const out = new Set();
+  for (const e of servers) {
+    const st = e?._meta?.['io.modelcontextprotocol.registry/official']?.status;
+    if (st !== 'active') continue;
+    const slug = slugifyName(e?.server?.name);
+    if (slug) out.add(slug);
+  }
+  return out;
+}
+let prevActive = new Set();
+try {
+  const prev = JSON.parse(await fs.readFile(SNAP_PATH, 'utf8'));
+  prevActive = activeSlugSet(prev.servers ?? []);
+} catch {
+  // First run / missing previous snapshot — nothing to diff.
+}
+const nextActive = activeSlugSet(latest);
+let removals = { updatedAt: new Date().toISOString(), redirects: {}, gone: {} };
+try {
+  removals = JSON.parse(await fs.readFile(REMOVALS_PATH, 'utf8'));
+  if (!removals.redirects || typeof removals.redirects !== 'object') removals.redirects = {};
+  if (!removals.gone || typeof removals.gone !== 'object') removals.gone = {};
+} catch {
+  // Seed file should exist; create a minimal one if missing.
+}
+let goneAdded = 0;
+let goneCleared = 0;
+for (const slug of prevActive) {
+  if (nextActive.has(slug)) continue;
+  // Still present as deprecated (or other non-active) — keep addressable; do not 410.
+  const stillListed = latest.some((e) => slugifyName(e?.server?.name) === slug);
+  if (stillListed) continue;
+  if (removals.redirects[slug]) continue; // renamed — redirect owns this URL
+  if (!removals.gone[slug]) {
+    removals.gone[slug] = { removedAt: day };
+    goneAdded++;
+  }
+}
+for (const slug of Object.keys(removals.gone)) {
+  if (nextActive.has(slug)) {
+    delete removals.gone[slug];
+    goneCleared++;
+  }
+}
+removals.updatedAt = new Date().toISOString();
+
 await Promise.all([
   fs.writeFile(SNAP_PATH, JSON.stringify(snapshot, null, 2)),
   fs.writeFile(
     path.join(SNAP_DIR, `${day}.json`),
     JSON.stringify(snapshot, null, 2),
   ),
+  fs.writeFile(REMOVALS_PATH, JSON.stringify(removals, null, 2) + '\n'),
 ]);
 
 console.log(`Wrote ${SNAP_PATH}`);
 console.log(`Wrote ${SNAP_DIR}/${day}.json`);
+console.log(`Wrote ${REMOVALS_PATH} (gone +${goneAdded}/-${goneCleared}, total ${Object.keys(removals.gone).length})`);

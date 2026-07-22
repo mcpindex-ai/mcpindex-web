@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server';
-import { getServer } from '@/lib/registry';
+import { getServer, loadServers } from '@/lib/registry';
 import { computeQuality } from '@/lib/quality';
 import { buildInstalls } from '@/lib/installs';
 import { getSourceLiveness, livenessRecommendation } from '@/lib/sourceLiveness';
+import { isGoneSlug, resolveServerRedirect } from '@/lib/serverRemovals';
 
 export const revalidate = 3600;
 
@@ -13,6 +14,20 @@ export async function GET(
   const { slug } = await ctx.params;
   const s = await getServer(slug);
   if (!s) {
+    if (isGoneSlug(slug)) {
+      return Response.json(
+        { error: 'gone' },
+        {
+          status: 410,
+          headers: { 'Cache-Control': 'public, max-age=86400' },
+        },
+      );
+    }
+    const active = new Set((await loadServers()).map((s) => s.slug));
+    const dest = resolveServerRedirect(slug, active);
+    if (dest) {
+      return Response.redirect(new URL(`/api/v1/server/${dest}`, 'https://mcpindex.ai'), 308);
+    }
     // Cache 404s briefly so typo-storms don't bypass rate limits.
     return Response.json(
       { error: 'not_found' },
