@@ -97,13 +97,26 @@ jobs:
           # A full version=latest fetch can take 45-70min on a slow window; main moves
           # under us (verdicts sync, product commits). Non-fast-forward push is expected
           # - rebase onto tip and retry rather than failing after a successful fetch.
+          # If data/snapshot.json conflicts (another sync or a rare manual edit), keep
+          # OURS (= the commit being replayed = this run's fresh fetch). During rebase,
+          # --theirs is the commit being applied.
           for attempt in 1 2 3 4 5; do
             if git push; then
               exit 0
             fi
             echo "push rejected (main moved); rebase onto origin/main (attempt ${attempt}/5)"
             git fetch origin main
-            git rebase origin/main
+            if ! git rebase origin/main; then
+              if [ -f data/snapshot.json ]; then
+                git checkout --theirs -- data/snapshot.json
+                git add data/snapshot.json
+                GIT_EDITOR=true git rebase --continue
+              else
+                echo "::error::rebase failed and snapshot.json missing; aborting"
+                git rebase --abort || true
+                exit 1
+              fi
+            fi
           done
           echo "::error::push failed after 5 rebase retries"
           exit 1

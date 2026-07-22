@@ -40,12 +40,16 @@ const PAGE_RETRIES = Number(process.env.SYNC_PAGE_RETRIES ?? 6);
 const RUN_DEADLINE_MS = Number(process.env.SYNC_DEADLINE_MS ?? 80 * 60_000);
 // Projected-page budget for the early slow-window bail. With version=latest the
 // corpus is ~18k servers (~180 pages); 200 leaves modest headroom as it grows.
-// After PAGE_RATE_SAMPLE pages, if rate * EXPECTED_PAGES_CEIL > RUN_DEADLINE_MS we
-// abort immediately instead of burning the full deadline on a doomed window.
+// After PAGE_RATE_SAMPLE pages, if rate * EXPECTED_PAGES_CEIL exceeds the
+// deadline (plus a small estimation slack) we abort immediately instead of
+// burning the full deadline on a doomed window.
 // Paired with the 80min deadline (workflow timeout 90): a ~20s/page window can
-// finish ~180 latest pages (~60min), while a 30s+/page window early-bails.
+// finish ~180 latest pages (~60min), while a sustained 30s+/page window
+// early-bails. Sample 15 pages (not 10) so one outlier slow page in the warm-up
+// doesn't doom an otherwise-viable window; 5% slack absorbs projection noise.
 const EXPECTED_PAGES_CEIL = Number(process.env.SYNC_EXPECTED_PAGES ?? 200);
-const PAGE_RATE_SAMPLE = Number(process.env.SYNC_RATE_SAMPLE_PAGES ?? 10);
+const PAGE_RATE_SAMPLE = Number(process.env.SYNC_RATE_SAMPLE_PAGES ?? 15);
+const EARLY_BAIL_SLACK = Number(process.env.SYNC_EARLY_BAIL_SLACK ?? 1.05);
 const startedAt = Date.now();
 const elapsed = () => Date.now() - startedAt;
 
@@ -108,13 +112,14 @@ while (page < MAX_PAGES) {
   if (page === PAGE_RATE_SAMPLE) {
     const rateMs = elapsed() / page;
     const projectedMs = rateMs * EXPECTED_PAGES_CEIL;
-    if (projectedMs > RUN_DEADLINE_MS) {
+    const bailAtMs = RUN_DEADLINE_MS * EARLY_BAIL_SLACK;
+    if (projectedMs > bailAtMs) {
       const rate = (rateMs / 1000).toFixed(1);
       console.error(
         `\n::error::Registry sync aborting early: ${rate}s/page after ${page} pages projects ` +
           `${Math.round(projectedMs / 1000)}s for ${EXPECTED_PAGES_CEIL} pages ` +
-          `(deadline ${Math.round(RUN_DEADLINE_MS / 1000)}s). Upstream window is too slow; ` +
-          `next 4h run will try a fresh window.`,
+          `(deadline ${Math.round(RUN_DEADLINE_MS / 1000)}s, bail-at ${Math.round(bailAtMs / 1000)}s). ` +
+          `Upstream window is too slow; next 4h run will try a fresh window.`,
       );
       process.exit(1);
     }
