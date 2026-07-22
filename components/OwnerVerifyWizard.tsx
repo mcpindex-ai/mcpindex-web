@@ -914,7 +914,7 @@ export default function OwnerVerifyWizard() {
 
           <div className="mt-4">
             <div className={`${LABEL} mb-1.5`}>challenge token</div>
-            <TokenField value={challenge.token} />
+            <TokenField value={challenge.token} secret />
           </div>
 
           <p className="mt-3 font-mono text-[11px] text-[var(--color-mute)]">
@@ -1251,36 +1251,77 @@ function StepTitle({ n, title }: { n: number; title: string }) {
   );
 }
 
+// Fixed-width stand-in for a hidden secret. Deliberately NOT value.length - the
+// rendered width would otherwise leak how long the token is.
+const SECRET_MASK = '•'.repeat(32);
+
 // Click-to-copy token field (the same dark code-box grammar as CopyField, kept local so
 // the token value renders as escaped text only). Degrades to a selectable box on copy failure.
-function TokenField({ value }: { value: string }) {
+//
+// `secret` keeps the value OUT OF THE RENDERED DOM until the owner asks for it. The
+// challenge token is a bearer credential for claiming a listing, and anything that reads
+// rendered text - session recorders, screen shares, support tooling, browser extensions,
+// screenshots pasted into an issue - captures it from a plain <pre>. Per-vendor mask
+// attributes (ph-no-capture, data-clarity-mask, …) only cover vendors we thought to name,
+// so the value is withheld instead. Copy reads from the prop, never from the DOM, so the
+// happy path needs no reveal at all.
+function TokenField({ value, secret = false }: { value: string; secret?: boolean }) {
   const [copied, setCopied] = useState(false);
+  const [revealed, setRevealed] = useState(false);
+  const hidden = secret && !revealed;
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(true);
       setTimeout(() => setCopied(false), 1400);
     } catch {
-      /* selectable fallback: the text is selectable in the pre */
+      /* selectable fallback: reveal the value, then it is selectable in the pre */
+      setRevealed(true);
     }
   };
+  const btn =
+    'font-mono text-[10px] uppercase tracking-[0.12em] border px-1.5 py-0.5 transition-colors';
   return (
     <div className="relative">
-      <pre className="bg-[var(--color-ink)] text-zinc-100 pl-4 pr-16 py-3 font-mono text-[12px] overflow-x-auto leading-snug">
-        <code>{value}</code>
-      </pre>
-      <button
-        type="button"
-        onClick={copy}
-        aria-label={copied ? 'Copied' : 'Copy token'}
-        className={`absolute top-2 right-2 font-mono text-[10px] uppercase tracking-[0.12em] border px-1.5 py-0.5 transition-colors ${
-          copied
-            ? 'text-emerald-400 border-emerald-500/60'
-            : 'text-zinc-400 hover:text-white border-zinc-700 hover:border-zinc-500'
-        }`}
+      <pre
+        className={`bg-[var(--color-ink)] text-zinc-100 pl-4 ${
+          secret ? 'pr-32' : 'pr-16'
+        } py-3 font-mono text-[12px] overflow-x-auto leading-snug`}
       >
-        {copied ? '✓ copied' : 'copy'}
-      </button>
+        {hidden ? (
+          <>
+            <code aria-hidden="true">{SECRET_MASK}</code>
+            <span className="sr-only">Token hidden. Use the reveal button to show it.</span>
+          </>
+        ) : (
+          <code>{value}</code>
+        )}
+      </pre>
+      <div className="absolute top-2 right-2 flex items-center gap-1.5">
+        {secret && (
+          <button
+            type="button"
+            onClick={() => setRevealed((r) => !r)}
+            aria-pressed={revealed}
+            aria-label={revealed ? 'Hide token' : 'Reveal token'}
+            className={`${btn} text-zinc-400 hover:text-white border-zinc-700 hover:border-zinc-500`}
+          >
+            {revealed ? 'hide' : 'reveal'}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={copy}
+          aria-label={copied ? 'Copied' : 'Copy token'}
+          className={`${btn} ${
+            copied
+              ? 'text-emerald-400 border-emerald-500/60'
+              : 'text-zinc-400 hover:text-white border-zinc-700 hover:border-zinc-500'
+          }`}
+        >
+          {copied ? '✓ copied' : 'copy'}
+        </button>
+      </div>
     </div>
   );
 }
