@@ -37,16 +37,18 @@ const PAGE_RETRIES = Number(process.env.SYNC_PAGE_RETRIES ?? 6);
 // crawls until CI kills it at exactly 60m00s. A CI kill surfaces as "cancelled" -
 // indistinguishable from a human cancel. Exiting on our own deadline makes the same
 // event a RED failure with a diagnostic.
-const RUN_DEADLINE_MS = Number(process.env.SYNC_DEADLINE_MS ?? 80 * 60_000);
+const RUN_DEADLINE_MS = Number(process.env.SYNC_DEADLINE_MS ?? 110 * 60_000);
 // Projected-page budget for the early slow-window bail. With version=latest the
 // corpus is ~18k servers (~180 pages); 200 leaves modest headroom as it grows.
 // After PAGE_RATE_SAMPLE pages, if rate * EXPECTED_PAGES_CEIL exceeds the
 // deadline (plus a small estimation slack) we abort immediately instead of
 // burning the full deadline on a doomed window.
-// Paired with the 80min deadline (workflow timeout 90): a ~20s/page window can
-// finish ~180 latest pages (~60min), while a sustained 30s+/page window
-// early-bails. Sample 15 pages (not 10) so one outlier slow page in the warm-up
-// doesn't doom an otherwise-viable window; 5% slack absorbs projection noise.
+// Paired with the 110min deadline (workflow timeout 120): a ~30s/page degraded
+// window can finish ~180 latest pages (~90min), while a sustained 40s+/page
+// window early-bails. Sample 15 pages (not 10) so one outlier slow page in the
+// warm-up doesn't doom an otherwise-viable window; 5% slack absorbs projection
+// noise. Measured 2026-07-22: good windows ~0.08-23s/page; bad windows sustained
+// ~30s/page and still completed when given a 110min ceiling.
 const EXPECTED_PAGES_CEIL = Number(process.env.SYNC_EXPECTED_PAGES ?? 200);
 const PAGE_RATE_SAMPLE = Number(process.env.SYNC_RATE_SAMPLE_PAGES ?? 15);
 const EARLY_BAIL_SLACK = Number(process.env.SYNC_EARLY_BAIL_SLACK ?? 1.05);
@@ -106,8 +108,8 @@ while (page < MAX_PAGES) {
   all.push(...json.servers);
   page++;
   // Early slow-window bail: once we have a stable per-page rate, project whether the
-  // expected latest-only corpus can finish under RUN_DEADLINE_MS. Aborting at page 10
-  // of a 20s+/page window frees the concurrency lock in ~2min instead of crawling to
+  // expected latest-only corpus can finish under RUN_DEADLINE_MS. Aborting at page 15
+  // of a 40s+/page window frees the concurrency lock in ~8min instead of crawling to
   // the hard deadline.
   if (page === PAGE_RATE_SAMPLE) {
     const rateMs = elapsed() / page;
