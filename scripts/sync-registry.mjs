@@ -237,8 +237,10 @@ try {
 }
 const nextActive = activeSlugSet(latest);
 let removals = { updatedAt: new Date().toISOString(), redirects: {}, gone: {} };
+let removalsExisted = false;
 try {
   removals = JSON.parse(await fs.readFile(REMOVALS_PATH, 'utf8'));
+  removalsExisted = true;
   if (!removals.redirects || typeof removals.redirects !== 'object') removals.redirects = {};
   if (!removals.gone || typeof removals.gone !== 'object') removals.gone = {};
 } catch {
@@ -263,7 +265,15 @@ for (const slug of Object.keys(removals.gone)) {
     goneCleared++;
   }
 }
-removals.updatedAt = new Date().toISOString();
+// Only rewrite server-removals.json when gone/redirects actually change (or the
+// file is missing). Bumping updatedAt on every run left the file dirty in CI
+// even when gone +0/-0; the workflow used to stage only snapshot.json, so
+// rebase-after-push-reject failed with "cannot rebase: You have unstaged
+// changes" (run 29958442988).
+const removalsChanged = !removalsExisted || goneAdded > 0 || goneCleared > 0;
+if (removalsChanged) {
+  removals.updatedAt = new Date().toISOString();
+}
 
 await Promise.all([
   fs.writeFile(SNAP_PATH, JSON.stringify(snapshot, null, 2)),
@@ -271,9 +281,15 @@ await Promise.all([
     path.join(SNAP_DIR, `${day}.json`),
     JSON.stringify(snapshot, null, 2),
   ),
-  fs.writeFile(REMOVALS_PATH, JSON.stringify(removals, null, 2) + '\n'),
+  removalsChanged
+    ? fs.writeFile(REMOVALS_PATH, JSON.stringify(removals, null, 2) + '\n')
+    : Promise.resolve(),
 ]);
 
 console.log(`Wrote ${SNAP_PATH}`);
 console.log(`Wrote ${SNAP_DIR}/${day}.json`);
-console.log(`Wrote ${REMOVALS_PATH} (gone +${goneAdded}/-${goneCleared}, total ${Object.keys(removals.gone).length})`);
+if (removalsChanged) {
+  console.log(`Wrote ${REMOVALS_PATH} (gone +${goneAdded}/-${goneCleared}, total ${Object.keys(removals.gone).length})`);
+} else {
+  console.log(`Skipped ${REMOVALS_PATH} (no gone changes; gone total ${Object.keys(removals.gone).length})`);
+}

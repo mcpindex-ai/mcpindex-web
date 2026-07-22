@@ -81,8 +81,15 @@ jobs:
           fi
           echo "ENTRIES=$ENTRIES" >> "$GITHUB_ENV"
 
-      - name: Stage main snapshot only
-        run: git add data/snapshot.json
+      # snapshot.json is the directory corpus; server-removals.json is the SEO 410/308
+      # ledger consumed by lib/serverRemovals.ts. Both are produced by sync-registry.mjs.
+      # Staging only the snapshot (pre-2026-07-22) left removals dirty in the working tree;
+      # when main moved under a long fetch, `git rebase` refused ("unstaged changes") and
+      # the successful fetch never landed (run 29958442988).
+      - name: Stage snapshot + removals
+        run: |
+          git add data/snapshot.json data/server-removals.json
+          git status --short
 
       - name: Commit and push if changed
         run: |
@@ -108,16 +115,39 @@ jobs:
             fi
             echo "push rejected (main moved); rebase onto origin/main (attempt ${attempt}/5)"
             git fetch origin main
-            if ! git rebase origin/main; then
+            # Belt-and-suspenders: any leftover dirty/untracked file (or future producer
+            # writes) blocks rebase the same way server-removals.json did. Stash then
+            # rebase — dated archives under data/snapshots/ are gitignored and irrelevant.
+            # Runner is ephemeral so the stash need not be dropped after success.
+            if [ -n "$(git status --porcelain)" ]; then
+              git stash push -u -m "sync-pre-rebase-${attempt}" || {
+                echo "::error::git stash failed with dirty working tree; aborting"
+                git status --short || true
+                exit 1
+              }
+            fi
+            if git rebase origin/main; then
+              continue
+            fi
+            # Rebase started but hit conflicts — resolve snapshot/removals in favor of
+            # this run's commit (--theirs during rebase = the commit being applied).
+            if [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; then
               if [ -f data/snapshot.json ]; then
                 git checkout --theirs -- data/snapshot.json
                 git add data/snapshot.json
-                GIT_EDITOR=true git rebase --continue
-              else
-                echo "::error::rebase failed and snapshot.json missing; aborting"
+              fi
+              if [ -f data/server-removals.json ]; then
+                git checkout --theirs -- data/server-removals.json
+                git add data/server-removals.json
+              fi
+              if ! GIT_EDITOR=true git rebase --continue; then
+                echo "::error::rebase --continue failed after resolving snapshot/removals; aborting"
                 git rebase --abort || true
                 exit 1
               fi
+            else
+              echo "::error::rebase failed to start (dirty tree or other); aborting"
+              exit 1
             fi
           done
           echo "::error::push failed after 5 rebase retries"
