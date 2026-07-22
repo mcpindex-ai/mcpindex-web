@@ -247,9 +247,64 @@ export async function loadServers(): Promise<IndexedServer[]> {
   return _cache.servers;
 }
 
+// Resolve a deprecated registry entry by the public slug it would have had while
+// active, without folding deprecated subjects into loadServers() (browse/sitemap/
+// leaderboard stay active-only) and without re-running set-wide disambiguation
+// against active servers (that would renumber live URLs when a deprecated twin
+// appears). Ahrefs 2026-07-22: active→deprecated left /server/<slug> as soft-404s.
+export function findDeprecatedServer(
+  slug: string,
+  entries: RegistryEntry[],
+  activeSlugs: ReadonlySet<string>,
+): IndexedServer | null {
+  const filtered = entries
+    .filter(
+      (e) =>
+        e._meta['io.modelcontextprotocol.registry/official'].status ===
+        'deprecated',
+    )
+    .map(normalize)
+    .filter((s) => s.description && s.name && s.slug);
+  const seenName = new Set<string>();
+  const uniqueByName = filtered.filter((s) =>
+    seenName.has(s.name) ? false : (seenName.add(s.name), true),
+  );
+
+  // Assign slugs among deprecated only. A bare slug already owned by an active
+  // server is hashed so we never alias a live subject; collisions inside the
+  // deprecated set are hashed the same way disambiguateSlugs does.
+  const byBase = new Map<string, IndexedServer[]>();
+  for (const s of uniqueByName) {
+    const group = byBase.get(s.slug);
+    if (group) group.push(s);
+    else byBase.set(s.slug, [s]);
+  }
+  const resolved: IndexedServer[] = [];
+  for (const [base, group] of byBase) {
+    const mustHash = group.length > 1 || activeSlugs.has(base);
+    if (!mustHash) {
+      resolved.push(group[0]!);
+      continue;
+    }
+    for (const s of group) {
+      const hash = createHash('sha256').update(s.name).digest('hex').slice(0, 12);
+      resolved.push({ ...s, slug: `${base}-${hash}` });
+    }
+  }
+  return resolved.find((s) => s.slug === slug) ?? null;
+}
+
 export async function getServer(slug: string): Promise<IndexedServer | null> {
   const servers = await loadServers();
-  return servers.find((s) => s.slug === slug) ?? null;
+  const hit = servers.find((s) => s.slug === slug);
+  if (hit) return hit;
+  // Warm path: loadSnapshot() is free once loadServers() filled _cache.
+  const snapshot = await loadSnapshot();
+  return findDeprecatedServer(
+    slug,
+    snapshot.servers,
+    new Set(servers.map((s) => s.slug)),
+  );
 }
 
 export async function getServerCount(): Promise<number> {

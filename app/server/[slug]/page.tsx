@@ -75,12 +75,16 @@ export async function generateMetadata(
   const { slug } = await ctx.params;
   const server = await getServer(slug);
   if (!server) return { title: 'Server not found' };
+  const deprecated = server.status === 'deprecated';
   return {
     // ~half of registry servers have title === name; emitting "X - X" duplicated the
     // slug in the <title>. Collapse to a single value when they match (the parent
     // template still appends "· mcpindex.ai").
     title: server.title === server.name ? server.name : `${server.title} - ${server.name}`,
     description: server.description,
+    // Deprecated subjects stay addressable (no soft-404) but leave the index so
+    // they do not compete with active listings after the registry retires them.
+    ...(deprecated ? { robots: { index: false, follow: true } } : {}),
     alternates: { canonical: `https://mcpindex.ai/server/${server.slug}` },
     openGraph: {
       title: server.title,
@@ -186,7 +190,24 @@ export default async function ServerPage(
               >
                 {CATEGORY_LABELS[server.category] ?? server.category}
               </Link>
+              {server.status === 'deprecated' ? (
+                <>
+                  <span aria-hidden="true" className="inline-block w-px h-3 bg-[var(--color-rule)]" />
+                  <span className="text-[var(--color-ink)]">deprecated</span>
+                </>
+              ) : null}
             </div>
+
+            {server.status === 'deprecated' ? (
+              <p
+                role="status"
+                className="mt-6 border border-[var(--color-rule)] bg-[var(--color-accent-soft)]/40 px-4 py-3 text-[14px] leading-[1.5] text-[var(--color-cite)]"
+              >
+                This server is marked deprecated in the official MCP registry. The
+                listing stays available for historical reference and is not offered
+                in browse, sitemap, or leaderboard surfaces.
+              </p>
+            ) : null}
 
             <p className="mt-6 text-[17px] leading-[1.55] text-[var(--color-cite)]">
               {server.description}
