@@ -914,7 +914,10 @@ export default function OwnerVerifyWizard() {
 
           <div className="mt-4">
             <div className={`${LABEL} mb-1.5`}>challenge token</div>
-            <TokenField value={challenge.token} secret />
+            {/* Keyed on the token so a rotation ("new challenge") remounts the field and drops
+                any prior reveal. Without this the subtree survives - step is already 2 - and a
+                freshly issued credential renders in the clear with no user action. */}
+            <TokenField key={challenge.token} value={challenge.token} secret />
           </div>
 
           <p className="mt-3 font-mono text-[11px] text-[var(--color-mute)]">
@@ -1255,28 +1258,48 @@ function StepTitle({ n, title }: { n: number; title: string }) {
 // rendered width would otherwise leak how long the token is.
 const SECRET_MASK = '•'.repeat(32);
 
+// A revealed credential should not sit on screen indefinitely. The token's own TTL is 15
+// minutes and the realistic exposure is an unattended screen share, so a reveal lapses on
+// its own rather than relying on the owner remembering to hide it.
+const REVEAL_TIMEOUT_MS = 20_000;
+
 // Click-to-copy token field (the same dark code-box grammar as CopyField, kept local so
 // the token value renders as escaped text only). Degrades to a selectable box on copy failure.
 //
 // `secret` keeps the value OUT OF THE RENDERED DOM until the owner asks for it. The
 // challenge token is a bearer credential for claiming a listing, and anything that reads
-// rendered text - session recorders, screen shares, support tooling, browser extensions,
-// screenshots pasted into an issue - captures it from a plain <pre>. Per-vendor mask
-// attributes (ph-no-capture, data-clarity-mask, …) only cover vendors we thought to name,
-// so the value is withheld instead. Copy reads from the prop, never from the DOM, so the
-// happy path needs no reveal at all.
+// RENDERED TEXT - session recorders, screen shares, support tooling, screenshots pasted into
+// an issue - captures it from a plain <pre>. Per-vendor mask attributes (ph-no-capture,
+// data-clarity-mask, …) only cover vendors we thought to name, so the value is withheld
+// instead. Copy reads from the prop, never from the DOM, so the happy path needs no reveal.
+//
+// Scope, so a later reader does not over-trust this: it does NOT defeat anything that can
+// read the network or the clipboard. A browser extension with host permissions reads the
+// /api/owner/challenge response body directly and never touches the DOM.
 function TokenField({ value, secret = false }: { value: string; secret?: boolean }) {
   const [copied, setCopied] = useState(false);
   const [revealed, setRevealed] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
   const hidden = secret && !revealed;
+
+  useEffect(() => {
+    if (!revealed) return;
+    const t = setTimeout(() => setRevealed(false), REVEAL_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [revealed]);
+
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(true);
+      setCopyFailed(false);
       setTimeout(() => setCopied(false), 1400);
     } catch {
-      /* selectable fallback: reveal the value, then it is selectable in the pre */
-      setRevealed(true);
+      // Deliberately does NOT reveal. The owner asked to copy, not to display, and
+      // navigator.clipboard is absent in any non-secure context - so this branch is a whole
+      // class of browsers, not an exotic edge. Putting a bearer token on screen unannounced
+      // is the exact exposure this component exists to prevent; tell them instead.
+      setCopyFailed(true);
     }
   };
   const btn =
@@ -1319,9 +1342,16 @@ function TokenField({ value, secret = false }: { value: string; secret?: boolean
               : 'text-zinc-400 hover:text-white border-zinc-700 hover:border-zinc-500'
           }`}
         >
-          {copied ? '✓ copied' : 'copy'}
+          {copyFailed ? 'copy blocked' : copied ? '✓ copied' : 'copy'}
         </button>
       </div>
+      {copyFailed && (
+        <p role="status" className="mt-1.5 font-mono text-[11px] text-amber-500">
+          clipboard unavailable in this browser context - click{' '}
+          <span className="uppercase tracking-[0.12em]">reveal</span>, then select the token and
+          copy it manually.
+        </p>
+      )}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { test, expect } from '@playwright/test';
 
 const FAKE_KEY = 'mcpk_e2eFakeKeyNotARealCredential';
 const FAKE_TOKEN = 'e2e-challenge-token-0d5c1f9a4b7e2c86';
+const ROTATED_TOKEN = 'e2e-rotated-token-71b3e0a9c4d6f285';
 
 async function gotoStepTwo(page: import('@playwright/test').Page) {
   await page.route('**/api/owner/challenge', (route) =>
@@ -42,20 +43,66 @@ async function gotoStepTwo(page: import('@playwright/test').Page) {
   await expect(page.getByText('challenge token')).toBeVisible();
 }
 
+// Assert against serialized markup, not textContent. `toContainText` reads text nodes only,
+// so a refactor adding title={value} / aria-label={value} / <input value> would leak the token
+// and this spec would still pass green - the exact failure it exists to catch. page.content()
+// also covers <head> and the Flight payload.
+async function expectAbsentFromMarkup(page: import('@playwright/test').Page) {
+  await expect
+    .poll(async () => (await page.content()).includes(FAKE_TOKEN), {
+      message: 'token must not appear anywhere in the serialized page',
+    })
+    .toBe(false);
+}
+
+async function expectPresentInMarkup(page: import('@playwright/test').Page) {
+  await expect.poll(async () => (await page.content()).includes(FAKE_TOKEN)).toBe(true);
+}
+
 test('challenge token is not in the DOM until revealed', async ({ page }) => {
   await gotoStepTwo(page);
 
   // The security assertion: the credential is absent from the rendered page.
-  await expect(page.locator('body')).not.toContainText(FAKE_TOKEN);
+  await expectAbsentFromMarkup(page);
   await expect(page.getByText('•'.repeat(32))).toBeVisible();
 
   // And it is genuinely reachable when the owner asks for it.
   await page.getByRole('button', { name: 'Reveal token' }).click();
-  await expect(page.locator('body')).toContainText(FAKE_TOKEN);
+  await expectPresentInMarkup(page);
 
   // Hiding puts it back out of the DOM.
   await page.getByRole('button', { name: 'Hide token' }).click();
-  await expect(page.locator('body')).not.toContainText(FAKE_TOKEN);
+  await expectAbsentFromMarkup(page);
+});
+
+test('rotating the token drops a prior reveal', async ({ page }) => {
+  // The realistic exposure: reveal, the 15-minute TTL lapses mid-screen-share, the owner
+  // clicks "new challenge" - and the freshly issued credential must not render in the clear.
+  // Step is already 2, so nothing unmounts unless TokenField is keyed on the token.
+  await gotoStepTwo(page);
+  await page.getByRole('button', { name: 'Reveal token' }).click();
+  await expectPresentInMarkup(page);
+
+  await page.unroute('**/api/owner/challenge');
+  await page.route('**/api/owner/challenge', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        token: ROTATED_TOKEN,
+        well_known_path: '/.well-known/mcpindex-challenge',
+        expires_at: new Date(Date.now() + 15 * 60_000).toISOString(),
+      }),
+    }),
+  );
+  await page.getByRole('button', { name: 'new challenge' }).click();
+
+  await expect(page.getByText('•'.repeat(32))).toBeVisible();
+  await expect
+    .poll(async () => (await page.content()).includes(ROTATED_TOKEN), {
+      message: 'a rotated token must not inherit the previous reveal',
+    })
+    .toBe(false);
 });
 
 test('the well-known URL stays visible - it is public, not a secret', async ({ page }) => {
