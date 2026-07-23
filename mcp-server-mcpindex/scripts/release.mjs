@@ -24,11 +24,27 @@ import path from 'node:path';
 const pkgRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const run = (cmd, args) =>
   execFileSync(cmd, args, { cwd: pkgRoot, stdio: 'inherit' });
+const capture = (cmd, args) =>
+  execFileSync(cmd, args, { cwd: pkgRoot, encoding: 'utf8' });
 
 const { name, version } = JSON.parse(
   await readFile(path.join(pkgRoot, 'package.json'), 'utf8'),
 );
 console.log(`release: preparing ${name}@${version}`);
+
+// Guard: refuse to release with uncommitted changes in the package dir. The header
+// promises the version is "already committed", but nothing enforced it - so
+// `npm publish` (working tree) would ship the bump while the Glama mirror
+// (`git archive HEAD:`, step 7) shipped the old version, silently. That is the
+// split that left the mirror on 0.3.10 while npm went to 0.3.11.
+const dirty = capture('git', ['status', '--porcelain', '--', '.']).trim();
+if (dirty) {
+  console.error(
+    `release: ABORT - uncommitted changes in ${name}. npm ships the working tree but the\n` +
+      `Glama mirror ships HEAD, so releasing dirty desyncs them. Commit first:\n${dirty}`,
+  );
+  process.exit(1);
+}
 
 // manifest.json is committed + mirrored to the Glama repo and built into the .mcpb;
 // keep its version in lockstep with package.json so no artifact ships a stale one.

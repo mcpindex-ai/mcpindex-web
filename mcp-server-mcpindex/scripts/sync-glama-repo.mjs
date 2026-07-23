@@ -33,9 +33,12 @@ const MIRROR_SLUG = 'mcpindex-ai/mcp-server-mcpindex';
 const SUBDIR = 'mcp-server-mcpindex';
 
 const pkgRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const { name, version } = JSON.parse(
-  await readFile(path.join(pkgRoot, 'package.json'), 'utf8'),
-);
+// `name` is stable, so the working-tree copy is fine for it. The VERSION, though,
+// must be read from the archived tree below, never from here: the content is
+// `git archive HEAD:` while this file is the working tree, and if the two disagree
+// the mirror ships one version while its commit message announces another. That is
+// exactly how the mirror came to hold 0.3.10 under two commits both titled 0.3.11.
+const { name } = JSON.parse(await readFile(path.join(pkgRoot, 'package.json'), 'utf8'));
 
 const tmp = mkdtempSync(path.join(tmpdir(), 'mcpindex-mirror-'));
 const clone = path.join(tmp, 'repo');
@@ -45,7 +48,7 @@ const capture = (cmd, args, cwd) =>
   execFileSync(cmd, args, { cwd, encoding: 'utf8' });
 
 try {
-  console.log(`sync-glama-repo: mirroring committed ${name}@${version} -> ${MIRROR_SLUG}`);
+  console.log(`sync-glama-repo: mirroring committed ${name} -> ${MIRROR_SLUG}`);
   run('git', ['clone', '--depth', '1', MIRROR_REPO, clone], tmp);
 
   // Export ONLY the committed package tree at HEAD into a clean dir. `git archive`
@@ -67,6 +70,13 @@ try {
   if (readdirSync(exportDir).length === 0) {
     throw new Error('git archive produced no files; refusing to wipe the mirror');
   }
+
+  // The version that will be published IS the one in the archived tree. Reading it
+  // here (not from the working tree) makes the commit message and the committed
+  // content structurally incapable of disagreeing.
+  const { version } = JSON.parse(
+    await readFile(path.join(exportDir, 'package.json'), 'utf8'),
+  );
 
   // Sync the clean export into the clone; --delete keeps the mirror faithful
   // (handles files removed from source). .git is the only thing we must not touch.
