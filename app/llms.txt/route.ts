@@ -76,6 +76,11 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 - Public, free to read in full, with a free PDF (no email required): [mcpindex.ai/whitepaper](https://mcpindex.ai/whitepaper)
 - PDF: [mcpindex.ai/whitepaper.pdf](https://mcpindex.ai/whitepaper.pdf)
 
+## Research / datasets (archived, citable)
+
+- Source Liveness - Baseline v1: a corroborated, timestamp-anchored census of whether the source behind every registry server is still publicly reachable. Finding: 1,830 of 13,105 referenced GitHub repositories (14.0%) are no longer publicly accessible, affecting 2,069 listed servers. Two independent vantages, 0 cross-vantage disagreements; census digest anchored to Bitcoin via OpenTimestamps. Live: [mcpindex.ai/research/source-liveness](https://mcpindex.ai/research/source-liveness). Archived, CC-BY-4.0: DOI 10.5281/zenodo.21501868 (concept 10.5281/zenodo.21501867).
+- Drift Report - Edition v1: aggregate + per-server statistics of silent tool-contract changes across the reachable remote population. Live: [mcpindex.ai/drift-report](https://mcpindex.ai/drift-report). Archived, CC-BY-4.0: DOI 10.5281/zenodo.21449150 (concept 10.5281/zenodo.21449149).
+
 ## Endpoints an agent can call
 
 - POST /api/mcp                                                  Remote MCP server (Streamable HTTP) - connect any MCP client without installing; exposes the 6 tools below as MCP.
@@ -129,6 +134,7 @@ This is the advisory directory client - not the in-path gate (\`mcpindex-gate\` 
 - [Methodology](https://mcpindex.ai/methodology): The eval (semantic-only today; conformance probe built but not yet run), four-state verdict, honest limits.
 - [Stats](https://mcpindex.ai/stats): How many MCP servers are there? Live official-registry count with stated methodology (what counts as a server).
 - [Whitepaper](https://mcpindex.ai/whitepaper): Architecture whitepaper: gate, threat model, methodology, honest limits. Public; free PDF, no email wall.
+- [Source Liveness](https://mcpindex.ai/research/source-liveness): Census of which listed servers' source repository is still publicly reachable; 1 in 7 are gone. Archived with a DOI (CC-BY-4.0).
 - [About](https://mcpindex.ai/about): Why this exists.
 
 Unofficial. Not affiliated with Anthropic.
