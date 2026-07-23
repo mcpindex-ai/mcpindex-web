@@ -5124,6 +5124,44 @@
     "title": "Cortex RMCP",
     "verdict_contract_version": "1.0.0"
   },
+  "ai-dinglebear-soma": {
+    "content_hash": "sha256:1a86d7865ff17078fc9bc0b7a3736cd7ace5c8a0527726876e81b1a681c294a7",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:01:02.088062+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:01:02.088062+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "Soma",
+    "verdict_contract_version": "1.0.0"
+  },
   "ai-dinglebear-soma-rmcp": {
     "content_hash": "sha256:1a86d7865ff17078fc9bc0b7a3736cd7ace5c8a0527726876e81b1a681c294a7",
     "dimensions": [
@@ -20382,6 +20420,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "NetSuite Link (beta)",
+    "verdict_contract_version": "1.0.0"
+  },
+  "ai-sourcemill-au-towing-legality": {
+    "content_hash": "sha256:79e9de4e50dbf9f359461a5b23e5ce3f7d89c6583367f519b599a82d618894eb",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:01:18.855812+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:01:18.855812+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "ai.sourcemill/au-towing-legality",
     "verdict_contract_version": "1.0.0"
   },
   "ai-specproof-specproof-mcp": {
@@ -51405,6 +51481,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "Custom Website Editor",
+    "verdict_contract_version": "1.0.0"
+  },
+  "com-elkassabgidata-elkassabgidata": {
+    "content_hash": "sha256:8a9f7dcc947d97fcda39e19f4476046ff98ef01a72a09d94478193dab21b26f3",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:00:28.435922+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:00:28.435922+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "ElkassabgiData",
     "verdict_contract_version": "1.0.0"
   },
   "com-emergentphysicslab-waveguard": {
@@ -95562,6 +95676,44 @@
     "title": "Mnemolog MCP",
     "verdict_contract_version": "1.0.0"
   },
+  "dev-paperdock-paperdock": {
+    "content_hash": "sha256:f9f4c46c42c5b892f16da3ed5815af5af4f744897038cff5c27daa12e0098a8f",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:00:20.097416+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:00:20.097416+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "PaperDock",
+    "verdict_contract_version": "1.0.0"
+  },
   "dev-pingzen-mcp": {
     "content_hash": "sha256:829c5a449e2c776efe14ef23002320395d15f9a4be9721cc79c0943405a20ec6",
     "dimensions": [
@@ -103493,6 +103645,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "ADVERSARIAL FIXTURE: read_file (SSH key exfiltration)",
+    "verdict_contract_version": "1.0.0"
+  },
+  "food-myplate-nutrition": {
+    "content_hash": "sha256:196522e16865bdf5f2a5756bfe16aa354c463fa42fbb22be1b3fc58a193a2ddf",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:00:24.271505+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:00:24.271505+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "MyPlate.food nutrition tools",
     "verdict_contract_version": "1.0.0"
   },
   "fr-brandyze-mcp": {
@@ -225280,6 +225470,44 @@
     "title": "io.github.finfin/mermaid-mcp-app",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-fingerprintjs-fingerprint-mcp-server": {
+    "content_hash": "sha256:2af57f68016afb5e741de002c48a4032c0c8eb9a914516442dc282862cadbd4f",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:00:08.956979+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:00:08.956979+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "Fingerprint",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-finhay-mcp-server": {
     "content_hash": "sha256:3a5a146614df9d96dddbfdfa6b23483950f749b352b0ae9f1b7eb59f1b554d15",
     "dimensions": [
@@ -225736,6 +225964,44 @@
     "title": "Firecrawl MCP Server",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-firish-webfetch": {
+    "content_hash": "sha256:ce5a4d7fbc23bca1cca9c56cfab83b41b130d85e462afe56bab7d289c5a05ab8",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:00:13.234740+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:00:13.234740+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "webfetch",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-first-touch-inc-mcp": {
     "content_hash": "sha256:2bd0f2140e07ebf6ecf44b9f3754001e62a6e845e67903a2c840c580dc806d57",
     "dimensions": [
@@ -226038,6 +226304,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.fjnunezp75/gpu-bridge",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-fkiene-llmtrim": {
+    "content_hash": "sha256:390ce0aab7e551e1909195febc78c9f6f52d2ba5450787d00930437a5f857fbd",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:00:17.419540+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:00:17.419540+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "llmtrim",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-fkom13-gencodedoc": {
@@ -228470,6 +228774,44 @@
     "title": "io.github.frangelbarrera/osint-agent-skills",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-frankchu91-mindbase": {
+    "content_hash": "sha256:4f5beb3cb87d922f00bb4fca57f4c871c3a9b73e498b6f3aee34282e6a769054",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:00:21.607091+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:00:21.607091+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.frankchu91/mindbase",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-franksterino-citeguard": {
     "content_hash": "sha256:1884133aa5926367b99df710a5883b9d52669198eb526611403e973a67e72f99",
     "dimensions": [
@@ -229266,6 +229608,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "RASON",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-frontsail-ai-aspicio": {
+    "content_hash": "sha256:06b2fac80cb720199e4367cbb9eff0e3346b6614b55a1316c2546f389bfc352f",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:00:25.780570+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:00:25.780570+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "Aspicio",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-fruggr-zendesk-mcp-server": {
@@ -237024,6 +237404,44 @@
     "title": "StressZero MCP - Burnout Risk Scoring",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-gomission-mcp": {
+    "content_hash": "sha256:64e8e74b1fda8cd320833db48a024a9a5f81ea406fcaee39d95182a413d55abd",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:00:29.960020+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:00:29.960020+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "Mission \u2014 Trust Graduation Gate",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-gonetone-mcp-server-taiwan-weather": {
     "content_hash": "sha256:42195d31bd5db33fe0e19d8f05ae5eb50e67254871d4e194bf8470e2f9693316",
     "dimensions": [
@@ -237784,6 +238202,44 @@
     "title": "PortlandMaps (Unofficial)",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-gra-kir-solsigs-mcp": {
+    "content_hash": "sha256:3e4d709962bf3347474c657ea0e9f694d9098b32e612ec0aed689ce641a8f5ed",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:00:34.110910+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:00:34.110910+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "SolSigs MCP",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-gradion-ai-ipybox": {
     "content_hash": "sha256:55e030c9736c69c575268e95ddc6f789c313567b925aa657d3d2ff9c224cbbea",
     "dimensions": [
@@ -238010,6 +238466,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "Awardopedia - Federal Contracts",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-grblasquiz-hacecuentas": {
+    "content_hash": "sha256:adc70691fe55ba678af1e5de10660cb7e176154fea5b59c3e485565a344eff1a",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared capabilities, no hidden instructions"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:00:38.306356+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:00:38.306356+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "Hac\u00e9 Cuentas \u2014 Free Calculators",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-greatquestion-mcp": {
@@ -240100,6 +240594,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.guidance-ai/guidance-lark-mcp",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-gulmezeren2-byte-erp-report-engine": {
+    "content_hash": "sha256:ae37d8d82be75e037df809c67704abdd12c3e594eddf5fdda33c3359bf568553",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Read-only MCP, no secret file access or data exfiltration"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:00:42.521056+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:00:42.521056+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "ERP Report Engine",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-gulmezeren2-byte-ihalent": {
@@ -242724,6 +243256,44 @@
     "title": "io.github.HBarefoot/engram",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-hbhqq9-bde-score": {
+    "content_hash": "sha256:bf3528d634aaa6d16d132cba5654c78e107e710be42627d3304c135925badaed",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:01:06.284209+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:01:06.284209+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.hbhqq9/bde-score",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-hcs412-ventureautomated-omnis": {
     "content_hash": "sha256:f020d7816e6ee4a40b07cfd12583bffaf34d574866cb31e3ba13c97beb575587",
     "dimensions": [
@@ -244280,6 +244850,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "SAIJ \u2014 Jurisprudencia Argentina",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-hernaninverso-costwright-mcp": {
+    "content_hash": "sha256:01b6e574433071ea4f0f8918033000d4fd9c44d6d44d2454374494b72a8a6d6d",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No secret file access or data exfiltration mentioned"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:00:46.696189+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:00:46.696189+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "costwright \u2014 agent budget analysis",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-herohunt-ai-herohunt-mcp": {
@@ -245916,6 +246524,44 @@
     "title": "io.github.HMAKT99/erabi",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-hoanglt1223-mnema": {
+    "content_hash": "sha256:510d0ca9cbd98cf267e41a2a80820569dcf79233e42afb49f7653f62d1f3e450",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared access to personal data, but no hidden instructions"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:00:50.908785+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:00:50.908785+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "Mnema \u2014 AI Memory Layer",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-hoklims-stacksfinder": {
     "content_hash": "sha256:2ba1c77695a73bddb51cb6eab69fa788d02cb83dcd06ae8e594dc29f51fa8585",
     "dimensions": [
@@ -247504,6 +248150,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.huandu/feishu-markdown-mcp",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-huangdun-tempmd": {
+    "content_hash": "sha256:73b5a48c4e073844343b1d9c698a246e768162529ec59ce21e8b5f92dd7dfc20",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No secret access or data exfiltration mentioned"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:00:55.084890+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:00:55.084890+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.huangdun/tempmd",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-huangzesen-heliospice": {
@@ -249102,6 +249786,44 @@
     "title": "RAGScore",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-i-m-arul-cricketstudio-mcp": {
+    "content_hash": "sha256:bc2926df3b16f210d0afb85572751b43804cb5c5069091091af9393d96c7c0e6",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:00:59.272422+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:00:59.272422+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "CricketStudio MCP",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-i-ninte-grad-agent": {
     "content_hash": "sha256:259800681dc49fcd1b2ecd322194a57b8b568e4acf39006a51199c3bd2966949",
     "dimensions": [
@@ -249669,6 +250391,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.iancollins27/mailsnail",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-iarfhlaith-gaff-check": {
+    "content_hash": "sha256:4b27838372df3ab323607d41c9b160f088ed9a08b81b9f2f95f3bd5931d26693",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared capability, no hidden instructions"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:01:03.440638+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:01:03.440638+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.iarfhlaith/gaff-check",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-ibazylchuk-paparats-mcp": {
@@ -250963,6 +251723,44 @@
     "title": "io.github.ilpr/waitlister",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-im-ff-crawlinx-mcp": {
+    "content_hash": "sha256:c3c986b335ed8abcdc596f287c8513d86f793971af2b045516917a2787699bb1",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found in the description"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:01:07.610054+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:01:07.610054+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.im-ff/crawlinx-mcp",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-im-sham-aegis-protocol": {
     "content_hash": "sha256:6cd9790107922211896bd84462ca6e7823959cfac911cfda9942e7a7d23ea778",
     "dimensions": [
@@ -251417,6 +252215,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "Pleasanter MCP",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-imprezahost-impreza-mcp": {
+    "content_hash": "sha256:3ee4359778fd383fdf47977d85175ad53f9e689d2bbbc9cd9d909e442233d1b4",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Deploys AI agent without user consent"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "low",
+        "verdict": "fail"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:01:11.811277+00:00",
+      "rationale": "Semantic screen flagged a possible manipulation pattern in the description; review before your agent calls this tool."
+    },
+    "evaluated_at": "2026-07-23T06:01:11.811277+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "Impreza Host",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-imran-siddique-agentos": {
@@ -254603,6 +255439,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.invapi-org/invapi-mcp",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-invaro-opentax": {
+    "content_hash": "sha256:47b47662b7fe5d96cecc70f3ddd9237df257d763a32ed433c8e3c9854ae0ca38",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared capability, no hidden instructions"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:00:32.599413+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:00:32.599413+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.Invaro/opentax",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-invertedhoologan-eval-engine-mcp": {
@@ -259114,6 +259988,44 @@
     "title": "io.github.jaimenbell/bus-mcp",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-jaimenbell-desktop-mcp": {
+    "content_hash": "sha256:162f33c1089ef67bd9859c89331a84a4c14b09ebb12cb81684490a0b80d7a618",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared capabilities, no hidden instructions"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:01:16.007280+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:01:16.007280+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.jaimenbell/desktop-mcp",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-jajuanx-hometeam-directory": {
     "content_hash": "sha256:6f09f040d46b167a38f76097affd76f66834ab1e0a6480aa07016bd48a83de9b",
     "dimensions": [
@@ -259378,6 +260290,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "Forage Shopping",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-jamboree777-nightwatch": {
+    "content_hash": "sha256:5e2a991c45155f6b4002b8be4a051f721faf5527132cf6e8163dc2661190a47c",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:01:20.189007+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:01:20.189007+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "NightWatch Live Intelligence",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-james-chahwan-repo-graph": {
@@ -261432,6 +262382,44 @@
     "title": "ZenLink MCP",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-jaysinailabs-aperture-mcp": {
+    "content_hash": "sha256:091268066afafc3dbd86b51a68dd0d1bf8081a6aab3c6c7c7c5e4703b6ba70bf",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No secret access or data exfiltration mentioned"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:01:24.381553+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:01:24.381553+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "Aperture MCP",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-jayvee6-apple-mail-mcp": {
     "content_hash": "sha256:3595be5c611cd1ceaaf297ef701b42b4c6a9f940cd8f776fdb29559de8e14895",
     "dimensions": [
@@ -261849,6 +262837,44 @@
     "title": "io.github.jbiggs77/bizinsured",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-jbobbink-glippy-mcp": {
+    "content_hash": "sha256:f53694a2bd3011ea863c9ab7f295a089f4cafab3062f628c698c39886bb75bff",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared capability, no hidden instructions"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:01:28.616959+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:01:28.616959+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.jbobbink/glippy-mcp",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-jbrand0n-market-intelligence-mcp": {
     "content_hash": "sha256:d88e61bfe6deca7e4b6d102f830695b1eee4ae6e5405138a8c32790a1c2e26cc",
     "dimensions": [
@@ -262189,6 +263215,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.jdhart81/agent-escrow",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-jdhart81-agent-market-network": {
+    "content_hash": "sha256:97075c0389415a54aaea15f512ec005b4fb6cf6af36a3c461133633f5981a253",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:01:32.770159+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:01:32.770159+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.jdhart81/agent-market-network",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-jdhart81-agent-offset-clearinghouse": {
@@ -263101,6 +264165,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.jeresalmisto/calcfi-mcp",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-jermayne36-heartwood-memory": {
+    "content_hash": "sha256:fdead22d1d7341b5cf94ceb8f383252354f2cf2d1aca050cac62b799897974d1",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:01:36.964636+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:01:36.964636+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "Heartwood Memory",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-jerrysrodz-goldhold": {
@@ -264393,6 +265495,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "Noosphere",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-jinweihan-ai-ferrolaser-parts": {
+    "content_hash": "sha256:1ef26a5b3dfa1047ce5b6196433256b23d1eab7ad1747979184ac304ebeb2e4f",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:01:41.157335+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:01:41.157335+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.jinweihan-ai/ferrolaser-parts",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-jitbit-jitbit-helpdesk": {
@@ -266295,6 +267435,44 @@
     "title": "io.github.johnisanerd/google-ai-overview",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-johnisanerd-google-flights": {
+    "content_hash": "sha256:616a22c55780cf3cf3e996e036e540c136e3fe8fd1c7868c78525865d167dc55",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared capability, no hidden instructions"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:01:45.317698+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:01:45.317698+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.johnisanerd/google-flights",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-johnisanerd-google-local": {
     "content_hash": "sha256:1b3fe873a76e8b43bd59c13fe6b13ad53583ba5b3df1d28cca084688fa175661",
     "dimensions": [
@@ -266409,6 +267587,44 @@
     "title": "io.github.johnisanerd/google-shopping",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-johnisanerd-linkedin-posts": {
+    "content_hash": "sha256:ff3f7ef64166de63058d62ce02862a1177db4bce46a6f511c6992ae703774084",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No secret file access or data exfiltration mentioned"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:01:49.527719+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:01:49.527719+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.johnisanerd/linkedin-posts",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-johnisanerd-startup-investors": {
     "content_hash": "sha256:7b71ae8d6386acbd393873ad2f964f9abd4070f781edf84800e05367e68bacda",
     "dimensions": [
@@ -266445,6 +267661,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.johnisanerd/startup-investors",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-johnisanerd-yandex-search": {
+    "content_hash": "sha256:cdfe92348373dd0c7792500314f193b8805a3a9068338b7a035ef2a8a3ebc826",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared capability, no hidden instructions"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:01:53.717550+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:01:53.717550+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.johnisanerd/yandex-search",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-johnmci-claudesmalltalk": {
@@ -267205,6 +268459,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.jonradoff/lightcms",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-jontelep-summarize-vid": {
+    "content_hash": "sha256:48f9ac6131c8b5ca2351036f59f4c606a35fafc4eeb601f49cd52d5ed11316c7",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:00:45.169887+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:00:45.169887+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "YouTube Video Summarizer (pay-per-call)",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-jonybur-mcp-server": {
@@ -268307,6 +269599,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "Pic Gen",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-jrainsberger-orthotomeo": {
+    "content_hash": "sha256:6b45c8ecc581ea6a91469f84916727c0a6f088afd9c3ba30704461a106a9e593",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:01:57.872916+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:01:57.872916+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.jrainsberger/orthotomeo",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-jrelph-ripe-atlas": {
@@ -271119,6 +272449,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.jyswee/ainpc-cli",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-jyswee-buggazi": {
+    "content_hash": "sha256:591c84af294cad9fa33fec02786f88682ea8ee6464fb7965e233ebe0df5ee368",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:02:02.027165+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:02:02.027165+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.jyswee/buggazi",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-jztan-pdf-mcp": {
@@ -276630,6 +277998,44 @@
     "title": "Pyxel MCP",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-kitepon-rgb-aiterm-mcp": {
+    "content_hash": "sha256:4815e73e3fc3cef30a0d4b514a55bc0af18012fd1821dd61bd36420c900f9c3c",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:02:06.184802+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:02:06.184802+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.kitepon-rgb/aiterm-mcp",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-kitewright-mcp": {
     "content_hash": "sha256:44a8621f01196fab41e1dafa77e3e2de44c117d3beaf81a5454e0311c71c7348",
     "dimensions": [
@@ -276666,6 +278072,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.kitewright/mcp",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-kitsune-de-hyperliquid-mcp": {
+    "content_hash": "sha256:e94afbf74d7f8c6a629f09a8a14058d02109533c9fa2ee6d8b0db6b74fcddede",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Read-only access to Hyperliquid data"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:02:10.411049+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:02:10.411049+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.kitsune-de/hyperliquid-mcp",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-kittycad-zoo-mcp": {
@@ -278451,6 +279895,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.krakonjac300-pixel/agent-media-toolkit",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-krasnoperov-makefx": {
+    "content_hash": "sha256:8380fba7f9b1b0a5018966bbd78392bb58f8e68eb360e567c4482172b9912757",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:02:14.611318+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:02:14.611318+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "Make Effects",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-krayinc-docbase": {
@@ -281681,6 +283163,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.lanternrow/tiktok-organic-mcp",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-lanternrow-youtube-organic-mcp": {
+    "content_hash": "sha256:6bdc3d9dca49541f28d72e0194013bc9b697efeda4e7ce061f03b1e8a278d92d",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:02:18.780496+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:02:18.780496+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.lanternrow/youtube-organic-mcp",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-lapfelix-xcodemcp": {
@@ -285860,6 +287380,44 @@
     "title": "io.github.leshchenko1979/fast-mcp-telegram",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-lesofi-handinloop-mcp-server": {
+    "content_hash": "sha256:df73f0b5714b72579378be44b3fa9e080861007994f8971c2a468ad781db9778",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:02:22.939075+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:02:22.939075+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.lesofi/handinloop-mcp-server",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-let-sunny-canicode": {
     "content_hash": "sha256:76df041e3aeb974496f62163de19f95ccceb1c235e369e838485c36db54133fb",
     "dimensions": [
@@ -287228,6 +288786,82 @@
     "title": "Frankfurter",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-linhnnmt-genai-capture": {
+    "content_hash": "sha256:dec6b27edc32044d6b3ab7c12b7d057cd5fc7ce617e8abf85b7b94a46bd125ce",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared capability, no hidden instructions"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:02:27.114931+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:02:27.114931+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.linhnnmt/genai-capture",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-linkedmash-linkedmash": {
+    "content_hash": "sha256:aa55c2d48dd75c5c7c1a059a23d657dce4c1a516c0fbf0f1af64919c390ccdff",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared capability, no hidden instructions"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:02:31.278410+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:02:31.278410+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.linkedmash/linkedmash",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-linuxsuren-atest-mcp-server": {
     "content_hash": "sha256:c043469311d77ffe982c7012e839b2d00dd175dd4085a1e88ea8eb1add05a874",
     "dimensions": [
@@ -288176,6 +289810,82 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "One Person Company OS",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-lixiaolin94-skia-studio": {
+    "content_hash": "sha256:1f2d3a252c8b71e8827dac0fbf91fff0a9c7de0686516f20fadd175a676daf16",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:02:35.437445+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:02:35.437445+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.lixiaolin94/skia-studio",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-lixiaowww-veragent": {
+    "content_hash": "sha256:091b00222f8863f70c37feef253e986e4eb7e2ca52bcdec50772877df4f25e66",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:02:39.610317+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:02:39.610317+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "Veragent",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-lizzlechen-local-dfw-mcp": {
@@ -290150,6 +291860,44 @@
     "title": "io.github.LorgAI/lorg-mcp-server",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-lostnumber07-shearline": {
+    "content_hash": "sha256:56a9cda40622ce6133845febfec0e1e4f0fcc71c10c92b29d989070d5c640b12",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:02:43.797399+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:02:43.797399+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "SHEARLINE",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-louis49-melchizedek": {
     "content_hash": "sha256:85dbfdd6d9b0418226619c5513cd27fb42dfb49b42dc23f05961c23ea59f690c",
     "dimensions": [
@@ -290980,6 +292728,44 @@
     "title": "Cairn",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-lucyfuur94-webnav": {
+    "content_hash": "sha256:775289d4e412dbac9038d1d8a62694e8896a7299b57925fa178b2d7fa2cc1efd",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:02:47.949476+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:02:47.949476+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.lucyfuur94/webnav",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-ludmila-omlopes-youtube-video-analyzer": {
     "content_hash": "sha256:2373ec9ea34896f46084bd9013ab25e14abb96c6d7e2b20d480eaa5cef1c7d1f",
     "dimensions": [
@@ -291244,6 +293030,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.LuizEduPP/rememb",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-lukasschwarz-elster-mcp-server": {
+    "content_hash": "sha256:6ca245894a7a64b6d15a78954a837c60bc4ea43b3012ba7476e49d39912dcda8",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:02:52.111657+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:02:52.111657+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.lukasschwarz/elster-mcp-server",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-luke-fairbanks-broll": {
@@ -291885,6 +293709,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.luziadev/luzia",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-luzomi-grandline-mcp": {
+    "content_hash": "sha256:ca00ba0d08474943389caa57f93793417476573af310b889efc868d522feba03",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:02:56.277379+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:02:56.277379+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.luzomi/grandline-mcp",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-lvpiggyqq-xcatcher": {
@@ -293064,6 +294926,44 @@
     "title": "io.github.Madia333/lintbase-mcp",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-madrzak-rankgoat": {
+    "content_hash": "sha256:7ec7464d21e6447bfb4ed173ef4c45b1eb7b82744baa8738d4e7103fb63886fe",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared capability, no hidden instructions"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:03:00.480150+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:03:00.480150+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.madrzak/rankgoat",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-mafzaal-d365fo-client": {
     "content_hash": "sha256:b31133628d6acd78e4c2f66a42c562ae9d7d472ef54c90964a35c3cdf865ef3b",
     "dimensions": [
@@ -293328,6 +295228,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "MailboxValidator",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-majiayu000-remem": {
+    "content_hash": "sha256:e66312a756162b9437bd74d6eecfde7849272ba3a0bf5d85f2c3e2525333d28b",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:03:04.631108+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:03:04.631108+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.majiayu000/remem",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-major-pcp": {
@@ -293974,6 +295912,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "OpenF1 MCP by UnClick",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-malamutemayhem-openfoodfacts": {
+    "content_hash": "sha256:67f5c8d08465d22a8c15f3aabca235e427fbc0187d814fb8482e7700d457af65",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared capability, no hidden instructions"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:03:08.839220+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:03:08.839220+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "Open Food Facts MCP by UnClick",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-malamutemayhem-ptv": {
@@ -299356,6 +301332,44 @@
     "title": "io.github.matematicsolutions/au-eli-mcp",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-matematicsolutions-co-eli-mcp": {
+    "content_hash": "sha256:ef2c99b042f7241f845dbc13be90f592bea25c5168d150506377c6c7cf48452f",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:03:13.004376+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:03:13.004376+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.matematicsolutions/co-eli-mcp",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-matematicsolutions-de-eli-mcp": {
     "content_hash": "sha256:edb8bf3d04fe297aead4b2e9e4bd123cda2c48641f60e5e75fb1f4d7459ef9a2",
     "dimensions": [
@@ -299392,6 +301406,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.matematicsolutions/de-eli-mcp",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-matematicsolutions-dk-eli-mcp": {
+    "content_hash": "sha256:114565ed1d97b94a53adb92a30b264bb078eff152d6dab49b4c2d99d592e4ae8",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:03:17.165847+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:03:17.165847+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.matematicsolutions/dk-eli-mcp",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-matematicsolutions-fi-eli-mcp": {
@@ -300380,6 +302432,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.Maverick7/glue-code-generator",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-maxaeo-maxaeo-ai-visibility-mcp": {
+    "content_hash": "sha256:17cd5db0240cd930a82551ecb65b76abc575d4f2400f9a5ca71eb990c2bf01ff",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:03:21.332449+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:03:21.332449+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "MaxAEO AI Visibility MCP",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-maxanatsko-mcp-engine": {
@@ -306485,6 +308575,44 @@
     "title": "Todos",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-mcurmi05-vdiff-mcp": {
+    "content_hash": "sha256:9947bf0b38a54cfbb86185767fa9a6bfefab71e88474e106c0e7cb6f4f82b3ee",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:03:25.505614+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:03:25.505614+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.mcurmi05/vdiff-mcp",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-mdefrance-autocarver": {
     "content_hash": "sha256:eb9157ee193a26a95055d17105a877bc7d1e778d2460fb8c919b9373fd82b844",
     "dimensions": [
@@ -307738,6 +309866,44 @@
     "title": "LLMemory",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-meloliva14-verity-mcp": {
+    "content_hash": "sha256:464fd0f67b647aee6d6b5d0310272e67d309d8e3f49ea5e16297fc3cc6261d79",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No suspicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:03:29.692200+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:03:29.692200+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.meloliva14/verity-mcp",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-meloncafe-chromadb-remote-mcp": {
     "content_hash": "sha256:731ff8eb849cd3ab1bd664fcb6fb5216d4dac30f559d0192f374b1776aa80a9a",
     "dimensions": [
@@ -308192,6 +310358,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.MendleM/pipepost",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-menot-you-n-memory": {
+    "content_hash": "sha256:d6ce08a4b3f992decf7d095d93e00171c26f89bda5b936360ca70e7f80f12ad6",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No suspicious instructions or data handling mentioned"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:00:49.494058+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:00:49.494058+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "nMEMORY",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-mepsopti-sprout-mcp": {
@@ -308762,6 +310966,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "Parse-DMARC MCP Server",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-meyusufdemirci-app-store-operator": {
+    "content_hash": "sha256:6d6f8dfe5db4ff882f02aebcad5a23f72c89742287499ca48b3de052e98c0a07",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:00:53.715660+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:00:53.715660+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "App Store Operator",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-mfbahc-colter": {
@@ -309710,6 +311952,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.michael-denyer/hot-memory-mcp",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-michaelhologram-clutter-mcp": {
+    "content_hash": "sha256:1ede337394107495f68a59ebbd60f55f0cc6d06cbc06e84907c2b4470e87f1eb",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious intent described"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T06:03:33.902522+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T06:03:33.902522+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "Clutter",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-michaeljiangmingfeng-debug-quanttogo-mcp": {
@@ -314308,6 +316588,44 @@
     "title": "io.github.mingyo186/partreel",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-minjikim89-korean-saju-calculator": {
+    "content_hash": "sha256:18abbbfbf765d50ade2585ae9c5f533ac3579072c5c41b92ac1de288e9e82d30",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:01:23.074311+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:01:23.074311+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.minjikim89/korean-saju-calculator",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-mintii-labs-ozor": {
     "content_hash": "sha256:0d776b7fe94e4e70db05bf21990855e4b82880e1499bcd780d335f457895b1e5",
     "dimensions": [
@@ -316200,6 +318518,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "PDF Modifier",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-mmmikael-arelay": {
+    "content_hash": "sha256:866f810742b11e362fb490bd763982de89c41765e9061c00f894578f9333cb7a",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:01:27.282633+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:01:27.282633+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.mmmikael/arelay",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-mmorris35-devplan-mcp-server": {
@@ -319164,6 +321520,44 @@
     "title": "Misar.Blog MCP Server",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-mrityunjay-tiwari-ui-registry-mcp": {
+    "content_hash": "sha256:3085d08320803d85e14568cdbf44736c6399b93a6f6a55662be684b02d5dca0d",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:01:31.444947+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:01:31.444947+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "UI Registry",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-mrlarryjohnson111-polymarket-mcp-server": {
     "content_hash": "sha256:7e85cd5325cf46d38f968356d5edd9dc7d1b3be751857e573a2eb7787ee0872a",
     "dimensions": [
@@ -319656,6 +322050,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.MrWizardlyLoaf/rugcheck-ai",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-ms-zaman-designscan": {
+    "content_hash": "sha256:307ddba73a4bb99d57dc4127ce8a1e8584d14a824c0f0decf89722dd21779d7b",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Extracts design tokens from website, no secret access or exfiltration"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:01:35.625583+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:01:35.625583+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "DesignScan",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-msaad00-agent-bom": {
@@ -321896,6 +324328,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "jobd",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-musharna-ldraw-mcp": {
+    "content_hash": "sha256:a15e9a28139651b2043ec89e82880617352a24c37424a26fb7327e633ea8820a",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No suspicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:01:39.814878+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:01:39.814878+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "ldraw-mcp",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-musharna-plant-genomics-mcp": {
@@ -324245,6 +326715,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "MTG MCP",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-ndesv21-socialclaw": {
+    "content_hash": "sha256:be2d32646384b6847decb8bd3312db3c0a51593a72b7cf8c67cb7ba2b19d0918",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "declared capability, no hidden instructions"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:01:43.983635+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:01:43.983635+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.ndesv21/socialclaw",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-ndjordjevic-pinrag": {
@@ -326831,6 +329339,44 @@
     "title": "io.github.nhadaututtheky/neural-memory",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-nhoverte-biocosm": {
+    "content_hash": "sha256:84dc4acbf2e1fc5833f42c328c38e1fc15c8da269cd97b35a751a024820eae0c",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:01:48.182784+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:01:48.182784+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "BioCosm",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-nhype-owa-exchange-mcp": {
     "content_hash": "sha256:b02f936d6e01b077d4849b8e0d9d37e913081970e91913a16312dab61ff1f605",
     "dimensions": [
@@ -328693,6 +331239,44 @@
     "title": "MCP Fiscal Brasil",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-nikolausm-imap-mcp-server": {
+    "content_hash": "sha256:94a56959d3de1fb4dd512dd6ce598ea611868c8f3ce6954860cbb8a5c50b952b",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared capability to read and send email"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:01:52.376731+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:01:52.376731+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.nikolausm/imap-mcp-server",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-nikulk2992-jpg-prismhr-mcp": {
     "content_hash": "sha256:4a117dfd9ee6ffde50c0a6c931e0713136c8655b000e53154ec35ecf09ea2717",
     "dimensions": [
@@ -329073,6 +331657,44 @@
     "title": "UCAI",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-nirholas-agent-sniper": {
+    "content_hash": "sha256:167d0f453ef6c1a6c2ee075a8ca2ffc1bee79a1c7cef892d52066a13373d2f1a",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:01:56.550926+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:01:56.550926+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "Agent Sniper",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-nirholas-agentcore-payments-mcp": {
     "content_hash": "sha256:8a8e418765ae191287e0394e058ac665488d25c7d35aeade86d958943ffc316a",
     "dimensions": [
@@ -329147,6 +331769,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "three.ws Agora",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-nirholas-alerts-mcp": {
+    "content_hash": "sha256:ada964233c62fc733945d77666c701af57165d4ba5c3bf8b22dab73ac3f2a2ed",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared capability, no hidden instructions"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:02:00.744309+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:02:00.744309+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "three.ws Alerts",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-nirholas-audio-mcp": {
@@ -329299,6 +331959,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "three.ws Concierge",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-nirholas-copy-mcp": {
+    "content_hash": "sha256:eb8271d0a024c67ecfb4dbf98c37d93dd7f646ea63b11b4fcc0ec51fa1f548b8",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:02:04.904169+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:02:04.904169+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "three.ws Copy Trading",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-nirholas-ethereum-wallet-mcp": {
@@ -329567,6 +332265,44 @@
     "title": "three.ws Portfolio",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-nirholas-provenance-mcp": {
+    "content_hash": "sha256:f8c403c4c71b979bbf35fecc8f7adb27e9b5a2e9e4bfc56f969ee89a7df67ee2",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No secret file access or data exfiltration mentioned"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:02:09.086067+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:02:09.086067+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "three.ws Provenance",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-nirholas-pumpfun-claims-bot": {
     "content_hash": "sha256:d162de371be7a4cd37952dbbc15b01d81ba942c45e734042454d6b1d958e486a",
     "dimensions": [
@@ -329603,6 +332339,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "PumpFun Claims Bot",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-nirholas-pumpfun-solana-mcp": {
+    "content_hash": "sha256:0634516a85d39d541770b333e558d42a27901a4f39967dcf32e147c60aa030d2",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:02:13.264259+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:02:13.264259+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "pump.fun Solana Data",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-nirholas-robinhood-mcp": {
@@ -329833,6 +332607,44 @@
     "title": "three.ws Avatars",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-nirholas-threews-pumpfun": {
+    "content_hash": "sha256:5b38c3e6d3b1c249c1abfeff167717a3f51b288c7f549264f5ca7a5caede46d3",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:02:17.451264+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:02:17.451264+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "three.ws pump.fun MCP",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-nirholas-transaction-mcp-server": {
     "content_hash": "sha256:38d9b965dc93c48b3f3fc85bd312b64217394a3deb9d14ea28349ae64d21ce8c",
     "dimensions": [
@@ -329871,6 +332683,44 @@
     "title": "Ethereum Transaction Builder",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-nirholas-tutor-mcp": {
+    "content_hash": "sha256:db5c39f6410ba35a89a95b8b770ee8d1c213b37b9ab382b1ce93480b68ec51fe",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared capability, no hidden instructions"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:02:21.597497+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:02:21.597497+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "three.ws Tutor",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-nirholas-validation-mcp-server": {
     "content_hash": "sha256:f45e4062ab2fd27fe845ae7e2cd8e0f4a372d7bd8303036347a83f8c788ece50",
     "dimensions": [
@@ -329907,6 +332757,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "Ethereum Address Validator",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-nirholas-vision-mcp": {
+    "content_hash": "sha256:07b2742680b14d2c68871cc2cf1c1d5c8dc49dd971d0a598a85e4424400c5438",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No secret file access or data exfiltration mentioned"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:02:25.789751+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:02:25.789751+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "three.ws Vision",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-nirholas-x402-bridge": {
@@ -331651,6 +334539,44 @@
     "title": "io.github.NovadaLabs/proxy4agents-mcp",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-novadyne-hq-ledger-mcp": {
+    "content_hash": "sha256:177a185510ac0a9673d36d536ba07cbd31d12ea3043e4502f68789b0591f25d8",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found in description"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:02:30.014384+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:02:30.014384+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.novadyne-hq/ledger-mcp",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-novaventures-ai-marriage-astro": {
     "content_hash": "sha256:70677e0e2bce1cee042eb186a893c358bed9a8024e4cd75f86ebd674bef5d151",
     "dimensions": [
@@ -332333,6 +335259,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.nugehs/aiglare",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-nugehs-bouncer": {
+    "content_hash": "sha256:21c66acf700f9af6e51aa9903e8e8108e8bac087e3e093d60be5d05700f14625",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:02:34.185882+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:02:34.185882+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "bouncer",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-nugehs-repoctx": {
@@ -333093,6 +336057,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "MCP Debug Recorder",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-oaslananka-health-monitor-mcp": {
+    "content_hash": "sha256:2639c0c66ea57d6ca60caff69d77e8dc991bee7f166ce261eea17bf18f6c313d",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:01:10.474952+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:01:10.474952+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "MCP Health Monitor",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-oaslananka-infra-lens-mcp": {
@@ -337153,6 +340155,44 @@
     "title": "io.github.oomkapwn/enquire-mcp",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-ooopak11-opuslog": {
+    "content_hash": "sha256:5d6986ce6af24dae9a58b1060066dde7f93ff85116618a99141262af36938a00",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:02:38.397967+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:02:38.397967+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.ooopak11/opuslog",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-ooples-mcp-console-automation": {
     "content_hash": "sha256:e01426ce6efdfa95cafe435117d302837b741ac01473e2e3aa0ec30eeb621bed",
     "dimensions": [
@@ -340039,6 +343079,44 @@
     "title": "io.github.ozanmutlu/gitlab-docs",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-ozers-hooksense": {
+    "content_hash": "sha256:306abf2e25dfb6a768e2a0f03b361e755f868e4b04efaf0d5b10e4e8a5596d74",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared capability, no hidden instructions"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:02:42.601372+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:02:42.601372+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.ozers/hooksense",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-ozorown-frostbyte": {
     "content_hash": "sha256:587e81c80590d59f8c13e6e5622faea2fe81f993ef25baf996962cbca68d0fd2",
     "dimensions": [
@@ -340682,6 +343760,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "Pact Tooling",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-pactlayer-escrow": {
+    "content_hash": "sha256:4067ddd1123ad0776cefa8fbe859d720e05793906ac40d267db580142cb8ae8d",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:00:36.797951+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:00:36.797951+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.pactlayer/escrow",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-pagecrawl-pagecrawl-mcp": {
@@ -341406,6 +344522,44 @@
     "title": "io.github.Pantheon-Security/notebooklm-mcp-secure",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-panzik13-forgivemyagent-mcp": {
+    "content_hash": "sha256:aeb732b0c32bf3ce0b44f1b3281d3b65ae311f5bf6659a7f11b1a77975ad45f1",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious intent described"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:02:46.779133+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:02:46.779133+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.panzik13/forgivemyagent-mcp",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-paolobietolini-gtm-mcp-server": {
     "content_hash": "sha256:751ee85b726e4f359c7ad11f0de74710a3a463c3b24546760c30753ae6f5c4ca",
     "dimensions": [
@@ -341746,6 +344900,82 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.parallelromb/smara",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-pareen-monad-mcp": {
+    "content_hash": "sha256:ac6d4a394b44cf59e8c3e50b610769d14ba3c9053b009398b16f9f34434f845b",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:02:51.013725+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:02:51.013725+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.pareen/monad-mcp",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-parkseokjune-kaggle-mcp": {
+    "content_hash": "sha256:1e3a19785157ea65be39461e8c9790108dc0130d975ec2ede1f054d4d542d595",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:02:55.177567+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:02:55.177567+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "Safe Kaggle MCP",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-parserelay-mcp": {
@@ -344103,6 +347333,44 @@
     "title": "io.github.PedroMarianoAlmeida/ffmpeg-mcp",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-pedrot95dev-twitterapi": {
+    "content_hash": "sha256:57daa97fc8f9a63ef11f9c13a1dda4cf8b390319e241e9d71587df3f64549b49",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared capability to read/write Twitter data"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:02:59.353826+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:02:59.353826+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.pedrot95dev/twitterapi",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-pelletfi-mcp": {
     "content_hash": "sha256:b11761658b7d7c1db5bdb9c0656429cd4e9c9d56f035b56522e45a175a52851a",
     "dimensions": [
@@ -344405,6 +347673,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "SUZURI MCP Server",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-pepesto-solutions-agent-to-cart-mcp": {
+    "content_hash": "sha256:23641d817266154a55f786f647c795c096e2af72efd5702d74025aea4a953750",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No suspicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:03:03.559036+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:03:03.559036+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "Pepesto Agent-to-Cart",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-pepesto-solutions-pepesto-mcp": {
@@ -345621,6 +348927,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.pghdma/callrail-mcp",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-phaedo-labs-phaedo-mcp": {
+    "content_hash": "sha256:890440a7863feb2abdf07514d35d415a452d4c84ef326bccc00208e20fb0093e",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "injection and escalation instructions"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "low",
+        "verdict": "fail"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:03:07.742647+00:00",
+      "rationale": "Semantic screen flagged a possible manipulation pattern in the description; review before your agent calls this tool."
+    },
+    "evaluated_at": "2026-07-23T07:03:07.742647+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.phaedo-labs/phaedo-mcp",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-phasespace-labs-palinode": {
@@ -348053,6 +351397,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "Apology",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-pipeworx-io-arcgis-tallahassee": {
+    "content_hash": "sha256:303ebc171de0758faf1b7660fc339e6de3918de588c175357195c56dc3edf7ee",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:03:11.913335+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:03:11.913335+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "Arcgis Tallahassee",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-pipeworx-io-archive": {
@@ -366672,6 +370054,44 @@
     "title": "Twilio",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-pipeworx-io-uk-gazette": {
+    "content_hash": "sha256:6b6c918e47a29ee697e21f3f1303c07eb15f2bb83764db6cf73bdd73e34db18c",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:03:16.092646+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:03:16.092646+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "Uk Gazette",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-pipeworx-io-uk-ons": {
     "content_hash": "sha256:577a5c76a13ef0f4ee377dbee5815d2268ef28ace525dda1e25be9226e7d9e56",
     "dimensions": [
@@ -370244,6 +373664,44 @@
     "title": "io.github.pouyahasanamreji/continuum",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-poweredbygen-gen-mcp-server": {
+    "content_hash": "sha256:748ee34e854a2bc46e50aff1887f8b1ede717fa1bca51836f504fdb1ea255602",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:03:20.249545+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:03:20.249545+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "GEN",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-pozymasika-please-remind": {
     "content_hash": "sha256:5465a95d8cac82919ed8f236d5ca3c5577fa80909147214168e0e4a4ac7ff7f6",
     "dimensions": [
@@ -371422,6 +374880,44 @@
     "title": "Signet MCP Tools",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-priteshmann-easeclaw": {
+    "content_hash": "sha256:d0857438189cca43e252d883691c433a0681b6c077d3d31ab02648cb5d4629fa",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared capability, no hidden instructions"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:03:24.423412+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:03:24.423412+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.priteshmann/easeclaw",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-privacyplaybook-sops-mcp": {
     "content_hash": "sha256:516e2e1e07bd7c245f42bbc86ac5970827eb5112a5f6d5b919208be867bfb3fc",
     "dimensions": [
@@ -371878,6 +375374,44 @@
     "title": "io.github.ProjectAILiberation/tactus",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-projecttron-numproof": {
+    "content_hash": "sha256:3302828163649712663bb00bc2eba0abb2f458ee8b4493a24b4865c2906479d7",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:03:28.588057+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:03:28.588057+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "NumProof",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-prometheusagency-bluesky-brand-monitor": {
     "content_hash": "sha256:9a922933109b5238c62b00fb7724fa6fb43648f0846d67ffa602ba98be67df15",
     "dimensions": [
@@ -372256,6 +375790,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "Promptster",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-promptwheel-ai-logbook": {
+    "content_hash": "sha256:db449a252924bc56c3ad47e8c4429544be7e322474afd82d791df77e9c97df24",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:03:32.754448+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:03:32.754448+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.promptwheel-ai/logbook",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-prontohq-mcp-pronto": {
@@ -373206,6 +376778,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.pungggi/smart-terminal",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-purahmanian-google-trends-mcp": {
+    "content_hash": "sha256:24e85881c16ef1dcf69dd332208eb199fb6e0d894deb2420ca2efcb03e2ca3c2",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:03:36.960176+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:03:36.960176+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.purahmanian/google-trends-mcp",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-pure-maple-modelmux": {
@@ -374267,6 +377877,44 @@
     "title": "io.github.qinisolabs/companieswise",
     "verdict_contract_version": "1.0.0"
   },
+  "io-github-qinisolabs-floodwise": {
+    "content_hash": "sha256:3ddbcd4394e2692997ab60d73e4aa99b40bf949ac7a3f5e2439b24bfa965bb62",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:03:41.161312+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:03:41.161312+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.qinisolabs/floodwise",
+    "verdict_contract_version": "1.0.0"
+  },
   "io-github-qinisolabs-icdwise": {
     "content_hash": "sha256:2fd6b6387d9124f461b9c43019e47f84ac683fdb388f900053b54912736f8d54",
     "dimensions": [
@@ -374303,6 +377951,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "io.github.qinisolabs/icdwise",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-qinisolabs-sanctionwise": {
+    "content_hash": "sha256:7a6a7616482bbf4f9322e424ae8e0114ccffc29145539c46ef9c8d1851ba61b1",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:03:45.332355+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:03:45.332355+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.qinisolabs/sanctionwise",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-qiskit-qiskit-code-assistant-mcp-server": {
@@ -426356,6 +430042,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "Kognitrix AI",
+    "verdict_contract_version": "1.0.0"
+  },
+  "io-github-themutherfvcker-adu-zoning": {
+    "content_hash": "sha256:5e6af338e286cfae35c1256431d2108646467112922b383353233cef74d16296",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "Declared capability, no hidden instructions"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:00:40.982483+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:00:40.982483+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "io.github.themutherfvcker/adu-zoning",
     "verdict_contract_version": "1.0.0"
   },
   "io-github-thenextgennexus-academic-research-mcp-server": {
@@ -489065,6 +492789,44 @@
     "title": "OpenWarrant \u2014 Document Verification Suite",
     "verdict_contract_version": "1.0.0"
   },
+  "sh-stipple-openwarrant-aitext": {
+    "content_hash": "sha256:1c861e6433622fb5e69bf21b9e4492f0d961344fc7054c2c7582833986ea5201",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No suspicious instructions or data handling mentioned"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:01:14.641522+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:01:14.641522+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "OpenWarrant \u2014 AI Text Detection",
+    "verdict_contract_version": "1.0.0"
+  },
   "sh-superlog-superlog": {
     "content_hash": "sha256:be73e1210c31a1beb628986ccd5ff599e4a65eae6f9ddfc91a88c400ec41fce2",
     "dimensions": [
@@ -491988,6 +495750,44 @@
     "status": "PARTIAL",
     "tier": "scanned",
     "title": "PlacePack",
+    "verdict_contract_version": "1.0.0"
+  },
+  "trade-coil-scanner": {
+    "content_hash": "sha256:05a3ef6dae4529c34e4815db2a8bd902f6d1e87b6e91e5d4068da141157d01fd",
+    "dimensions": [
+      {
+        "evidence": [
+          {
+            "method": "static_description",
+            "quote": "No malicious instructions found"
+          }
+        ],
+        "id": "mcpindex.integrity.description",
+        "severity": "info",
+        "verdict": "pass"
+      }
+    ],
+    "directive": {
+      "decision": "REVIEW",
+      "expires_at": "2026-08-22T07:00:57.894329+00:00",
+      "rationale": "Semantic screen found no manipulation pattern in the description. Conformance probe not yet run."
+    },
+    "evaluated_at": "2026-07-23T07:00:57.894329+00:00",
+    "fixture": false,
+    "granularity": "description-level",
+    "honest_limits": [
+      "semantic_only_no_conformance",
+      "calibrated_false_v1",
+      "description_level_screen",
+      "advisory",
+      "registry_description_only_no_input_schema",
+      "screen_model_8b"
+    ],
+    "origin": "registry",
+    "schema_version": "1.0",
+    "status": "PARTIAL",
+    "tier": "scanned",
+    "title": "Coil Scanner",
     "verdict_contract_version": "1.0.0"
   },
   "trade-neglect-mcp-server": {
