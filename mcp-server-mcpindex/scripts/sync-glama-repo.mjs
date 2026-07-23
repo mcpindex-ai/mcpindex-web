@@ -80,7 +80,19 @@ try {
 
   // Sync the clean export into the clone; --delete keeps the mirror faithful
   // (handles files removed from source). .git is the only thing we must not touch.
-  run('rsync', ['-a', '--delete', '--exclude', '.git', `${exportDir}/`, `${clone}/`], tmp);
+  //
+  // --checksum is load-bearing, not a nicety. Without it rsync's quick check is
+  // size+mtime, and a version bump like 0.3.10 -> 0.3.11 does not change the byte
+  // length of package.json (1723 bytes either way). That is exactly how the mirror
+  // sat at 0.3.10 through three separate syncs whose commits all claimed 0.3.11:
+  // rsync saw "same size" and skipped the file. server.json changed size in the
+  // same bump, so it synced - which is why the mirror was internally inconsistent.
+  // Compare by content hash so a same-length edit can never be skipped.
+  run(
+    'rsync',
+    ['-a', '--checksum', '--delete', '--exclude', '.git', `${exportDir}/`, `${clone}/`],
+    tmp,
+  );
 
   if (!capture('git', ['status', '--porcelain'], clone).trim()) {
     console.log('sync-glama-repo: mirror already current, nothing to push.');
