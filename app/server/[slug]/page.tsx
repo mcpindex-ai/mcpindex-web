@@ -482,6 +482,13 @@ export default async function ServerPage(
                       {liveness.confirmed_unavailable && (
                         <> Confirmed {liveness.confirmed_unavailable}.</>
                       )}{' '}
+                      <Link
+                        href="/research/source-liveness"
+                        className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+                      >
+                        How we check →
+                      </Link>{' '}
+                      ·{' '}
                       <a
                         href={`mailto:hello@mcpindex.ai?subject=${encodeURIComponent(`Dispute source-liveness flag: ${server.slug}`)}`}
                         className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
