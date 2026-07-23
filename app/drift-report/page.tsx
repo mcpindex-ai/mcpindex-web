@@ -529,7 +529,19 @@ export default async function DriftReportPage() {
         </p>
       </section>
 
-      <p className="mt-12 font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
+      <p className="mt-12 text-[14px] leading-[1.6] text-[var(--color-mute)]">
+        Companion dataset:{' '}
+        <Link
+          href="/research/source-liveness"
+          className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+        >
+          Source Liveness
+        </Link>{' '}
+        — a census of which listed servers&apos; source is still publicly auditable
+        (archived, DOI 10.5281/zenodo.21501868).
+      </p>
+
+      <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
         Page refreshed every 5 minutes · frozen edition numbers never change
       </p>
     </article>
