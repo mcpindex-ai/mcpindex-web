@@ -537,7 +537,7 @@ export default async function DriftReportPage() {
         >
           Source Liveness
         </Link>{' '}
-        — a census of which listed servers&apos; source is still publicly auditable
+        - a census of which listed servers&apos; source is still publicly auditable
         (archived, DOI 10.5281/zenodo.21501868).
       </p>
 
