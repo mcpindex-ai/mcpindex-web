@@ -181,27 +181,41 @@ body {
   .live-dot, .caret-blink { animation: none; }
 }
 
-/* Sticky header hairline - appears only when scrolled (no JS, pure CSS) */
+/* Sticky header hairline - appears only when scrolled (no JS, pure CSS).
+   Opacity on a ::after (composited) — not border-bottom-color (forces paint). */
 .scroll-shadow {
   position: sticky;
   top: 0;
   background: #ffffff;
   z-index: 40;
-  border-bottom: 1px solid transparent;
-  transition: border-color 200ms ease;
+}
+.scroll-shadow::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--color-rule);
+  opacity: 0;
+  pointer-events: none;
 }
 @supports (animation-timeline: scroll()) {
-  .scroll-shadow {
-    animation: shadow-on-scroll linear both;
-    animation-timeline: scroll();
-    animation-range: 0 80px;
+  @media (prefers-reduced-motion: no-preference) {
+    .scroll-shadow::after {
+      animation: shadow-on-scroll linear both;
+      animation-timeline: scroll();
+      animation-range: 0 80px;
+    }
+    @keyframes shadow-on-scroll {
+      to { opacity: 1; }
+    }
   }
-  @keyframes shadow-on-scroll {
-    to { border-bottom-color: var(--color-rule); }
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-shadow::after { opacity: 1; }
   }
 }
 @supports not (animation-timeline: scroll()) {
-  .scroll-shadow { border-bottom-color: var(--color-rule); }
+  .scroll-shadow::after { opacity: 1; }
 }
 
 /* Dotted top ticker rule */
