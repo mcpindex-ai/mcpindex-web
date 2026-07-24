@@ -1,5 +1,7 @@
 # mcp-server-mcpindex
 
+[![mcpindex](https://mcpindex.ai/api/v1/badge/io-github-gautamgb-mcp-server-mcpindex)](https://mcpindex.ai/server/io-github-gautamgb-mcp-server-mcpindex)
+
 > An MCP server for finding MCP servers, plus advisory trust verdicts agent frameworks can call before invoking a tool.
 
 A drop-in MCP server that lets your agent discover, compare, install, and pre-flight other MCP servers from inside the agent loop. Backed by [mcpindex.ai](https://mcpindex.ai) - the agent-native index of the official MCP registry (live count at [mcpindex.ai/stats](https://mcpindex.ai/stats)), screened and drift-monitored daily.
