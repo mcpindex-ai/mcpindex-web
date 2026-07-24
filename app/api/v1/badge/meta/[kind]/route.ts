@@ -1,6 +1,9 @@
 // Corpus meta badges for README social proof (not per-server verdicts).
-//   [![servers](https://mcpindex.ai/api/v1/badge/meta/servers)](https://mcpindex.ai/stats)
-//   [![screened](https://mcpindex.ai/api/v1/badge/meta/screened)](https://mcpindex.ai/stats)
+// README embeds use a cache-bust query (`?v=1`) so GitHub Camo does not keep a
+// poisoned 404 from before this route existed:
+//   [![servers](https://mcpindex.ai/api/v1/badge/meta/servers?v=1)](https://mcpindex.ai/stats)
+//   [![screened](https://mcpindex.ai/api/v1/badge/meta/screened?v=1)](https://mcpindex.ai/stats)
+// Trailing `.svg` is also accepted (image-looking path for proxies).
 //
 // Counts match /.well-known/mcp-index.json (getServerCount + listScreened).
 
@@ -18,7 +21,10 @@ const MAX_PARAM_LEN = 256;
 function decodeKind(raw: string | undefined): MetaBadgeKind | null {
   if (typeof raw !== 'string' || raw.length === 0 || raw.length > MAX_PARAM_LEN) return null;
   try {
-    const d = decodeURIComponent(raw).trim().toLowerCase();
+    // Strip a trailing .svg so README embeds can use an image-looking path
+    // (helps GitHub Camo; also gives a clean cache-bust vs the extension-less URL).
+    let d = decodeURIComponent(raw).trim().toLowerCase();
+    if (d.endsWith('.svg')) d = d.slice(0, -4);
     if (d.length === 0 || d.length > MAX_PARAM_LEN) return null;
     return KINDS.has(d as MetaBadgeKind) ? (d as MetaBadgeKind) : null;
   } catch {

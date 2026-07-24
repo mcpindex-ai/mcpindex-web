@@ -34,6 +34,16 @@ test('meta badge: unknown kind → 404', async () => {
   assert.equal(r.status, 404);
 });
 
+test('meta badge: servers.svg strips extension (GitHub Camo-friendly path)', async () => {
+  const expected = (await getServerCount()).toLocaleString('en-US');
+  const r = await callRoute(GET, '/api/v1/badge/meta/servers.svg', {
+    params: { kind: 'servers.svg' },
+  });
+  assert.equal(r.status, 200);
+  assert.match(r.headers.get('content-type') ?? '', /image\/svg\+xml/);
+  assert.match(r.text, new RegExp(`${expected} servers`));
+});
+
 test('meta badge: 1h cache-control', async () => {
   const r = await callRoute(GET, '/api/v1/badge/meta/servers', { params: { kind: 'servers' } });
   assert.match(r.headers.get('cache-control') ?? '', /max-age=3600/);
