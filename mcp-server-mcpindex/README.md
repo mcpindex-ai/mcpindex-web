@@ -1,10 +1,19 @@
 # mcp-server-mcpindex
 
 [![mcpindex](https://mcpindex.ai/api/v1/badge/io-github-gautamgb-mcp-server-mcpindex)](https://mcpindex.ai/server/io-github-gautamgb-mcp-server-mcpindex)
+[![npm](https://img.shields.io/npm/v/mcp-server-mcpindex?logo=npm&label=npm)](https://www.npmjs.com/package/mcp-server-mcpindex)
+[![npm downloads](https://img.shields.io/npm/dw/mcp-server-mcpindex)](https://www.npmjs.com/package/mcp-server-mcpindex)
+[![servers indexed](https://mcpindex.ai/api/v1/badge/meta/servers)](https://mcpindex.ai/stats)
+[![screened](https://mcpindex.ai/api/v1/badge/meta/screened)](https://mcpindex.ai/stats)
+[![last commit](https://img.shields.io/github/last-commit/mcpindex-ai/mcp-server-mcpindex)](https://github.com/mcpindex-ai/mcp-server-mcpindex/commits/main)
+[![Smithery](https://smithery.ai/badge/gautamgb/mcpindex)](https://smithery.ai/servers/gautamgb/mcpindex)
+[![Glama](https://glama.ai/mcp/servers/mcpindex-ai/mcp-server-mcpindex/badges/score.svg)](https://glama.ai/mcp/servers/mcpindex-ai/mcp-server-mcpindex)
 
 > An MCP server for finding MCP servers, plus advisory trust verdicts agent frameworks can call before invoking a tool.
 
 A drop-in MCP server that lets your agent discover, compare, install, and pre-flight other MCP servers from inside the agent loop. Backed by [mcpindex.ai](https://mcpindex.ai) - the agent-native index of the official MCP registry (live count at [mcpindex.ai/stats](https://mcpindex.ai/stats)), screened and drift-monitored daily.
+
+[Live site](https://mcpindex.ai) · [`npx mcp-server-mcpindex`](https://www.npmjs.com/package/mcp-server-mcpindex) · [Remote MCP](https://mcpindex.ai/api/mcp) · [Install gate](https://mcpindex.ai/#install) · [Docs](https://mcpindex.ai/docs) · [Trust](https://mcpindex.ai/trust)
 
 ## Install
 
@@ -247,7 +256,5 @@ MIT.
 - Screen a server: [mcpindex.ai/screen](https://mcpindex.ai/screen)
 - Guide: [Find the right MCP server by task](https://mcpindex.ai/guides/find-mcp-server-by-task)
 - Source: [github.com/mcpindex-ai](https://github.com/mcpindex-ai)
-
-[![mcp-server-mcpindex MCP server](https://glama.ai/mcp/servers/mcpindex-ai/mcp-server-mcpindex/badges/score.svg)](https://glama.ai/mcp/servers/mcpindex-ai/mcp-server-mcpindex)
 
 Unofficial. Not affiliated with Anthropic.
