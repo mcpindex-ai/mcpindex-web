@@ -4,7 +4,7 @@
 // `cleared` SCREEN adjudication (fail-open) nor auto-escalated to public "flagged".
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeBadgeState, splitFlags } from './badge';
+import { computeBadgeState, splitFlags, renderStatBadgeSvg } from './badge';
 import type { Verdict, Dimension, AdjudicationDecision } from './verdicts';
 
 const SCHEMA = 'mcpindex.integrity.schema_content';
@@ -147,4 +147,20 @@ test('splitFlags separates the schema-content axis from the screen axis', () => 
   const schemaOnly = splitFlags(mkVerdict([{ id: SCHEMA, verdict: 'FAIL', severity: 'CRITICAL' }]));
   assert.equal(schemaOnly.schemaContentFail, true);
   assert.equal(schemaOnly.screenFail, false);
+});
+
+test('renderStatBadgeSvg: corpus counts stay informational (no safety words, no green)', () => {
+  const servers = renderStatBadgeSvg('servers', 18081);
+  assert.match(servers, /18,081 servers/);
+  assert.match(servers, /#0e7490/); // informational teal, same as verdict "screened"
+  assert.doesNotMatch(servers, /safe|verified|certified|trusted/i);
+  // Green is reserved for post-conformance ALLOW — corpus badges must not use it.
+  assert.doesNotMatch(servers, /#(16a34a|22c55e|15803d|4ade80|00ff00|0f0)\b/i);
+
+  const screened = renderStatBadgeSvg('screened', 14057);
+  assert.match(screened, /14,057 screened/);
+  assert.doesNotMatch(screened, /safe|verified|certified|trusted/i);
+
+  const zero = renderStatBadgeSvg('servers', -5);
+  assert.match(zero, />0 servers</);
 });

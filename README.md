@@ -6,9 +6,18 @@
 
 > The in-path trust gate for agent tool calls.
 
+[![npm](https://img.shields.io/npm/v/mcp-server-mcpindex?logo=npm&label=npm)](https://www.npmjs.com/package/mcp-server-mcpindex)
+[![npm downloads](https://img.shields.io/npm/dw/mcp-server-mcpindex)](https://www.npmjs.com/package/mcp-server-mcpindex)
+[![PyPI](https://img.shields.io/pypi/v/mcpindex-gate?label=mcpindex-gate)](https://pypi.org/project/mcpindex-gate/)
+[![servers indexed](https://mcpindex.ai/api/v1/badge/meta/servers)](https://mcpindex.ai/stats)
+[![screened](https://mcpindex.ai/api/v1/badge/meta/screened)](https://mcpindex.ai/stats)
+[![last commit](https://img.shields.io/github/last-commit/mcpindex-ai/mcpindex-web)](https://github.com/mcpindex-ai/mcpindex-web/commits/main)
+[![Smithery](https://smithery.ai/badge/gautamgb/mcpindex)](https://smithery.ai/servers/gautamgb/mcpindex)
+[![Glama](https://glama.ai/mcp/servers/mcpindex-ai/mcp-server-mcpindex/badges/score.svg)](https://glama.ai/mcp/servers/mcpindex-ai/mcp-server-mcpindex)
+
 MCP tool contracts can change remotely with no version bump. mcpindex **pins each contract** and **HOLDs the call** when it drifts — before your agent acts. Deterministic contract-diff on your host. Zero credential custody. Not a safety oracle.
 
-[Live site](https://mcpindex.ai) · [Install](https://mcpindex.ai/#install) · [Docs](https://mcpindex.ai/docs) · [Trust](https://mcpindex.ai/trust) · [Methodology](https://mcpindex.ai/methodology) · [npm: mcp-server-mcpindex](https://www.npmjs.com/package/mcp-server-mcpindex)
+[Live site](https://mcpindex.ai) · [Install gate](https://mcpindex.ai/#install) · [`npx mcp-server-mcpindex`](https://www.npmjs.com/package/mcp-server-mcpindex) · [`pip install mcpindex-gate`](https://pypi.org/project/mcpindex-gate/) · [Remote MCP](https://mcpindex.ai/api/mcp) · [Docs](https://mcpindex.ai/docs) · [Trust](https://mcpindex.ai/trust) · [Methodology](https://mcpindex.ai/methodology)
 
 ## What you get
 

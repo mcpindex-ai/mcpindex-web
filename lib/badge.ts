@@ -104,23 +104,55 @@ function pillWidth(s: string): number {
   return Math.ceil(s.length * 6.5) + 14;
 }
 
-// All inputs are fixed module constants (LEFT, BADGE_STYLE labels) - never
-// request data - so no escaping is required; there is nothing external to inject.
-export function renderBadgeSvg(state: BadgeState): string {
-  const { right, color } = BADGE_STYLE[state];
+function escapeXml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function renderTwoPillSvg(right: string, color: string): string {
   const lw = pillWidth(LEFT);
   const rw = pillWidth(right);
   const w = lw + rw;
-  const aria = `mcpindex: ${right}`;
+  const aria = escapeXml(`mcpindex: ${right}`);
+  const leftText = escapeXml(LEFT);
+  const rightText = escapeXml(right);
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${H}" role="img" aria-label="${aria}">`,
     `<title>${aria}</title>`,
     `<rect width="${lw}" height="${H}" fill="#0a0a0a"/>`,
     `<rect x="${lw}" width="${rw}" height="${H}" fill="${color}"/>`,
     `<g fill="#ffffff" font-family="${FONT}" font-size="11" text-anchor="middle">`,
-    `<text x="${lw / 2}" y="14">${LEFT}</text>`,
-    `<text x="${lw + rw / 2}" y="14">${right}</text>`,
+    `<text x="${lw / 2}" y="14">${leftText}</text>`,
+    `<text x="${lw + rw / 2}" y="14">${rightText}</text>`,
     `</g>`,
     `</svg>`,
   ].join('');
+}
+
+// All inputs are fixed module constants (LEFT, BADGE_STYLE labels) - never
+// request data - so no escaping is required; there is nothing external to inject.
+export function renderBadgeSvg(state: BadgeState): string {
+  const { right, color } = BADGE_STYLE[state];
+  return renderTwoPillSvg(right, color);
+}
+
+// Corpus / coverage stats for README social proof. Not a verdict badge — never
+// says safe/verified/certified. Color stays informational teal (same as
+// "screened"), never green (reserved for post-conformance ALLOW).
+export type MetaBadgeKind = 'servers' | 'screened';
+
+const META_STYLE: Record<MetaBadgeKind, { suffix: string; color: string }> = {
+  servers: { suffix: 'servers', color: '#0e7490' },
+  screened: { suffix: 'screened', color: '#0e7490' },
+};
+
+export function renderStatBadgeSvg(kind: MetaBadgeKind, count: number): string {
+  const n = Number.isFinite(count) && count >= 0 ? Math.floor(count) : 0;
+  const { suffix, color } = META_STYLE[kind];
+  const right = `${n.toLocaleString('en-US')} ${suffix}`;
+  return renderTwoPillSvg(right, color);
 }
