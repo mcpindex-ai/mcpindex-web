@@ -1,5 +1,5 @@
 {
-  "_comment": "Editorially admitted servers, absent from registry.modelcontextprotocol.io. Schema + rationale: lib/admitted.ts. Versions verified against npm and PyPI on 2026-07-24; server-git/fetch/time are Python-only and do NOT exist on npm under the @modelcontextprotocol scope.",
+  "_comment": "Editorially admitted servers, absent from registry.modelcontextprotocol.io. Schema + rationale: lib/admitted.ts. Versions AND publishedAt/updatedAt read from npm `time` and PyPI `upload_time_iso_8601` on 2026-07-25 - never hand-stamped, because updatedAt feeds the published quality score and the public API. server-git/fetch/time are Python-only and do NOT exist on npm under the @modelcontextprotocol scope.",
   "servers": [
     {
       "server": {
@@ -7,22 +7,28 @@
         "title": "Filesystem (reference)",
         "description": "Reference MCP server for filesystem access, maintained by the Model Context Protocol project. Reads and writes files within directories the operator explicitly allows, via command-line arguments or Roots.",
         "version": "2026.7.10",
-        "repository": { "url": "https://github.com/modelcontextprotocol/servers", "source": "github" },
+        "repository": {
+          "url": "https://github.com/modelcontextprotocol/servers",
+          "source": "github"
+        },
         "websiteUrl": "https://modelcontextprotocol.io",
         "packages": [
           {
             "registryType": "npm",
             "identifier": "@modelcontextprotocol/server-filesystem",
             "version": "2026.7.10",
-            "transport": { "type": "stdio" }
+            "transport": {
+              "type": "stdio"
+            }
           }
         ]
       },
       "admitted": {
         "reason": "One of the most widely installed MCP servers in the ecosystem and absent from the official registry, so no registry-mirroring index can answer questions about it.",
         "admittedAt": "2026-07-24",
-        "publishedAt": "2026-07-24T00:00:00Z",
-        "updatedAt": "2026-07-24T00:00:00Z"
+        "publishedAt": "2024-11-21T19:14:54Z",
+        "updatedAt": "2026-07-10T03:31:10Z",
+        "datesVerifiedFrom": "npm registry `time`"
       }
     },
     {
@@ -31,22 +37,28 @@
         "title": "Memory (reference)",
         "description": "Reference MCP server providing persistent memory for a model through a local knowledge-graph store, maintained by the Model Context Protocol project.",
         "version": "2026.7.4",
-        "repository": { "url": "https://github.com/modelcontextprotocol/servers", "source": "github" },
+        "repository": {
+          "url": "https://github.com/modelcontextprotocol/servers",
+          "source": "github"
+        },
         "websiteUrl": "https://modelcontextprotocol.io",
         "packages": [
           {
             "registryType": "npm",
             "identifier": "@modelcontextprotocol/server-memory",
             "version": "2026.7.4",
-            "transport": { "type": "stdio" }
+            "transport": {
+              "type": "stdio"
+            }
           }
         ]
       },
       "admitted": {
         "reason": "One of the most widely installed MCP servers in the ecosystem and absent from the official registry, so no registry-mirroring index can answer questions about it.",
         "admittedAt": "2026-07-24",
-        "publishedAt": "2026-07-24T00:00:00Z",
-        "updatedAt": "2026-07-24T00:00:00Z"
+        "publishedAt": "2024-11-21T19:15:20Z",
+        "updatedAt": "2026-07-04T23:05:12Z",
+        "datesVerifiedFrom": "npm registry `time`"
       }
     },
     {
@@ -55,70 +67,88 @@
         "title": "Sequential Thinking (reference)",
         "description": "Reference MCP server offering a structured step-by-step reasoning tool, letting a host model break a problem into revisable steps. Maintained by the Model Context Protocol project.",
         "version": "2026.7.4",
-        "repository": { "url": "https://github.com/modelcontextprotocol/servers", "source": "github" },
+        "repository": {
+          "url": "https://github.com/modelcontextprotocol/servers",
+          "source": "github"
+        },
         "websiteUrl": "https://modelcontextprotocol.io",
         "packages": [
           {
             "registryType": "npm",
             "identifier": "@modelcontextprotocol/server-sequential-thinking",
             "version": "2026.7.4",
-            "transport": { "type": "stdio" }
+            "transport": {
+              "type": "stdio"
+            }
           }
         ]
       },
       "admitted": {
         "reason": "One of the most widely installed MCP servers in the ecosystem and absent from the official registry, so no registry-mirroring index can answer questions about it.",
         "admittedAt": "2026-07-24",
-        "publishedAt": "2026-07-24T00:00:00Z",
-        "updatedAt": "2026-07-24T00:00:00Z"
+        "publishedAt": "2024-12-03T13:25:34Z",
+        "updatedAt": "2026-07-04T23:05:13Z",
+        "datesVerifiedFrom": "npm registry `time`"
       }
     },
     {
       "server": {
         "name": "io.github.modelcontextprotocol/server-everything",
         "title": "Everything (reference)",
-        "description": "Reference MCP server that exercises every feature of the protocol - tools, prompts, resources, sampling and logging - intended for testing MCP clients rather than production use.",
+        "description": "Reference MCP server that exercises every part of the protocol - tools, prompts, resources, sampling, completions - so client implementations can be tested against a known-good server. Built for testing, not production use.",
         "version": "2026.7.4",
-        "repository": { "url": "https://github.com/modelcontextprotocol/servers", "source": "github" },
+        "repository": {
+          "url": "https://github.com/modelcontextprotocol/servers",
+          "source": "github"
+        },
         "websiteUrl": "https://modelcontextprotocol.io",
         "packages": [
           {
             "registryType": "npm",
             "identifier": "@modelcontextprotocol/server-everything",
             "version": "2026.7.4",
-            "transport": { "type": "stdio" }
+            "transport": {
+              "type": "stdio"
+            }
           }
         ]
       },
       "admitted": {
         "reason": "The protocol's own conformance server, used to test MCP clients, and absent from the official registry.",
         "admittedAt": "2026-07-24",
-        "publishedAt": "2026-07-24T00:00:00Z",
-        "updatedAt": "2026-07-24T00:00:00Z"
+        "publishedAt": "2024-11-19T14:14:26Z",
+        "updatedAt": "2026-07-04T23:05:18Z",
+        "datesVerifiedFrom": "npm registry `time`"
       }
     },
     {
       "server": {
         "name": "io.github.modelcontextprotocol/server-git",
         "title": "Git (reference)",
-        "description": "Reference MCP server providing tools to read, search and manipulate a local Git repository, maintained by the Model Context Protocol project.",
+        "description": "Reference MCP server for working with a local Git repository: inspect history, stage changes, and create commits and branches. Maintained by the Model Context Protocol project.",
         "version": "2026.7.10",
-        "repository": { "url": "https://github.com/modelcontextprotocol/servers", "source": "github" },
+        "repository": {
+          "url": "https://github.com/modelcontextprotocol/servers",
+          "source": "github"
+        },
         "websiteUrl": "https://modelcontextprotocol.io",
         "packages": [
           {
             "registryType": "pypi",
             "identifier": "mcp-server-git",
             "version": "2026.7.10",
-            "transport": { "type": "stdio" }
+            "transport": {
+              "type": "stdio"
+            }
           }
         ]
       },
       "admitted": {
         "reason": "One of the most widely installed MCP servers in the ecosystem and absent from the official registry, so no registry-mirroring index can answer questions about it.",
         "admittedAt": "2026-07-24",
-        "publishedAt": "2026-07-24T00:00:00Z",
-        "updatedAt": "2026-07-24T00:00:00Z"
+        "publishedAt": "2024-11-21T21:54:26Z",
+        "updatedAt": "2026-07-10T03:31:03Z",
+        "datesVerifiedFrom": "PyPI `upload_time_iso_8601`"
       }
     },
     {
@@ -127,22 +157,28 @@
         "title": "Fetch (reference)",
         "description": "Reference MCP server that fetches a URL and converts the response to text a model can read, maintained by the Model Context Protocol project.",
         "version": "2026.7.10",
-        "repository": { "url": "https://github.com/modelcontextprotocol/servers", "source": "github" },
+        "repository": {
+          "url": "https://github.com/modelcontextprotocol/servers",
+          "source": "github"
+        },
         "websiteUrl": "https://modelcontextprotocol.io",
         "packages": [
           {
             "registryType": "pypi",
             "identifier": "mcp-server-fetch",
             "version": "2026.7.10",
-            "transport": { "type": "stdio" }
+            "transport": {
+              "type": "stdio"
+            }
           }
         ]
       },
       "admitted": {
         "reason": "One of the most widely installed MCP servers in the ecosystem and absent from the official registry, so no registry-mirroring index can answer questions about it.",
         "admittedAt": "2026-07-24",
-        "publishedAt": "2026-07-24T00:00:00Z",
-        "updatedAt": "2026-07-24T00:00:00Z"
+        "publishedAt": "2024-11-22T13:32:01Z",
+        "updatedAt": "2026-07-10T03:31:06Z",
+        "datesVerifiedFrom": "PyPI `upload_time_iso_8601`"
       }
     },
     {
@@ -151,22 +187,28 @@
         "title": "Time (reference)",
         "description": "Reference MCP server providing current-time and timezone-conversion tools, maintained by the Model Context Protocol project.",
         "version": "2026.7.10",
-        "repository": { "url": "https://github.com/modelcontextprotocol/servers", "source": "github" },
+        "repository": {
+          "url": "https://github.com/modelcontextprotocol/servers",
+          "source": "github"
+        },
         "websiteUrl": "https://modelcontextprotocol.io",
         "packages": [
           {
             "registryType": "pypi",
             "identifier": "mcp-server-time",
             "version": "2026.7.10",
-            "transport": { "type": "stdio" }
+            "transport": {
+              "type": "stdio"
+            }
           }
         ]
       },
       "admitted": {
         "reason": "One of the most widely installed MCP servers in the ecosystem and absent from the official registry, so no registry-mirroring index can answer questions about it.",
         "admittedAt": "2026-07-24",
-        "publishedAt": "2026-07-24T00:00:00Z",
-        "updatedAt": "2026-07-24T00:00:00Z"
+        "publishedAt": "2024-11-29T11:30:55Z",
+        "updatedAt": "2026-07-10T03:31:04Z",
+        "datesVerifiedFrom": "PyPI `upload_time_iso_8601`"
       }
     }
   ]

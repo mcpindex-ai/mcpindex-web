@@ -120,6 +120,19 @@ test('admitted rows without a description are dropped', () => {
   assert.deepEqual(mergeAdmitted([], [bare]), []);
 });
 
+test('a non-ISO date is rejected', () => {
+  // Guards the fabrication path: updatedAt feeds the published quality score and the
+  // public API, so a hand-typed "2026-07-24" or "today" must not load.
+  for (const bad of ['2026-07-24', 'today', '', 'July 24 2026']) {
+    const doc = {
+      servers: [
+        { ...VALID.servers[0], admitted: { ...VALID.servers[0].admitted, updatedAt: bad } },
+      ],
+    };
+    assert.deepEqual(coerceAdmitted(doc), { servers: [] }, `should reject "${bad}"`);
+  }
+});
+
 test('the shipped overlay is valid and carries only reference servers', async () => {
   const fs = await import('node:fs/promises');
   const raw = JSON.parse(await fs.readFile('data/admitted.json', 'utf8'));
@@ -134,5 +147,13 @@ test('the shipped overlay is valid and carries only reference servers', async ()
       `${e.server.name} needs a package or remote`,
     );
     assert.match(e.server.name, /\//, `${e.server.name} needs a publisher namespace`);
+    assert.ok(e.admitted.datesVerifiedFrom, `${e.server.name} must cite where its dates came from`);
   }
+  // The fabrication smell: hand-stamping shows up as every entry sharing one timestamp.
+  // Real package releases do not land at the same instant across seven packages.
+  const stamps = new Set(doc.servers.map((e) => e.admitted.updatedAt));
+  assert.ok(
+    stamps.size > 1,
+    'every admitted server shares one updatedAt - that is a hand-stamped date, not an observed one',
+  );
 });

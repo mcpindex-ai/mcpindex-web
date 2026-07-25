@@ -53,6 +53,10 @@ export async function GET(
       description: s.description,
       version: s.version,
       category: s.category,
+      // Provenance, published as data - see lib/projection.ts. An admitted server is not
+      // in the official MCP registry, and an API consumer has no other way to know that.
+      source: s.source,
+      ...(s.admittedReason ? { admittedReason: s.admittedReason } : {}),
       publishedAt: s.publishedAt,
       updatedAt: s.updatedAt,
       qualityScore: score,

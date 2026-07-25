@@ -88,13 +88,14 @@ export async function generateMetadata(
   // the SERP that only we hold, and it is what the searcher is actually checking for.
   // Only the negative case is rewritten - absent liveness data is not an all-clear, so
   // there is nothing to say for it.
+  // The "may be private or moved" hedge is not optional politeness: lib/sourceLiveness
+  // publishes the OBSERVATION (a 404 from two vantages) and never the inference, because
+  // a 404 cannot tell a deleted repo from a deliberately private one. The snippet is the
+  // highest-visibility place that sentence appears and often the only place someone reads
+  // it, so it carries the caveat too - shortened to survive Google's ~155-char truncation.
   const liveness = await getSourceLiveness(server.name);
   const description = liveness
-    ? `Source repository no longer publicly reachable${
-        liveness.last_verified_accessible
-          ? ` (last verified ${liveness.last_verified_accessible})`
-          : ''
-      }. ${server.description}`
+    ? `Source repo returns HTTP ${liveness.evidence.http_status} (may be private or moved). ${server.description}`
     : server.description;
   return {
     // ~half of registry servers have title === name; emitting "X - X" duplicated the

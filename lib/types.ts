@@ -78,8 +78,15 @@ export type AdmittedEntry = {
     reason: string;
     /** ISO date we admitted it. */
     admittedAt: string;
+    /**
+     * Real package-registry timestamps, NOT hand-stamped. `updatedAt` feeds the freshness
+     * dimension of the published quality score and is emitted by the public API, so an
+     * invented value there is a fabricated fact, not a placeholder.
+     */
     publishedAt: string;
     updatedAt: string;
+    /** Where the two dates above were read from, so the claim is auditable. */
+    datesVerifiedFrom?: string;
   };
 };
 

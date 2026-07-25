@@ -18,6 +18,12 @@ export function toListItem(s: IndexedServer) {
     description: s.description,
     category: s.category,
     version: s.version,
+    // Provenance, published as data. Without it an API consumer cannot tell a mirrored
+    // registry listing from one mcpindex admitted editorially, which would let an
+    // unlisted server read as registry-listed through this surface - the exact claim the
+    // HTML page is careful never to make. Additive, so existing consumers are unaffected.
+    source: s.source,
+    ...(s.admittedReason ? { admittedReason: s.admittedReason } : {}),
     qualityScore: computeQuality(s).score,
     installs: {
       npm: s.npmPackage,

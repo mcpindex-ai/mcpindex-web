@@ -19,6 +19,8 @@ import type { AdmittedDoc } from './types';
 
 const ADMITTED_PATH = path.join(process.cwd(), 'data', 'admitted.json');
 
+const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+
 // Structural, matching lib/snapshotSchema.ts: validate only the fields we depend on so
 // extra keys pass through instead of failing the whole load.
 const PackageZ = z
@@ -48,8 +50,12 @@ const AdmittedEntryZ = z
       .object({
         reason: z.string().min(1),
         admittedAt: z.string().min(1),
-        publishedAt: z.string().min(1),
-        updatedAt: z.string().min(1),
+        // ISO-8601 required, not just non-empty: updatedAt drives the published quality
+        // score's freshness dimension and is emitted by the public API, so a loose string
+        // here is how an invented date becomes a fabricated fact.
+        publishedAt: z.string().regex(ISO_INSTANT, 'must be an ISO-8601 instant'),
+        updatedAt: z.string().regex(ISO_INSTANT, 'must be an ISO-8601 instant'),
+        datesVerifiedFrom: z.string().min(1).optional(),
       })
       .loose(),
   })
