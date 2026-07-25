@@ -7,6 +7,7 @@ import type { IndexedServer, RegistryEntry } from './types';
 
 function stub(name: string): IndexedServer {
   return {
+    source: 'registry',
     slug: slugify(name),
     name,
     title: name,

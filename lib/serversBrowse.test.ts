@@ -6,6 +6,7 @@ import type { IndexedServer } from './types';
 
 function mk(slug: string, title: string): IndexedServer {
   return {
+    source: 'registry',
     slug,
     name: slug,
     title,

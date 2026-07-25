@@ -82,12 +82,26 @@ export async function generateMetadata(
     return { title: 'Server not found', robots: { index: false, follow: false } };
   }
   const deprecated = server.status === 'deprecated';
+  // Every registry-mirroring directory renders this same blurb, so our search snippet was
+  // byte-identical to five competitors' and earned a 0.24% CTR at positions 6-12. When the
+  // liveness sweep has flagged the source, lead with that instead: it is the one fact on
+  // the SERP that only we hold, and it is what the searcher is actually checking for.
+  // Only the negative case is rewritten - absent liveness data is not an all-clear, so
+  // there is nothing to say for it.
+  const liveness = await getSourceLiveness(server.name);
+  const description = liveness
+    ? `Source repository no longer publicly reachable${
+        liveness.last_verified_accessible
+          ? ` (last verified ${liveness.last_verified_accessible})`
+          : ''
+      }. ${server.description}`
+    : server.description;
   return {
     // ~half of registry servers have title === name; emitting "X - X" duplicated the
     // slug in the <title>. Collapse to a single value when they match (the parent
     // template still appends "· mcpindex.ai").
     title: server.title === server.name ? server.name : `${server.title} - ${server.name}`,
-    description: server.description,
+    description,
     // Deprecated subjects stay addressable (no soft-404) but leave the index so
     // they do not compete with active listings after the registry retires them.
     ...(deprecated ? { robots: { index: false, follow: true } } : {}),
@@ -218,6 +232,32 @@ export default async function ServerPage(
                 This server is marked deprecated in the official MCP registry. The
                 listing stays available for historical reference and is not offered
                 in browse, sitemap, or leaderboard surfaces.
+              </p>
+            ) : null}
+
+            {/* The liveness flag also renders in the right rail with full evidence, but a
+                searcher who arrived asking "is this dead" should not have to scroll past
+                install, badge and API sections to find the answer. Observation only - the
+                wording stays in lib/sourceLiveness so it cannot drift into an accusation. */}
+            {liveness ? (
+              <p
+                role="status"
+                className="mt-6 border border-[var(--color-rule)] bg-[var(--color-accent-soft)]/40 px-4 py-3 text-[14px] leading-[1.5] text-[var(--color-cite)]"
+              >
+                {livenessSentence(liveness)}{' '}
+                <a href="#source" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
+                  Evidence
+                </a>
+                .
+              </p>
+            ) : null}
+
+            {/* Admitted listings are not in the official registry. Saying so is both honest
+                and useful - "nobody published this upstream" is information a reader wants. */}
+            {server.source === 'admitted' ? (
+              <p className="mt-6 border border-[var(--color-rule)] px-4 py-3 text-[14px] leading-[1.5] text-[var(--color-cite)]">
+                Not listed in the official MCP registry. mcpindex indexes it anyway:{' '}
+                {server.admittedReason}
               </p>
             ) : null}
 
@@ -469,7 +509,7 @@ export default async function ServerPage(
             {/* Links: registry-supplied third-party URLs, so nofollow - many
                 targets go dead and we can't vouch for any of them. */}
             {(repoHref || siteHref || liveness) && (
-              <div>
+              <div id="source" className="scroll-mt-8">
                 <div className={RAIL_LABEL}>Links</div>
                 <div className="flex flex-col gap-2 font-mono text-[11px] uppercase tracking-[0.16em]">
                   {/* A confirmed-unreachable repo replaces the link rather

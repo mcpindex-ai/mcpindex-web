@@ -2,11 +2,15 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import type {
+  AdmittedEntry,
   IndexedServer,
   RegistryEntry,
   RegistryResponse,
+  RegistryServer,
+  ServerSource,
   Snapshot,
 } from './types';
+import { loadAdmitted } from './admitted';
 import { categorize } from './categorize';
 import { SnapshotZ } from './snapshotSchema';
 import {
@@ -73,9 +77,15 @@ function safeUrl(u: string | undefined): string | undefined {
   }
 }
 
-export function normalize(entry: RegistryEntry): IndexedServer {
-  const s = entry.server;
-  const meta = entry._meta['io.modelcontextprotocol.registry/official'];
+// Shared field mapping for both provenances. Registry entries read their dates and status
+// from the official _meta block; admitted entries carry their own, because stamping them
+// with a registry block would have them claim listing they do not have (see lib/admitted.ts).
+function normalizeServer(
+  s: RegistryServer,
+  meta: { status: string; publishedAt: string; updatedAt: string },
+  source: ServerSource,
+  admittedReason?: string,
+): IndexedServer {
   const remote = s.remotes?.[0];
   const npmPkg = s.packages?.find((p) => p.registryType === 'npm');
   const pypiPkg = s.packages?.find((p) => p.registryType === 'pypi');
@@ -84,6 +94,8 @@ export function normalize(entry: RegistryEntry): IndexedServer {
   );
   const primary = remote ?? s.packages?.[0];
   return {
+    source,
+    ...(admittedReason ? { admittedReason } : {}),
     slug: slugify(s.name),
     name: s.name,
     title: s.title || s.name,
@@ -110,6 +122,52 @@ export function normalize(entry: RegistryEntry): IndexedServer {
     envVars:
       s.packages?.flatMap((p) => p.environmentVariables ?? []) ?? [],
   };
+}
+
+export function normalize(entry: RegistryEntry): IndexedServer {
+  return normalizeServer(
+    entry.server,
+    entry._meta['io.modelcontextprotocol.registry/official'],
+    'registry',
+  );
+}
+
+/**
+ * Append editorially admitted servers (lib/admitted.ts) to the registry-derived set.
+ *
+ * Two invariants, both about not breaking what already works:
+ *  - Admitted rows go LAST, so the name-dedup downstream always resolves a tie in the
+ *    registry's favour.
+ *  - An admitted row whose base slug already belongs to a registry listing is DROPPED,
+ *    not disambiguated. disambiguateSlugs() hashes every member of a colliding set, so
+ *    resolving the collision would rename a live /server/<slug> URL. A missing overlay
+ *    row is recoverable; a moved public URL is not.
+ */
+export function mergeAdmitted(
+  registryServers: readonly IndexedServer[],
+  admittedServers: readonly IndexedServer[],
+): IndexedServer[] {
+  const registryBaseSlugs = new Set(registryServers.map((s) => s.slug));
+  const admitted = admittedServers
+    .filter((s) => s.description && s.name && s.slug)
+    .filter((s) => {
+      if (!registryBaseSlugs.has(s.slug)) return true;
+      console.warn('[admitted] dropped, slug collides with a registry listing', {
+        name: s.name,
+        slug: s.slug,
+      });
+      return false;
+    });
+  return [...registryServers, ...admitted];
+}
+
+export function normalizeAdmitted(entry: AdmittedEntry): IndexedServer {
+  return normalizeServer(
+    entry.server,
+    { status: 'active', publishedAt: entry.admitted.publishedAt, updatedAt: entry.admitted.updatedAt },
+    'admitted',
+    entry.admitted.reason,
+  );
 }
 
 type LoadedSnapshot = {
@@ -229,9 +287,11 @@ export async function loadServers(): Promise<IndexedServer[]> {
     )
     .map(normalize)
     .filter((s) => s.description && s.name && s.slug);
+  const merged = mergeAdmitted(filtered, (await loadAdmitted()).servers.map(normalizeAdmitted));
+
   // Dedup by name first (publisher isLatest regressions / crawler dupes; first wins).
   const seenName = new Set<string>();
-  const uniqueByName = filtered.filter((s) =>
+  const uniqueByName = merged.filter((s) =>
     seenName.has(s.name) ? false : (seenName.add(s.name), true),
   );
   // Then disambiguate slugify collisions so distinct names never share a public slug

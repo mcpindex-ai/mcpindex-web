@@ -33,6 +33,7 @@ function collectTypes(node: unknown, out: string[] = []): string[] {
 
 function makeServer(over: Partial<IndexedServer>): IndexedServer {
   return {
+    source: 'registry',
     slug: 'x',
     name: 'ns/x',
     title: 'X',

@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next';
 import { loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { ALL_CATEGORIES } from '@/lib/categorize';
 import { browseTotalPages } from '@/lib/serversBrowse';
+import { eligibleTopics } from '@/lib/topics';
 import { loadGuides } from '@/lib/guides-content';
 
 export const revalidate = 86400;
@@ -70,7 +71,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
       changeFrequency: 'weekly',
     }));
-    baseEntries = [...staticRoutes, ...categoryRoutes, ...browseRoutes, ...serverRoutes];
+    // Topic comparison pages. Priority above per-server pages: they answer a question no
+    // competing page answers, where a server page is one of seven near-identical listings.
+    // Derived from eligibleTopics so a topic that stops clearing the bar leaves the sitemap
+    // in the same pass that makes its route 404.
+    const compareRoutes: MetadataRoute.Sitemap = eligibleTopics(servers).map((t) => ({
+      url: `${base}/compare/${t}`,
+      priority: 0.8,
+      changeFrequency: 'weekly',
+    }));
+    baseEntries = [
+      ...staticRoutes,
+      ...categoryRoutes,
+      ...compareRoutes,
+      ...browseRoutes,
+      ...serverRoutes,
+    ];
     baseCache = { version: meta.version, entries: baseEntries };
   }
 

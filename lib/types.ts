@@ -60,7 +60,37 @@ export type Snapshot = {
 };
 
 // Normalized shape used everywhere on-site.
+// Where a listing came from. 'registry' = mirrored from
+// registry.modelcontextprotocol.io. 'admitted' = indexed by mcpindex even though it
+// is absent upstream (the reference servers are the motivating case: the most-
+// installed MCP servers in the ecosystem are in no registry). Required, not
+// optional, so tsc finds every construction site and no listing can be rendered
+// without its provenance being decided.
+export type ServerSource = 'registry' | 'admitted';
+
+// An overlay listing: a registry-shaped server plus why we admitted it. Carries NO
+// `io.modelcontextprotocol.registry/official` block - stamping one would make an
+// unlisted server claim registry provenance on our own pages, API and JSON-LD.
+export type AdmittedEntry = {
+  server: RegistryServer;
+  admitted: {
+    /** Public, human-readable justification. Rendered on the server page. */
+    reason: string;
+    /** ISO date we admitted it. */
+    admittedAt: string;
+    publishedAt: string;
+    updatedAt: string;
+  };
+};
+
+export type AdmittedDoc = {
+  servers: AdmittedEntry[];
+};
+
 export type IndexedServer = {
+  source: ServerSource;
+  /** Public admission rationale. Present only when source === 'admitted'. */
+  admittedReason?: string;
   slug: string;
   name: string;
   title: string;
