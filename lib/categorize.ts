@@ -23,13 +23,13 @@ const RULES: Array<{ category: string; patterns: RegExp[] }> = [
   { category: 'ecommerce', patterns: [/shopify/i, /woocommerce/i, /bigcommerce/i, /magento/i] },
   { category: 'ai-llm', patterns: [/openai/i, /\banthropic/i, /\bgpt\b/i, /\bllm\b/i, /perplexity/i, /gemini/i, /huggingface/i, /replicate/i] },
   { category: 'image-video', patterns: [/image/i, /video/i, /audio/i, /vision/i, /transcrib/i, /whisper/i, /\btts\b/i, /\bocr\b/i, /3d/i] },
-  { category: 'search', patterns: [/search/i, /elastic/i, /algolia/i, /typesense/i, /meilisearch/i] },
+  { category: 'search', patterns: [/search/i, /\btrouver\b/i, /elastic/i, /algolia/i, /typesense/i, /meilisearch/i] },
   { category: 'monitoring', patterns: [/grafana/i, /prometheus/i, /datadog/i, /sentry/i, /pagerduty/i, /honeycomb/i, /\blog/i] },
   { category: 'security', patterns: [/security/i, /vault/i, /1password/i, /lastpass/i, /vulnerab/i, /cve/i] },
   { category: 'devtools', patterns: [/git\b/i, /\bide\b/i, /vscode/i, /cursor/i, /terminal/i, /shell/i, /repl/i] },
   { category: 'maps-location', patterns: [/map/i, /\bgeo/i, /location/i, /weather/i] },
   { category: 'memory', patterns: [/memory/i, /knowledge/i, /\brag\b/i, /vector/i, /embedding/i] },
-  { category: 'time', patterns: [/time/i, /calendar/i, /schedul/i, /reminder/i] },
+  { category: 'time', patterns: [/\btime\b/i, /calendar/i, /schedul/i, /reminder/i] },
 ];
 
 // Strip registry-namespacing prefixes that would otherwise contaminate matching.
