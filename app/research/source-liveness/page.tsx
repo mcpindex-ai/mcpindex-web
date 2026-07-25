@@ -3,23 +3,31 @@ import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = pageMetadata({
-  title: 'Source liveness: 2,073 listed MCP servers point at source that is no longer public',
+  title: 'Source liveness: 2,069 listed MCP servers point at source that is not public',
   description:
-    'A 2026-07-20 census of every repository and website URL in the official MCP registry: 1,834 of 13,105 referenced GitHub repositories are no longer publicly accessible, affecting 2,073 of 17,673 listed servers. Full method, limits, and the deleted-vs-private caveat.',
+    'A 2026-07-20 census of every repository and website URL in the official MCP registry: 1,830 of 13,105 referenced GitHub repositories were not publicly accessible, affecting 2,069 of 17,673 listed servers. Full method, limits, and the deleted-vs-private caveat.',
   path: '/research/source-liveness',
 });
 
-// Figures are quoted from the sweep receipt (sweep-20260720T065010Z, store
-// digest 943f1a25, OpenTimestamps-stamped) rather than recomputed here, so the
-// page states exactly what the anchored artifact states.
+// Figures are quoted from the published dataset (aggregates.json, store digest
+// 943f1a25, OpenTimestamps-stamped, DOI 10.5281/zenodo.21501868) rather than
+// recomputed here, so the page states exactly what the anchored artifact states.
+//
+// These are the POST-DEBOUNCE counts: a URL is confirmed unreachable only after
+// two failed checks at least 48h apart (confirmed 2026-07-23T00:26:18Z) plus
+// agreement from a second independent vantage. The raw 2026-07-20 sweep counted
+// 1,834 repos / 2,073 servers / 306 sites / 178 egress-blocked; four repos, four
+// servers and two sites did not survive the second check and were dropped. This
+// page previously published those raw numbers, which contradicted the DOI. Any
+// edit here must match aggregates.json or the citation breaks.
 const FIG = {
   serversTotal: '17,673',
   reposTotal: '13,105',
-  reposUnreachable: '1,834',
-  serversAffected: '2,073',
-  sitesUnreachable: '306',
+  reposUnreachable: '1,830',
+  serversAffected: '2,069',
+  sitesUnreachable: '304',
   sampleSize: '150',
-  egressBlocked: '178',
+  egressBlocked: '176',
   sweepDate: '2026-07-20',
 };
 
@@ -32,8 +40,8 @@ export default function SourceLivenessPage() {
         Research · census of {FIG.sweepDate}
       </div>
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
-        {FIG.serversAffected} listed MCP servers point at source code that is no
-        longer publicly accessible.
+        {FIG.serversAffected} listed MCP servers point at source code that is not
+        publicly accessible.
       </h1>
 
       <p className="mt-6 text-[16px] leading-[1.65] text-[var(--color-cite)]">
@@ -131,11 +139,18 @@ export default function SourceLivenessPage() {
       <h2 className="mt-12 t-h2 font-medium text-[var(--color-ink)]">Limits</h2>
       <ul className="mt-4 space-y-3 text-[15px] leading-[1.65] text-[var(--color-cite)] list-disc pl-5">
         <li>
-          <strong>Point in time.</strong> These are the counts on{' '}
-          {FIG.sweepDate}. Per-listing flags carry a stricter bar than this
-          aggregate: two failed checks at least 48 hours apart, plus agreement
-          from a second independent vantage, before anything appears on a server
-          page.
+          <strong>Point in time, and confirmed.</strong> These are the counts for
+          the {FIG.sweepDate} census, under the same bar as every per-listing
+          flag: two failed checks at least 48 hours apart, plus agreement from a
+          second independent vantage. Four repositories failed the first check
+          and passed the second, so they are not counted here.
+        </li>
+        <li>
+          <strong>Unreachability, not death dates.</strong> Every repository above
+          was already unreachable when we first looked, so this is a baseline: it
+          says these were not publicly accessible on {FIG.sweepDate}, never when
+          they stopped being accessible. Death dates accrue only for repositories
+          that go dark after this census.
         </li>
         <li>
           <strong>Deleted and private are indistinguishable.</strong> Some share
