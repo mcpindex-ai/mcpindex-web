@@ -290,4 +290,45 @@ async function postHandler(req: Request, ctx: unknown): Promise<Response> {
   return (handler as (r: Request, c: unknown) => Promise<Response>)(forwarded, ctx);
 }
 
-export { handler as GET, postHandler as POST, handler as DELETE };
+// mcp-handler's basePath claims EVERY /api/<transport> segment, not just /api/mcp -
+// including /api/sse, the legacy HTTP+SSE transport. We only serve Streamable HTTP,
+// and the SSE transport needs a Redis message channel we do not run, so /api/sse
+// accepted the connection and then hung to the client's timeout: no status, no body,
+// no diagnostic (measured 40s+, 0 bytes, 2026-07-24). Clients pinned to the legacy
+// transport - Spring AI 1.0.x has no streamable-http support at all, verified against
+// the published jars - had no way to discover they were on the wrong URL. Fail fast
+// with the canonical one instead; a 404 the client can read beats a silent hang.
+const CANONICAL_TRANSPORT = 'mcp';
+
+async function wrongTransport(ctx: unknown): Promise<Response | null> {
+  const { transport } = await (ctx as { params: Promise<{ transport: string }> }).params;
+  if (transport === CANONICAL_TRANSPORT) return null;
+  // Echo the segment back so the operator can see what they asked for, but don't
+  // reflect unbounded caller-controlled input: same posture as safeSeg() above.
+  const echoed = transport.replace(/[^\w.-]/g, '').slice(0, 32) || 'unknown';
+  return Response.json(
+    {
+      jsonrpc: '2.0',
+      id: null,
+      error: {
+        code: -32600,
+        message:
+          `Unsupported transport "${echoed}". mcpindex serves Streamable HTTP only - ` +
+          `connect to https://mcpindex.ai/api/${CANONICAL_TRANSPORT}.`,
+      },
+    },
+    { status: 404 },
+  );
+}
+
+type RouteHandler = (req: Request, ctx: unknown) => Promise<Response>;
+const onlyCanonical =
+  (h: RouteHandler): RouteHandler =>
+  async (req, ctx) =>
+    (await wrongTransport(ctx)) ?? h(req, ctx);
+
+const mcpHandler = handler as RouteHandler;
+
+export const GET = onlyCanonical(mcpHandler);
+export const POST = onlyCanonical(postHandler);
+export const DELETE = onlyCanonical(mcpHandler);
