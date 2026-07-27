@@ -172,8 +172,9 @@ test('an admitted server that upstream later publishes under a DIFFERENT name is
   // Name-equality dedup misses this entirely: different name -> different slug -> no
   // collision -> both rows survive, and the admitted page keeps claiming the server is not
   // registry-listed when it now is. The package identifier survives the rename.
-  const registry = { ...srv('io.modelcontextprotocol/servers'), npmPackage: '@modelcontextprotocol/server-filesystem' };
-  const admitted = { ...srv('io.github.modelcontextprotocol/server-filesystem', 'admitted'), npmPackage: '@modelcontextprotocol/server-filesystem' };
+  const repo = 'https://github.com/modelcontextprotocol/servers';
+  const registry = { ...srv('io.modelcontextprotocol/servers'), npmPackage: '@modelcontextprotocol/server-filesystem', repositoryUrl: repo };
+  const admitted = { ...srv('io.github.modelcontextprotocol/server-filesystem', 'admitted'), npmPackage: '@modelcontextprotocol/server-filesystem', repositoryUrl: `${repo}.git` };
   const merged = mergeAdmitted([registry], [admitted]);
   assert.equal(merged.length, 1, 'the admitted duplicate must not survive');
   assert.equal(merged[0].source, 'registry');
@@ -186,7 +187,25 @@ test('identity matching is case- and trailing-slash-insensitive on remotes', () 
 });
 
 test('a genuinely distinct admitted server is still kept', () => {
-  const registry = { ...srv('a/x'), npmPackage: '@a/x' };
-  const admitted = { ...srv('b/y', 'admitted'), npmPackage: '@b/y' };
+  const registry = { ...srv('a/x'), npmPackage: '@a/x', repositoryUrl: 'https://github.com/a/x' };
+  const admitted = { ...srv('b/y', 'admitted'), npmPackage: '@b/y', repositoryUrl: 'https://github.com/b/y' };
   assert.equal(mergeAdmitted([registry], [admitted]).length, 2);
+});
+
+test('the same package name from a DIFFERENT repo does not delist an admitted server', () => {
+  // A package identifier is not unique in an open-publish registry - 513 identifiers in the
+  // live snapshot are claimed by more than one entry. Matching on identifier alone would let
+  // anyone delist an admitted server by publishing an entry that names its package.
+  const admitted = {
+    ...srv('io.github.modelcontextprotocol/server-filesystem', 'admitted'),
+    npmPackage: '@modelcontextprotocol/server-filesystem',
+    repositoryUrl: 'https://github.com/modelcontextprotocol/servers',
+  };
+  const squatter = {
+    ...srv('io.github.attacker/typosquat'),
+    npmPackage: '@modelcontextprotocol/server-filesystem',
+    repositoryUrl: 'https://github.com/attacker/typosquat',
+  };
+  const merged = mergeAdmitted([squatter], [admitted]);
+  assert.equal(merged.length, 2, 'the admitted server must survive an unrelated claimant');
 });

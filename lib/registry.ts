@@ -143,12 +143,24 @@ export function normalize(entry: RegistryEntry): IndexedServer {
  *    resolving the collision would rename a live /server/<slug> URL. A missing overlay
  *    row is recoverable; a moved public URL is not.
  */
-/** Identity keys that survive a rename: what the server IS, not what it is called. */
+/** Identity keys that survive a rename: what the server IS, not what it is called.
+ *
+ * A package identifier ALONE is not an identity in an open-publish registry - 513 identifiers
+ * in the current snapshot are claimed by more than one distinct entry (pypi:clio-kit by 23).
+ * Identifier-alone would therefore be a delisting vector: anyone publishing an entry that
+ * declares an admitted server's package would silently remove it from the index. So a package
+ * key is qualified by the repository it ships from, and only the remote URL - which is the
+ * running artifact itself - stands alone. */
 function identityKeys(s: IndexedServer): string[] {
   const keys: string[] = [];
-  if (s.npmPackage) keys.push(`npm:${s.npmPackage.toLowerCase()}`);
-  if (s.pypiPackage) keys.push(`pypi:${s.pypiPackage.toLowerCase()}`);
-  if (s.dockerImage) keys.push(`oci:${s.dockerImage.toLowerCase().split(':')[0]}`);
+  const repo = s.repositoryUrl
+    ? s.repositoryUrl.toLowerCase().replace(/\.git$/, '').replace(/\/+$/, '')
+    : '';
+  if (repo) {
+    if (s.npmPackage) keys.push(`npm:${s.npmPackage.toLowerCase()}@${repo}`);
+    if (s.pypiPackage) keys.push(`pypi:${s.pypiPackage.toLowerCase()}@${repo}`);
+    if (s.dockerImage) keys.push(`oci:${s.dockerImage.toLowerCase().split(':')[0]}@${repo}`);
+  }
   if (s.remoteUrl) keys.push(`remote:${s.remoteUrl.toLowerCase().replace(/\/+$/, '')}`);
   return keys;
 }

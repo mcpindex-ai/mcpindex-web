@@ -162,7 +162,7 @@ export default function AboutPage() {
           mcpindex.ai is an independent research and engineering artifact. It
           is unaffiliated with Anthropic. The Model Context Protocol is open
           under MIT and trademarks remain with their owners. Server data comes
-          from the official MCP registry; quality scoring, semantic ranking,
+          from the official MCP registry plus a small editorially admitted set; quality scoring, semantic ranking,
           and trust verdicts are produced locally from public artifacts (the
           tool description and schema). The deterministic behavioral probe is
           built but has not yet run on the public corpus.
