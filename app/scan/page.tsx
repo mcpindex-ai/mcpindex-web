@@ -2,6 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ScanTool } from '@/components/ScanTool';
 import { jsonLdSafe } from '@/lib/jsonLd';
+import { ledgerEnabled } from '@/lib/ledger';
+import { loadLedger } from '@/lib/ledgerServer';
+
+// Matches /ledger. A transient Redis miss makes loadLedger() return null; at 300s
+// the drift line is absent for at most 5 minutes rather than a full ISR window.
+// The scan tool itself never depends on this - see the null handling below.
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: 'Scan your MCP setup - blast radius in your browser',
@@ -29,7 +36,21 @@ const JSON_LD = {
     'A free, in-browser tool that reads your MCP configuration and reports each tool’s blast radius: action type, side effect, reversibility, and off-machine egress. No install, no upload.',
 };
 
-export default function ScanPage() {
+export default async function ScanPage() {
+  // Read live so this line can never drift from the ledger it cites. If the ledger
+  // is disabled or a read fails, the sentence is omitted entirely rather than shown
+  // stale - a wrong number on a trust surface costs more than a missing one.
+  const ledger = ledgerEnabled() ? await loadLedger() : null;
+  const s = ledger?.stat;
+  const drift =
+    s && s.safety_relevant && s.tools_observed_drifting && s.silent_same_version
+      ? {
+          safety: s.safety_relevant.toLocaleString('en-US'),
+          silent: s.silent_same_version.toLocaleString('en-US'),
+          drifting: s.tools_observed_drifting.toLocaleString('en-US'),
+        }
+      : null;
+
   return (
     <article className="site-container pt-16 pb-24">
       <script
@@ -45,6 +66,20 @@ export default function ScanPage() {
         do: which tools can take irreversible actions, which send data off your machine, and how many contracts
         are <strong className="text-[var(--color-ink)]">unpinned</strong> and free to change under you.
       </p>
+      {drift && (
+        <p className="mt-3 text-[15px] leading-[1.6] text-[var(--color-cite)]">
+          That last one is not hypothetical. Across the public MCP servers we re-crawl daily,{' '}
+          <strong className="text-[var(--color-ink)]">{drift.safety} tool contracts</strong> have changed in a
+          way that alters what the tool can do, and{' '}
+          <strong className="text-[var(--color-ink)]">
+            {drift.silent} of {drift.drifting}
+          </strong>{' '}
+          drifting tools did it without their declared version moving. A version pin does not see those.{' '}
+          <Link href="/ledger" className={UNDERLINE}>
+            Check the numbers yourself &rarr;
+          </Link>
+        </p>
+      )}
       <p className="mt-3 text-[15px] leading-[1.6] text-[var(--color-cite)]">
         It runs entirely in your browser. Your config is read locally and{' '}
         <strong className="text-[var(--color-ink)]">never uploaded</strong> - which matters, because that file
