@@ -2,6 +2,7 @@ import { getServerCount, getCategoryCount } from '@/lib/registry';
 import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
 import { gateInstallLine } from '@/lib/install/manifest';
 import { recordAeoFetch } from '@/lib/aeoCounter';
+import { SOURCE_LIVENESS_CENSUS } from '@/lib/sourceLiveness';
 
 // Uncached for the AEO measurement window so every fetch invokes the function (see lib/aeoCounter.ts).
 // The counter is per-isolate/per-minute deduped, so it records ACTIVE-MINUTES (presence), not raw hits —
@@ -78,7 +79,7 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 
 ## Research / datasets (archived, citable)
 
-- Source Liveness - Baseline v1: a corroborated, timestamp-anchored census of whether the source behind every registry server is still publicly reachable. Finding: 1,830 of 13,105 referenced GitHub repositories (14.0%) were not publicly accessible as of the 2026-07-20 census, affecting 2,069 listed servers. Two independent vantages, 0 cross-vantage disagreements; census digest anchored to Bitcoin via OpenTimestamps. Live: [mcpindex.ai/research/source-liveness](https://mcpindex.ai/research/source-liveness). Archived, CC-BY-4.0: DOI 10.5281/zenodo.21501868 (concept 10.5281/zenodo.21501867).
+- Source Liveness - Baseline v1: a corroborated, timestamp-anchored census of whether the source behind every registry server is still publicly reachable. Finding: ${SOURCE_LIVENESS_CENSUS.reposUnreachable} of ${SOURCE_LIVENESS_CENSUS.reposTotal} referenced GitHub repositories (14.0%) were not publicly accessible as of the ${SOURCE_LIVENESS_CENSUS.sweepDate} census, affecting ${SOURCE_LIVENESS_CENSUS.serversAffected} listed servers. Two independent vantages, 0 cross-vantage disagreements; census digest anchored to Bitcoin via OpenTimestamps. Live: [mcpindex.ai/research/source-liveness](https://mcpindex.ai/research/source-liveness). Archived, CC-BY-4.0: DOI 10.5281/zenodo.21501868 (concept 10.5281/zenodo.21501867).
 - Drift Report - Edition v1: aggregate + per-server statistics of silent tool-contract changes across the reachable remote population. Live: [mcpindex.ai/drift-report](https://mcpindex.ai/drift-report). Archived, CC-BY-4.0: DOI 10.5281/zenodo.21449150 (concept 10.5281/zenodo.21449149).
 
 ## Endpoints an agent can call

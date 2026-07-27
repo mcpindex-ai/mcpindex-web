@@ -26,8 +26,8 @@ import { buildServerJsonLd, isEndpointShaped, isSafeHref } from '@/lib/serverJso
 import { isGoneSlug, resolveServerRedirect } from '@/lib/serverRemovals';
 
 // Trust verdict shape (public projection of the v1.0.0 verdict contract).
-// Full back-history is not surfaced on this public page; the current verdict
-// and its publicly recomputable OTS anchor are what render here.
+// Full back-history is not surfaced on this public page; the current verdict is what
+// renders here. (Verdict records are NOT timestamp-anchored - see the Provenance rail.)
 //
 // Two rendering states for the trust panel, both FAIL-CLOSED (no ALLOW, no
 // green unless a real EVALUATED verdict says so):
@@ -109,7 +109,9 @@ export async function generateMetadata(
     alternates: { canonical: `https://mcpindex.ai/server/${server.slug}` },
     openGraph: {
       title: server.title,
-      description: server.description,
+      // Same `description` as the meta tag, not the raw blurb: a shared card is frequently
+      // the only place the liveness caveat would ever be read.
+      description,
       url: `https://mcpindex.ai/server/${server.slug}`,
       type: 'website',
       images: [`/server/${server.slug}/og`],
@@ -117,7 +119,7 @@ export async function generateMetadata(
     twitter: {
       card: 'summary_large_image',
       title: server.title,
-      description: server.description,
+      description,
       images: [`/server/${server.slug}/og`],
     },
   };
@@ -502,14 +504,25 @@ export default async function ServerPage(
               </p>
             </div>
 
-            {/* Provenance - the OTS / Bitcoin-anchored history signal (npm's
-                provenance badge analog). The current verdict renders here; the
-                OTS anchor proof is public and recomputable offline. */}
+            {/* Provenance. This block used to assert "Verdict history is anchored to Bitcoin
+                via OpenTimestamps", unconditionally, on every server page. That is not true:
+                verdict records carry content_hash and no anchor field, and the only OTS proof
+                in the project covers the source-liveness census digest, not verdict history.
+                On a product whose entire thesis is refusing to overclaim, that was the worst
+                sentence on the site. Replaced with what the record actually supports. */}
             <div>
               <div className={RAIL_LABEL}>Provenance</div>
               <p className="text-[12px] leading-[1.55] text-[var(--color-cite)]">
-                Verdict history is anchored to Bitcoin via OpenTimestamps. The anchor proof is
-                public and any skeptic can recompute it offline.
+                Each verdict is bound to a hash of the exact description it judged, so a later
+                re-crawl that changes the text produces a new record rather than silently
+                inheriting this one. Verdict history is not timestamp-anchored;{' '}
+                <Link
+                  href="/research/source-liveness"
+                  className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+                >
+                  the source-liveness census
+                </Link>{' '}
+                is the artifact with an OpenTimestamps proof.
               </p>
             </div>
 

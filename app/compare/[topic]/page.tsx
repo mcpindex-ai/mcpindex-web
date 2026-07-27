@@ -33,6 +33,12 @@ export async function generateMetadata(
   if (!isTopic(topic)) return { title: 'Not found', robots: { index: false, follow: false } };
   const label = topicLabel(topic);
   const servers = await loadServers();
+  // The body notFound()s when a topic stops clearing the bar; without the same check here a
+  // prerendered, sitemap-listed page would keep emitting a title, description and
+  // self-canonical for a hard 404 - the soft-404 class already fixed for /server/[slug].
+  if (!topicEligibility(servers, topic).eligible) {
+    return { title: 'Not found', robots: { index: false, follow: false } };
+  }
   const n = implementationsFor(servers, topic).length;
   return {
     title: `${label} MCP servers compared: which one to use`,
@@ -96,6 +102,9 @@ export default async function CompareTopic(
     );
 
   const goneCount = rows.filter((r) => r.sourceGone).length;
+  // The scope sentence used to assert that non-registry servers are never listed here. They
+  // are, whenever an admitted server matches the topic - so state the real composition.
+  const admittedCount = rows.filter((r) => r.server.source === 'admitted').length;
   const asOf = (meta.fetchedAt || meta.writtenAt || '').slice(0, 10);
 
   const faqLd = {
@@ -115,8 +124,11 @@ export default async function CompareTopic(
         name: `Which ${label} MCP server should I use?`,
         acceptedAnswer: {
           '@type': 'Answer',
+          // rows[0] is the top-scoring UNFLAGGED row, not the top-scoring row overall - the
+          // sort puts flagged servers last. Claiming "highest Quality Score" here was false
+          // whenever a flagged server scored higher, in machine-consumed structured data.
           text: rows[0]
-            ? `Of the ${rows.length} indexed, ${rows[0].server.title} (${rows[0].server.name}) has the highest MCP Quality Score at ${rows[0].score}/100 and no source-liveness flag. A high score means the listing is complete and current, not that the server is safe.`
+            ? `Of the ${rows.length} indexed, ${rows[0].server.title} (${rows[0].server.name}) is the highest-scoring server with no source-liveness flag, at ${rows[0].score}/100. A high score means the listing is complete and current, not that the server is safe.`
             : 'No servers indexed for this topic yet.',
         },
       },
@@ -169,13 +181,16 @@ export default async function CompareTopic(
               editorially admitted set, which is not the same as every server that exists -
               claiming otherwise on a trust site would be the exact failure we sell against. */}
           <p className="mt-3 text-[13.5px] leading-[1.5] text-[var(--color-mute)]">
-            Scope: {rows.length} servers indexed from the{' '}
+            Scope: {rows.length} servers, mostly mirrored from the{' '}
             <Link href="/methodology" className={UNDERLINE}>
               MCP registry
             </Link>{' '}
-            as of {asOf || 'the latest snapshot'}. Servers whose authors never published to
-            the registry are not listed here, so treat this as the registry&apos;s view rather
-            than a complete census.
+            as of {asOf || 'the latest snapshot'}
+            {admittedCount > 0
+              ? `, plus ${admittedCount} indexed by mcpindex despite not being registry-listed`
+              : ''}
+            . Most servers whose authors never published to the registry are absent, so treat
+            this as close to the registry&apos;s view rather than a complete census.
           </p>
         </header>
 

@@ -50,8 +50,14 @@ export default async function ScanPage() {
   // published blob on 2026-07-26 and absent on 2026-07-27. Gating both clauses on it
   // would silently drop the whole paragraph whenever version evidence is off, which is
   // a failure mode nobody would notice because it looks like ordinary missing copy.
+  // The subset invariant matters for the standalone clause too: coerceStat clamps each
+  // field independently, so without it a corrupt blob renders "9,000,000 tools have
+  // changed a safety-relevant field" as an unqualified public claim.
   const safety =
-    typeof s?.safety_relevant === 'number' && s.safety_relevant > 0
+    typeof s?.safety_relevant === 'number' &&
+    typeof s?.tools_observed_drifting === 'number' &&
+    s.safety_relevant > 0 &&
+    s.safety_relevant <= s.tools_observed_drifting
       ? s.safety_relevant.toLocaleString('en-US')
       : null;
 

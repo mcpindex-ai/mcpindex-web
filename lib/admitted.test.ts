@@ -58,6 +58,16 @@ test('a malformed overlay yields an empty doc rather than throwing', () => {
   }
 });
 
+test('one bad row drops only itself - the good rows survive', () => {
+  // All-or-nothing was the bug: a single mistyped date emptied the site's overlay while the
+  // Python screener kept all rows, so the two computed different collision sets.
+  const bad = { ...VALID.servers[0], admitted: { ...VALID.servers[0].admitted, updatedAt: '2026-07-10' } };
+  const good = { ...VALID.servers[0], server: { ...VALID.servers[0].server, name: 'io.github.example/other' } };
+  const doc = coerceAdmitted({ servers: [bad, good] });
+  assert.equal(doc.servers.length, 1);
+  assert.equal(doc.servers[0].server.name, 'io.github.example/other');
+});
+
 test('an entry missing its admission reason is rejected', () => {
   const noReason = {
     servers: [{ ...VALID.servers[0], admitted: { ...VALID.servers[0].admitted, reason: '' } }],

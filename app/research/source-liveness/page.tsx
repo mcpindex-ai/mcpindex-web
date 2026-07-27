@@ -3,10 +3,16 @@ import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
 import { SOURCE_LIVENESS_CENSUS as FIG } from '@/lib/sourceLiveness';
 
+// Templated off FIG, not hardcoded. The title and meta were TWO of the sites that
+// carried pre-debounce figures for four days, and they are exactly the two the census
+// test cannot see, so a literal here can go stale while the suite stays green.
 export const metadata: Metadata = pageMetadata({
-  title: 'Source liveness: 2,069 listed MCP servers point at source that is not public',
+  title: `Source liveness: ${FIG.serversAffected} listed MCP servers point at source that is not public`,
   description:
-    'A 2026-07-20 census of every repository and website URL in the official MCP registry: 1,830 of 13,105 referenced GitHub repositories were not publicly accessible, affecting 2,069 of 17,673 listed servers. Full method, limits, and the deleted-vs-private caveat.',
+    `A ${FIG.sweepDate} census of every repository and website URL in the official MCP registry: ` +
+    `${FIG.reposUnreachable} of ${FIG.reposTotal} referenced GitHub repositories were not publicly ` +
+    `accessible, affecting ${FIG.serversAffected} of ${FIG.serversTotal} listed servers. Full method, ` +
+    `limits, and the deleted-vs-private caveat.`,
   path: '/research/source-liveness',
 });
 
@@ -28,9 +34,10 @@ export default function SourceLivenessPage() {
         On {FIG.sweepDate} we checked every repository and website URL carried by
         the {FIG.serversTotal} servers in the official MCP registry.{' '}
         {FIG.reposUnreachable} of the {FIG.reposTotal} distinct GitHub
-        repositories those servers reference could not be reached — one in seven.
-        The packages themselves still install. What has gone is the ability to
-        read the code before you hand it to an agent.
+        repositories those servers reference could not be reached, one in seven.
+        What has gone is the ability to read the code before you hand it to an
+        agent. This census measured URL reachability only; it makes no claim about
+        whether a package still installs.
       </p>
 
       <p className="mt-4 text-[16px] leading-[1.65] text-[var(--color-cite)]">
