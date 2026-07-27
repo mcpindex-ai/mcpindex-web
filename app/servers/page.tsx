@@ -8,7 +8,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: 'All MCP servers · browse the full index A-Z',
   description:
-    'Every MCP server in the official registry snapshot, alphabetized and paginated. Each entry links its verdict page.',
+    'Every MCP server mcpindex indexes - the official registry snapshot plus a small editorially admitted set - alphabetized and paginated. Each entry links its verdict page.',
   alternates: { canonical: 'https://mcpindex.ai/servers' },
 };
 

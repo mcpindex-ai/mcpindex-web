@@ -116,7 +116,9 @@ export default async function CompareTopic(
         name: `How many ${label} MCP servers are there?`,
         acceptedAnswer: {
           '@type': 'Answer',
-          text: `${rows.length} ${label} MCP servers are indexed on mcpindex as of ${asOf}. That is what the MCP registry lists, not necessarily every one that exists.`,
+          // "what the MCP registry lists" was left in the machine-readable half after the
+          // prose was corrected - and it is false whenever an admitted server matches.
+          text: `${rows.length} ${label} MCP servers are indexed on mcpindex as of ${asOf}${admittedCount > 0 ? `, of which ${admittedCount} are indexed by mcpindex despite not being listed in the MCP registry` : ''}. That is close to what the registry lists, not necessarily every one that exists.`,
         },
       },
       {
@@ -127,9 +129,18 @@ export default async function CompareTopic(
           // rows[0] is the top-scoring UNFLAGGED row, not the top-scoring row overall - the
           // sort puts flagged servers last. Claiming "highest Quality Score" here was false
           // whenever a flagged server scored higher, in machine-consumed structured data.
-          text: rows[0]
-            ? `Of the ${rows.length} indexed, ${rows[0].server.title} (${rows[0].server.name}) is the highest-scoring server with no source-liveness flag, at ${rows[0].score}/100. A high score means the listing is complete and current, not that the server is safe.`
-            : 'No servers indexed for this topic yet.',
+          // rows[0] is only "unflagged" when at least one unflagged row exists; if every
+          // server is flagged the previous wording asserted a clean bill of health for a
+          // flagged server, in structured data.
+          text: (() => {
+            const clean = rows.find((r) => !r.sourceGone);
+            if (!clean) {
+              return rows[0]
+                ? `Every one of the ${rows.length} indexed has a source repository flagged unreachable, so none can be recommended on that basis. ${rows[0].server.title} scores highest at ${rows[0].score}/100.`
+                : 'No servers indexed for this topic yet.';
+            }
+            return `Of the ${rows.length} indexed, ${clean.server.title} (${clean.server.name}) is the highest-scoring server with no source-liveness flag, at ${clean.score}/100. A high score means the listing is complete and current, not that the server is safe.`;
+          })(),
         },
       },
       {

@@ -378,7 +378,9 @@ export async function getServerCount(): Promise<number> {
 }
 
 export async function getCategoryCount(): Promise<number> {
-  const servers = await loadServers();
+  // Registry-only for the same reason as getServerCount: /api/v1/registry-count publishes
+  // this next to source: 'registry.modelcontextprotocol.io'.
+  const servers = (await loadServers()).filter((s) => s.source === 'registry');
   return new Set(servers.map((s) => s.category)).size;
 }
 

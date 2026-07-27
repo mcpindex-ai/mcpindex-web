@@ -20,7 +20,9 @@ type ClaimableEntry = { name: string; slug: string; title: string; remote: strin
 let _index: ClaimableEntry[] | null = null;
 async function claimableIndex(): Promise<ClaimableEntry[]> {
   if (_index) return _index;
-  const servers = await loadServers();
+  const servers = (await loadServers()).filter((s) => s.source === 'registry');
+  // /claim states that only registry-listed servers are claimable, and the ownership proof
+  // is defined against a registry entry. Latent today (all admitted rows lack a remote).
   _index = servers
     .filter((s) => typeof s.remoteUrl === 'string' && s.remoteUrl.length > 0)
     .map((s) => ({

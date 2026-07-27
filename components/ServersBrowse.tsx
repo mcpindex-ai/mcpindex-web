@@ -15,7 +15,7 @@ export function ServersBrowse({ data }: { data: BrowsePage }) {
           Browse the index.
         </h1>
         <p className="mt-4 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
-          {data.totalServers.toLocaleString('en-US')} MCP servers from the official registry
+          {data.totalServers.toLocaleString('en-US')} MCP servers indexed by mcpindex (the registry snapshot plus a small editorially admitted set)
           snapshot, A to Z. Rankings live on the{' '}
           <Link href="/leaderboard" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
             leaderboard

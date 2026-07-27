@@ -62,7 +62,10 @@ export function buildInstalls(s: IndexedServer): InstallTarget[] {
     out.push({
       client: 'remote',
       label: 'Remote endpoint',
-      command: s.remoteUrl,
+      // Quoted like every other command: safeUrl() gates the PROTOCOL only, and a URL keeps
+      // `;`, `|`, backticks and `$` in its path or query. This renders in the same
+      // copy-into-a-terminal box as the npx commands, so it needs the same treatment.
+      command: shellArg(s.remoteUrl),
       notes: 'Streamable HTTP / SSE endpoint. Add to any MCP client that supports remote servers.',
     });
   }
