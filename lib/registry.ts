@@ -143,14 +143,39 @@ export function normalize(entry: RegistryEntry): IndexedServer {
  *    resolving the collision would rename a live /server/<slug> URL. A missing overlay
  *    row is recoverable; a moved public URL is not.
  */
+/** Identity keys that survive a rename: what the server IS, not what it is called. */
+function identityKeys(s: IndexedServer): string[] {
+  const keys: string[] = [];
+  if (s.npmPackage) keys.push(`npm:${s.npmPackage.toLowerCase()}`);
+  if (s.pypiPackage) keys.push(`pypi:${s.pypiPackage.toLowerCase()}`);
+  if (s.dockerImage) keys.push(`oci:${s.dockerImage.toLowerCase().split(':')[0]}`);
+  if (s.remoteUrl) keys.push(`remote:${s.remoteUrl.toLowerCase().replace(/\/+$/, '')}`);
+  return keys;
+}
+
 export function mergeAdmitted(
   registryServers: readonly IndexedServer[],
   admittedServers: readonly IndexedServer[],
 ): IndexedServer[] {
   const registryBaseSlugs = new Set(registryServers.map((s) => s.slug));
+  // Name equality only catches byte-identical republication. When upstream publishes a
+  // server we admitted, it will very likely use a DIFFERENT name (the reference servers live
+  // in one monorepo), so the slug differs, nothing collides, and BOTH rows survive: two pages
+  // for one subject, and the admitted one keeps asserting "not listed in the official MCP
+  // registry" about a server that now is. Package identifier and remote URL survive a rename;
+  // the name does not.
+  const registryIdentities = new Set(registryServers.flatMap(identityKeys));
   const admitted = admittedServers
     .filter((s) => s.description && s.name && s.slug)
     .filter((s) => {
+      const dupe = identityKeys(s).find((k) => registryIdentities.has(k));
+      if (dupe) {
+        console.warn('[admitted] dropped, upstream now lists this server under another name', {
+          name: s.name,
+          matchedOn: dupe,
+        });
+        return false;
+      }
       if (!registryBaseSlugs.has(s.slug)) return true;
       console.warn('[admitted] dropped, slug collides with a registry listing', {
         name: s.name,

@@ -167,3 +167,26 @@ test('the shipped overlay is valid and carries only reference servers', async ()
     'every admitted server shares one updatedAt - that is a hand-stamped date, not an observed one',
   );
 });
+
+test('an admitted server that upstream later publishes under a DIFFERENT name is dropped', () => {
+  // Name-equality dedup misses this entirely: different name -> different slug -> no
+  // collision -> both rows survive, and the admitted page keeps claiming the server is not
+  // registry-listed when it now is. The package identifier survives the rename.
+  const registry = { ...srv('io.modelcontextprotocol/servers'), npmPackage: '@modelcontextprotocol/server-filesystem' };
+  const admitted = { ...srv('io.github.modelcontextprotocol/server-filesystem', 'admitted'), npmPackage: '@modelcontextprotocol/server-filesystem' };
+  const merged = mergeAdmitted([registry], [admitted]);
+  assert.equal(merged.length, 1, 'the admitted duplicate must not survive');
+  assert.equal(merged[0].source, 'registry');
+});
+
+test('identity matching is case- and trailing-slash-insensitive on remotes', () => {
+  const registry = { ...srv('a/x'), remoteUrl: 'https://Example.com/MCP/' };
+  const admitted = { ...srv('b/y', 'admitted'), remoteUrl: 'https://example.com/mcp' };
+  assert.equal(mergeAdmitted([registry], [admitted]).length, 1);
+});
+
+test('a genuinely distinct admitted server is still kept', () => {
+  const registry = { ...srv('a/x'), npmPackage: '@a/x' };
+  const admitted = { ...srv('b/y', 'admitted'), npmPackage: '@b/y' };
+  assert.equal(mergeAdmitted([registry], [admitted]).length, 2);
+});
