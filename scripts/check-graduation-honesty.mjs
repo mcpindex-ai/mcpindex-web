@@ -686,6 +686,71 @@ try {
   errors.push(`could not run the drift-flag force-enable scan: ${err.message}`);
 }
 
+// ---------------------------------------------------------------------------
+// ANCHOR-CLAIM GUARD (G-anchor-real).
+//
+// tasks/decisions.md D-ANCHOR-2 (2026-05-26) is explicit: an "anchored / provable
+// / tamper-proof history" claim is FORBIDDEN until a real external anchor is
+// wired. That decision was written down and nothing enforced it, so every server
+// page shipped "Verdict history is anchored to Bitcoin via OpenTimestamps" while
+// mcpindex-trust/corpus_eval/last_anchor.json carried a `testsink:` token - the
+// in-memory sink whose own docstring calls this "the G-anchor-real overclaim".
+//
+// The gate is conditional, not a blanket ban: once the real OpenTimestamps sink
+// is producing tokens, the claim becomes TRUE and this stops objecting. It fails
+// only while the anchor is a test sink, which is exactly when the claim is false.
+const ANCHOR_CLAIM = /anchored to Bitcoin|Bitcoin[- ]anchored|tamper[- ]proof history|provable history/i;
+// The source-liveness CENSUS is genuinely OTS-anchored - a real .ots proof and a DOI back
+// it. Only VERDICT-history anchoring is the forbidden claim, so exempt lines that are
+// plainly about the census.
+const ANCHOR_EXEMPT = /census|source[- ]liveness|liveness baseline/i;
+// A NEGATED mention is a disclaimer, not a claim - "but not Bitcoin-anchored", "not yet
+// confirmed", "once confirmed" are exactly the honest phrasings this guard exists to
+// encourage, so flagging them would push authors back toward the bare assertion.
+const ANCHOR_NEGATED = /\bnot\b[^.]{0,40}(anchored|confirmed)|once confirmed|committed, not|built and committed/i;
+try {
+  const anchorFile = path.join(
+    root, '..', 'mcpindex-trust', 'corpus_eval', 'last_anchor.json',
+  );
+  let anchorIsReal = null; // null = cannot tell (sibling repo absent, e.g. CI)
+  if (fs.existsSync(anchorFile)) {
+    const tok = JSON.parse(fs.readFileSync(anchorFile, 'utf8'))?.token ?? '';
+    anchorIsReal = !String(tok).startsWith('testsink:');
+  }
+  if (anchorIsReal === false) {
+    const surfaces = [];
+    const walk = (dir) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) walk(full);
+        else if (/\.(tsx|ts|md|json)$/.test(e.name)) surfaces.push(full);
+      }
+    };
+    for (const d of ['app', 'components', 'content']) {
+      const full = path.join(root, d);
+      if (fs.existsSync(full)) walk(full);
+    }
+    for (const f of surfaces) {
+      const body = fs.readFileSync(f, 'utf8');
+      // Skip the comment that documents this very guard.
+      for (const line of body.split('\n')) {
+        if (!ANCHOR_CLAIM.test(line)) continue;
+        if (ANCHOR_EXEMPT.test(line) || ANCHOR_NEGATED.test(line)) continue;
+        if (/^\s*(\/\/|\*|\{\/\*)/.test(line)) continue;
+        errors.push(
+          `${path.relative(root, f)}: asserts Bitcoin/OpenTimestamps anchoring while ` +
+          `last_anchor.json holds a testsink token. D-ANCHOR-2 forbids this claim until ` +
+          `the real OTS sink is wired: "${line.trim().slice(0, 80)}"`,
+        );
+        break;
+      }
+    }
+  }
+} catch (err) {
+  errors.push(`could not run the anchor-claim scan: ${err.message}`);
+}
+
 if (errors.length) {
   console.error('\n[graduation-guard] BUILD BLOCKED - false trust claim detected:');
   for (const e of errors) console.error('  - ' + e);

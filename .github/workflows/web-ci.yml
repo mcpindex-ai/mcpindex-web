@@ -15,6 +15,14 @@ on:
       - 'components/**'
       - 'scripts/**'
       - 'package.json'
+      # data/** is here because `verify` is a REQUIRED check on main. A path filter that
+      # skips it does not report "skipped" to branch protection - it reports nothing, so the
+      # PR is permanently unmergeable. The source-liveness publisher opens a PR touching only
+      # data/source-liveness.json, so every one of those was undismissable and the published
+      # census silently sat a week stale. Data-only PRs are cheap to verify and this keeps
+      # them mergeable without an admin bypass. (The 2-hourly verdict sync pushes straight to
+      # main and never opens a PR, so it is unaffected by a pull_request filter.)
+      - 'data/**'
       - 'package-lock.json'
       - 'tsconfig.json'
       - '.github/workflows/web-ci.yml'

@@ -8,7 +8,7 @@ import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
 export const metadata: Metadata = pageMetadata({
   title: 'Methodology',
   description:
-    'How mcpindex evaluates MCP tools. At v1 the screen is semantic-only (an LLM judge reads the description); the deterministic conformance probe is built but has not run on the public corpus yet. Four-state verdict, OTS Bitcoin-anchored history; Bitcoin-finalized at N=6 confirmations (~1 hr); pending in ~10 min. Honest limits at v1 advisory.',
+    'How mcpindex evaluates MCP tools. At v1 the screen is semantic-only (an LLM judge reads the description); the deterministic conformance probe is built but has not run on the public corpus yet. Four-state verdict, OTS hash-chained history; Bitcoin-finalized at N=6 confirmations (~1 hr); pending in ~10 min. Honest limits at v1 advisory.',
   path: '/methodology',
 });
 
@@ -51,7 +51,7 @@ export default function MethodologyPage() {
           <Dim
             label="History"
             kind="OTS"
-            body="OTS Bitcoin-anchored history with cadence bound = confirmation latency (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized); sub-window precision asserted, not proven. The verdict stream for a tool is hash-chained and timestamped via OpenTimestamps; the chain is auditable end-to-end once a block confirms."
+            body="OTS hash-chained history with cadence bound = confirmation latency (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized); sub-window precision asserted, not proven. The verdict stream for a tool is hash-chained and timestamped via OpenTimestamps; the chain is auditable end-to-end once a block confirms."
           />
         </ul>
       </section>

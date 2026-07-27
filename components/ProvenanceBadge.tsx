@@ -12,7 +12,7 @@ export function ProvenanceBadge({ className = '' }: { className?: string }) {
         <path d="M5.2 7V5.2a2.8 2.8 0 0 1 5.6 0V7" stroke="currentColor" strokeWidth="1.3" />
         <circle cx="8" cy="10.4" r="1.1" fill="currentColor" />
       </svg>
-      Bitcoin-anchored history
+      hash-chained history
     </span>
   );
 }

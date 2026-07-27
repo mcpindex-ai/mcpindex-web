@@ -63,14 +63,14 @@ export default function AboutPage() {
           instructions. The deterministic conformance probe - which checks
           whether observed behavior matches the declared schema - is built
           but has not yet run on the public corpus, so no published screen verdict
-          carries a conformance result yet. History is OTS Bitcoin-anchored, so
+          carries a conformance result yet. History is hash-chained (OTS Bitcoin anchoring is built and committed, not yet confirmed per verdict), so
           once a block confirms, the trust record for a tool cannot be quietly
           rewritten.
         </p>
         <p>
           v1 is honest about its edges. Conformance is built but not yet run on
           the screen; when it runs it is monitored, not enforced.
-          OTS Bitcoin-anchored history with cadence bound = confirmation latency
+          hash-chained history; OTS Bitcoin anchoring is built and committed, with a cadence bound of confirmation latency
           (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized);
           sub-window precision asserted, not proven. Confidences are reported but not yet calibrated
           (calibrated=false). Deployment posture is advisory: we publish the

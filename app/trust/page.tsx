@@ -11,7 +11,7 @@ import { D3_CONFORMING_LABELS, D3_REQUIRED_LABELS } from '@/lib/honest-limits';
 export const metadata: Metadata = pageMetadata({
   title: 'Trust',
   description:
-    'How mcpindex earns trust: how a verdict is produced, Bitcoin-anchored provenance, the security and data model, compliance posture and roadmap, and live status. Honest about the edges.',
+    'How mcpindex earns trust: how a verdict is produced, hash-chained provenance, the security and data model, compliance posture and roadmap, and live status. Honest about the edges.',
   path: '/trust',
 });
 
@@ -226,7 +226,7 @@ export default function TrustPage() {
         <p>
           Direct and current: mcpindex is pre-SOC 2. We are not going to imply
           otherwise. The interim posture is the one above - advisory deployment,
-          no call-time data, public method, Bitcoin-anchored history. Formal
+          no call-time data, public method, hash-chained history. Formal
           attestation (SOC 2 Type 2) is on the roadmap, not something we claim
           today. If you have a specific compliance
           requirement,{' '}

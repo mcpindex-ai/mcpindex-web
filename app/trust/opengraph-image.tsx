@@ -11,7 +11,7 @@ export default function Image() {
       <BrandOg
         eyebrow="Trust"
         title="Trust, stated plainly."
-        sub="How a verdict is produced, Bitcoin-anchored provenance, the security model, and honest limits."
+        sub="How a verdict is produced, hash-chained provenance, the security model, and honest limits."
       />
     ),
     size,
