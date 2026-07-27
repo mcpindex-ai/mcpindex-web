@@ -505,11 +505,20 @@ export default async function ServerPage(
             {/* Provenance - the OTS / Bitcoin-anchored history signal (npm's
                 provenance badge analog). The current verdict renders here; the
                 OTS anchor proof is public and recomputable offline. */}
+            {/* This asserted "Verdict history is anchored to Bitcoin via OpenTimestamps",
+                unconditionally, on every server page. Verdict records carry content_hash and
+                no anchor field; the anchor machinery exists and has submitted a token, but
+                per-verdict Bitcoin confirmation is committed at go-live, not delivered - the
+                whitepaper says exactly that. On a product whose thesis is refusing to
+                overclaim, publishing the future tense as the present was the worst sentence
+                on the site. Now states what the record supports today. */}
             <div>
               <div className={RAIL_LABEL}>Provenance</div>
               <p className="text-[12px] leading-[1.55] text-[var(--color-cite)]">
-                Verdict history is anchored to Bitcoin via OpenTimestamps. The anchor proof is
-                public and any skeptic can recompute it offline.
+                Each verdict is bound to a hash of the exact description it judged, so a
+                re-crawl that changes the text produces a new record rather than silently
+                inheriting this one. Verdict history is hash-chained today; Bitcoin anchoring
+                via OpenTimestamps is built and committed, not yet confirmed per verdict.
               </p>
             </div>
 
