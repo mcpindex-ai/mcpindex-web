@@ -154,7 +154,7 @@ export function normalize(entry: RegistryEntry): IndexedServer {
 function identityKeys(s: IndexedServer): string[] {
   const keys: string[] = [];
   const repo = s.repositoryUrl
-    ? s.repositoryUrl.toLowerCase().replace(/\.git$/, '').replace(/\/+$/, '')
+    ? s.repositoryUrl.toLowerCase().replace(/\/+$/, '').replace(/\.git$/, '').replace(/\/+$/, '')
     : '';
   if (repo) {
     if (s.npmPackage) keys.push(`npm:${s.npmPackage.toLowerCase()}@${repo}`);
@@ -162,6 +162,15 @@ function identityKeys(s: IndexedServer): string[] {
     if (s.dockerImage) keys.push(`oci:${s.dockerImage.toLowerCase().split(':')[0]}@${repo}`);
   }
   if (s.remoteUrl) keys.push(`remote:${s.remoteUrl.toLowerCase().replace(/\/+$/, '')}`);
+  // Fallback for a republication that carries no repository at all (3,439 snapshot entries
+  // have none). A bare package key is unsafe in general - identifiers are not unique - but it
+  // is safe when the claimant sits in a namespace the registry verifies ownership of, which
+  // no attacker can forge.
+  if (/^io\.github\.[^/]+\//i.test(s.name)) {
+    const ns = s.name.slice(0, s.name.indexOf('/')).toLowerCase();
+    if (s.npmPackage) keys.push(`npm:${s.npmPackage.toLowerCase()}@ns:${ns}`);
+    if (s.pypiPackage) keys.push(`pypi:${s.pypiPackage.toLowerCase()}@ns:${ns}`);
+  }
   return keys;
 }
 
