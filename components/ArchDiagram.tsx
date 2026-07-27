@@ -39,7 +39,7 @@ export function ArchDiagram() {
       <svg
         viewBox={`0 0 ${VB_W} ${VB_H}`}
         role="img"
-        aria-label="mcpindex.ai architecture: request flows from agent client through a discovery adapter into the recommendation API, which ranks against an indexed catalog. A daily refresh worker keeps the catalog current from an upstream source."
+        aria-label="The advisory directory's DISCOVERY path only: a request flows from an agent client through a discovery adapter into the recommendation API, which ranks against an indexed catalog kept current by a daily refresh worker. The trust path shares layers 01 to 03 but returns an advisory screen verdict instead of ranked picks, so it never reaches the ranking engine and is not drawn here. The in-path gate is a separate surface entirely."
         className="block w-full mx-auto"
         style={{ height: 'auto' }}
       >
@@ -128,8 +128,11 @@ export function ArchDiagram() {
           strokeWidth={1}
         />
       </svg>
+      {/* Lettered, not numbered: the numbered series 01-17 is owned by lib/diagrams.ts, and this
+          page renders Fig. 01 from that registry above. A hardcoded number here collided with it. */}
       <figcaption className="mt-3 text-center text-[11px] text-[var(--color-mute)] font-mono uppercase tracking-[0.16em]">
-        Fig. 01 · Architecture, top-down. Request flow synchronous; refresh async, daily.
+        Fig. A · The advisory directory&rsquo;s discovery path only. Request flow synchronous; refresh
+        async, daily.
       </figcaption>
     </figure>
   );

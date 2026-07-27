@@ -249,7 +249,39 @@ for (const e of entries) {
   }
 }
 
-// --- 8) review staleness (warn, never block) ---------------------------------
+// --- 8) figure numbers belong to the registry --------------------------------
+// components/ArchDiagram.tsx hardcoded "Fig. 01" and shipped onto /docs next to registry
+// Fig. 01, so the page rendered two different figures under the same number. Any component
+// that owns a <figcaption> and hardcodes a numeric figure label is competing with the series;
+// letters (Fig. A) are the escape hatch for a figure outside the registry.
+{
+  const roots = ['components', 'app'];
+  const walk = (dir) => {
+    const out = [];
+    for (const e of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
+      const rel = `${dir}/${e.name}`;
+      if (e.isDirectory()) out.push(...walk(rel));
+      else if (/\.tsx?$/.test(e.name)) out.push(rel);
+    }
+    return out;
+  };
+  for (const f of roots.flatMap(walk)) {
+    if (f === 'components/Figure.tsx' || f.startsWith('components/diagrams/')) continue;
+    // Comments stripped first: prose EXPLAINING the numbering ("this page renders Fig. 01
+    // from the registry above") is not a caption, and flagging it made the guard cry wolf on
+    // the very comment documenting the rule.
+    const src = read(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    if (!src.includes('<figcaption')) continue;
+    const m = src.match(/Fig\.\s*\d+/);
+    if (m) {
+      errors.push(
+        `figure numbering: ${f} owns a <figcaption> and hardcodes "${m[0]}". The numeric series 01-${String(entries.length).padStart(2, '0')} belongs to lib/diagrams.ts - a hardcoded number collides the moment both render on one page. Use a letter (Fig. A) for a figure outside the registry.`,
+      );
+    }
+  }
+}
+
+// --- 9) review staleness (warn, never block) ---------------------------------
 const reviewedConst = (registrySrc.match(/const REVIEWED = '([\d-]+)'/) ?? [])[1];
 if (reviewedConst) {
   const age = Math.floor((Date.now() - Date.parse(reviewedConst)) / 86_400_000);
