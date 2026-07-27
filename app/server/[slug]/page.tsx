@@ -5,6 +5,7 @@ import { getServer, loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { computeQuality, rankByQuality } from '@/lib/quality';
 import { buildInstalls } from '@/lib/installs';
 import { getSourceLiveness, livenessSentence } from '@/lib/sourceLiveness';
+import { anchorClaim } from '@/lib/verdictAnchor';
 import { CATEGORY_LABELS } from '@/lib/categorize';
 import { D3_PROGRESS } from '@/lib/honest-limits';
 import { CopyField } from '@/components/CopyField';
@@ -505,34 +506,27 @@ export default async function ServerPage(
             </div>
 
             {/* This asserted "Verdict history is anchored to Bitcoin via OpenTimestamps",
-                unconditionally, on every server page. Verdict records carry content_hash and
-                no anchor field; the anchor machinery exists and has submitted a token, but
-                per-verdict Bitcoin confirmation is committed at go-live, not delivered - the
-                whitepaper says exactly that. On a product whose thesis is refusing to
-                overclaim, publishing the future tense as the present was the worst sentence
-                on the site. Now states what the record supports today.
+                unconditionally, on every server page, while NOTHING anchored the published
+                verdicts - the only anchor that existed was a real OTS proof over the empty
+                set, and `ots upgrade` had never run, so even that sat pending for five weeks.
 
-                MERGE NOTE: this branch and main fixed that same sentence independently, and
-                their replacements made DIFFERENT factual claims - the branch said verdict
-                history "is not timestamp-anchored", main says it is hash-chained with
-                anchoring built and committed but not yet confirmed per verdict. Main's is the
-                shipped, later, and more precise statement, so it stands verbatim. The branch's
-                pointer to the census (the artifact that does carry a confirmed proof) is kept,
-                because it adds a true fact without modifying the claim above it. */}
+                The sentence is now DERIVED from data/verdict-anchors.json rather than
+                written here. That is the actual fix: hand-written copy is what let nine
+                surfaces drift from the evidence, and correcting them by hand would have left
+                the same failure mode in place for the next drift. */}
             <div>
               <div className={RAIL_LABEL}>Provenance</div>
               <p className="text-[12px] leading-[1.55] text-[var(--color-cite)]">
                 Each verdict is bound to a hash of the exact description it judged, so a
                 re-crawl that changes the text produces a new record rather than silently
-                inheriting this one. Verdict history is hash-chained today; Bitcoin anchoring
-                via OpenTimestamps is built and committed, not yet confirmed per verdict. The{' '}
+                inheriting this one. {anchorClaim()}{' '}
                 <Link
-                  href="/research/source-liveness"
+                  href="/trust#anchor"
                   className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
                 >
-                  source-liveness census
-                </Link>{' '}
-                is the artifact carrying an OpenTimestamps proof today.
+                  Verify it yourself
+                </Link>
+                .
               </p>
             </div>
 

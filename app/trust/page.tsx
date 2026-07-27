@@ -7,6 +7,7 @@ import { ProvenanceBadge } from '@/components/ProvenanceBadge';
 import { PriorityGuides } from '@/components/PriorityGuides';
 import { Seal } from '@/components/Seal';
 import { D3_CONFORMING_LABELS, D3_REQUIRED_LABELS } from '@/lib/honest-limits';
+import { anchorClaim, anchorState } from '@/lib/verdictAnchor';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Trust',
@@ -20,6 +21,9 @@ export const metadata: Metadata = pageMetadata({
 // and contact. Pre-SOC2 and honest about it - silence on compliance reads as
 // hiding; a stated posture + roadmap reads as serious.
 export default function TrustPage() {
+  // Read once and thread it through: anchorState() re-reads and re-verifies the ledger on
+  // every call, and the Provenance section branches on it four times.
+  const anchorLedgerState = anchorState();
   return (
     <article className="site-container pt-16 pb-24">
       <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
@@ -69,21 +73,61 @@ export default function TrustPage() {
       </Section>
 
       <Section label="Provenance">
-        <p>
-          Verdict history is hash-chained and timestamped to Bitcoin via{' '}
-          <a
-            href="https://opentimestamps.org"
-            target="_blank"
-            rel="noreferrer"
-            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
-          >
-            OpenTimestamps
-          </a>
-          . Once a block confirms, the trust record for a tool cannot be quietly
-          rewritten. The claim is precise: anchored history exists. It is not a
-          claim about minute-level ordering inside the confirmation window - see
-          the honest limits below.
+        <p id="anchor" className="scroll-mt-8">
+          {anchorClaim(anchorLedgerState)} Each anchor commits to the previous one, so
+          removing or reordering a past anchor invalidates every later link - and each of
+          those is separately timestamped, so tampering is detectable against an external
+          clock rather than against our own say-so.
         </p>
+        <p className="mt-4">
+          What this proves is narrow, and worth stating exactly. An anchor shows that a
+          given set of verdicts existed no later than the attested Bitcoin block. It does
+          not show the verdicts are correct, it says nothing about minute-level ordering
+          inside the confirmation window, and it does not reach back before the first
+          anchor: the chain is real going forward, never retroactively.
+        </p>
+        {anchorLedgerState.kind !== 'none' && (
+          <>
+            <p className="mt-4">
+              Verify it without trusting us. Install{' '}
+              <a
+                href="https://opentimestamps.org"
+                target="_blank"
+                rel="noreferrer"
+                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+              >
+                OpenTimestamps
+              </a>
+              , then:
+            </p>
+            <pre className="mt-3 overflow-x-auto rounded border border-[var(--color-rule)] bg-[var(--color-surface)] p-3 font-mono text-[11px] leading-[1.7]">
+{`# 1. the corpus that was anchored, and the ledger
+curl -sO https://mcpindex.ai/anchors/${anchorLedgerState.latest.chain_root.replace(/^sha256:/, '')}.ots
+git clone --depth 1 https://github.com/mcpindex-ai/mcpindex-web
+
+# 2. recompute the chain root from the published verdicts
+#    (recipe: sha256 over canonical JSON per verdict, folded per data/verdict-anchors.json)
+
+# 3. check the proof commits to that exact root
+ots verify ${anchorLedgerState.latest.chain_root.replace(/^sha256:/, '')}.ots`}
+            </pre>
+            <p className="mt-3 text-[13px] text-[var(--color-cite)]">
+              Anchor #{anchorLedgerState.latest.seq} covers{' '}
+              {anchorLedgerState.latest.verdict_count.toLocaleString('en-US')} verdicts,
+              stamped {anchorLedgerState.latest.stamped_at.slice(0, 10)}. The full ledger
+              is committed at{' '}
+              <a
+                href="https://github.com/mcpindex-ai/mcpindex-web/blob/main/data/verdict-anchors.json"
+                target="_blank"
+                rel="noreferrer"
+                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+              >
+                data/verdict-anchors.json
+              </a>
+              .
+            </p>
+          </>
+        )}
       </Section>
 
       <Figure id="trust-boundary">{renderDiagram('trust-boundary')}</Figure>
