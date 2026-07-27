@@ -93,15 +93,27 @@ test('recommendation: severity keys on distribution type', () => {
 // /research/source-liveness shipped the raw pre-debounce sweep (1,834 repos / 2,073
 // servers) while citing a DOI that says 1,830 / 2,069, and sat wrong in production for
 // four days. A comment saying "these must match aggregates.json" is not a check.
-test('census figures match data/source-liveness.json', async () => {
+// Checked against the DOI-DEPOSITED aggregates, not data/source-liveness.json. Those are two
+// different populations, and conflating them broke this test the first time the operational
+// file refreshed. The census is a FROZEN, citable artifact (sweep-20260720, ots_anchored,
+// DOI 10.5281/zenodo.21501868); source-liveness.json rolls forward on every re-check - it read
+// 2,069 on 2026-07-23 and 2,065 on 2026-07-27 as four repos came back. The page cites the DOI,
+// so tracking the rolling file would silently break the citation, which is what the FIG block's
+// own comment warns against. Enforcing it mechanically was right; the source of truth was not.
+test('census figures match the DOI-deposited aggregates', async () => {
   const raw = await fs.readFile(
-    path.join(process.cwd(), 'data', 'source-liveness.json'),
+    path.join(
+      process.cwd(), '..', 'tasks', 'growth', 'doi-deposition-liveness-v1', 'aggregates.json',
+    ),
     'utf8',
   );
-  const doc = JSON.parse(raw) as {
-    server_count: number;
-    url_count: number;
-    servers: Record<string, { url: string }>;
+  const agg = JSON.parse(raw) as {
+    repositories: { not_publicly_accessible: number; servers_affected: number; corroborated: number };
+  };
+  const doc = {
+    server_count: agg.repositories.servers_affected,
+    url_count: agg.repositories.not_publicly_accessible,
+    servers: {} as Record<string, { url: string }>,
   };
 
   const parse = (s: string) => Number(s.replace(/,/g, ''));
@@ -117,10 +129,15 @@ test('census figures match data/source-liveness.json', async () => {
     'reposUnreachable must equal url_count in data/source-liveness.json',
   );
 
-  // url_count is itself a claim; derive it independently so a wrong header value in the
-  // artifact cannot make a wrong page figure look correct.
-  const distinctUrls = new Set(Object.values(doc.servers).map((s) => s.url)).size;
-  assert.equal(distinctUrls, doc.url_count, 'url_count must equal distinct repo URLs');
+  // Keep the original intent - do not let one header value validate itself - but cross-check
+  // against a SECOND independent field in the same deposited artifact. The per-server map the
+  // old version counted lives in the rolling operational file, which is a different population
+  // and would reintroduce the conflation this test was just corrected for.
+  assert.equal(
+    agg.repositories.corroborated,
+    doc.url_count,
+    'corroborated must equal not_publicly_accessible in the deposited aggregates',
+  );
 });
 
 // pctUnreachable and ratioPhrase are DERIVED from the two enforced figures, so they can
