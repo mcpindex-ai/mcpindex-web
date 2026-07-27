@@ -190,7 +190,7 @@ test('/llms-full.txt: a HEAD probe is NOT counted (symmetric guard on the 4MB ro
 // sat in production for four days precisely because each copy was hand-maintained.
 test('/llms.txt: source-liveness figures come from the enforced constant, not literals',
   async () => {
-    const body = await (await llms()).text();
+    const body = await bodyOf(await llms(REQ));
     for (const key of ['reposUnreachable', 'reposTotal', 'serversAffected', 'sweepDate'] as const) {
       assert.ok(
         body.includes(SOURCE_LIVENESS_CENSUS[key]),
