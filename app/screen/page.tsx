@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
 import Link from 'next/link';
 import { ScreenDemo } from '@/components/ScreenDemo';
 
@@ -67,6 +69,7 @@ export default function ScreenPage() {
           </li>
         </ul>
       </section>
+      <Figure id="two-verdict-surfaces">{renderDiagram('two-verdict-surfaces')}</Figure>
     </article>
   );
 }

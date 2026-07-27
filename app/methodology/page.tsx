@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
 import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
 import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
@@ -93,6 +95,8 @@ export default function MethodologyPage() {
             body="Monitor notifies and proceeds; Guard (default) holds the unambiguously-breaking and dangerous changes while letting a proven-benign drift through; Strict holds on any drift. A benign change (added optional param or new tool, description byte-identical, no risk escalation, no marker) is auto-accepted and re-pinned, so cosmetic churn does not raise a false alarm. Anything else holds before the call."
           />
         </ul>
+        <Figure id="tier-ladder">{renderDiagram('tier-ladder')}</Figure>
+        <Figure id="posture-matrix">{renderDiagram('posture-matrix')}</Figure>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mt-10 mb-4">
           Honest limits (the gate)
         </div>
@@ -126,6 +130,7 @@ export default function MethodologyPage() {
         </ul>
       </section>
 
+      <Figure id="drift-network-loop">{renderDiagram('drift-network-loop')}</Figure>
       <section className="mt-12 rule-t pt-10">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
           Four-state verdict
@@ -159,6 +164,7 @@ export default function MethodologyPage() {
         </ul>
       </section>
 
+      <Figure id="two-verdict-surfaces">{renderDiagram('two-verdict-surfaces')}</Figure>
       <section className="mt-12 rule-t pt-10">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
           Honest limits (v1)

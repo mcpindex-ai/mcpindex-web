@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
 import { pageMetadata } from '@/lib/seo';
 import { ArchDiagram } from '@/components/ArchDiagram';
 import { Disclose } from '@/components/Disclose';
@@ -385,6 +387,7 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
       </Section>
 
       {/* §02 - The shape */}
+      <Figure id="where-the-gate-sits">{renderDiagram('where-the-gate-sits')}</Figure>
       <p className="mt-14 text-[14px] leading-[1.55]" style={{ color: 'var(--color-mute)' }}>
         The rest of this page documents the advisory directory the gate above can optionally
         query - a separate, free surface: search, recommend, and trust-verdict lookups

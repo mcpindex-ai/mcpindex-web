@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
 import Link from 'next/link';
 import { ScanTool } from '@/components/ScanTool';
 import { jsonLdSafe } from '@/lib/jsonLd';
@@ -153,6 +155,7 @@ export default async function ScanPage() {
           <Link href="/screen" className={UNDERLINE}>Screen a tool →</Link>
         </p>
       </section>
+      <Figure id="blast-radius">{renderDiagram('blast-radius')}</Figure>
     </article>
   );
 }

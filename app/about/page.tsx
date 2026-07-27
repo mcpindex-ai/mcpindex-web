@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
 import type { Metadata } from 'next';
 import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
 
@@ -200,6 +202,7 @@ export default function AboutPage() {
           said here rather than discovered.
         </p>
       </section>
+      <Figure id="category-map">{renderDiagram('category-map')}</Figure>
     </article>
   );
 }

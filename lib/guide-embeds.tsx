@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react';
 import { CopyField } from '@/components/CopyField';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
+import { getDiagram } from '@/lib/diagrams';
 import DriftGateDemo from '@/components/DriftGateDemo';
 import { ScanTool } from '@/components/ScanTool';
 import { Disclose } from '@/components/Disclose';
@@ -198,6 +201,20 @@ mcpindex · noted github/delete_repo - delete, irreversible
 // (mirrors the loader's fail-safe ethos) so a typo in a guide never breaks the
 // page or the build - it just surfaces the missing key in place.
 export function renderEmbed(key: string): ReactNode {
+  // "diagram:<id>" resolves against the figure registry rather than this table. Diagrams are
+  // their own registry (lib/diagrams.ts) because they carry an alt, a claim and a text twin that
+  // an embed key cannot; re-declaring 17 of them here would be a second place to drift.
+  if (key.startsWith('diagram:')) {
+    const id = key.slice('diagram:'.length);
+    if (!getDiagram(id)) {
+      return (
+        <p className="mt-4 font-mono text-[12px] text-[var(--color-mute)]">
+          [diagram: unknown id &quot;{id}&quot;]
+        </p>
+      );
+    }
+    return <Figure id={id}>{renderDiagram(id)}</Figure>;
+  }
   const embed = EMBED_REGISTRY[key as EmbedKey];
   if (!embed) {
     return (

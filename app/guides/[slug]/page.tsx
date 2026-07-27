@@ -1,5 +1,8 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
+import { getDiagram } from '@/lib/diagrams';
 import type { Metadata } from 'next';
 import {
   citationToServerSlug,
@@ -138,6 +141,14 @@ export default async function GuidePage(
         <div className="mt-8">
           <Prose>{guide.body}</Prose>
         </div>
+      )}
+
+      {guide.figures?.map((id) =>
+        getDiagram(id) ? (
+          <Figure key={id} id={id}>
+            {renderDiagram(id)}
+          </Figure>
+        ) : null,
       )}
 
       {guide.faq && guide.faq.length > 0 && (

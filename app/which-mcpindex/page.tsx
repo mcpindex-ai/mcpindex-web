@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
 import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
 
@@ -69,6 +71,7 @@ export default function WhichMcpindexPage() {
           hello@mcpindex.ai
         </a>
       </p>
+      <Figure id="two-jobs-two-packages">{renderDiagram('two-jobs-two-packages')}</Figure>
     </article>
   );
 }

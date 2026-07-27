@@ -63,6 +63,9 @@ export interface Guide {
   project: string;
   updated?: string; // ISO date, if the artifact carries one (drives sitemap lastmod)
   faq?: FaqItem[]; // optional Q&A pairs -> FAQPage JSON-LD (answer-engine extraction)
+  /** Figure ids (lib/diagrams.ts) rendered after the body. Classic guides have no steps to
+   *  hang an embed off; this is their placement channel. Unknown ids degrade in the renderer. */
+  figures?: string[];
   // --- walkthrough fields (all optional) ---
   kind?: 'walkthrough'; // absence = classic flat-body guide
   order?: number; // funnel position in the /guides index (lower = earlier)
@@ -129,6 +132,9 @@ export function coerceGuide(raw: unknown, slugFromFile: string): Guide | null {
   const impatient = coerceImpatient(r.impatient, new Set(steps.map((s) => s.id)));
   const next = coerceNext(r.next);
   const dependsOn = list(r.depends_on);
+  // Figure ids are slugs; the renderer resolves them against lib/diagrams.ts and degrades on a
+  // miss, so no registry import is needed here (this loader stays React-free by design).
+  const figures = list(r.figures).filter((f) => SLUG_RE.test(f));
   return {
     slug,
     title,
@@ -145,6 +151,7 @@ export function coerceGuide(raw: unknown, slugFromFile: string): Guide | null {
     ...(estMinutes ? { estMinutes } : {}),
     ...(impatient ? { impatient } : {}),
     ...(steps.length ? { steps } : {}),
+    ...(figures.length ? { figures } : {}),
     ...(next ? { next } : {}),
     ...(dependsOn.length ? { dependsOn } : {}),
   };

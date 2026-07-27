@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
 import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
 import { loadServers, loadSnapshot } from '@/lib/registry';
@@ -175,6 +177,15 @@ export default async function StatsPage() {
           /api/registry-count
         </Link>
       </p>
+      <Figure
+        id="corpus-pipeline"
+        twinVars={{ servers: countFormatted, categories: String(ALL_CATEGORIES.length) }}
+      >
+        {renderDiagram('corpus-pipeline', {
+          servers: countFormatted,
+          categories: String(ALL_CATEGORIES.length),
+        })}
+      </Figure>
     </article>
   );
 }

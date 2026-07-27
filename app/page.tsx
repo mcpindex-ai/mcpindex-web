@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
 import { jsonLdSafe } from '@/lib/jsonLd';
 import { LiveTicker } from '@/components/LiveTicker';
 import { VerdictReveal } from '@/components/VerdictReveal';
@@ -291,6 +293,7 @@ export default async function Home() {
             with no version bump. The gate <strong>catches that change in-path</strong> before
             the call goes through.
           </p>
+          <Figure id="where-the-gate-sits">{renderDiagram('where-the-gate-sits')}</Figure>
           <GateLoop compact />
           <div className="mt-12 rule-t pt-10">
             <PriorityGuides

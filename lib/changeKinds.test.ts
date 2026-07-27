@@ -3,7 +3,13 @@
 // to a fixed allowlist. Run with `npx tsx --test lib/changeKinds.test.ts`.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { coerceChangeKinds, SURFACE_CHANGE_KINDS, MAX_CHANGE_KINDS } from './changeKinds';
+import {
+  coerceChangeKinds,
+  SURFACE_CHANGE_KINDS,
+  SAFETY_RELEVANT_CHANGE_KINDS,
+  isSafetyRelevant,
+  MAX_CHANGE_KINDS,
+} from './changeKinds';
 
 test('accepts a known-kind array: validated, deduped, sorted', () => {
   assert.deepEqual(
@@ -63,4 +69,40 @@ test('the allowlist matches the trust SURFACE_KINDS taxonomy member-for-member',
   ]);
   assert.ok(!SURFACE_CHANGE_KINDS.has('description-only')); // never surfaced (cosmetic churn)
   assert.ok(!SURFACE_CHANGE_KINDS.has('tool-added')); // not drift of an existing dependency
+});
+
+// The safety bit is MIRRORED from mcpindex-trust/corpus_eval/tooling/cse/schema_diff.py
+// (`_SAFETY_RELEVANT`). Pinning the membership here is what makes the mirror safe: an upstream
+// taxonomy edit that is not reflected in this repo fails the suite instead of silently
+// re-grading a kind on a public surface (and in the generated posture figure).
+test('the mirrored safety set matches the upstream frozenset, member for member', () => {
+  assert.deepEqual([...SAFETY_RELEVANT_CHANGE_KINDS].sort(), [
+    'added-required-param',
+    'annotation-flip-to-destructive',
+    'constraint-narrowed',
+    'deep-schema-undiffable',
+    'enum-values-removed',
+    'output-schema-changed',
+    'removed-param',
+    'required-set-expanded',
+    'tool-removed',
+    'type-changed',
+  ]);
+});
+
+test('the non-safety surfaced kinds are exactly the two additive ones', () => {
+  const benign = [...SURFACE_CHANGE_KINDS].filter((k) => !isSafetyRelevant(k)).sort();
+  // added-optional-param is LOW and output-schema-added is ADDITIVE upstream. If either moves,
+  // the guard column in the posture figure flips for that row - which is the point of pinning.
+  assert.deepEqual(benign, ['added-optional-param', 'output-schema-added']);
+});
+
+test('a schema too deep to diff fails SAFE, never silently benign', () => {
+  assert.ok(isSafetyRelevant('deep-schema-undiffable'));
+});
+
+test('every safety-relevant kind is one the public surface can actually show', () => {
+  for (const k of SAFETY_RELEVANT_CHANGE_KINDS) {
+    assert.ok(SURFACE_CHANGE_KINDS.has(k), `${k} carries the safety bit but is not surfaced`);
+  }
 });

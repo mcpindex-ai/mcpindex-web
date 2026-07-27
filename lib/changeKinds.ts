@@ -26,6 +26,38 @@ export const SURFACE_CHANGE_KINDS: ReadonlySet<string> = new Set([
   'deep-schema-undiffable',
 ]);
 
+// The SAFETY BIT, mirrored from the single source of truth:
+// mcpindex-trust/corpus_eval/tooling/cse/schema_diff.py `_SAFETY_RELEVANT`.
+// A kind is either on the operator's must-review list or it is not - severity is membership,
+// never an ordinal. This mirror exists so the public surfaces (the posture figure D-07, the
+// ledger) can render the bit WITHOUT hand-typing it a fourth time; the membership is pinned in
+// changeKinds.test.ts so a taxonomy edit upstream that is not mirrored here fails the suite.
+//
+// SCOPE: this is the safety bit only. The GUARD posture's hold/proceed branch lives in the
+// `mcpindex-gate` package (not in this repo), and the documented semantics on /methodology are
+// "guard holds the unambiguously-breaking and dangerous changes while letting proven-benign drift
+// through" - i.e. guard tracks this bit. Any figure that renders a posture column must SAY it is
+// rendering the safety bit under the documented posture semantics, not a read of the gate's branch.
+export const SAFETY_RELEVANT_CHANGE_KINDS: ReadonlySet<string> = new Set([
+  'added-required-param',
+  'removed-param',
+  'type-changed',
+  'enum-values-removed',
+  'constraint-narrowed',
+  'required-set-expanded',
+  'annotation-flip-to-destructive',
+  'output-schema-changed',
+  'tool-removed',
+  // A schema too deep to fully diff fails safe: it cannot be proven benign, so it joins the
+  // must-review list rather than passing silently as 'no change'.
+  'deep-schema-undiffable',
+]);
+
+/** True when a kind is on the operator's must-review list (the safety bit). */
+export function isSafetyRelevant(kind: string): boolean {
+  return SAFETY_RELEVANT_CHANGE_KINDS.has(kind);
+}
+
 // Hard cap on how many kinds render/return for one event - a hostile blob cannot bloat the page or
 // the API response. Comfortably above the real taxonomy size (12) so a legitimate event is never
 // truncated, while a forged 10k-element array is.

@@ -44,6 +44,7 @@ export function Footer() {
             <Link href="/best" className={LINK}>Best of</Link>
             <Link href="/servers" className={LINK}>All servers</Link>
             <Link href="/changelog" className={LINK}>Changelog</Link>
+            <Link href="/diagrams" className={LINK}>Diagrams</Link>
           </div>
 
           <div>

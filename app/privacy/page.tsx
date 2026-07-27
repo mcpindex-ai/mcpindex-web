@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
 import { ObfuscatedEmail } from '@/components/ObfuscatedEmail';
 
 export const metadata: Metadata = {
@@ -137,6 +139,7 @@ export default function PrivacyPage() {
           to request deletion of any personal data tied to you.
         </p>
       </div>
+      <Figure id="trust-boundary">{renderDiagram('trust-boundary')}</Figure>
     </article>
   );
 }

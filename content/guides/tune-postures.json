@@ -55,5 +55,9 @@
       "q": "How do I make the gate hold on every contract change?",
       "a": "Run it in Strict posture. How you set that depends on the install: pass --posture strict to mcpindex-proxy, choose it in the Claude Desktop install dialog, or pass posture=Posture.STRICT to the SDK's wrap(). Config-wired installs run Guard by default."
     }
+  ],
+  "figures": [
+    "posture-matrix",
+    "it-held-now-what"
   ]
 }

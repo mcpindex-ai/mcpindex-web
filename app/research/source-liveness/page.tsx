@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
 import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
 import { SOURCE_LIVENESS_CENSUS as FIG } from '@/lib/sourceLiveness';
@@ -212,6 +214,8 @@ export default function SourceLivenessPage() {
         </a>
         .
       </p>
+      <Figure id="source-liveness-census">{renderDiagram('source-liveness-census')}</Figure>
+      <Figure id="provenance-chain">{renderDiagram('provenance-chain')}</Figure>
     </article>
   );
 }

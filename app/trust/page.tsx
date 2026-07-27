@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
 import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
 import { ProvenanceBadge } from '@/components/ProvenanceBadge';
@@ -84,6 +86,7 @@ export default function TrustPage() {
         </p>
       </Section>
 
+      <Figure id="trust-boundary">{renderDiagram('trust-boundary')}</Figure>
       <Section label="Security & data model">
         <ul className="space-y-3">
           <Edge head="Advisory, not blocking (the directory screen).">
@@ -217,6 +220,8 @@ export default function TrustPage() {
         </ul>
       </Section>
 
+      <Figure id="tier-ladder">{renderDiagram('tier-ladder')}</Figure>
+      <Figure id="provenance-chain">{renderDiagram('provenance-chain')}</Figure>
       <Section label="Compliance & roadmap">
         <p>
           Direct and current: mcpindex is pre-SOC 2. We are not going to imply

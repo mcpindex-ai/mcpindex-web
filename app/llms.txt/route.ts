@@ -3,6 +3,7 @@ import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
 import { gateInstallLine } from '@/lib/install/manifest';
 import { recordAeoFetch } from '@/lib/aeoCounter';
 import { SOURCE_LIVENESS_CENSUS } from '@/lib/sourceLiveness';
+import { DIAGRAMS, renderTwin } from '@/lib/diagrams';
 
 // Uncached for the AEO measurement window so every fetch invokes the function (see lib/aeoCounter.ts).
 // The counter is per-isolate/per-minute deduped, so it records ACTIVE-MINUTES (presence), not raw hits —
@@ -10,6 +11,17 @@ import { SOURCE_LIVENESS_CENSUS } from '@/lib/sourceLiveness';
 // s-maxage=60 floor), not raw fetch volume. REVERT after the window: restore `revalidate = 3600` and the
 // `s-maxage=3600` Cache-Control below.
 export const revalidate = 0;
+
+// The figures worth spending answer-engine budget on: the positional claim, the data-flow
+// boundary, the category map, the generated posture table, and the verdict-vocabulary split.
+// These are the five that get asked about; the rest are one line each above.
+const TWIN_IDS = [
+  'where-the-gate-sits',
+  'trust-boundary',
+  'category-map',
+  'posture-matrix',
+  'two-verdict-surfaces',
+] as const;
 
 export async function GET(req: Request) {
   // Only GET is counted: Next 16 auto-implements HEAD from GET, which would otherwise double-count.
@@ -81,6 +93,20 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 
 - Source Liveness - Baseline v1: a corroborated, timestamp-anchored census of whether the source behind every registry server is still publicly reachable. Finding: ${SOURCE_LIVENESS_CENSUS.reposUnreachable} of ${SOURCE_LIVENESS_CENSUS.reposTotal} referenced GitHub repositories (${SOURCE_LIVENESS_CENSUS.pctUnreachable}) were not publicly accessible as of the ${SOURCE_LIVENESS_CENSUS.sweepDate} census, affecting ${SOURCE_LIVENESS_CENSUS.serversAffected} listed servers. Two independent vantages, 0 cross-vantage disagreements; census digest anchored to Bitcoin via OpenTimestamps. Live: [mcpindex.ai/research/source-liveness](https://mcpindex.ai/research/source-liveness). Archived, CC-BY-4.0: DOI 10.5281/zenodo.21501868 (concept 10.5281/zenodo.21501867).
 - Drift Report - Edition v1: aggregate + per-server statistics of silent tool-contract changes across the reachable remote population. Live: [mcpindex.ai/drift-report](https://mcpindex.ai/drift-report). Archived, CC-BY-4.0: DOI 10.5281/zenodo.21449150 (concept 10.5281/zenodo.21449149).
+
+## Diagrams (CC BY 4.0, free to reuse with attribution)
+
+Every figure on the site is inline SVG plus a plain-text rendering, because an answer engine cannot read a picture. Gallery: [mcpindex.ai/diagrams](https://mcpindex.ai/diagrams). Each permalink carries the figure, its text version, a standalone SVG, and a credit line. Reuse is welcome - attribute mcpindex.ai.
+
+${DIAGRAMS.map((d) => `- ${d.title} - ${d.claim} [mcpindex.ai/diagrams/${d.id}](https://mcpindex.ai/diagrams/${d.id})`).join('\n')}
+
+The five most-quoted figures, as text:
+
+${TWIN_IDS.map((id) => {
+    const d = DIAGRAMS.find((x) => x.id === id);
+    if (!d) return '';
+    return `### ${d.title}\n${d.claim}\n\n\u0060\u0060\u0060\n${renderTwin(d.twin, { servers: String(servers), categories: String(categories) })}\n\u0060\u0060\u0060`;
+  }).join('\n\n')}
 
 ## Endpoints an agent can call
 
