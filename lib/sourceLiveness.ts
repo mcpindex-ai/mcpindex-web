@@ -41,6 +41,11 @@ export const SOURCE_LIVENESS_CENSUS = {
   sampleSize: '150',
   egressBlocked: '176',
   sweepDate: '2026-07-20',
+  // DERIVED from reposUnreachable / reposTotal. They live here because they were being
+  // hand-maintained inside the very sentences the raw figures are enforced in, so a v2
+  // census would have shipped "2,400 of 13,500 (14.0%)" - self-contradicting in one clause.
+  pctUnreachable: '14.0%',
+  ratioPhrase: 'one in seven',
 } as const;
 
 export type SourceLivenessState = 'unavailable';

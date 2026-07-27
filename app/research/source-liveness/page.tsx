@@ -13,6 +13,7 @@ export const metadata: Metadata = pageMetadata({
     `${FIG.reposUnreachable} of ${FIG.reposTotal} referenced GitHub repositories were not publicly ` +
     `accessible, affecting ${FIG.serversAffected} of ${FIG.serversTotal} listed servers. Full method, ` +
     `limits, and the deleted-vs-private caveat.`,
+  image: '/opengraph-image',
   path: '/research/source-liveness',
 });
 
@@ -34,7 +35,7 @@ export default function SourceLivenessPage() {
         On {FIG.sweepDate} we checked every repository and website URL carried by
         the {FIG.serversTotal} servers in the official MCP registry.{' '}
         {FIG.reposUnreachable} of the {FIG.reposTotal} distinct GitHub
-        repositories those servers reference could not be reached, one in seven.
+        repositories those servers reference could not be reached, {FIG.ratioPhrase}.
         What has gone is the ability to read the code before you hand it to an
         agent. This census measured URL reachability only; it makes no claim about
         whether a package still installs.

@@ -188,10 +188,11 @@ test('/llms-full.txt: a HEAD probe is NOT counted (symmetric guard on the 4MB ro
 // constant against data/source-liveness.json, but nothing guarded that this surface
 // actually uses the constant - and answer engines read this file. Pre-debounce figures
 // sat in production for four days precisely because each copy was hand-maintained.
-test('/llms.txt: source-liveness figures come from the enforced constant, not literals',
+test('/llms.txt: every source-liveness figure, including the derived ones, is present',
   async () => {
     const body = await bodyOf(await llms(REQ));
-    for (const key of ['reposUnreachable', 'reposTotal', 'serversAffected', 'sweepDate'] as const) {
+    for (const key of ['reposUnreachable', 'reposTotal', 'serversAffected', 'sweepDate',
+                       'pctUnreachable', 'ratioPhrase'] as const) {
       assert.ok(
         body.includes(SOURCE_LIVENESS_CENSUS[key]),
         `llms.txt must carry SOURCE_LIVENESS_CENSUS.${key} (${SOURCE_LIVENESS_CENSUS[key]})`,

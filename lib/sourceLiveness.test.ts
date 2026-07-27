@@ -122,3 +122,28 @@ test('census figures match data/source-liveness.json', async () => {
   const distinctUrls = new Set(Object.values(doc.servers).map((s) => s.url)).size;
   assert.equal(distinctUrls, doc.url_count, 'url_count must equal distinct repo URLs');
 });
+
+// pctUnreachable and ratioPhrase are DERIVED from the two enforced figures, so they can
+// be internally wrong while every other guard stays green: the llms/page tests only prove
+// a surface interpolates the constant, not that the constant is arithmetically true.
+test('derived census figures match the enforced raw figures', () => {
+  const n = (s: string) => Number(s.replace(/[,%]/g, ''));
+  const unreachable = n(SOURCE_LIVENESS_CENSUS.reposUnreachable);
+  const total = n(SOURCE_LIVENESS_CENSUS.reposTotal);
+  const pct = (unreachable / total) * 100;
+
+  assert.equal(
+    n(SOURCE_LIVENESS_CENSUS.pctUnreachable).toFixed(1),
+    pct.toFixed(1),
+    `pctUnreachable must equal ${unreachable}/${total} = ${pct.toFixed(1)}%`,
+  );
+
+  // "one in seven" must round-trip: 1/7 = 14.3%, and the true rate must land nearer 7
+  // than 6 or 8, otherwise the phrase contradicts the percentage beside it.
+  const oneInN = total / unreachable;
+  assert.equal(
+    Math.round(oneInN),
+    7,
+    `ratioPhrase says "one in seven" but the rate is one in ${oneInN.toFixed(2)}`,
+  );
+});
