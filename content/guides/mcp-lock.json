@@ -19,5 +19,8 @@
       "q": "Does a registry replace a lockfile?",
       "a": "No. A registry's pin is not a versioned artifact in your repo. It can corroborate and warn that a server drifted before your next session finds out, but only your repo knows what you approved and why. A registry can corroborate; it shouldn't decide."
     }
+  ],
+  "figures": [
+    "mcp-needs-a-lockfile"
   ]
 }

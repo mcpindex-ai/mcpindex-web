@@ -2,6 +2,8 @@ import { getServerCount, getCategoryCount } from '@/lib/registry';
 import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
 import { gateInstallLine } from '@/lib/install/manifest';
 import { recordAeoFetch } from '@/lib/aeoCounter';
+import { SOURCE_LIVENESS_CENSUS } from '@/lib/sourceLiveness';
+import { DIAGRAMS, renderTwin } from '@/lib/diagrams';
 
 // Uncached for the AEO measurement window so every fetch invokes the function (see lib/aeoCounter.ts).
 // The counter is per-isolate/per-minute deduped, so it records ACTIVE-MINUTES (presence), not raw hits —
@@ -9,6 +11,17 @@ import { recordAeoFetch } from '@/lib/aeoCounter';
 // s-maxage=60 floor), not raw fetch volume. REVERT after the window: restore `revalidate = 3600` and the
 // `s-maxage=3600` Cache-Control below.
 export const revalidate = 0;
+
+// The figures worth spending answer-engine budget on: the positional claim, the data-flow
+// boundary, the category map, the generated posture table, and the verdict-vocabulary split.
+// These are the five that get asked about; the rest are one line each above.
+const TWIN_IDS = [
+  'where-the-gate-sits',
+  'trust-boundary',
+  'category-map',
+  'posture-matrix',
+  'two-verdict-surfaces',
+] as const;
 
 export async function GET(req: Request) {
   // Only GET is counted: Next 16 auto-implements HEAD from GET, which would otherwise double-count.
@@ -36,7 +49,7 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 ## Drift Gate (in-path; tier-0 live, tiers 1-3 held off by default)
 
 - What it is: an in-path trust gate for agent tool calls. It pins each MCP tool's contract trust-on-first-use (TOFU) and, before your agent acts, HOLDs the call the moment that contract silently changes. Unlike the advisory screen below, it sits in the call path, so it can HOLD, not merely alert.
-- Method: a deterministic contract-diff (ChangeKind taxonomy: added-required-param, required-set-expanded, constraint-narrowed, type-changed, enum-values-removed, removed-param, annotation-flip-to-destructive, output-schema-added/changed, tool-added/removed), plus an injection/exfil marker scan over the input and output schema and description. Postures: Monitor (notify+proceed) / Guard (default; hold dangerous, auto-accept proven-benign) / Strict (hold any drift). Fail-closed.
+- Method: a deterministic contract-diff (ChangeKind taxonomy: added-required-param, required-set-expanded, constraint-narrowed, type-changed, enum-values-removed, removed-param, annotation-flip-to-destructive, output-schema-added/changed, tool-added/removed), plus an injection/exfil marker scan over the input and output schema and description. Postures: Monitor (never blocks; proceed-with-note) / Guard (default; hold dangerous, INCONCLUSIVE where behaviour is the gate, auto-accept proven-benign) / Strict (hold anything not proven benign - NOT every drift: the benign auto-accept runs before the posture layer, so a proven-benign change proceeds under strict too). Fail-closed.
 - ${gateInstallLine({ code: true })}
 - Tiered ladder: tier-0 deterministic contract-diff is the live, deterministic leg and runs first. Above it the ladder is built as in-path seams - a cloud tier-1 corpus lookup (a contract judged once clears or condemns it everywhere), a tier-2 LLM consult on the ambiguous, and a tier-3 behavioral verifier that exercises a changed tool to clear or refute the change - but each is held off by default and requires explicit opt-in; the default build egresses nothing and stays fail-closed.
 - Honest limits: contract_diff_not_safety_verdict (a HOLD means the contract CHANGED vs your pin, not that the new contract is unsafe; when enabled, the behavioral tier clears or refutes a change, it does not prove a tool safe); tiers1to3_held_off_by_default_opt_in; default_build_egresses_nothing_fail_closed; calibrated_false_v1 (confidence reported but not yet calibrated against a held-out corpus).
@@ -56,7 +69,7 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 - Capability: check_tool_trust (exposed by the npm MCP server, see below). This is the directory client, not the in-path gate.
 - Framework bindings: @mcp-index/mastra wires check_tool_trust into Mastra as a beforeToolCall hook (warn or enforce; fail-closed, no credentials). A client of the advisory screen, not the in-path gate.
 - Pipeline (screen): today the screen is semantic-only - an LLM judge reads each tool description for hidden instructions. The deterministic conformance probe (drives the tool against its declared schema) is built but has NOT yet run on the public corpus, so no published screen verdict carries a conformance result; a clearing ALLOW (which the probe would earn) is not produced at v1. When the probe runs it is monitored, not enforced. Confidence is reported but not yet calibrated (calibrated=false).
-- History: OTS Bitcoin-anchored. Cadence bound = confirmation latency (~10 minutes for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized). Sub-window precision asserted, not proven. In-process verify proves the proof carries a Bitcoin BlockHeaderAttestation; confirmation-depth check is the relying party's job against their own Bitcoin node.
+- History: hash-chained; OTS Bitcoin anchoring built and committed, not yet confirmed per verdict. Cadence bound = confirmation latency (~10 minutes for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized). Sub-window precision asserted, not proven. In-process verify proves the proof carries a Bitcoin BlockHeaderAttestation; confirmation-depth check is the relying party's job against their own Bitcoin node.
 - Calibration: calibrated=false at v1. Confidences are reported, not yet calibrated against a held-out adversarial corpus.
 - Exposure: anonymous calls return the current verdict (directive, status, dimension verdicts, severity, expires_at). Free, no key required - nothing on this API is paid-tier.
 - Graduation gate (D3): >=${D3_REQUIRED_LABELS} conforming labels with FP upper-95 <=2%. Current: ${D3_PROGRESS}. Terminal-v1 trigger 2026-09-01: under 50 conforming = ships calibrated=false as terminal (v2 graduation, not v1).
@@ -78,8 +91,22 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 
 ## Research / datasets (archived, citable)
 
-- Source Liveness - Baseline v1: a corroborated, timestamp-anchored census of whether the source behind every registry server is still publicly reachable. Finding: 1,830 of 13,105 referenced GitHub repositories (14.0%) were not publicly accessible as of the 2026-07-20 census, affecting 2,069 listed servers. Two independent vantages, 0 cross-vantage disagreements; census digest anchored to Bitcoin via OpenTimestamps. Live: [mcpindex.ai/research/source-liveness](https://mcpindex.ai/research/source-liveness). Archived, CC-BY-4.0: DOI 10.5281/zenodo.21501868 (concept 10.5281/zenodo.21501867).
+- Source Liveness - Baseline v1: a corroborated, timestamp-anchored census of whether the source behind every registry server is still publicly reachable. Finding: ${SOURCE_LIVENESS_CENSUS.reposUnreachable} of ${SOURCE_LIVENESS_CENSUS.reposTotal} referenced GitHub repositories (${SOURCE_LIVENESS_CENSUS.pctUnreachable}) were not publicly accessible as of the ${SOURCE_LIVENESS_CENSUS.sweepDate} census, affecting ${SOURCE_LIVENESS_CENSUS.serversAffected} listed servers. Two independent vantages, 0 cross-vantage disagreements; census digest anchored to Bitcoin via OpenTimestamps. Live: [mcpindex.ai/research/source-liveness](https://mcpindex.ai/research/source-liveness). Archived, CC-BY-4.0: DOI 10.5281/zenodo.21501868 (concept 10.5281/zenodo.21501867).
 - Drift Report - Edition v1: aggregate + per-server statistics of silent tool-contract changes across the reachable remote population. Live: [mcpindex.ai/drift-report](https://mcpindex.ai/drift-report). Archived, CC-BY-4.0: DOI 10.5281/zenodo.21449150 (concept 10.5281/zenodo.21449149).
+
+## Diagrams (CC BY 4.0, free to reuse with attribution)
+
+Every figure on the site is inline SVG plus a plain-text rendering, because an answer engine cannot read a picture. Gallery: [mcpindex.ai/diagrams](https://mcpindex.ai/diagrams). Each permalink carries the figure, its text version, a standalone SVG, and a credit line. Reuse is welcome - attribute mcpindex.ai.
+
+${DIAGRAMS.map((d) => `- ${d.title} - ${d.claim} [mcpindex.ai/diagrams/${d.id}](https://mcpindex.ai/diagrams/${d.id})`).join('\n')}
+
+The five most-quoted figures, as text:
+
+${TWIN_IDS.map((id) => {
+    const d = DIAGRAMS.find((x) => x.id === id);
+    if (!d) return '';
+    return `### ${d.title}\n${d.claim}\n\n\u0060\u0060\u0060\n${renderTwin(d.twin, { servers: String(servers), categories: String(categories) })}\n\u0060\u0060\u0060`;
+  }).join('\n\n')}
 
 ## Endpoints an agent can call
 
@@ -134,7 +161,7 @@ This is the advisory directory client - not the in-path gate (\`mcpindex-gate\` 
 - [Methodology](https://mcpindex.ai/methodology): The eval (semantic-only today; conformance probe built but not yet run), four-state verdict, honest limits.
 - [Stats](https://mcpindex.ai/stats): How many MCP servers are there? Live official-registry count with stated methodology (what counts as a server).
 - [Whitepaper](https://mcpindex.ai/whitepaper): Architecture whitepaper: gate, threat model, methodology, honest limits. Public; free PDF, no email wall.
-- [Source Liveness](https://mcpindex.ai/research/source-liveness): Census of which listed servers' source repository is still publicly reachable; 1 in 7 are not. Archived with a DOI (CC-BY-4.0).
+- [Source Liveness](https://mcpindex.ai/research/source-liveness): Census of which listed servers' source repository is still publicly reachable; ${SOURCE_LIVENESS_CENSUS.ratioPhrase} are not. Archived with a DOI (CC-BY-4.0).
 - [About](https://mcpindex.ai/about): Why this exists.
 
 Unofficial. Not affiliated with Anthropic.

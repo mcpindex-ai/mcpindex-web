@@ -32,6 +32,9 @@ const PackageZ = z
   })
   .loose();
 
+// Every admitted row must carry at least one identity key (package or remote). mergeAdmitted
+// uses those to notice that upstream has started listing the same server under a different
+// name; a row with neither is invisible to that check and would live on as a duplicate.
 const AdmittedEntryZ = z
   .object({
     server: z
@@ -59,9 +62,11 @@ const AdmittedEntryZ = z
       })
       .loose(),
   })
-  .loose();
-
-const AdmittedDocZ = z.object({ servers: z.array(AdmittedEntryZ) }).loose();
+  .loose()
+  .refine(
+    (e) => (e.server.packages?.length ?? 0) > 0 || (e.server.remotes?.length ?? 0) > 0,
+    { message: 'needs at least one package or remote (identity key for rename detection)' },
+  );
 
 const EMPTY: AdmittedDoc = { servers: [] };
 
@@ -71,14 +76,29 @@ const EMPTY: AdmittedDoc = { servers: [] };
  * mode we want is "the reference servers are missing again", not "the site 500s".
  */
 export function coerceAdmitted(raw: unknown): AdmittedDoc {
-  const parsed = AdmittedDocZ.safeParse(raw);
-  if (!parsed.success) {
-    console.error('[admitted] overlay failed validation, ignoring', {
-      issues: parsed.error.issues.slice(0, 5).map((i) => `${i.path.join('.')}: ${i.message}`),
-    });
+  // PER-ROW, not all-or-nothing. This used to return EMPTY on any single bad row, so one
+  // mistyped date removed every admitted server from the site (pages 404, sitemap shrinks)
+  // while the Python screener - which validates per row - kept screening them and computed a
+  // DIFFERENT collision set from a different population. Divergent overlays between the two
+  // is the failure `active_registry_names` exists to prevent, and an all-or-nothing parser on
+  // one side guarantees it. Drop the bad row, keep the rest, and say so.
+  if (typeof raw !== 'object' || raw === null || !Array.isArray((raw as { servers?: unknown }).servers)) {
+    console.error('[admitted] overlay is not { servers: [...] }, ignoring');
     return EMPTY;
   }
-  return parsed.data as AdmittedDoc;
+  const servers: AdmittedDoc['servers'] = [];
+  (raw as { servers: unknown[] }).servers.forEach((row, i) => {
+    const parsed = AdmittedEntryZ.safeParse(row);
+    if (parsed.success) {
+      servers.push(parsed.data as AdmittedDoc['servers'][number]);
+      return;
+    }
+    console.error('[admitted] dropped row', i, {
+      name: (row as { server?: { name?: unknown } })?.server?.name,
+      issues: parsed.error.issues.slice(0, 3).map((x) => `${x.path.join('.')}: ${x.message}`),
+    });
+  });
+  return { servers };
 }
 
 let _cache: AdmittedDoc | null = null;
@@ -89,7 +109,13 @@ export async function loadAdmitted(): Promise<AdmittedDoc> {
   try {
     const raw = await fs.readFile(ADMITTED_PATH, 'utf8');
     _cache = coerceAdmitted(JSON.parse(raw));
-  } catch {
+  } catch (err) {
+    // A bare `catch {}` swallowed JSON syntax errors with zero output, so a broken overlay
+    // looked identical to no overlay. ENOENT is the only expected absence.
+    const code = (err as NodeJS.ErrnoException)?.code;
+    if (code !== 'ENOENT') {
+      console.error('[admitted] could not read/parse the overlay', { code, err: String(err).slice(0, 200) });
+    }
     _cache = EMPTY;
   }
   return _cache;

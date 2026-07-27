@@ -26,6 +26,7 @@ import edition from '@/data/report-edition-v1.json';
 export const revalidate = 300;
 
 export const metadata: Metadata = pageMetadata({
+  image: '/opengraph-image',
   title: 'The MCP Drift Report',
   description:
     'How MCP tool contracts change in the wild: deduped safety incidents by kind, how many land with the declared version unchanged, removals, unstable contracts, and the full methodology. Fingerprinted corpus, checkable numbers.',

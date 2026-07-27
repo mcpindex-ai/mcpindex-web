@@ -31,5 +31,8 @@
       "q": "Is git diff enough to catch MCP tool contract changes?",
       "a": "No. git diff and similar utilities compare file snapshots you provide. MCP contract integrity pins the live tool contract on first sight and diffs it on later calls - including when the server changes remotely with no file in your repo. See the layer map in MCP scanners vs gateways."
     }
+  ],
+  "figures": [
+    "silent-contract-drift-timeline"
   ]
 }

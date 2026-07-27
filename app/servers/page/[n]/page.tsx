@@ -23,7 +23,7 @@ export async function generateMetadata(
   const { n } = await ctx.params;
   return {
     title: `All MCP servers · page ${n}`,
-    description: `Alphabetized index of MCP servers from the official registry snapshot, page ${n}.`,
+    description: `Alphabetized index of MCP servers indexed by mcpindex (registry snapshot plus a small editorially admitted set), page ${n}.`,
     alternates: { canonical: `https://mcpindex.ai/servers/page/${n}` },
   };
 }

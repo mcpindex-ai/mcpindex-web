@@ -14,7 +14,7 @@
     {
       "id": "meet",
       "heading": "Meet the three postures",
-      "body": "Toggle the posture on the demo below and apply the same change to see how the decision shifts.\n\n- **Monitor** notifies and proceeds (awareness, no friction).\n- **Guard** (default) holds the unambiguously breaking and dangerous changes, and auto-accepts a proven-benign drift (an added optional param, a byte-identical description) so cosmetic churn never raises a false alarm.\n- **Strict** holds on any drift.",
+      "body": "Toggle the posture on the demo below and apply the same change to see how the decision shifts.\n\n- **Monitor** notifies and proceeds (awareness, no friction).\n- **Guard** (default) holds the unambiguously breaking and dangerous changes, and auto-accepts a proven-benign drift (an added optional param, a byte-identical description) so cosmetic churn never raises a false alarm.\n- **Strict** holds anything it cannot prove benign. It is *not* \"hold every drift\": the benign auto-accept runs before the posture layer, so a proven-benign change (an added optional param, a first-time output schema) is re-pinned and proceeds under Strict too.",
       "embed": "drift-gate-demo"
     },
     {
@@ -55,5 +55,9 @@
       "q": "How do I make the gate hold on every contract change?",
       "a": "Run it in Strict posture. How you set that depends on the install: pass --posture strict to mcpindex-proxy, choose it in the Claude Desktop install dialog, or pass posture=Posture.STRICT to the SDK's wrap(). Config-wired installs run Guard by default."
     }
+  ],
+  "figures": [
+    "posture-matrix",
+    "it-held-now-what"
   ]
 }

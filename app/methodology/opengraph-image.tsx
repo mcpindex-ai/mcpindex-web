@@ -11,7 +11,7 @@ export default function Image() {
       <BrandOg
         eyebrow="Methodology · v1 advisory"
         title="How a verdict is produced."
-        sub="The gate's deterministic contract-diff, the directory's semantic screen, and OTS Bitcoin-anchored history."
+        sub="The gate's deterministic contract-diff, the directory's semantic screen, and hash-chained verdict history."
       />
     ),
     size,

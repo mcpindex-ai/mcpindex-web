@@ -4,6 +4,7 @@ import { ALL_CATEGORIES } from '@/lib/categorize';
 import { browseTotalPages } from '@/lib/serversBrowse';
 import { eligibleTopics } from '@/lib/topics';
 import { loadGuides } from '@/lib/guides-content';
+import { DIAGRAMS } from '@/lib/diagrams';
 
 export const revalidate = 86400;
 
@@ -38,6 +39,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { url: `${base}/stats`, priority: 0.6, changeFrequency: 'daily' },
       { url: `${base}/status`, priority: 0.4, changeFrequency: 'daily' },
       { url: `${base}/brand`, priority: 0.3, changeFrequency: 'monthly' },
+      { url: `${base}/diagrams`, priority: 0.7, changeFrequency: 'monthly' },
       { url: `${base}/ledger`, priority: 0.7, changeFrequency: 'hourly' },
       { url: `${base}/dashboard`, priority: 0.5, changeFrequency: 'hourly' },
       { url: `${base}/research/source-liveness`, priority: 0.8, changeFrequency: 'weekly' },
@@ -49,6 +51,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { url: `${base}/terms`, priority: 0.3, changeFrequency: 'yearly' },
       { url: `${base}/accessibility`, priority: 0.3, changeFrequency: 'yearly' },
     ];
+    // Individual figure permalinks sit deliberately LOW. lib/priority-guides.ts already makes
+    // the point: every URL added to a crawl wave dilutes equity on the pages that convert. The
+    // gallery hub is the crawlable entry point; the 17 leaves are for reuse and citation, not
+    // for competing with /install and /trust over crawl budget.
+    const diagramRoutes: MetadataRoute.Sitemap = DIAGRAMS.map((d) => ({
+      url: `${base}/diagrams/${d.id}`,
+      priority: 0.4,
+      changeFrequency: 'monthly',
+    }));
     const categoryRoutes: MetadataRoute.Sitemap = ALL_CATEGORIES.map((c) => ({
       url: `${base}/best/${c}`,
       priority: 0.8,
@@ -82,6 +93,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
     baseEntries = [
       ...staticRoutes,
+      ...diagramRoutes,
       ...categoryRoutes,
       ...compareRoutes,
       ...browseRoutes,

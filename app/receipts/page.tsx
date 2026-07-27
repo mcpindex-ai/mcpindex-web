@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
 import Link from 'next/link';
 import { getInstallReceipts } from '@/lib/receiptIngest';
 
@@ -33,7 +35,8 @@ export default async function ReceiptsPage({ searchParams }: PageProps) {
           </Link>
           .
         </p>
-      </article>
+        <Figure id="anatomy-of-a-hold">{renderDiagram('anatomy-of-a-hold')}</Figure>
+    </article>
     );
   }
 

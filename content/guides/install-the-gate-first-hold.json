@@ -1,89 +1,94 @@
 {
- "slug": "install-the-gate-first-hold",
- "kind": "walkthrough",
- "order": 1,
- "title": "Install the mcpindex gate and watch your first HOLD",
- "meta_description": "A start-to-finish walkthrough: install the mcpindex gate, see which MCP hosts it wires, then watch it HOLD a silently changed tool contract before your agent acts. Roughly 4 minutes.",
- "h1": "Install the gate and watch your first HOLD",
- "project": "mcpindex",
- "updated": "2026-07-20",
- "est_minutes": 4,
- "outcome": "The gate installed and wired into your MCP hosts, and a live contract change held right in front of you, so you know exactly what a HOLD looks like before it matters.",
- "impatient": {
-  "label": "Skip ahead and watch a contract change get held first",
-  "target_id": "watch"
- },
- "body": "The tool your agent trusted on Monday can change on Tuesday, with no version bump your client notices. The gate installs locally, pins each tool's declared contract on first sight, and HOLDs a call when that contract silently changes, before your agent acts. It is a contract-diff, not a safety verdict, and it holds no credentials. Here is the whole path, start to finish.",
- "steps": [
-  {
-   "id": "install",
-   "heading": "Install the gate",
-   "body": "Run this in your terminal. It installs the gate binary and rewrites each MCP host's config so that host's servers launch behind the gate. Free, no account, runs locally.",
-   "embed": "install-command"
+  "slug": "install-the-gate-first-hold",
+  "kind": "walkthrough",
+  "order": 1,
+  "title": "Install the mcpindex gate and watch your first HOLD",
+  "meta_description": "A start-to-finish walkthrough: install the mcpindex gate, see which MCP hosts it wires, then watch it HOLD a silently changed tool contract before your agent acts. Roughly 4 minutes.",
+  "h1": "Install the gate and watch your first HOLD",
+  "project": "mcpindex",
+  "updated": "2026-07-20",
+  "est_minutes": 4,
+  "outcome": "The gate installed and wired into your MCP hosts, and a live contract change held right in front of you, so you know exactly what a HOLD looks like before it matters.",
+  "impatient": {
+    "label": "Skip ahead and watch a contract change get held first",
+    "target_id": "watch"
   },
-  {
-   "id": "wired",
-   "heading": "See what it wired",
-   "body": "The one-liner only touches the hosts it actually finds on your machine. These are the hosts it knows how to config-wire:",
-   "embed": "supported-hosts"
+  "body": "The tool your agent trusted on Monday can change on Tuesday, with no version bump your client notices. The gate installs locally, pins each tool's declared contract on first sight, and HOLDs a call when that contract silently changes, before your agent acts. It is a contract-diff, not a safety verdict, and it holds no credentials. Here is the whole path, start to finish.",
+  "steps": [
+    {
+      "id": "install",
+      "heading": "Install the gate",
+      "body": "Run this in your terminal. It installs the gate binary and rewrites each MCP host's config so that host's servers launch behind the gate. Free, no account, runs locally.",
+      "embed": "install-command"
+    },
+    {
+      "id": "wired",
+      "heading": "See what it wired",
+      "body": "The one-liner only touches the hosts it actually finds on your machine. These are the hosts it knows how to config-wire:",
+      "embed": "supported-hosts"
+    },
+    {
+      "id": "restart",
+      "heading": "Restart your host",
+      "body": "Quit and reopen the host you use (Claude Desktop, Cursor, and so on) so it reloads the gated config. Nothing changes about how you call your tools. The gate sits in the path and stays quiet until a contract drifts.",
+      "troubleshoot": "If tools stop appearing after the restart, run `mcpindex-config-wire status` to check the wiring, or `uninstall.sh` to un-wire every host config and restore the originals."
+    },
+    {
+      "id": "watch",
+      "heading": "Watch a contract change get held",
+      "body": "Now the part that matters. Pin a tool's contract, apply a change, and watch what the gate does. This runs the real diff logic in your browser (the same mapping the installed gate uses), so there is nothing to fake. Try a breaking change and a benign one:",
+      "embed": "drift-gate-demo"
+    },
+    {
+      "id": "read-verdict",
+      "heading": "Read the verdict",
+      "body": "A HOLD means the live contract differs from what you pinned, so the call is paused before your agent acts. A PROCEED means there was no breaking difference (a benign added-optional field can pass through). The verdict is about what changed, never a claim that the tool is safe.",
+      "embed": "verdict-states"
+    },
+    {
+      "id": "trace",
+      "heading": "Find the trace on stderr",
+      "body": "As the gate works it leaves one quiet line per call on your host's stderr, so you can see it is present without it getting in your way.",
+      "embed": "ambient-trace"
+    },
+    {
+      "id": "receipts",
+      "heading": "Bookmark your receipts page - the primary audit surface",
+      "body": "Each gated call is recorded to a private receipt log keyed to your install. It is credential-blind: the verdict and the action, never the arguments or content. On the receipt that decision is logged on the trust axis: a PROCEED shows as ALLOW, a HOLD as DENY, an inconclusive as REVIEW. This page is the primary place to check what the gate did for you - host clients often bury the gate's stderr lines in log files, but the receipts page is always one click away. Your install id is a random token at ~/.mcpindex/install_id (run: cat ~/.mcpindex/install_id), and your page lives at mcpindex.ai/receipts?id=<install-id>. Open it once and bookmark it. From gate v0.9.0 the gate also prints a local weekly summary line (calls gated, drift seen, holds) that links the same page; the counters are local-only and nothing about that line is sent anywhere.",
+      "deep_link": {
+        "href": "/receipts",
+        "label": "Open your Gate Activity",
+        "look_for": "the tool hash, the verdict (ALLOW, REVIEW, or DENY), and the action, one row per gated call. Paste your install id from ~/.mcpindex/install_id, then bookmark the resulting URL."
+      }
+    }
+  ],
+  "next": {
+    "href": "/guides/evaluate-before-install",
+    "label": "Vet an MCP server before you install it"
   },
-  {
-   "id": "restart",
-   "heading": "Restart your host",
-   "body": "Quit and reopen the host you use (Claude Desktop, Cursor, and so on) so it reloads the gated config. Nothing changes about how you call your tools. The gate sits in the path and stays quiet until a contract drifts.",
-   "troubleshoot": "If tools stop appearing after the restart, run `mcpindex-config-wire status` to check the wiring, or `uninstall.sh` to un-wire every host config and restore the originals."
-  },
-  {
-   "id": "watch",
-   "heading": "Watch a contract change get held",
-   "body": "Now the part that matters. Pin a tool's contract, apply a change, and watch what the gate does. This runs the real diff logic in your browser (the same mapping the installed gate uses), so there is nothing to fake. Try a breaking change and a benign one:",
-   "embed": "drift-gate-demo"
-  },
-  {
-   "id": "read-verdict",
-   "heading": "Read the verdict",
-   "body": "A HOLD means the live contract differs from what you pinned, so the call is paused before your agent acts. A PROCEED means there was no breaking difference (a benign added-optional field can pass through). The verdict is about what changed, never a claim that the tool is safe.",
-   "embed": "verdict-states"
-  },
-  {
-   "id": "trace",
-   "heading": "Find the trace on stderr",
-   "body": "As the gate works it leaves one quiet line per call on your host's stderr, so you can see it is present without it getting in your way.",
-   "embed": "ambient-trace"
-  },
-  {
-   "id": "receipts",
-   "heading": "Bookmark your receipts page - the primary audit surface",
-   "body": "Each gated call is recorded to a private receipt log keyed to your install. It is credential-blind: the verdict and the action, never the arguments or content. On the receipt that decision is logged on the trust axis: a PROCEED shows as ALLOW, a HOLD as DENY, an inconclusive as REVIEW. This page is the primary place to check what the gate did for you - host clients often bury the gate's stderr lines in log files, but the receipts page is always one click away. Your install id is a random token at ~/.mcpindex/install_id (run: cat ~/.mcpindex/install_id), and your page lives at mcpindex.ai/receipts?id=<install-id>. Open it once and bookmark it. From gate v0.9.0 the gate also prints a local weekly summary line (calls gated, drift seen, holds) that links the same page; the counters are local-only and nothing about that line is sent anywhere.",
-   "deep_link": {
-    "href": "/receipts",
-    "label": "Open your Gate Activity",
-    "look_for": "the tool hash, the verdict (ALLOW, REVIEW, or DENY), and the action, one row per gated call. Paste your install id from ~/.mcpindex/install_id, then bookmark the resulting URL."
-   }
-  }
- ],
- "next": {
-  "href": "/guides/evaluate-before-install",
-  "label": "Vet an MCP server before you install it"
- },
- "depends_on": [
-  "lib/install/commands.ts",
-  "lib/install/manifest.ts",
-  "components/DriftGateDemo.tsx",
-  "app/receipts/page.tsx"
- ],
- "faq": [
-  {
-   "q": "Do I need an account to install the mcpindex gate?",
-   "a": "No. The gate installs locally with one command, needs no account, and holds no credentials. An account only matters later if you opt into cloud tiers or higher limits."
-  },
-  {
-   "q": "What does a HOLD from the gate actually mean?",
-   "a": "A HOLD means the tool's live declared contract differs from what you pinned on first sight, so the gate pauses the call before your agent acts. It is a contract-diff (this changed), not a claim that the tool is safe or unsafe."
-  },
-  {
-   "q": "Will the gate change how I use my tools?",
-   "a": "No. It sits in the path and stays quiet, leaving one trace line per call on stderr. You only notice it when a tool's contract changes and it holds the call for you to look at."
-  }
- ]
+  "depends_on": [
+    "lib/install/commands.ts",
+    "lib/install/manifest.ts",
+    "components/DriftGateDemo.tsx",
+    "app/receipts/page.tsx"
+  ],
+  "faq": [
+    {
+      "q": "Do I need an account to install the mcpindex gate?",
+      "a": "No. The gate installs locally with one command, needs no account, and holds no credentials. An account only matters later if you opt into cloud tiers or higher limits."
+    },
+    {
+      "q": "What does a HOLD from the gate actually mean?",
+      "a": "A HOLD means the tool's live declared contract differs from what you pinned on first sight, so the gate pauses the call before your agent acts. It is a contract-diff (this changed), not a claim that the tool is safe or unsafe."
+    },
+    {
+      "q": "Will the gate change how I use my tools?",
+      "a": "No. It sits in the path and stays quiet, leaving one trace line per call on stderr. You only notice it when a tool's contract changes and it holds the call for you to look at."
+    }
+  ],
+  "figures": [
+    "ninety-second-path",
+    "anatomy-of-a-hold",
+    "it-held-now-what"
+  ]
 }

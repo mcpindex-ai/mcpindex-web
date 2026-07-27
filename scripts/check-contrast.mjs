@@ -31,7 +31,7 @@ const ROUTES = [
   '/guides', '/best', '/search', '/about', '/trust', '/accessibility',
   '/changelog', '/brand', '/which-mcpindex', '/drift-report', '/servers',
   '/claim', '/dashboard', '/privacy', '/terms', '/research/source-liveness',
-  '/servers/page/2', '/receipts', NOT_FOUND_PROBE,
+  '/servers/page/2', '/receipts', '/diagrams', NOT_FOUND_PROBE,
 ];
 
 // Dynamic templates: resolved to a real slug at runtime so the audit covers
@@ -40,6 +40,9 @@ const DYNAMIC_SOURCES = [
   { index: '/servers', pattern: /\/server\/[a-z0-9._@/-]+/i },
   { index: '/guides', pattern: /\/guides\/[a-z0-9-]+/i },
   { index: '/best', pattern: /\/best\/[a-z0-9-]+/i },
+  // A figure page carries the accent-on-paper pairs the diagrams themselves use, so leaving
+  // the template unaudited would exempt exactly the markup this rule exists for.
+  { index: '/diagrams', pattern: /\/diagrams\/[a-z0-9-]+/i },
 ];
 
 // Anything whose contrast can change on hover: native interactive elements, ARIA
@@ -272,6 +275,38 @@ function auditPage() {
     }
   }
   return { violations, unparsed: [...unparsed] };
+}
+
+/**
+ * Identity preflight - the guard must prove it is auditing THIS site.
+ *
+ * BASE defaults to localhost:3000, which is a port, not a promise. Any other project's dev
+ * server answering there produced a full, confident audit of the wrong site: 30 violations
+ * against strings that appear nowhere in this codebase, indistinguishable from a real
+ * regression. A gate that can silently grade someone else's HTML is worse than no gate, because
+ * it reports either verdict with equal authority.
+ *
+ * The machine descriptor is the cheapest unmistakable proof: it is a route handler in this app,
+ * it is served in every environment, and no other project emits it.
+ */
+const WELL_KNOWN = '/.well-known/mcp-index.json';
+try {
+  const res = await fetch(`${BASE}${WELL_KNOWN}`, { redirect: 'follow' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const descriptor = await res.json();
+  if (descriptor?.name !== 'mcpindex.ai') {
+    throw new Error(`descriptor identifies as "${descriptor?.name ?? 'unknown'}"`);
+  }
+} catch (err) {
+  console.error(`\ncontrast audit ABORTED - ${BASE} is not this site.\n`);
+  console.error(`  ${BASE}${WELL_KNOWN} -> ${err.message}\n`);
+  console.error('  Something else is probably listening on that port. Check with:');
+  console.error(`    lsof -nP -iTCP:${new URL(BASE).port || 80} -sTCP:LISTEN\n`);
+  console.error('  Then point the audit at the right server:');
+  console.error('    npm run build && PORT=3111 npm start &');
+  console.error('    CONTRAST_BASE_URL=http://localhost:3111 npm run check:contrast\n');
+  console.error('  Refusing to report a pass or a fail against an unidentified origin.\n');
+  process.exit(1);
 }
 
 const browser = await chromium.launch();

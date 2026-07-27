@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
 import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
 import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
@@ -6,7 +8,7 @@ import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
 export const metadata: Metadata = pageMetadata({
   title: 'Methodology',
   description:
-    'How mcpindex evaluates MCP tools. At v1 the screen is semantic-only (an LLM judge reads the description); the deterministic conformance probe is built but has not run on the public corpus yet. Four-state verdict, OTS Bitcoin-anchored history; Bitcoin-finalized at N=6 confirmations (~1 hr); pending in ~10 min. Honest limits at v1 advisory.',
+    'How mcpindex evaluates MCP tools. At v1 the screen is semantic-only (an LLM judge reads the description); the deterministic conformance probe is built but has not run on the public corpus yet. Four-state verdict, OTS hash-chained history; Bitcoin-finalized at N=6 confirmations (~1 hr); pending in ~10 min. Honest limits at v1 advisory.',
   path: '/methodology',
 });
 
@@ -49,7 +51,7 @@ export default function MethodologyPage() {
           <Dim
             label="History"
             kind="OTS"
-            body="OTS Bitcoin-anchored history with cadence bound = confirmation latency (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized); sub-window precision asserted, not proven. The verdict stream for a tool is hash-chained and timestamped via OpenTimestamps; the chain is auditable end-to-end once a block confirms."
+            body="OTS hash-chained history with cadence bound = confirmation latency (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized); sub-window precision asserted, not proven. The verdict stream for a tool is hash-chained and timestamped via OpenTimestamps; the chain is auditable end-to-end once a block confirms."
           />
         </ul>
       </section>
@@ -90,9 +92,11 @@ export default function MethodologyPage() {
           <Dim
             label="Postures"
             kind="policy"
-            body="Monitor notifies and proceeds; Guard (default) holds the unambiguously-breaking and dangerous changes while letting a proven-benign drift through; Strict holds on any drift. A benign change (added optional param or new tool, description byte-identical, no risk escalation, no marker) is auto-accepted and re-pinned, so cosmetic churn does not raise a false alarm. Anything else holds before the call."
+            body="Monitor never blocks: every drift returns proceed-with-note. Guard (default) holds the unambiguously-breaking and dangerous changes while letting a proven-benign drift through; two kinds where behaviour is the gate (annotation-flip-to-destructive, output-schema-changed) resolve to INCONCLUSIVE rather than a flat block. Strict holds everything it cannot prove benign - NOT every drift: the benign auto-accept (added optional param, new tool, first-time output schema; description byte-identical, no risk escalation, no marker) runs BEFORE the posture layer, so a proven-benign change is re-pinned and proceeds under strict too. Anything else holds before the call."
           />
         </ul>
+        <Figure id="tier-ladder">{renderDiagram('tier-ladder')}</Figure>
+        <Figure id="posture-matrix">{renderDiagram('posture-matrix')}</Figure>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mt-10 mb-4">
           Honest limits (the gate)
         </div>
@@ -126,6 +130,7 @@ export default function MethodologyPage() {
         </ul>
       </section>
 
+      <Figure id="drift-network-loop">{renderDiagram('drift-network-loop')}</Figure>
       <section className="mt-12 rule-t pt-10">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
           Four-state verdict
@@ -159,6 +164,7 @@ export default function MethodologyPage() {
         </ul>
       </section>
 
+      <Figure id="two-verdict-surfaces">{renderDiagram('two-verdict-surfaces')}</Figure>
       <section className="mt-12 rule-t pt-10">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
           Honest limits (v1)

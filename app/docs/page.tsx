@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
 import { pageMetadata } from '@/lib/seo';
 import { ArchDiagram } from '@/components/ArchDiagram';
 import { Disclose } from '@/components/Disclose';
@@ -270,7 +272,7 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
               cosmetic churn never raises a false alarm.
             </li>
             <li>
-              <Mono>Strict</Mono> - hold on any drift.
+              <Mono>Strict</Mono> - hold anything not proven benign (a proven-benign drift is still auto-accepted).
             </li>
           </ul>
           <p
@@ -385,6 +387,7 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
       </Section>
 
       {/* §02 - The shape */}
+      <Figure id="where-the-gate-sits">{renderDiagram('where-the-gate-sits')}</Figure>
       <p className="mt-14 text-[14px] leading-[1.55]" style={{ color: 'var(--color-mute)' }}>
         The rest of this page documents the advisory directory the gate above can optionally
         query - a separate, free surface: search, recommend, and trust-verdict lookups
@@ -392,20 +395,27 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
       </p>
       <Section number="02" title="The shape">
         <p>
-          Five components in the request path; a refresh job keeps the catalog current.
+          The directory answers two questions over one set of components. Fig. A draws the{' '}
+          <strong>discovery</strong> one: five layers in the request path, plus a refresh job that
+          keeps the catalog current.
         </p>
         <ArchDiagram />
         <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-mute)]">
-          Diagram = advisory directory path (secondary). The in-path gate is Job 1 - see §00-§01.
+          Fig. A = the advisory directory&rsquo;s discovery path. Not the trust path, and not the
+          in-path gate (Job 1 - see §00-§01 and Fig. 01).
         </p>
         <p>
-          Top-down: a request originates in your agent client and passes through an
-          adapter into the API. The trust path returns an advisory screen verdict for a
-          given tool (v1: REVIEW or UNVERIFIED - a semantic integrity check, not a safety
-          clearance); the discovery path ranks an indexed catalog of MCP servers and
-          returns picks with install commands. The catalog is rebuilt daily from an
-          upstream source. The in-path gate (install via mcpindex-gate) is a separate
-          path: it sits between host and server and can HOLD on contract drift.
+          Top-down: a request originates in your agent client and passes through an adapter into
+          the API, which ranks an indexed catalog of MCP servers and returns picks with install
+          commands. The catalog is rebuilt daily from an upstream source.
+        </p>
+        <p>
+          The <strong>trust</strong> path shares layers 01 to 03 and then diverges: it looks a tool
+          up and returns an advisory screen verdict (v1: REVIEW or UNVERIFIED - a semantic
+          integrity check, not a safety clearance), so it never reaches the ranking engine. That is
+          why Fig. A does not draw it - one figure, one path. And the in-path gate (install via{' '}
+          <code>mcpindex-gate</code>) is a third surface entirely: it sits between host and server
+          and can HOLD on contract drift, which is what Fig. 01 above shows.
         </p>
         <p>
           What you don&rsquo;t need to care about as a caller: which storage layer

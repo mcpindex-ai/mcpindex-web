@@ -143,14 +143,60 @@ export function normalize(entry: RegistryEntry): IndexedServer {
  *    resolving the collision would rename a live /server/<slug> URL. A missing overlay
  *    row is recoverable; a moved public URL is not.
  */
+/** Identity keys that survive a rename: what the server IS, not what it is called.
+ *
+ * A package identifier ALONE is not an identity in an open-publish registry - 513 identifiers
+ * in the current snapshot are claimed by more than one distinct entry (pypi:clio-kit by 23).
+ * Identifier-alone would therefore be a delisting vector: anyone publishing an entry that
+ * declares an admitted server's package would silently remove it from the index. So a package
+ * key is qualified by the repository it ships from, and only the remote URL - which is the
+ * running artifact itself - stands alone. */
+function identityKeys(s: IndexedServer): string[] {
+  const keys: string[] = [];
+  const repo = s.repositoryUrl
+    ? s.repositoryUrl.toLowerCase().replace(/\/+$/, '').replace(/\.git$/, '').replace(/\/+$/, '')
+    : '';
+  if (repo) {
+    if (s.npmPackage) keys.push(`npm:${s.npmPackage.toLowerCase()}@${repo}`);
+    if (s.pypiPackage) keys.push(`pypi:${s.pypiPackage.toLowerCase()}@${repo}`);
+    if (s.dockerImage) keys.push(`oci:${s.dockerImage.toLowerCase().split(':')[0]}@${repo}`);
+  }
+  if (s.remoteUrl) keys.push(`remote:${s.remoteUrl.toLowerCase().replace(/\/+$/, '')}`);
+  // Fallback for a republication that carries no repository at all (3,439 snapshot entries
+  // have none). A bare package key is unsafe in general - identifiers are not unique - but it
+  // is safe when the claimant sits in a namespace the registry verifies ownership of, which
+  // no attacker can forge.
+  if (/^io\.github\.[^/]+\//i.test(s.name)) {
+    const ns = s.name.slice(0, s.name.indexOf('/')).toLowerCase();
+    if (s.npmPackage) keys.push(`npm:${s.npmPackage.toLowerCase()}@ns:${ns}`);
+    if (s.pypiPackage) keys.push(`pypi:${s.pypiPackage.toLowerCase()}@ns:${ns}`);
+  }
+  return keys;
+}
+
 export function mergeAdmitted(
   registryServers: readonly IndexedServer[],
   admittedServers: readonly IndexedServer[],
 ): IndexedServer[] {
   const registryBaseSlugs = new Set(registryServers.map((s) => s.slug));
+  // Name equality only catches byte-identical republication. When upstream publishes a
+  // server we admitted, it will very likely use a DIFFERENT name (the reference servers live
+  // in one monorepo), so the slug differs, nothing collides, and BOTH rows survive: two pages
+  // for one subject, and the admitted one keeps asserting "not listed in the official MCP
+  // registry" about a server that now is. Package identifier and remote URL survive a rename;
+  // the name does not.
+  const registryIdentities = new Set(registryServers.flatMap(identityKeys));
   const admitted = admittedServers
     .filter((s) => s.description && s.name && s.slug)
     .filter((s) => {
+      const dupe = identityKeys(s).find((k) => registryIdentities.has(k));
+      if (dupe) {
+        console.warn('[admitted] dropped, upstream now lists this server under another name', {
+          name: s.name,
+          matchedOn: dupe,
+        });
+        return false;
+      }
       if (!registryBaseSlugs.has(s.slug)) return true;
       console.warn('[admitted] dropped, slug collides with a registry listing', {
         name: s.name,
@@ -368,11 +414,19 @@ export async function getServer(slug: string): Promise<IndexedServer | null> {
 }
 
 export async function getServerCount(): Promise<number> {
-  return (await loadServers()).length;
+  // REGISTRY-SOURCED ONLY. /stats and /api/v1/registry-count publish this number under an
+  // explicit claim - "active entries in the official registry ... not self-submitted
+  // listings" - and loadServers() now also returns editorially admitted servers. Counting
+  // those here would make a published, checkable claim quietly false. The stats page's whole
+  // value is that its method is stated and verifiable, so the filter belongs here rather than
+  // a caveat on every surface that quotes it.
+  return (await loadServers()).filter((s) => s.source === 'registry').length;
 }
 
 export async function getCategoryCount(): Promise<number> {
-  const servers = await loadServers();
+  // Registry-only for the same reason as getServerCount: /api/v1/registry-count publishes
+  // this next to source: 'registry.modelcontextprotocol.io'.
+  const servers = (await loadServers()).filter((s) => s.source === 'registry');
   return new Set(servers.map((s) => s.category)).size;
 }
 

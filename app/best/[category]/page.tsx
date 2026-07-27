@@ -69,7 +69,9 @@ export default async function BestCategory(
         name: `How many ${label} MCP servers exist?`,
         acceptedAnswer: {
           '@type': 'Answer',
-          text: `${inCategory.length} active ${label} servers are indexed from the official MCP registry.`,
+          // "from the official MCP registry" was asserted over a set that can include
+          // editorially admitted servers; count only what the claim covers.
+          text: `${inCategory.filter((s) => s.source === 'registry').length} active ${label} servers are indexed from the official MCP registry.`,
         },
       },
       {

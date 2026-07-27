@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
 import { pageMetadata } from '@/lib/seo';
 import Link from 'next/link';
 import { CopyField } from '@/components/CopyField';
@@ -113,6 +115,9 @@ export default function InstallPage() {
         />
 
         {/* ---- 1. The gate (the product) -------------------------------- */}
+        <Figure id="where-the-gate-sits">{renderDiagram('where-the-gate-sits')}</Figure>
+        <Figure id="two-jobs-two-packages">{renderDiagram('two-jobs-two-packages')}</Figure>
+        <Figure id="ninety-second-path">{renderDiagram('ninety-second-path')}</Figure>
         <section className="mt-14 rule-t pt-8">
           <div className={`${KICKER} mb-2`}>1 · Install the gate</div>
           <p className="text-[15px] leading-[1.65] text-[var(--color-cite)] mb-5">

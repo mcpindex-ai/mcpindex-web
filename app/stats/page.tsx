@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
 import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
 import { loadServers, loadSnapshot } from '@/lib/registry';
@@ -17,7 +19,11 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default async function StatsPage() {
-  const [servers, snap] = await Promise.all([loadServers(), loadSnapshot()]);
+  const [allServers, snap] = await Promise.all([loadServers(), loadSnapshot()]);
+  // Registry-sourced only: the copy and the FAQ JSON-LD on this page assert "active entries
+  // in the official registry ... not self-submitted listings", and loadServers() also returns
+  // editorially admitted servers. Same reasoning as lib/registry.ts getServerCount().
+  const servers = allServers.filter((s) => s.source === 'registry');
   const countFormatted = servers.length.toLocaleString();
   const cats = new Set(servers.map((s) => s.category)).size;
   const week = daysAgoCutoff(7);
@@ -171,6 +177,15 @@ export default async function StatsPage() {
           /api/registry-count
         </Link>
       </p>
+      <Figure
+        id="corpus-pipeline"
+        twinVars={{ servers: countFormatted, categories: String(ALL_CATEGORIES.length) }}
+      >
+        {renderDiagram('corpus-pipeline', {
+          servers: countFormatted,
+          categories: String(ALL_CATEGORIES.length),
+        })}
+      </Figure>
     </article>
   );
 }

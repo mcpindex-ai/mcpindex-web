@@ -1,35 +1,24 @@
 import Link from 'next/link';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
 import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
+import { SOURCE_LIVENESS_CENSUS as FIG } from '@/lib/sourceLiveness';
 
+// Templated off FIG, not hardcoded. The title and meta were TWO of the sites that
+// carried pre-debounce figures for four days, and they are exactly the two the census
+// test cannot see, so a literal here can go stale while the suite stays green.
 export const metadata: Metadata = pageMetadata({
-  title: 'Source liveness: 2,069 listed MCP servers point at source that is not public',
+  title: `Source liveness: ${FIG.serversAffected} listed MCP servers point at source that is not public`,
   description:
-    'A 2026-07-20 census of every repository and website URL in the official MCP registry: 1,830 of 13,105 referenced GitHub repositories were not publicly accessible, affecting 2,069 of 17,673 listed servers. Full method, limits, and the deleted-vs-private caveat.',
+    `A ${FIG.sweepDate} census of every repository and website URL in the official MCP registry: ` +
+    `${FIG.reposUnreachable} of ${FIG.reposTotal} referenced GitHub repositories were not publicly ` +
+    `accessible, affecting ${FIG.serversAffected} of ${FIG.serversTotal} listed servers. Full method, ` +
+    `limits, and the deleted-vs-private caveat.`,
+  image: '/opengraph-image',
   path: '/research/source-liveness',
 });
 
-// Figures are quoted from the published dataset (aggregates.json, store digest
-// 943f1a25, OpenTimestamps-stamped, DOI 10.5281/zenodo.21501868) rather than
-// recomputed here, so the page states exactly what the anchored artifact states.
-//
-// These are the POST-DEBOUNCE counts: a URL is confirmed unreachable only after
-// two failed checks at least 48h apart (confirmed 2026-07-23T00:26:18Z) plus
-// agreement from a second independent vantage. The raw 2026-07-20 sweep counted
-// 1,834 repos / 2,073 servers / 306 sites / 178 egress-blocked; four repos, four
-// servers and two sites did not survive the second check and were dropped. This
-// page previously published those raw numbers, which contradicted the DOI. Any
-// edit here must match aggregates.json or the citation breaks.
-const FIG = {
-  serversTotal: '17,673',
-  reposTotal: '13,105',
-  reposUnreachable: '1,830',
-  serversAffected: '2,069',
-  sitesUnreachable: '304',
-  sampleSize: '150',
-  egressBlocked: '176',
-  sweepDate: '2026-07-20',
-};
 
 const CELL = 'py-2.5 pr-6 align-top';
 
@@ -48,9 +37,10 @@ export default function SourceLivenessPage() {
         On {FIG.sweepDate} we checked every repository and website URL carried by
         the {FIG.serversTotal} servers in the official MCP registry.{' '}
         {FIG.reposUnreachable} of the {FIG.reposTotal} distinct GitHub
-        repositories those servers reference could not be reached — one in seven.
-        The packages themselves still install. What has gone is the ability to
-        read the code before you hand it to an agent.
+        repositories those servers reference could not be reached, {FIG.ratioPhrase}.
+        What has gone is the ability to read the code before you hand it to an
+        agent. This census measured URL reachability only; it makes no claim about
+        whether a package still installs.
       </p>
 
       <p className="mt-4 text-[16px] leading-[1.65] text-[var(--color-cite)]">
@@ -139,18 +129,20 @@ export default function SourceLivenessPage() {
       <h2 className="mt-12 t-h2 font-medium text-[var(--color-ink)]">Limits</h2>
       <ul className="mt-4 space-y-3 text-[15px] leading-[1.65] text-[var(--color-cite)] list-disc pl-5">
         <li>
-          <strong>Point in time, and confirmed.</strong> These are the counts for
-          the {FIG.sweepDate} census, under the same bar as every per-listing
-          flag: two failed checks at least 48 hours apart, plus agreement from a
-          second independent vantage. Four repositories failed the first check
-          and passed the second, so they are not counted here.
+          <strong>Point in time, and confirmed.</strong> The{' '}
+          <em>repository</em> counts are for the {FIG.sweepDate} census under the
+          same bar as every per-listing flag: two failed checks at least 48 hours
+          apart, plus agreement from a second independent vantage. Four
+          repositories failed the first check and passed the second, so they are
+          not counted here. The website figure is single-vantage and does not
+          carry that bar, as the fourth bullet says.
         </li>
         <li>
-          <strong>Unreachability, not death dates.</strong> Every repository above
-          was already unreachable when we first looked, so this is a baseline: it
-          says these were not publicly accessible on {FIG.sweepDate}, never when
-          they stopped being accessible. Death dates accrue only for repositories
-          that go dark after this census.
+          <strong>Unreachability, not death dates.</strong> Most affected
+          repositories were already unreachable when we first looked, so this is a
+          baseline: it says these were not publicly accessible on {FIG.sweepDate},
+          never when they stopped being accessible. Death dates accrue only for
+          repositories that go dark after this census.
         </li>
         <li>
           <strong>Deleted and private are indistinguishable.</strong> Some share
@@ -222,6 +214,8 @@ export default function SourceLivenessPage() {
         </a>
         .
       </p>
+      <Figure id="source-liveness-census">{renderDiagram('source-liveness-census')}</Figure>
+      <Figure id="provenance-chain">{renderDiagram('provenance-chain')}</Figure>
     </article>
   );
 }

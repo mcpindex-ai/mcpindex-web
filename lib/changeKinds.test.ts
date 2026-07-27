@@ -3,7 +3,16 @@
 // to a fixed allowlist. Run with `npx tsx --test lib/changeKinds.test.ts`.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { coerceChangeKinds, SURFACE_CHANGE_KINDS, MAX_CHANGE_KINDS } from './changeKinds';
+import {
+  coerceChangeKinds,
+  SURFACE_CHANGE_KINDS,
+  SAFETY_RELEVANT_CHANGE_KINDS,
+  BENIGN_AUTOACCEPT_CHANGE_KINDS,
+  BEHAVIORAL_MANDATED_CHANGE_KINDS,
+  postureOutcome,
+  isSafetyRelevant,
+  MAX_CHANGE_KINDS,
+} from './changeKinds';
 
 test('accepts a known-kind array: validated, deduped, sorted', () => {
   assert.deepEqual(
@@ -63,4 +72,78 @@ test('the allowlist matches the trust SURFACE_KINDS taxonomy member-for-member',
   ]);
   assert.ok(!SURFACE_CHANGE_KINDS.has('description-only')); // never surfaced (cosmetic churn)
   assert.ok(!SURFACE_CHANGE_KINDS.has('tool-added')); // not drift of an existing dependency
+});
+
+// The safety bit is MIRRORED from mcpindex-trust/corpus_eval/tooling/cse/schema_diff.py
+// (`_SAFETY_RELEVANT`). Pinning the membership here is what makes the mirror safe: an upstream
+// taxonomy edit that is not reflected in this repo fails the suite instead of silently
+// re-grading a kind on a public surface (and in the generated posture figure).
+test('the mirrored safety set matches the upstream frozenset, member for member', () => {
+  assert.deepEqual([...SAFETY_RELEVANT_CHANGE_KINDS].sort(), [
+    'added-required-param',
+    'annotation-flip-to-destructive',
+    'constraint-narrowed',
+    'deep-schema-undiffable',
+    'enum-values-removed',
+    'output-schema-changed',
+    'removed-param',
+    'required-set-expanded',
+    'tool-removed',
+    'type-changed',
+  ]);
+});
+
+test('the non-safety surfaced kinds are exactly the two additive ones', () => {
+  const benign = [...SURFACE_CHANGE_KINDS].filter((k) => !isSafetyRelevant(k)).sort();
+  // added-optional-param is LOW and output-schema-added is ADDITIVE upstream. If either moves,
+  // the guard column in the posture figure flips for that row - which is the point of pinning.
+  assert.deepEqual(benign, ['added-optional-param', 'output-schema-added']);
+});
+
+test('a schema too deep to diff fails SAFE, never silently benign', () => {
+  assert.ok(isSafetyRelevant('deep-schema-undiffable'));
+});
+
+test('every safety-relevant kind is one the public surface can actually show', () => {
+  for (const k of SAFETY_RELEVANT_CHANGE_KINDS) {
+    assert.ok(SURFACE_CHANGE_KINDS.has(k), `${k} carries the safety bit but is not surfaced`);
+  }
+});
+
+// The two posture-input sets, mirrored from corpus_eval/tooling/cse/gate.py and VERIFIED
+// 2026-07-27 by driving the real Gate. Pinned for the same reason as the safety set: an
+// upstream edit that is not mirrored here would silently re-grade a public surface.
+test('the benign auto-accept allowlist matches the gate frozenset', () => {
+  assert.deepEqual([...BENIGN_AUTOACCEPT_CHANGE_KINDS].sort(), [
+    'added-optional-param',
+    'output-schema-added',
+    'tool-added',
+  ]);
+});
+
+test('the behaviour-mandated set matches the gate frozenset', () => {
+  assert.deepEqual([...BEHAVIORAL_MANDATED_CHANGE_KINDS].sort(), [
+    'annotation-flip-to-destructive',
+    'output-schema-changed',
+  ]);
+});
+
+test('postureOutcome reproduces the observed gate behaviour', () => {
+  // Observed by driving the Gate at each posture, not read off the docs.
+  assert.equal(postureOutcome('added-optional-param', 'strict'), 'PROCEED');
+  assert.equal(postureOutcome('output-schema-added', 'strict'), 'PROCEED');
+  assert.equal(postureOutcome('added-required-param', 'guard'), 'HOLD');
+  assert.equal(postureOutcome('annotation-flip-to-destructive', 'guard'), 'INCONCLUSIVE');
+  assert.equal(postureOutcome('output-schema-changed', 'strict'), 'INCONCLUSIVE');
+  assert.equal(postureOutcome('deep-schema-undiffable', 'guard'), 'HOLD');
+  for (const k of SURFACE_CHANGE_KINDS) {
+    const m = postureOutcome(k, 'monitor');
+    assert.ok(m === 'PROCEED' || m === 'PROCEED_NOTIFY', `${k}: monitor must never block`);
+  }
+});
+
+test('a benign kind never carries the safety bit (the sets cannot overlap)', () => {
+  for (const k of BENIGN_AUTOACCEPT_CHANGE_KINDS) {
+    assert.ok(!isSafetyRelevant(k), `${k} cannot be both auto-accepted and safety-relevant`);
+  }
 });

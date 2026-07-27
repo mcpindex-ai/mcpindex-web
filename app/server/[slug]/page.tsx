@@ -5,6 +5,7 @@ import { getServer, loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { computeQuality, rankByQuality } from '@/lib/quality';
 import { buildInstalls } from '@/lib/installs';
 import { getSourceLiveness, livenessSentence } from '@/lib/sourceLiveness';
+import { anchorClaim } from '@/lib/verdictAnchor';
 import { CATEGORY_LABELS } from '@/lib/categorize';
 import { D3_PROGRESS } from '@/lib/honest-limits';
 import { CopyField } from '@/components/CopyField';
@@ -26,8 +27,8 @@ import { buildServerJsonLd, isEndpointShaped, isSafeHref } from '@/lib/serverJso
 import { isGoneSlug, resolveServerRedirect } from '@/lib/serverRemovals';
 
 // Trust verdict shape (public projection of the v1.0.0 verdict contract).
-// Full back-history is not surfaced on this public page; the current verdict
-// and its publicly recomputable OTS anchor are what render here.
+// Full back-history is not surfaced on this public page; the current verdict is what
+// renders here. (Verdict records are NOT timestamp-anchored - see the Provenance rail.)
 //
 // Two rendering states for the trust panel, both FAIL-CLOSED (no ALLOW, no
 // green unless a real EVALUATED verdict says so):
@@ -109,7 +110,9 @@ export async function generateMetadata(
     alternates: { canonical: `https://mcpindex.ai/server/${server.slug}` },
     openGraph: {
       title: server.title,
-      description: server.description,
+      // Same `description` as the meta tag, not the raw blurb: a shared card is frequently
+      // the only place the liveness caveat would ever be read.
+      description,
       url: `https://mcpindex.ai/server/${server.slug}`,
       type: 'website',
       images: [`/server/${server.slug}/og`],
@@ -117,7 +120,7 @@ export async function generateMetadata(
     twitter: {
       card: 'summary_large_image',
       title: server.title,
-      description: server.description,
+      description,
       images: [`/server/${server.slug}/og`],
     },
   };
@@ -502,23 +505,28 @@ export default async function ServerPage(
               </p>
             </div>
 
-            {/* Provenance - the OTS / Bitcoin-anchored history signal (npm's
-                provenance badge analog). The current verdict renders here; the
-                OTS anchor proof is public and recomputable offline. */}
             {/* This asserted "Verdict history is anchored to Bitcoin via OpenTimestamps",
-                unconditionally, on every server page. Verdict records carry content_hash and
-                no anchor field; the anchor machinery exists and has submitted a token, but
-                per-verdict Bitcoin confirmation is committed at go-live, not delivered - the
-                whitepaper says exactly that. On a product whose thesis is refusing to
-                overclaim, publishing the future tense as the present was the worst sentence
-                on the site. Now states what the record supports today. */}
+                unconditionally, on every server page, while NOTHING anchored the published
+                verdicts - the only anchor that existed was a real OTS proof over the empty
+                set, and `ots upgrade` had never run, so even that sat pending for five weeks.
+
+                The sentence is now DERIVED from data/verdict-anchors.json rather than
+                written here. That is the actual fix: hand-written copy is what let nine
+                surfaces drift from the evidence, and correcting them by hand would have left
+                the same failure mode in place for the next drift. */}
             <div>
               <div className={RAIL_LABEL}>Provenance</div>
               <p className="text-[12px] leading-[1.55] text-[var(--color-cite)]">
                 Each verdict is bound to a hash of the exact description it judged, so a
                 re-crawl that changes the text produces a new record rather than silently
-                inheriting this one. Verdict history is hash-chained today; Bitcoin anchoring
-                via OpenTimestamps is built and committed, not yet confirmed per verdict.
+                inheriting this one. {anchorClaim()}{' '}
+                <Link
+                  href="/trust#anchor"
+                  className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+                >
+                  Verify it yourself
+                </Link>
+                .
               </p>
             </div>
 

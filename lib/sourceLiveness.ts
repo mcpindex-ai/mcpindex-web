@@ -1,3 +1,4 @@
+import 'server-only';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
@@ -15,6 +16,37 @@ import path from 'node:path';
  * the verdicts.json pattern: server pages are statically prerendered, so
  * a runtime lookup would add a failure mode to every render.
  */
+
+/**
+ * Published figures for the 2026-07-20 census, quoted by /research/source-liveness
+ * and by the Zenodo deposition (DOI 10.5281/zenodo.21501868).
+ *
+ * These are the POST-DEBOUNCE counts: a URL is confirmed unreachable only after two
+ * failed checks at least 48h apart plus a second independent vantage. The page once
+ * published the raw pre-debounce sweep (1,834 / 2,073 / 306 / 178) and so contradicted
+ * the DOI it cited, for four days, because the numbers were hand-copied with only a
+ * comment asserting they matched.
+ *
+ * `reposUnreachable` and `serversAffected` are now enforced against
+ * data/source-liveness.json by lib/sourceLiveness.test.ts. The remaining figures come
+ * from aggregates.json, which lives in the deposition repo and not here, so they stay
+ * comment-guarded: if you edit them, diff against that file first.
+ */
+export const SOURCE_LIVENESS_CENSUS = {
+  serversTotal: '17,673',
+  reposTotal: '13,105',
+  reposUnreachable: '1,830',
+  serversAffected: '2,069',
+  sitesUnreachable: '304',
+  sampleSize: '150',
+  egressBlocked: '176',
+  sweepDate: '2026-07-20',
+  // DERIVED from reposUnreachable / reposTotal. They live here because they were being
+  // hand-maintained inside the very sentences the raw figures are enforced in, so a v2
+  // census would have shipped "2,400 of 13,500 (14.0%)" - self-contradicting in one clause.
+  pctUnreachable: '14.0%',
+  ratioPhrase: 'one in seven',
+} as const;
 
 export type SourceLivenessState = 'unavailable';
 

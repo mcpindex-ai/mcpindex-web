@@ -4,6 +4,7 @@ import { pageMetadata } from '@/lib/seo';
 import OwnerVerifyWizard from '@/components/OwnerVerifyWizard';
 
 export const metadata: Metadata = pageMetadata({
+  image: '/opengraph-image',
   title: 'Claim your server',
   description:
     'Prove you control your MCP server and request an owner-consented preview conformance badge on its mcpindex page. Only registry-listed servers with an HTTP remote are claimable. The badge is a preview observation ("no contract drift observed"), not a security or safety guarantee - owner-attested, subordinate to mcpindex screening, re-checked and revoked on drift.',

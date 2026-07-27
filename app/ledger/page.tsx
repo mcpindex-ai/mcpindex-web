@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { Figure } from '@/components/Figure';
+import { renderDiagram } from '@/components/diagrams';
 import Link from 'next/link';
 import { pageMetadata } from '@/lib/seo';
 import { notFound } from 'next/navigation';
@@ -43,7 +45,8 @@ export default async function LedgerPage() {
         <p className="mt-8 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
           No ledger published right now - check back shortly.
         </p>
-      </article>
+        <Figure id="drift-network-loop">{renderDiagram('drift-network-loop')}</Figure>
+    </article>
     );
   }
 

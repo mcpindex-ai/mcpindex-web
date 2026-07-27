@@ -40,7 +40,7 @@ export async function GET() {
     <title>mcpindex.ai · Changelog</title>
     <link>https://mcpindex.ai/changelog</link>
     <atom:link href="https://mcpindex.ai/changelog.rss" rel="self" type="application/rss+xml"/>
-    <description>New and updated MCP servers indexed from the official MCP registry.</description>
+    <description>New and updated MCP servers indexed by mcpindex, mostly from the official MCP registry.</description>
     <language>en-us</language>
     <lastBuildDate>${new Date(snap.fetchedAt).toUTCString()}</lastBuildDate>
     <generator>mcpindex.ai</generator>

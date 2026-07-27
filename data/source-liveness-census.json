@@ -1,0 +1,24 @@
+{
+  "_comment": "Extract of the DOI-deposited aggregates for Source Liveness Baseline v1 (10.5281/zenodo.21501868). Committed HERE because lib/sourceLiveness.test.ts must validate the published census figures against the authoritative artifact, and CI checks out only this repo - a test reading ../tasks/... passes locally and fails in CI. Update this file only from the deposition; never edit it to make a test pass.",
+  "_source": "tasks/growth/doi-deposition-liveness-v1/aggregates.json (gautamgb/AI-workspace-configs)",
+  "_doi": "10.5281/zenodo.21501868",
+  "census_sweep": {
+    "sweep_id": "sweep-20260720T065010Z"
+  },
+  "population": {
+    "registry_servers_total": 17673,
+    "distinct_repository_urls": 13105
+  },
+  "repositories": {
+    "not_publicly_accessible": 1830,
+    "corroborated": 1830,
+    "servers_affected": 2069
+  },
+  "websites": {
+    "not_publicly_accessible_single_vantage": 304,
+    "egress_blocked_from_datacenter": 176
+  },
+  "corroboration": {
+    "hand_verified_sample": 150
+  }
+}
