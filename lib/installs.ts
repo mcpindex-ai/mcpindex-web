@@ -62,10 +62,11 @@ export function buildInstalls(s: IndexedServer): InstallTarget[] {
     out.push({
       client: 'remote',
       label: 'Remote endpoint',
-      // Quoted like every other command: safeUrl() gates the PROTOCOL only, and a URL keeps
-      // `;`, `|`, backticks and `$` in its path or query. This renders in the same
-      // copy-into-a-terminal box as the npx commands, so it needs the same treatment.
-      command: shellArg(s.remoteUrl),
+      // NOT shell-quoted, deliberately. A round-2 review flagged this as an unquoted sink and
+      // the quoting broke 216 real listings: this value is a URL pasted into a client's
+      // config field (see `notes` below), never interpolated into a shell command anywhere,
+      // so `'https://{api_host}/mcp'` is simply wrong. safeUrl() already gates the protocol.
+      command: s.remoteUrl,
       notes: 'Streamable HTTP / SSE endpoint. Add to any MCP client that supports remote servers.',
     });
   }

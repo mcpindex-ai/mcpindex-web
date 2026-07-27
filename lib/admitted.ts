@@ -32,6 +32,9 @@ const PackageZ = z
   })
   .loose();
 
+// Every admitted row must carry at least one identity key (package or remote). mergeAdmitted
+// uses those to notice that upstream has started listing the same server under a different
+// name; a row with neither is invisible to that check and would live on as a duplicate.
 const AdmittedEntryZ = z
   .object({
     server: z
@@ -59,7 +62,11 @@ const AdmittedEntryZ = z
       })
       .loose(),
   })
-  .loose();
+  .loose()
+  .refine(
+    (e) => (e.server.packages?.length ?? 0) > 0 || (e.server.remotes?.length ?? 0) > 0,
+    { message: 'needs at least one package or remote (identity key for rename detection)' },
+  );
 
 const EMPTY: AdmittedDoc = { servers: [] };
 

@@ -44,7 +44,7 @@ export async function generateMetadata(
     title: `${label} MCP servers compared: which one to use`,
     // Deliberately NOT a registry blurb. The count plus the maintenance framing is the
     // one snippet on this SERP that answers "which of these should I pick".
-    description: `${n} ${label} MCP servers side by side - which are still maintained, which have a source repository that went offline, and which have been screened. Indexed from the MCP registry.`,
+    description: `${n} ${label} MCP servers side by side - which are still maintained, which have a source repository that went offline, and which have been screened. Indexed by mcpindex, mostly from the MCP registry.`,
     alternates: { canonical: `https://mcpindex.ai/compare/${topic}` },
   };
 }
