@@ -30,10 +30,15 @@ export function __setLedgerServerRedisForTest(client: Redis | null | undefined):
  * is in `parseLedgerBlob` (./ledger), which is unit-tested without a Redis. */
 export async function loadLedger(): Promise<Ledger | null> {
   if (!ledgerEnabled()) return null;
-  const r = redis();
-  if (!r) return null;
   let raw: unknown;
   try {
+    // redis() must be INSIDE the try: the Upstash client throws UrlError from its
+    // constructor on a malformed REST URL (e.g. a rediss:// value pasted into
+    // UPSTASH_REDIS_REST_URL). Constructing it outside meant that misconfiguration
+    // escaped loadLedger and 500'd every caller, including /scan, whose tool does not
+    // need the ledger at all.
+    const r = redis();
+    if (!r) return null;
     raw = await r.get(LEDGER_KEY);
   } catch {
     return null; // cache hiccup => "not published right now", never a stale lie

@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
 import test from 'node:test';
 import {
+  SOURCE_LIVENESS_CENSUS,
   coerceSourceLiveness,
   livenessRecommendation,
   livenessSentence,
@@ -84,4 +87,38 @@ test('copy: omits the date clause cleanly when never seen alive', () => {
 test('recommendation: severity keys on distribution type', () => {
   assert.match(livenessRecommendation(true), /pin_version/);
   assert.match(livenessRecommendation(false), /informational_only/);
+});
+
+// The published census figures must match the committed artifact. This exists because
+// /research/source-liveness shipped the raw pre-debounce sweep (1,834 repos / 2,073
+// servers) while citing a DOI that says 1,830 / 2,069, and sat wrong in production for
+// four days. A comment saying "these must match aggregates.json" is not a check.
+test('census figures match data/source-liveness.json', async () => {
+  const raw = await fs.readFile(
+    path.join(process.cwd(), 'data', 'source-liveness.json'),
+    'utf8',
+  );
+  const doc = JSON.parse(raw) as {
+    server_count: number;
+    url_count: number;
+    servers: Record<string, { url: string }>;
+  };
+
+  const parse = (s: string) => Number(s.replace(/,/g, ''));
+
+  assert.equal(
+    parse(SOURCE_LIVENESS_CENSUS.serversAffected),
+    doc.server_count,
+    'serversAffected must equal server_count in data/source-liveness.json',
+  );
+  assert.equal(
+    parse(SOURCE_LIVENESS_CENSUS.reposUnreachable),
+    doc.url_count,
+    'reposUnreachable must equal url_count in data/source-liveness.json',
+  );
+
+  // url_count is itself a claim; derive it independently so a wrong header value in the
+  // artifact cannot make a wrong page figure look correct.
+  const distinctUrls = new Set(Object.values(doc.servers).map((s) => s.url)).size;
+  assert.equal(distinctUrls, doc.url_count, 'url_count must equal distinct repo URLs');
 });

@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ScanTool } from '@/components/ScanTool';
 import { jsonLdSafe } from '@/lib/jsonLd';
-import { ledgerEnabled } from '@/lib/ledger';
 import { loadLedger } from '@/lib/ledgerServer';
 
 // Matches /ledger. A transient Redis miss makes loadLedger() return null; at 300s
@@ -37,17 +36,36 @@ const JSON_LD = {
 };
 
 export default async function ScanPage() {
-  // Read live so this line can never drift from the ledger it cites. If the ledger
-  // is disabled or a read fails, the sentence is omitted entirely rather than shown
-  // stale - a wrong number on a trust surface costs more than a missing one.
-  const ledger = ledgerEnabled() ? await loadLedger() : null;
-  const s = ledger?.stat;
-  const drift =
-    s && s.safety_relevant && s.tools_observed_drifting && s.silent_same_version
+  // Read live so this line can never drift from the ledger it cites. loadLedger()
+  // already returns null when the ledger is disabled or a read fails, and on null the
+  // sentence is omitted entirely rather than shown stale - a wrong number on a trust
+  // surface costs more than a missing one.
+  const s = (await loadLedger())?.stat;
+
+  // `typeof === 'number'`, not truthiness: coerceStat documents that an absent stat is
+  // NOT zero (lib/ledger.ts), and 0 is a legitimate published value.
+  //
+  // The two clauses are gated SEPARATELY and deliberately. silent_same_version is
+  // ratification-gated upstream and is genuinely intermittent: it was present in the
+  // published blob on 2026-07-26 and absent on 2026-07-27. Gating both clauses on it
+  // would silently drop the whole paragraph whenever version evidence is off, which is
+  // a failure mode nobody would notice because it looks like ordinary missing copy.
+  const safety =
+    typeof s?.safety_relevant === 'number' && s.safety_relevant > 0
+      ? s.safety_relevant.toLocaleString('en-US')
+      : null;
+
+  // Rendered as a ratio, so it needs a non-zero denominator AND the cross-field
+  // invariant. coerceStat clamps each number independently, so nothing upstream stops
+  // a corrupt blob rendering "9,000 of 12".
+  const silent =
+    typeof s?.silent_same_version === 'number' &&
+    typeof s?.tools_observed_drifting === 'number' &&
+    s.tools_observed_drifting > 0 &&
+    s.silent_same_version <= s.tools_observed_drifting
       ? {
-          safety: s.safety_relevant.toLocaleString('en-US'),
-          silent: s.silent_same_version.toLocaleString('en-US'),
-          drifting: s.tools_observed_drifting.toLocaleString('en-US'),
+          n: s.silent_same_version.toLocaleString('en-US'),
+          of: s.tools_observed_drifting.toLocaleString('en-US'),
         }
       : null;
 
@@ -66,15 +84,21 @@ export default async function ScanPage() {
         do: which tools can take irreversible actions, which send data off your machine, and how many contracts
         are <strong className="text-[var(--color-ink)]">unpinned</strong> and free to change under you.
       </p>
-      {drift && (
+      {safety && (
         <p className="mt-3 text-[15px] leading-[1.6] text-[var(--color-cite)]">
           That last one is not hypothetical. Across the public MCP servers we re-crawl daily,{' '}
-          <strong className="text-[var(--color-ink)]">{drift.safety} tool contracts</strong> have changed in a
-          way that alters what the tool can do, and{' '}
-          <strong className="text-[var(--color-ink)]">
-            {drift.silent} of {drift.drifting}
-          </strong>{' '}
-          drifting tools did it without their declared version moving. A version pin does not see those.{' '}
+          <strong className="text-[var(--color-ink)]">{safety} tools</strong> have changed a safety-relevant
+          field. Not confirmed vulnerabilities, but the changes a pin exists to catch.
+          {silent && (
+            <>
+              {' '}
+              <strong className="text-[var(--color-ink)]">
+                {silent.n} of {silent.of}
+              </strong>{' '}
+              drifting tools have only ever changed with their declared version unchanged, where version
+              evidence exists, so a version pin does not see them.
+            </>
+          )}{' '}
           <Link href="/ledger" className={UNDERLINE}>
             Check the numbers yourself &rarr;
           </Link>
