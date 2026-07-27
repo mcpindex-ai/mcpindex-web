@@ -368,7 +368,13 @@ export async function getServer(slug: string): Promise<IndexedServer | null> {
 }
 
 export async function getServerCount(): Promise<number> {
-  return (await loadServers()).length;
+  // REGISTRY-SOURCED ONLY. /stats and /api/v1/registry-count publish this number under an
+  // explicit claim - "active entries in the official registry ... not self-submitted
+  // listings" - and loadServers() now also returns editorially admitted servers. Counting
+  // those here would make a published, checkable claim quietly false. The stats page's whole
+  // value is that its method is stated and verifiable, so the filter belongs here rather than
+  // a caveat on every surface that quotes it.
+  return (await loadServers()).filter((s) => s.source === 'registry').length;
 }
 
 export async function getCategoryCount(): Promise<number> {

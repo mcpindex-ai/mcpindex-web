@@ -61,8 +61,6 @@ const AdmittedEntryZ = z
   })
   .loose();
 
-const AdmittedDocZ = z.object({ servers: z.array(AdmittedEntryZ) }).loose();
-
 const EMPTY: AdmittedDoc = { servers: [] };
 
 /**

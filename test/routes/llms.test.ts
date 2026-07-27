@@ -11,7 +11,8 @@ import { GET as llms } from '../../app/llms.txt/route';
 import { GET as llmsFull } from '../../app/llms-full.txt/route';
 import { gateInstallLine } from '../../lib/install/manifest';
 import { __setAeoRedisForTest, __resetAeoDedupForTest } from '../../lib/aeoCounter';
-import { getServerCount, loadSnapshotMeta } from '../../lib/registry';
+import { getServerCount, loadServers, loadSnapshotMeta } from '../../lib/registry';
+import { SOURCE_LIVENESS_CENSUS } from '../../lib/sourceLiveness';
 
 // Per-minute write dedup is module state; reset between tests so a future second same-route+family
 // bot test can't silently dedup to a confusing keys.length===0 failure.
@@ -93,8 +94,11 @@ test('/llms-full.txt: catalog present, content-type, and runaway size tripwire',
   // One detail link per indexed server — tie to the source of truth so a RENDER-side partial collapse
   // is caught. (A source-side collapse would move both sides together; the coarse absolute floor below
   // guards that: the real registry is ~16k, so <10k means the snapshot itself shrank.)
+  // Tied to loadServers(), NOT getServerCount(): the latter is deliberately registry-only
+  // because /stats publishes it under an explicit "official registry" claim, while this
+  // catalog lists everything mcpindex indexes, editorially admitted servers included.
   const serverLinks = body.match(/https:\/\/mcpindex\.ai\/server\//g)?.length ?? 0;
-  assert.equal(serverLinks, await getServerCount(), 'one detail link per indexed server');
+  assert.equal(serverLinks, (await loadServers()).length, 'one detail link per indexed server');
   assert.ok(serverLinks > 10000, `catalog collapsed to ${serverLinks} (expected ~16k) — snapshot shrank?`);
 
   const bytes = Buffer.byteLength(body, 'utf8');
@@ -178,3 +182,23 @@ test('/llms-full.txt: a HEAD probe is NOT counted (symmetric guard on the 4MB ro
   }
   assert.equal(cap.keys.length, 0, 'HEAD must not record a fetch on llms-full');
 });
+
+// llms.txt is a third copy of the source-liveness census figures, alongside the page
+// body and the page metadata. The census test in lib/sourceLiveness.test.ts guards the
+// constant against data/source-liveness.json, but nothing guarded that this surface
+// actually uses the constant - and answer engines read this file. Pre-debounce figures
+// sat in production for four days precisely because each copy was hand-maintained.
+test('/llms.txt: source-liveness figures come from the enforced constant, not literals',
+  async () => {
+    const body = await (await llms()).text();
+    for (const key of ['reposUnreachable', 'reposTotal', 'serversAffected', 'sweepDate'] as const) {
+      assert.ok(
+        body.includes(SOURCE_LIVENESS_CENSUS[key]),
+        `llms.txt must carry SOURCE_LIVENESS_CENSUS.${key} (${SOURCE_LIVENESS_CENSUS[key]})`,
+      );
+    }
+    // The superseded pre-debounce numbers must never reappear on this surface.
+    for (const stale of ['1,834', '2,073']) {
+      assert.ok(!body.includes(stale), `llms.txt still contains superseded figure ${stale}`);
+    }
+  });

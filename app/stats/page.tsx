@@ -17,7 +17,11 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default async function StatsPage() {
-  const [servers, snap] = await Promise.all([loadServers(), loadSnapshot()]);
+  const [allServers, snap] = await Promise.all([loadServers(), loadSnapshot()]);
+  // Registry-sourced only: the copy and the FAQ JSON-LD on this page assert "active entries
+  // in the official registry ... not self-submitted listings", and loadServers() also returns
+  // editorially admitted servers. Same reasoning as lib/registry.ts getServerCount().
+  const servers = allServers.filter((s) => s.source === 'registry');
   const countFormatted = servers.length.toLocaleString();
   const cats = new Set(servers.map((s) => s.category)).size;
   const week = daysAgoCutoff(7);

@@ -104,6 +104,11 @@ function buildBody(servers: IndexedServer[], guides: Guide[]): string {
         `- ${s.title} (${s.name}@${s.version})`,
         `  ${s.description}`,
         `  installs: ${installs.join(' | ') || 'manual'}`,
+        // An LLM reading this catalog must not infer registry listing for a server that has
+        // none. Emitted only for admitted entries, so the 18k registry lines are unchanged.
+        ...(s.source === 'admitted'
+          ? ['  provenance: NOT listed in the official MCP registry; indexed by mcpindex']
+          : []),
         `  detail: https://mcpindex.ai/server/${s.slug}`,
         '',
       );
