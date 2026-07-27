@@ -152,6 +152,11 @@ const TRIPWIRES = {
     };
     const nS = members(changeKinds, 'SURFACE_CHANGE_KINDS');
     const nR = members(changeKinds, 'SAFETY_RELEVANT_CHANGE_KINDS');
+    const nB = members(changeKinds, 'BENIGN_AUTOACCEPT_CHANGE_KINDS');
+    const nM = members(changeKinds, 'BEHAVIORAL_MANDATED_CHANGE_KINDS');
+    if (nB !== 3 || nM !== 2) {
+      return `the gate's posture-input sets changed (${nB} benign auto-accept, ${nM} behaviour-mandated; the posture figure was verified against 3 and 2 by driving the gate on 2026-07-27). Re-run the probe in tasks/diagram-program.md, redraw the figure, then update this tripwire.`;
+    }
     // The posture figure is GENERATED from these two sets, so a size change is not an error in
     // itself - it is a prompt to re-read the figure and its twin, which quote both counts.
     return nS === 12 && nR === 10

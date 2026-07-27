@@ -1,4 +1,11 @@
-import { SURFACE_CHANGE_KINDS, SAFETY_RELEVANT_CHANGE_KINDS } from './changeKinds';
+import {
+  SURFACE_CHANGE_KINDS,
+  SAFETY_RELEVANT_CHANGE_KINDS,
+  BENIGN_AUTOACCEPT_CHANGE_KINDS,
+  BEHAVIORAL_MANDATED_CHANGE_KINDS,
+  postureOutcome,
+  type PostureOutcome,
+} from './changeKinds';
 import { KIND_LABEL } from './kindLabels';
 import { SOURCE_LIVENESS_CENSUS } from './sourceLiveness';
 import { D3_CONFORMING_LABELS, D3_REQUIRED_LABELS } from './honest-limits';
@@ -52,61 +59,90 @@ export interface DiagramMeta {
 const REVIEWED = '2026-07-27';
 
 /**
- * D-07's rows are GENERATED from the taxonomy, never typed by hand.
+ * D-07's rows are GENERATED from the gate's own sets, never typed by hand.
  *
- * The taxonomy already lives in three places (the Python enum in mcpindex-trust, the surfaced
- * subset in lib/changeKinds.ts, the full detector list in the well-known descriptor) with a
- * hand-maintained sync comment. A hand-drawn matrix would be a fourth copy, and a matrix that is
- * wrong in one cell is worse than no matrix.
+ * The taxonomy already lives in several places with hand-maintained sync comments; a drawn
+ * matrix would be one more copy, and a matrix wrong in one cell is worse than no matrix. A
+ * first hand-drawn draft WAS wrong in four rows.
  *
- * The GUARD column renders the SAFETY BIT under the posture semantics documented on
- * /methodology. It is not a read of the gate's posture branch, which lives in the mcpindex-gate
- * package and is not in this repo. Every surface that renders it says so.
+ * VERIFIED 2026-07-27 against corpus_eval/tooling/cse/gate.py by driving the real Gate at all
+ * three postures - not read off the docs. That run corrected three further errors this table
+ * had inherited from the site's own prose:
+ *   - STRICT does NOT hold every drift. Benign auto-accept runs BEFORE the posture layer, so a
+ *     proven-benign drift proceeds under strict too.
+ *   - annotation-flip-to-destructive and output-schema-changed resolve to INCONCLUSIVE, a third
+ *     state ("behaviour is the gate"), not HOLD.
+ *   - MONITOR returns PROCEED-with-note, never a block, for every kind.
  */
 export type PostureRow = {
   kind: string;
   label: string;
   safety: boolean;
-  monitor: 'notify';
-  guard: 'HOLD' | 'proceed';
-  strict: 'HOLD';
+  monitor: PostureOutcome;
+  guard: PostureOutcome;
+  strict: PostureOutcome;
+  /** Why this row lands where it does, in the gate's own vocabulary. */
+  because: string;
 };
 
 export const POSTURE_ROWS: readonly PostureRow[] = [...SURFACE_CHANGE_KINDS]
   .sort((a, b) => {
-    const sa = SAFETY_RELEVANT_CHANGE_KINDS.has(a) ? 0 : 1;
-    const sb = SAFETY_RELEVANT_CHANGE_KINDS.has(b) ? 0 : 1;
-    return sa - sb || a.localeCompare(b);
+    const rank = (k: string) =>
+      BENIGN_AUTOACCEPT_CHANGE_KINDS.has(k) ? 2 : BEHAVIORAL_MANDATED_CHANGE_KINDS.has(k) ? 1 : 0;
+    return rank(a) - rank(b) || a.localeCompare(b);
   })
-  .map((kind) => {
-    const safety = SAFETY_RELEVANT_CHANGE_KINDS.has(kind);
-    return {
-      kind,
-      label: KIND_LABEL[kind] ?? kind.replace(/-/g, ' '),
-      safety,
-      monitor: 'notify' as const,
-      guard: safety ? ('HOLD' as const) : ('proceed' as const),
-      strict: 'HOLD' as const,
-    };
-  });
+  .map((kind) => ({
+    kind,
+    label: KIND_LABEL[kind] ?? kind.replace(/-/g, ' '),
+    safety: SAFETY_RELEVANT_CHANGE_KINDS.has(kind),
+    monitor: postureOutcome(kind, 'monitor'),
+    guard: postureOutcome(kind, 'guard'),
+    strict: postureOutcome(kind, 'strict'),
+    because: BENIGN_AUTOACCEPT_CHANGE_KINDS.has(kind)
+      ? 'proven benign - re-pinned, then proceeds'
+      : BEHAVIORAL_MANDATED_CHANGE_KINDS.has(kind)
+        ? 'behaviour is the gate, not a block'
+        : 'carries the safety bit',
+  }));
+
+const CELL: Record<PostureOutcome, string> = {
+  PROCEED: '-> proceed',
+  PROCEED_NOTIFY: 'notify',
+  INCONCLUSIVE: '? INCONCL.',
+  HOLD: '| HOLD',
+};
 
 /** The generated ASCII twin for D-07, built from the same rows the SVG renders. */
 function posturesTwin(): string {
   const w = Math.max(...POSTURE_ROWS.map((r) => r.kind.length));
-  const head = `  ${'ChangeKind'.padEnd(w)}   MONITOR   GUARD*    STRICT`;
+  const head = `  ${'ChangeKind'.padEnd(w)}   MONITOR    GUARD*      STRICT`;
   const body = POSTURE_ROWS.map(
     (r) =>
-      `  ${r.kind.padEnd(w)}   notify    ${(r.guard === 'HOLD' ? '| HOLD' : '-> proceed').padEnd(9)} | HOLD`,
+      `  ${r.kind.padEnd(w)}   ${CELL[r.monitor].padEnd(10)} ${CELL[r.guard].padEnd(11)} ${CELL[r.strict]}`,
   ).join('\n');
-  return `${head}\n${'  ' + '-'.repeat(w + 32)}\n${body}
+  const benign = POSTURE_ROWS.filter((r) => r.guard === 'PROCEED').length;
+  const incon = POSTURE_ROWS.filter((r) => r.guard === 'INCONCLUSIVE').length;
+  const hold = POSTURE_ROWS.filter((r) => r.guard === 'HOLD').length;
+  return `${head}\n${'  ' + '-'.repeat(w + 36)}\n${body}
 
-  * guard is the default posture. the GUARD column is the SAFETY BIT
-    (mcpindex-trust schema_diff._SAFETY_RELEVANT) rendered under the posture
-    semantics documented at mcpindex.ai/methodology - not a read of the gate's
-    posture branch. monitor notifies and proceeds; strict holds on any drift.
-  ${POSTURE_ROWS.filter((r) => r.safety).length} of ${POSTURE_ROWS.length} surfaced kinds carry the safety bit.
-  an injection / exfil MARKER found in a schema or description is a separate
-  scan, not a ChangeKind. it is not a row here.`;
+  * guard is the default posture.
+
+  of ${POSTURE_ROWS.length} surfaced kinds: ${hold} HOLD under guard, ${incon} resolve to
+  INCONCLUSIVE (behaviour is the gate, not a block), ${benign} proceed as proven-benign.
+
+  STRICT DOES NOT HOLD EVERY DRIFT. the benign auto-accept runs BEFORE the posture
+  layer, so a proven-benign change (an added optional param, a first-time output
+  schema) is re-pinned and proceeds under strict too. strict holds everything it
+  cannot prove benign.
+
+  MONITOR never blocks: every kind returns PROCEED-with-note.
+
+  an injection / exfil MARKER found in a schema or description is a separate scan,
+  not a ChangeKind, so it is not a row here - but guard blocks on it, as it does on
+  a risk escalation, a description change, and any fail-closed error.
+
+  verified 2026-07-27 by driving the gate (corpus_eval/tooling/cse/gate.py) at all
+  three postures.`;
 }
 
 export const DIAGRAMS: readonly DiagramMeta[] = [
@@ -240,7 +276,7 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
     fig: '06',
     title: 'It held. Now what?',
     claim: 'Every exit from a hold is reversible.',
-    alt: 'A decision tree for a held call. If you expected the change, re-pin and the new contract becomes your baseline. If you did not expect it, ask whether it is breaking or destructive: if yes, reject the call, check the server changelog, and check the public ledger to see whether the crawler saw it too; if no, re-pin or move that server to the monitor posture. If the gate is holding too often, move from guard to monitor to notify and proceed, or to strict to hold on any drift at all.',
+    alt: 'A decision tree for a held call. If you expected the change, re-pin and the new contract becomes your baseline. If you did not expect it, ask whether it is breaking or destructive: if yes, reject the call, check the server changelog, and check the public ledger to see whether the crawler saw it too; if no, re-pin or move that server to the monitor posture. If the gate is holding too often, move from guard to monitor to notify and proceed, or to strict, which holds anything it cannot prove benign.',
     queries: ['mcpindex re-pin', 'mcp gate too many holds', 'mcpindex posture', 'what to do when mcp call is held'],
     placements: ['/guides/install-the-gate-first-hold', '/guides/tune-postures', '/diagrams/it-held-now-what'],
     derives: [],
@@ -256,7 +292,7 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
      |
      +- holding too often?
            guard --> monitor    notify and proceed. you still see every change.
-           guard --> strict     hold on any drift, including benign.
+           guard --> strict     hold anything not PROVEN benign.
 
   every exit is reversible. a re-pin can be re-pinned.`,
   },
@@ -264,11 +300,16 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
     id: 'posture-matrix',
     fig: '07',
     title: 'Posture and ChangeKind',
-    claim: 'The gate reads a fixed table, not a judgement call. Generated from the taxonomy at build time.',
-    alt: 'A matrix of the twelve surfaced ChangeKinds against the three postures. Monitor notifies and proceeds on every kind. Guard, the default, holds the kinds that carry the safety bit and lets the rest proceed. Strict holds on any drift. The guard column renders the safety bit from the taxonomy source, under the posture semantics documented on the methodology page. An injection or exfiltration marker found in a schema or description is a separate scan, not a ChangeKind, so it is not a row.',
+    claim: 'The gate reads a fixed table, not a judgement call - and strict does not hold every drift.',
+    alt: 'A matrix of the twelve surfaced ChangeKinds against the three postures, generated from the gate source. Monitor never blocks: every kind returns proceed-with-note. Guard, the default, holds the eight kinds that carry the safety bit, resolves annotation-flip-to-destructive and output-schema-changed to inconclusive because behaviour is the gate rather than a block, and lets the two provably benign kinds proceed. Strict matches guard except that it also holds the inconclusive pair; it does not hold every drift, because the benign auto-accept runs before the posture layer and re-pins a proven-benign change. An injection or exfiltration marker is a separate scan rather than a ChangeKind, so it is not a row, though guard blocks on it.',
     queries: ['mcp changekind taxonomy', 'mcpindex postures', 'monitor guard strict mcp', 'mcp contract diff kinds'],
     placements: ['/guides/tune-postures', '/methodology', '/diagrams/posture-matrix'],
-    derives: ['SURFACE_CHANGE_KINDS', 'SAFETY_RELEVANT_CHANGE_KINDS'],
+    derives: [
+      'SURFACE_CHANGE_KINDS',
+      'SAFETY_RELEVANT_CHANGE_KINDS',
+      'BENIGN_AUTOACCEPT_CHANGE_KINDS',
+      'BEHAVIORAL_MANDATED_CHANGE_KINDS',
+    ],
     tripwire: 'surface-taxonomy-size',
     reviewed: REVIEWED,
     twin: posturesTwin(),

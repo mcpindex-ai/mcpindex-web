@@ -153,7 +153,7 @@ const BRAND_MARK = '⬡ mcpindex';
 const POSTURES: ReadonlyArray<{ id: Posture; label: string; note: string }> = [
   { id: 'monitor', label: 'Monitor', note: 'notify, then proceed' },
   { id: 'guard', label: 'Guard', note: 'block dangerous + breaking' },
-  { id: 'strict', label: 'Strict', note: 'hold any drift' },
+  { id: 'strict', label: 'Strict', note: 'hold all but proven-benign' },
 ];
 
 export default function DriftGateDemo() {

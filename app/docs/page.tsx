@@ -272,7 +272,7 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
               cosmetic churn never raises a false alarm.
             </li>
             <li>
-              <Mono>Strict</Mono> - hold on any drift.
+              <Mono>Strict</Mono> - hold anything not proven benign (a proven-benign drift is still auto-accepted).
             </li>
           </ul>
           <p

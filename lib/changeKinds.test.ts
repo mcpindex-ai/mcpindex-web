@@ -7,6 +7,9 @@ import {
   coerceChangeKinds,
   SURFACE_CHANGE_KINDS,
   SAFETY_RELEVANT_CHANGE_KINDS,
+  BENIGN_AUTOACCEPT_CHANGE_KINDS,
+  BEHAVIORAL_MANDATED_CHANGE_KINDS,
+  postureOutcome,
   isSafetyRelevant,
   MAX_CHANGE_KINDS,
 } from './changeKinds';
@@ -104,5 +107,43 @@ test('a schema too deep to diff fails SAFE, never silently benign', () => {
 test('every safety-relevant kind is one the public surface can actually show', () => {
   for (const k of SAFETY_RELEVANT_CHANGE_KINDS) {
     assert.ok(SURFACE_CHANGE_KINDS.has(k), `${k} carries the safety bit but is not surfaced`);
+  }
+});
+
+// The two posture-input sets, mirrored from corpus_eval/tooling/cse/gate.py and VERIFIED
+// 2026-07-27 by driving the real Gate. Pinned for the same reason as the safety set: an
+// upstream edit that is not mirrored here would silently re-grade a public surface.
+test('the benign auto-accept allowlist matches the gate frozenset', () => {
+  assert.deepEqual([...BENIGN_AUTOACCEPT_CHANGE_KINDS].sort(), [
+    'added-optional-param',
+    'output-schema-added',
+    'tool-added',
+  ]);
+});
+
+test('the behaviour-mandated set matches the gate frozenset', () => {
+  assert.deepEqual([...BEHAVIORAL_MANDATED_CHANGE_KINDS].sort(), [
+    'annotation-flip-to-destructive',
+    'output-schema-changed',
+  ]);
+});
+
+test('postureOutcome reproduces the observed gate behaviour', () => {
+  // Observed by driving the Gate at each posture, not read off the docs.
+  assert.equal(postureOutcome('added-optional-param', 'strict'), 'PROCEED');
+  assert.equal(postureOutcome('output-schema-added', 'strict'), 'PROCEED');
+  assert.equal(postureOutcome('added-required-param', 'guard'), 'HOLD');
+  assert.equal(postureOutcome('annotation-flip-to-destructive', 'guard'), 'INCONCLUSIVE');
+  assert.equal(postureOutcome('output-schema-changed', 'strict'), 'INCONCLUSIVE');
+  assert.equal(postureOutcome('deep-schema-undiffable', 'guard'), 'HOLD');
+  for (const k of SURFACE_CHANGE_KINDS) {
+    const m = postureOutcome(k, 'monitor');
+    assert.ok(m === 'PROCEED' || m === 'PROCEED_NOTIFY', `${k}: monitor must never block`);
+  }
+});
+
+test('a benign kind never carries the safety bit (the sets cannot overlap)', () => {
+  for (const k of BENIGN_AUTOACCEPT_CHANGE_KINDS) {
+    assert.ok(!isSafetyRelevant(k), `${k} cannot be both auto-accepted and safety-relevant`);
   }
 });

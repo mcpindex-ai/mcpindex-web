@@ -488,21 +488,53 @@ export function DItHeldNowWhat() {
 export function DPostureMatrix() {
   const ROW_H = 25;
   const top = 84;
-  const h = top + POSTURE_ROWS.length * ROW_H + 118;
-  const safetyCount = POSTURE_ROWS.filter((r) => r.safety).length;
-  const COL = { monitor: 580, guard: 700, strict: 862 };
+  const h = top + POSTURE_ROWS.length * ROW_H + 140;
+  const holds = POSTURE_ROWS.filter((r) => r.guard === 'HOLD').length;
+  const incon = POSTURE_ROWS.filter((r) => r.guard === 'INCONCLUSIVE').length;
+  const benign = POSTURE_ROWS.filter((r) => r.guard === 'PROCEED').length;
+  const COL = { monitor: 560, guard: 700, strict: 858 };
+
+  // One cell. Meaning never rides on colour alone: HOLD gets the stop-bar, INCONCLUSIVE a
+  // ring, PROCEED an arrow - each with its own word.
+  const cell = (x: number, y: number, outcome: string) => {
+    if (outcome === 'HOLD') {
+      return (
+        <>
+          <HoldGlyph x={x} y={y - 4} stroke={ACCENT_TEXT} scale={0.7} />
+          <M x={x + 20} y={y} size={11} fill={ACCENT_TEXT} caps>
+            HOLD
+          </M>
+        </>
+      );
+    }
+    if (outcome === 'INCONCLUSIVE') {
+      return (
+        <>
+          <circle cx={x + 5} cy={y - 4} r={4.5} fill="none" stroke={ACCENT_TEXT} strokeWidth={1.4} />
+          <M x={x + 18} y={y} size={11} fill={ACCENT_TEXT} caps>
+            INCONCLUSIVE
+          </M>
+        </>
+      );
+    }
+    return (
+      <M x={x} y={y} size={11} fill={MUTE}>
+        &#8594; {outcome === 'PROCEED' ? 'proceed' : 'notify'}
+      </M>
+    );
+  };
 
   return (
     <Canvas id="posture-matrix" w={1000} h={h}>
       <M x={20} y={28} caps size={10} fill={ACCENT_TEXT}>
-        GENERATED FROM THE TAXONOMY AT BUILD TIME &mdash; NOT TYPED BY HAND
+        GENERATED FROM THE GATE SOURCE &mdash; VERIFIED BY DRIVING IT AT ALL THREE POSTURES
       </M>
 
       <M x={20} y={62} caps size={9.5}>
         CHANGEKIND
       </M>
       <M x={330} y={62} caps size={9.5}>
-        SAFETY BIT
+        WHY IT LANDS HERE
       </M>
       <M x={COL.monitor} y={62} caps size={9.5}>
         MONITOR
@@ -517,57 +549,44 @@ export function DPostureMatrix() {
 
       {POSTURE_ROWS.map((r, i) => {
         const y = top + i * ROW_H;
+        const blocking = r.guard !== 'PROCEED';
         return (
           <g key={r.kind}>
             {i > 0 && <Rule x1={20} x2={980} y={y - 17} />}
-            {r.safety && <rect x={12} y={y - 12} width={2} height={15} fill={ACCENT} />}
+            {blocking && <rect x={12} y={y - 12} width={2} height={15} fill={ACCENT} />}
             <M x={20} y={y} size={11.5} fill={INK}>
               {r.kind}
             </M>
-            <S x={330} y={y} size={11.5} fill={MUTE}>
-              {r.safety ? 'must review' : 'not safety-relevant'}
+            <S x={330} y={y} size={10.5} fill={MUTE}>
+              {r.because}
             </S>
-            <M x={COL.monitor} y={y} size={11} fill={MUTE}>
-              notify
-            </M>
-            {r.guard === 'HOLD' ? (
-              <>
-                <HoldGlyph x={COL.guard} y={y - 4} stroke={ACCENT_TEXT} scale={0.7} />
-                <M x={COL.guard + 20} y={y} size={11} fill={ACCENT_TEXT} caps>
-                  HOLD
-                </M>
-              </>
-            ) : (
-              <M x={COL.guard} y={y} size={11} fill={MUTE}>
-                &#8594; proceed
-              </M>
-            )}
-            <HoldGlyph x={COL.strict} y={y - 4} stroke={ACCENT_TEXT} scale={0.7} />
-            <M x={COL.strict + 20} y={y} size={11} fill={ACCENT_TEXT} caps>
-              HOLD
-            </M>
+            {cell(COL.monitor, y, r.monitor)}
+            {cell(COL.guard, y, r.guard)}
+            {cell(COL.strict, y, r.strict)}
           </g>
         );
       })}
 
       <Rule x1={20} x2={980} y={top + POSTURE_ROWS.length * ROW_H - 8} stroke={INK} />
       <S x={20} y={top + POSTURE_ROWS.length * ROW_H + 18} size={12} fill={CITE}>
-        {safetyCount} of {POSTURE_ROWS.length} surfaced kinds carry the safety bit. Monitor notifies and
-        proceeds; strict holds on any drift.
+        Of {POSTURE_ROWS.length} surfaced kinds: {holds} HOLD under guard, {incon} resolve to
+        INCONCLUSIVE (behaviour is the gate, not a block), {benign} proceed as proven-benign.
       </S>
-      {/* SVG does not wrap text: every visual line is its own node, sized to the canvas. */}
-      <S x={20} y={top + POSTURE_ROWS.length * ROW_H + 40} size={12} fill={MUTE}>
-        The GUARD column renders the safety bit under the posture semantics documented on
+      {/* SVG does not wrap: every visual line is its own node. */}
+      <S x={20} y={top + POSTURE_ROWS.length * ROW_H + 42} size={12} fill={CITE} weight="600">
+        Strict does not hold every drift.
       </S>
-      <S x={20} y={top + POSTURE_ROWS.length * ROW_H + 58} size={12} fill={MUTE}>
-        /methodology &mdash; not a read of the gate&rsquo;s posture branch, which ships in the
-        mcpindex-gate package.
+      <S x={228} y={top + POSTURE_ROWS.length * ROW_H + 42} size={12} fill={MUTE}>
+        The benign auto-accept runs before the posture layer, so a
       </S>
-      <S x={20} y={top + POSTURE_ROWS.length * ROW_H + 82} size={12} fill={MUTE}>
-        An injection / exfil marker found in a schema or description is a separate scan, not a
+      <S x={20} y={top + POSTURE_ROWS.length * ROW_H + 60} size={12} fill={MUTE}>
+        proven-benign change is re-pinned and proceeds under strict too. Monitor never blocks.
       </S>
-      <S x={20} y={top + POSTURE_ROWS.length * ROW_H + 100} size={12} fill={MUTE}>
-        ChangeKind. It is not a row here.
+      <S x={20} y={top + POSTURE_ROWS.length * ROW_H + 84} size={12} fill={MUTE}>
+        An injection / exfil marker is a separate scan, not a ChangeKind, so it is not a row &mdash;
+      </S>
+      <S x={20} y={top + POSTURE_ROWS.length * ROW_H + 102} size={12} fill={MUTE}>
+        but guard blocks on it, as it does on a risk escalation and any fail-closed error.
       </S>
     </Canvas>
   );

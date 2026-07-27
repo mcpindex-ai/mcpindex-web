@@ -58,6 +58,54 @@ export function isSafetyRelevant(kind: string): boolean {
   return SAFETY_RELEVANT_CHANGE_KINDS.has(kind);
 }
 
+// --- the gate's own posture inputs, mirrored ---------------------------------
+// Everything below mirrors corpus_eval/tooling/cse/gate.py. VERIFIED 2026-07-27 by driving the
+// real Gate at all three postures (see tasks/diagram-program.md); these are not inferences.
+//
+// The decisive ordering: the benign AUTO-ACCEPT runs inside validate_drift, BEFORE the posture
+// layer, and `auto_accept_benign` defaults to true at every call site and is never coupled to
+// posture. Gate.apply_posture then short-circuits on `if static.decision is PROCEED`. So a
+// proven-benign drift PROCEEDs under STRICT too - "strict holds on any drift" is false.
+
+/** Drifts provable-benign on every axis; auto-accepted and re-pinned before posture applies. */
+export const BENIGN_AUTOACCEPT_CHANGE_KINDS: ReadonlySet<string> = new Set([
+  'added-optional-param',
+  'output-schema-added',
+  // Not in SURFACE_CHANGE_KINDS, so it never renders - mirrored for parity with the gate.
+  'tool-added',
+]);
+
+/** Kinds where behaviour is the gate: these resolve to INCONCLUSIVE, a third state, not HOLD. */
+export const BEHAVIORAL_MANDATED_CHANGE_KINDS: ReadonlySet<string> = new Set([
+  'annotation-flip-to-destructive',
+  'output-schema-changed',
+]);
+
+export type Posture = 'monitor' | 'guard' | 'strict';
+export type PostureOutcome = 'PROCEED' | 'PROCEED_NOTIFY' | 'INCONCLUSIVE' | 'HOLD';
+
+/**
+ * What the gate actually returns for a drift of `kind` at `posture`.
+ *
+ * Mirrors Gate.validate_drift -> Gate.apply_posture, in that order:
+ *   1. proven-benign  -> PROCEED (re-pinned) in EVERY posture, posture never consulted;
+ *   2. monitor        -> never blocks; any non-PROCEED verdict downgrades to PROCEED-with-note;
+ *   3. behaviour-mandated -> INCONCLUSIVE (needs behaviour), not a HOLD;
+ *   4. otherwise      -> HOLD under guard and strict.
+ *
+ * Guard blocks exactly the safety-relevant set: gate.py `_GUARD_DANGEROUS_KINDS` and
+ * schema_diff.py `_SAFETY_RELEVANT` were verified member-for-member identical, so the safety bit
+ * is a sound source for the guard column. (Guard ALSO blocks on reason markers - a risk
+ * escalation, an injection/exfil marker, a description change, a fail-closed error - which are
+ * not ChangeKinds and so cannot appear as rows here.)
+ */
+export function postureOutcome(kind: string, posture: Posture): PostureOutcome {
+  if (BENIGN_AUTOACCEPT_CHANGE_KINDS.has(kind)) return 'PROCEED';
+  if (posture === 'monitor') return 'PROCEED_NOTIFY';
+  if (BEHAVIORAL_MANDATED_CHANGE_KINDS.has(kind)) return 'INCONCLUSIVE';
+  return 'HOLD';
+}
+
 // Hard cap on how many kinds render/return for one event - a hostile blob cannot bloat the page or
 // the API response. Comfortably above the real taxonomy size (12) so a legitimate event is never
 // truncated, while a forged 10k-element array is.

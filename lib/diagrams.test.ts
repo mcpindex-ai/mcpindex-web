@@ -13,7 +13,12 @@ import {
   renderTwin,
   attributionHtml,
 } from './diagrams';
-import { SURFACE_CHANGE_KINDS, SAFETY_RELEVANT_CHANGE_KINDS } from './changeKinds';
+import {
+  SURFACE_CHANGE_KINDS,
+  SAFETY_RELEVANT_CHANGE_KINDS,
+  BENIGN_AUTOACCEPT_CHANGE_KINDS,
+  BEHAVIORAL_MANDATED_CHANGE_KINDS,
+} from './changeKinds';
 
 test('every figure carries the four artifacts that make it legible to a model', () => {
   for (const d of DIAGRAMS) {
@@ -49,39 +54,74 @@ test('figure numbers are unique (a duplicate "Fig. 03" reads as an error)', () =
   assert.equal(new Set(figs).size, figs.length, `duplicate figure numbers: ${figs.join(',')}`);
 });
 
-test('the posture matrix is GENERATED from the taxonomy, not typed', () => {
+test('the posture matrix is GENERATED from the gate sets, not typed', () => {
   // One row per surfaced kind. If the taxonomy grows, the figure grows with it.
   assert.equal(POSTURE_ROWS.length, SURFACE_CHANGE_KINDS.size);
   for (const r of POSTURE_ROWS) {
     assert.ok(SURFACE_CHANGE_KINDS.has(r.kind), `${r.kind}: not a surfaced kind`);
-    // The cardinal rule of the figure: guard tracks the safety bit, nothing else.
     assert.equal(r.safety, SAFETY_RELEVANT_CHANGE_KINDS.has(r.kind), `${r.kind}: safety bit mismatch`);
-    assert.equal(r.guard, r.safety ? 'HOLD' : 'proceed', `${r.kind}: guard cell disagrees with the safety bit`);
-    assert.equal(r.monitor, 'notify');
-    assert.equal(r.strict, 'HOLD', `${r.kind}: strict holds on any drift, by definition`);
     assert.ok(r.label.trim(), `${r.kind}: needs a human label`);
+    assert.ok(r.because.trim(), `${r.kind}: needs a reason`);
   }
 });
 
-test('safety-relevant rows sort first, so the figure reads breaking-first', () => {
-  const flags = POSTURE_ROWS.map((r) => r.safety);
-  const firstFalse = flags.indexOf(false);
-  if (firstFalse !== -1) {
+// The three rules below are the OBSERVED behaviour of corpus_eval/tooling/cse/gate.py, captured
+// 2026-07-27 by driving the real Gate at each posture. They are the contract this figure draws;
+// if the gate changes, these fail and the figure must be redrawn.
+test('MONITOR never blocks - every kind proceeds', () => {
+  for (const r of POSTURE_ROWS) {
     assert.ok(
-      !flags.slice(firstFalse).includes(true),
-      'safety-relevant kinds must be contiguous at the top',
+      r.monitor === 'PROCEED' || r.monitor === 'PROCEED_NOTIFY',
+      `${r.kind}: monitor must never block, got ${r.monitor}`,
     );
   }
+});
+
+test('a proven-benign drift proceeds under EVERY posture, strict included', () => {
+  // The correction that mattered: auto-accept runs BEFORE apply_posture, so "strict holds any
+  // drift" is false. An earlier draft of this figure asserted exactly that.
+  const benign = POSTURE_ROWS.filter((r) => BENIGN_AUTOACCEPT_CHANGE_KINDS.has(r.kind));
+  assert.ok(benign.length > 0, 'expected at least one surfaced benign kind');
+  for (const r of benign) {
+    assert.equal(r.guard, 'PROCEED', `${r.kind}: guard must auto-accept a proven-benign drift`);
+    assert.equal(r.strict, 'PROCEED', `${r.kind}: STRICT must proceed on a proven-benign drift`);
+  }
+});
+
+test('behaviour-mandated kinds resolve to INCONCLUSIVE, never a flat HOLD', () => {
+  for (const r of POSTURE_ROWS) {
+    if (!BEHAVIORAL_MANDATED_CHANGE_KINDS.has(r.kind)) continue;
+    assert.equal(r.guard, 'INCONCLUSIVE', `${r.kind}: behaviour is the gate, not a block`);
+    assert.equal(r.strict, 'INCONCLUSIVE', `${r.kind}: strict keeps the inconclusive state`);
+  }
+});
+
+test('every other safety-relevant kind HOLDs under guard and strict', () => {
+  for (const r of POSTURE_ROWS) {
+    if (BENIGN_AUTOACCEPT_CHANGE_KINDS.has(r.kind)) continue;
+    if (BEHAVIORAL_MANDATED_CHANGE_KINDS.has(r.kind)) continue;
+    assert.equal(r.guard, 'HOLD', `${r.kind}: carries the safety bit, guard must hold`);
+    assert.equal(r.strict, 'HOLD', `${r.kind}: strict must hold what it cannot prove benign`);
+  }
+});
+
+test('rows sort blocking first, benign last, so the figure reads by severity', () => {
+  const rank = (r: (typeof POSTURE_ROWS)[number]) =>
+    BENIGN_AUTOACCEPT_CHANGE_KINDS.has(r.kind) ? 2 : BEHAVIORAL_MANDATED_CHANGE_KINDS.has(r.kind) ? 1 : 0;
+  const ranks = POSTURE_ROWS.map(rank);
+  assert.deepEqual(ranks, [...ranks].sort((a, b) => a - b), 'rows must be grouped by severity');
 });
 
 test('the posture twin quotes the same counts the rows produce', () => {
   const d = getDiagram('posture-matrix');
   assert.ok(d);
-  const safety = POSTURE_ROWS.filter((r) => r.safety).length;
+  const holds = POSTURE_ROWS.filter((r) => r.guard === 'HOLD').length;
   assert.ok(
-    d!.twin.includes(`${safety} of ${POSTURE_ROWS.length} surfaced kinds`),
+    d!.twin.includes(`${holds} HOLD under guard`),
     'the generated twin must quote the generated counts',
   );
+  // The correction must survive in the text an answer engine actually quotes.
+  assert.ok(d!.twin.includes('STRICT DOES NOT HOLD EVERY DRIFT'));
   // An injection marker is a separate scan, not a ChangeKind. The twin says so explicitly
   // because an earlier hand-drawn draft of this matrix listed it as a row.
   assert.ok(d!.twin.includes('not a ChangeKind'));
