@@ -101,41 +101,55 @@ test('recommendation: severity keys on distribution type', () => {
 // so tracking the rolling file would silently break the citation, which is what the FIG block's
 // own comment warns against. Enforcing it mechanically was right; the source of truth was not.
 test('census figures match the DOI-deposited aggregates', async () => {
+  // Reads an IN-REPO extract, not ../tasks/... . The cross-repo path passed locally only
+  // because this repo happens to sit inside the workspace repo on one machine; CI checks
+  // out this repo alone, so the file was absent and the suite went red. Same class of bug
+  // as the figures this test guards: correct on the author's box, wrong everywhere else.
   const raw = await fs.readFile(
-    path.join(
-      process.cwd(), '..', 'tasks', 'growth', 'doi-deposition-liveness-v1', 'aggregates.json',
-    ),
+    path.join(process.cwd(), 'data', 'source-liveness-census.json'),
     'utf8',
   );
   const agg = JSON.parse(raw) as {
-    repositories: { not_publicly_accessible: number; servers_affected: number; corroborated: number };
-  };
-  const doc = {
-    server_count: agg.repositories.servers_affected,
-    url_count: agg.repositories.not_publicly_accessible,
-    servers: {} as Record<string, { url: string }>,
+    population: { registry_servers_total: number; distinct_repository_urls: number };
+    repositories: {
+      not_publicly_accessible: number;
+      servers_affected: number;
+      corroborated: number;
+    };
+    websites: {
+      not_publicly_accessible_single_vantage: number;
+      egress_blocked_from_datacenter: number;
+    };
+    corroboration: { hand_verified_sample: number };
   };
 
   const parse = (s: string) => Number(s.replace(/,/g, ''));
 
-  assert.equal(
-    parse(SOURCE_LIVENESS_CENSUS.serversAffected),
-    doc.server_count,
-    'serversAffected must equal server_count in data/source-liveness.json',
-  );
-  assert.equal(
-    parse(SOURCE_LIVENESS_CENSUS.reposUnreachable),
-    doc.url_count,
-    'reposUnreachable must equal url_count in data/source-liveness.json',
-  );
+  // All seven numeric figures, not the two the first version covered. The deposited
+  // artifact carries every one of them, so there is no reason to leave five
+  // comment-guarded.
+  const checks: [keyof typeof SOURCE_LIVENESS_CENSUS, number][] = [
+    ['reposUnreachable', agg.repositories.not_publicly_accessible],
+    ['serversAffected', agg.repositories.servers_affected],
+    ['reposTotal', agg.population.distinct_repository_urls],
+    ['serversTotal', agg.population.registry_servers_total],
+    ['sitesUnreachable', agg.websites.not_publicly_accessible_single_vantage],
+    ['egressBlocked', agg.websites.egress_blocked_from_datacenter],
+    ['sampleSize', agg.corroboration.hand_verified_sample],
+  ];
+  for (const [key, expected] of checks) {
+    assert.equal(
+      parse(SOURCE_LIVENESS_CENSUS[key]),
+      expected,
+      `${key} must match the deposited aggregates (DOI 10.5281/zenodo.21501868)`,
+    );
+  }
 
-  // Keep the original intent - do not let one header value validate itself - but cross-check
-  // against a SECOND independent field in the same deposited artifact. The per-server map the
-  // old version counted lives in the rolling operational file, which is a different population
-  // and would reintroduce the conflation this test was just corrected for.
+  // Cross-check against a SECOND independent field so one header value cannot validate
+  // itself: every unreachable repo was corroborated by two vantages, so these must agree.
   assert.equal(
     agg.repositories.corroborated,
-    doc.url_count,
+    agg.repositories.not_publicly_accessible,
     'corroborated must equal not_publicly_accessible in the deposited aggregates',
   );
 });
