@@ -460,7 +460,13 @@ export default async function ServerPage(
             <div>
               <div className={RAIL_LABEL}>Listing</div>
               <p className="text-[12px] leading-[1.55] text-[var(--color-cite)]">
-                Listed from the official MCP registry.{' '}
+                {/* Derive the provenance sentence from `source` rather than asserting one.
+                    This line was unconditional, so every admitted page claimed registry
+                    listing here while the banner above it said the opposite - the same page
+                    contradicting itself on the one fact this product sells. */}
+                {server.source === 'admitted'
+                  ? 'Indexed by mcpindex; not listed in the official MCP registry.'
+                  : 'Listed from the official MCP registry.'}{' '}
                 {previewBadge ? (
                   'Maintainer-attested (preview).'
                 ) : (
