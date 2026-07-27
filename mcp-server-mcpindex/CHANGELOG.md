@@ -4,6 +4,12 @@ All notable changes to `mcp-server-mcpindex` are recorded here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.12] - 2026-07-27
+
+### Fixed
+
+- **`search_mcp_servers` no longer claims to search "the full MCP server registry".** The advertised description promised registry-wide coverage, but the tool queries mcpindex's own indexed snapshot (`loadServers()`), which is a subset. The description now says it searches "every MCP server mcpindex indexes" - the same claim the site makes, and one the tool actually delivers. Copy-only; no behaviour change.
+
 ## [0.3.11] - 2026-07-18
 
 ### Fixed
