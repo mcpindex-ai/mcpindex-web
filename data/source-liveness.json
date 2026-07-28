@@ -1,7 +1,7 @@
 {
  "gate": "state=unavailable AND corroborated=1 AND kind=repo",
- "generated_at": "2026-07-27T17:15:35Z",
- "server_count": 2065,
+ "generated_at": "2026-07-28T03:51:53Z",
+ "server_count": 2064,
  "servers": {
   "agency.lona/trading": {
    "confirmed_unavailable": "2026-07-23",
@@ -5589,20 +5589,6 @@
    "state": "unavailable",
    "url": "https://github.com/dinosaur24/spendict-mcp"
   },
-  "com.sprytools/sprytools": {
-   "confirmed_unavailable": "2026-07-23",
-   "evidence": {
-    "http_status": 404,
-    "methods": [
-     "github-api-authenticated",
-     "github-web-unauthenticated"
-    ],
-    "vantages": 2
-   },
-   "last_verified_accessible": null,
-   "state": "unavailable",
-   "url": "https://github.com/Grenzfrei/sprytools-mcp"
-  },
   "com.statisticsoftheworld/sotw": {
    "confirmed_unavailable": "2026-07-23",
    "evidence": {
@@ -9522,20 +9508,6 @@
    "last_verified_accessible": null,
    "state": "unavailable",
    "url": "https://github.com/agentbuilders/cli"
-  },
-  "io.github.Deesmo/arch-tools-mcp": {
-   "confirmed_unavailable": "2026-07-23",
-   "evidence": {
-    "http_status": 404,
-    "methods": [
-     "github-api-authenticated",
-     "github-web-unauthenticated"
-    ],
-    "vantages": 2
-   },
-   "last_verified_accessible": null,
-   "state": "unavailable",
-   "url": "https://github.com/Deesmo/Arch-AI-Tools"
   },
   "io.github.Dewars30/fulcrum": {
    "confirmed_unavailable": "2026-07-23",
@@ -24013,6 +23985,20 @@
    "state": "unavailable",
    "url": "https://github.com/sher1096/klinepic-agent-api-examples"
   },
+  "io.github.shigetosidumeda-cyber/autonomath-mcp": {
+   "confirmed_unavailable": "2026-07-28",
+   "evidence": {
+    "http_status": 404,
+    "methods": [
+     "github-api-authenticated",
+     "github-web-unauthenticated"
+    ],
+    "vantages": 2
+   },
+   "last_verified_accessible": "2026-07-21",
+   "state": "unavailable",
+   "url": "https://github.com/shigetosidumeda-cyber/autonomath-mcp"
+  },
   "io.github.shin-bot-litellm/litellm-mcp": {
    "confirmed_unavailable": "2026-07-23",
    "evidence": {
@@ -28914,5 +28900,5 @@
    "url": "https://github.com/ErikThiart/simcloud"
   }
  },
- "url_count": 1826
+ "url_count": 1825
 }
