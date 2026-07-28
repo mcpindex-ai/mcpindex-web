@@ -46,14 +46,38 @@ if (dirty) {
   process.exit(1);
 }
 
-// manifest.json is committed + mirrored to the Glama repo and built into the .mcpb;
-// keep its version in lockstep with package.json so no artifact ships a stale one.
-const manifest = JSON.parse(await readFile(path.join(pkgRoot, 'manifest.json'), 'utf8'));
-if (manifest.version !== version) {
-  console.error(
-    `release: ABORT - manifest.json version (${manifest.version}) != package.json (${version}). Bump manifest.json.`,
-  );
-  process.exit(1);
+// Every sibling file that repeats the version must move with package.json, or some
+// artifact ships a stale one. This was a manifest.json-only check, so the two files it
+// did NOT cover drifted exactly as you would predict: package-lock.json sat at 0.3.8
+// while package.json reached 0.3.12 (harmless - `files` excludes it from the tarball and
+// `npm ci` only diffs dependencies - but it makes the lock lie about what it locks), and
+// server.json, the MCP registry descriptor, was unguarded while carrying the version
+// TWICE. A registry descriptor that advertises a version npm does not have is the same
+// published-drift failure this script exists to prevent, so the check is now over the set
+// rather than over one file anyone remembered to add.
+const VERSION_SIBLINGS = [
+  { file: 'manifest.json', paths: [['version']] },
+  { file: 'server.json', paths: [['version'], ['packages', 0, 'version']] },
+  { file: 'package-lock.json', paths: [['version'], ['packages', '', 'version']] },
+];
+for (const { file, paths } of VERSION_SIBLINGS) {
+  const doc = JSON.parse(await readFile(path.join(pkgRoot, file), 'utf8'));
+  for (const keys of paths) {
+    // Reduce rather than index: a missing intermediate must read as undefined and FAIL the
+    // comparison, not throw a TypeError that reads like a broken release script.
+    const found = keys.reduce((node, k) => (node == null ? undefined : node[k]), doc);
+    if (found !== version) {
+      // The lockfile's root entry is keyed by the EMPTY STRING, which a bare join swallows
+      // into "packages..version" and sends the reader hunting for a field that looks
+      // malformed. Render it as '' so the path is copy-pasteable.
+      const where = keys.map((k) => (k === '' ? "''" : k)).join('.');
+      console.error(
+        `release: ABORT - ${file} ${where} (${found}) != package.json (${version}). ` +
+          `Bump ${file}.`,
+      );
+      process.exit(1);
+    }
+  }
 }
 
 // 1 + 2: build (syntax) and tests
