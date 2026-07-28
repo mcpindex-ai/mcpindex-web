@@ -1,27 +1,30 @@
 import { NextRequest } from 'next/server';
 import { timingSafeEqual } from 'node:crypto';
 import { readBundledSnapshot } from '@/lib/registry';
-import { kvConfigured, snapshotVersion, writeKVSnapshot } from '@/lib/snapshotStore';
+import { snapshotVersion } from '@/lib/snapshotStore';
 
-// NOT SCHEDULED, AND NO LONGER FETCHES UPSTREAM. This is a manual "republish the cache"
-// lever, not a sync.
+// READ-ONLY STATUS. THIS ENDPOINT CANNOT CHANGE WHAT THE SITE SERVES.
 //
-// The canonical refresh is .github/workflows/sync-registry.yml: it pulls ~180 sequential
-// version=latest pages every 4h and commits data/snapshot.json to main, and readers fall
-// back to that bundled file on a KV miss. This route used to attempt the SAME upstream
-// fetch, which cannot finish inside maxDuration=300s (measured 34s on a good window,
-// tens of minutes on a bad one), so it almost always died partway - an endpoint that
-// could start but not complete.
+// It reports which registry snapshot THIS deployment is serving. That is the whole contract.
+// Reaching for it during a "the site looks stale" incident will tell you what is deployed; it
+// will not make anything fresher.
 //
-// Worse, on the rare success it wrote KV with NO expiry, and the read path prefers KV
-// unconditionally: one manual invocation could pin the live site to that blob forever while
-// the workflow kept committing fresh snapshots that nothing read. (writeKVSnapshot now sets
-// a 6h TTL, which bounds that; this change removes the trap at the source.)
+// History, because the name still says "sync": it once fetched ~180 upstream pages (couldn't
+// finish inside maxDuration), then was reduced to republishing the committed snapshot into
+// Upstash KV. The KV read path was removed when it turned out to be forcing every ISR route
+// dynamic, which left this route writing a ~26MB blob nothing read - so the write went too.
 //
-// So it now republishes the ALREADY-COMMITTED snapshot into KV. That completes in
-// milliseconds, always finishes, and is the only thing a manual button here can usefully do:
-// force the cache to match the repo. To pull NEW servers from upstream, run the workflow
-// (`gh workflow run sync-registry.yml`) - that is the job that owns the slow fetch.
+// THE REAL LEVER for new upstream servers is the workflow that owns the slow fetch:
+//   gh workflow run sync-registry.yml
+// It commits data/snapshot.json to main every 4h and Vercel redeploys on push. Because the
+// snapshot is a build artifact, a deploy is the ONLY thing that changes what is served.
+//
+// Two traps removed with the KV write, both worth not reintroducing:
+//   - it returned `snapshot_written_at: new Date()`, which fed loadSnapshotMeta().writtenAt -
+//     the exact field tools/healthcheck/mcpindex_snapshot_freshness.py grades. One manual hit
+//     reset the staleness clock with no new data. It now reports the snapshot's OWN timestamp.
+//   - a `kvExpected && !persisted` guard returned 503 on a failed write to that unread key,
+//     i.e. it could page while the site was perfectly healthy.
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 
@@ -48,56 +51,26 @@ export async function GET(req: NextRequest) {
   try {
     const bundled = await readBundledSnapshot();
     const latest = bundled.servers;
-    const writtenAt = new Date().toISOString();
-    const version = bundled.snapshot_version || snapshotVersion(latest);
-    const persisted = await writeKVSnapshot({
-      fetchedAt: bundled.fetchedAt, // preserve WHEN the data was actually fetched upstream...
-      totalEntries: bundled.totalEntries,
-      servers: latest,
-      snapshot_version: version,
-      snapshot_written_at: writtenAt, // ...and record separately when this copy was published
-    });
-    const elapsed = Date.now() - start;
-    // KV write was EXPECTED if both Upstash env vars are present. If it
-    // was expected and failed, return 503 with ok:false so upstream
-    // healthchecks (keyed on status code or `ok`) actually fire. Without
-    // this branch the cron silently returned ok:true even when KV write
-    // failed, making healthcheck-driven alerting blind to silent storage
-    // outages. When KV is NOT configured (bundled-snapshot mode), persisted
-    // being false is by design and ok:true is correct.
-    const kvExpected = kvConfigured();
-    if (kvExpected && !persisted) {
-      return Response.json(
-        {
-          ok: false,
-          error: 'kv_write_failed',
-          totalEntries: bundled.totalEntries,
-          latestServers: latest.length,
-          elapsedMs: elapsed,
-          persisted: false,
-          snapshot_version: version,
-          snapshot_written_at: writtenAt,
-        },
-        { status: 503 },
-      );
-    }
     return Response.json({
       ok: true,
+      // Reports only. Nothing here mutates state - see the header comment.
+      readonly: true,
       totalEntries: bundled.totalEntries,
       latestServers: latest.length,
-      elapsedMs: elapsed,
-      persisted,
-      kv_configured: kvExpected,
-      source: 'bundled-snapshot', // never upstream; see the header comment
-      snapshot_version: version,
-      snapshot_written_at: writtenAt,
+      elapsedMs: Date.now() - start,
+      source: 'bundled-snapshot',
+      snapshot_version: bundled.snapshot_version || snapshotVersion(latest),
+      // The snapshot's OWN timestamps, never `now()`. Fabricating a fresh one here is what
+      // previously masked staleness from the freshness probe.
+      fetchedAt: bundled.fetchedAt,
+      snapshot_written_at: bundled.snapshot_written_at,
     });
   } catch (err) {
     // Log full error server-side; return generic body to avoid leaking
     // upstream registry hostnames / DNS errors / TLS strings to callers.
-    console.error('cron/sync-registry: republish failed', err);
+    console.error('cron/sync-registry: snapshot read failed', err);
     return Response.json(
-      { ok: false, error: 'snapshot_republish_failed' },
+      { ok: false, error: 'snapshot_read_failed' },
       { status: 500 },
     );
   }
