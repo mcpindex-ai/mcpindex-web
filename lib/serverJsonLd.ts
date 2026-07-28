@@ -1,4 +1,5 @@
 import type { IndexedServer } from '@/lib/types';
+import { anchorProvenance } from '@/lib/provenance';
 
 // Belt-and-suspenders URL-scheme guard. normalize() already strips non-http(s) at
 // registry load; this guards any future code path that bypasses it, and keeps the
@@ -88,5 +89,37 @@ export function buildServerJsonLd(server: IndexedServer): Record<string, unknown
     };
   }
 
-  return { '@context': 'https://schema.org', ...entity };
+  // Provenance for the machine audience. Search engines and answer engines read this
+  // block and nothing else on the page, so a listing that carries no basis is, to them,
+  // an unsourced assertion about a third party's software.
+  //
+  // Standard schema.org keys, not invented ones - `isBasedOn` names what the entry is
+  // derived FROM, `citation` points at the method, `creativeWorkStatus` is where the
+  // advisory posture belongs. A custom key would be ignored by every consumer and would
+  // amount to writing provenance for ourselves.
+  //
+  // The anchor is included ONLY when a confirmed one exists (anchorProvenance returns
+  // null for pending), so this can never assert settled provenance the ledger does not
+  // have. `sameAs` deliberately stays untouched: it identifies the SERVER's own entity,
+  // and mixing our proof URL into it would claim the proof is another identity for
+  // someone else's project.
+  const anchor = anchorProvenance();
+  return {
+    '@context': 'https://schema.org',
+    ...entity,
+    isBasedOn: 'https://registry.modelcontextprotocol.io',
+    citation: 'https://mcpindex.ai/methodology',
+    creativeWorkStatus: 'Advisory listing; semantic-only screen, not a safety verdict',
+    ...(anchor
+      ? {
+          subjectOf: {
+            '@type': 'CreativeWork',
+            name: 'Verdict corpus anchor (OpenTimestamps / Bitcoin)',
+            identifier: anchor.chain_root,
+            url: anchor.verify,
+            dateCreated: anchor.stamped_at,
+          },
+        }
+      : {}),
+  };
 }

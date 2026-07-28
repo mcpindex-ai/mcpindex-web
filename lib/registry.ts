@@ -404,6 +404,36 @@ export function findDeprecatedServer(
   return resolved.find((s) => s.slug === slug) ?? null;
 }
 
+/**
+ * The servers that a RETIRED bare slug used to address, when two or more names
+ * collide onto it. Returns null for every ordinary slug.
+ *
+ * WHY THIS EXISTS. `disambiguateSlugs` hashes EVERY member of a colliding set rather
+ * than letting first-wins pick a survivor, because a survivor would inherit the other
+ * subject's inbound links and, with them, the wrong trust verdict. The cost is that the
+ * bare slug stops resolving the moment a collision appears - and it may have been a live,
+ * indexed URL until that moment. Measured on the 2026-07-28 corpus: 5 colliding bases
+ * over 10 servers out of 18,638, every one a case-variant republication by the same
+ * author (`io.github.SceneView/mcp` vs `io.github.sceneview/mcp`). All five bare slugs
+ * were returning 404 in production.
+ *
+ * A redirect is NOT the fix, and that is the whole point. Two subjects claim the slug;
+ * picking one is exactly the misattribution disambiguation exists to prevent, and
+ * "same author, near-identical name" is an inference, not an observation - the two
+ * entries can and do carry different versions, packages, and verdicts. So the bare slug
+ * resolves to a page that names both and makes the reader choose. The link stays alive,
+ * nothing is asserted about which one they meant.
+ */
+export async function getCollidingBase(
+  slug: string,
+): Promise<IndexedServer[] | null> {
+  const servers = await loadServers();
+  // A slug that still addresses a server is not a retired base, whatever else is true.
+  if (servers.some((s) => s.slug === slug)) return null;
+  const members = servers.filter((s) => slugify(s.name) === slug);
+  return members.length > 1 ? members : null;
+}
+
 export async function getServer(slug: string): Promise<IndexedServer | null> {
   const servers = await loadServers();
   const hit = servers.find((s) => s.slug === slug);

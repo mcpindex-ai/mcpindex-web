@@ -10,6 +10,7 @@
 // truth (no logic duplication). The CLI package is untouched (stays single-dep).
 
 import { createMcpHandler } from 'mcp-handler';
+import { provenanceLine } from '@/lib/provenance';
 import { z } from 'zod';
 
 // In-process /api/v1 dispatch (no self-fetch); see lib/v1Dispatch.ts.
@@ -76,7 +77,16 @@ function formatRecommend(data: any): string {
     lines.push(`    ${r.url}`);
     lines.push('');
   }
-  lines.push(`Source: ${data.note ?? ''}`);
+  // Was `Source: ${data.note}` - which silently became an empty "Source:" line the moment
+  // the route replaced `note` with a provenance block. Read the structured field, and fall
+  // back to the local one-liner rather than printing a header with nothing under it: an
+  // agent reading "Source:" followed by nothing learns less than one told plainly.
+  lines.push(data.provenance?.basis ? `Basis: ${data.provenance.basis}` : provenanceLine());
+  if (data.provenance?.anchor?.bitcoin_block) {
+    lines.push(
+      `Corpus anchored to Bitcoin block ${data.provenance.anchor.bitcoin_block} - verify: ${data.provenance.anchor.verify}`,
+    );
+  }
   return lines.join('\n');
 }
 
@@ -87,6 +97,10 @@ function formatSearch(data: any): string {
     lines.push(`  ${r.description}`);
     lines.push(`  ${r.url ?? `https://mcpindex.ai/server/${r.slug}`}`);
   }
+  // Quality Score rides on every row above and measures documentation and packaging
+  // completeness, not safety. Unstated, an agent choosing what to execute reads it as the
+  // latter - so the basis ships with the numbers rather than being a click away.
+  lines.push('', provenanceLine());
   return lines.join('\n');
 }
 

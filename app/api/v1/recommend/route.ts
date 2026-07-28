@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { loadServers } from '@/lib/registry';
-import { rankServers, toRecommendations } from '@/lib/recommend';
+import { rankServers, recommendationProvenance, toRecommendations } from '@/lib/recommend';
 
 export const revalidate = 300;
 
@@ -33,9 +33,12 @@ export async function GET(req: NextRequest) {
     {
       task,
       recommendations: toRecommendations(ranked),
-      note:
-        'v0 ranker - heuristic score blends keyword match (70%) with MCP Quality Score (30%). ' +
-        'See /methodology for scoring details.',
+      // The retired note claimed "keyword match (70%) with MCP Quality Score (30%)". That
+      // stopped being true on 2026-06-01, when the composite changed to `score + QS*0.1`
+      // because a 0.3*QS term swamped the search score and floated generic high-QS servers
+      // to rank-1. The weighting moved; the sentence describing it to every API consumer
+      // did not. It now comes from `provenance.basis`, which lives beside the composite.
+      provenance: recommendationProvenance(),
     },
     {
       headers: {
