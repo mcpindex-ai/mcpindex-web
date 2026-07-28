@@ -17,6 +17,7 @@ function mk(name: string): IndexedServer {
   return {
     source: 'registry',
     slug: name.replace(/[^a-z0-9]/gi, '-').toLowerCase(),
+    baseSlug: name.replace(/[^a-z0-9]/gi, '-').toLowerCase(),
     name,
     title: name,
     description: 'd',

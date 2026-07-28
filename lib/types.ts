@@ -99,6 +99,13 @@ export type IndexedServer = {
   /** Public admission rationale. Present only when source === 'admitted'. */
   admittedReason?: string;
   slug: string;
+  /** Pre-disambiguation slug: what `slugify(name)` produced before any hashing.
+   *
+   * Carried explicitly because it can no longer be recomputed from `name`. `mergeAdmitted`
+   * PRE-hashes a colliding admitted row, so for that row `slugify(name) !== slug` AND the
+   * group it belongs to is keyed on neither. Recomputing was the bug: a chooser that groups
+   * by `slugify(name)` silently misses those rows. */
+  baseSlug: string;
   name: string;
   title: string;
   description: string;
