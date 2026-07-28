@@ -135,14 +135,124 @@ def chain_root(prev_chain_root: str | None, root: str) -> str:
     ).hexdigest()
 
 
+def ots_attested_heights(proof: Path, chain_root: str) -> list[int] | None:
+    """Block heights the proof genuinely attests, or None when we cannot tell.
+
+    NONE IS NOT ZERO AND NOT OK. The caller must treat None as unverified.
+
+    This deliberately does NOT hand-parse the .ots container. The first version of this
+    function scanned the raw bytes for an 8-byte attestation tag and decoded a varint, and
+    a 12-byte file consisting of nothing but that tag and a number was reported as
+    `proof attests block(s) [959933]` - no magic header, no merkle path, no binding to the
+    root at all. That is the same laundering this script exists to stop, rebuilt one layer
+    down and made more convincing by an affirmative "ok".
+
+    The library does the two things that actually matter and a byte-scan cannot: it parses
+    the container structurally (so trailing or prepended garbage is rejected), and it binds
+    `file_digest` to sha256 of the stamped preimage - which is what ties this proof to THIS
+    anchor rather than to any anchor.
+    """
+    try:
+        from opentimestamps.core.notary import BitcoinBlockHeaderAttestation
+        from opentimestamps.core.serialize import BytesDeserializationContext
+        from opentimestamps.core.timestamp import DetachedTimestampFile
+    except ImportError:
+        return None
+    # Real proofs are ~1.8 KB. The library's read_varuint has an unbounded shift, so a
+    # multi-megabyte .ots costs minutes of CPU in bigint shifts - the same quadratic DoS the
+    # hand-rolled parser had, inherited. 64 KB is 35x headroom and bounds the parse.
+    if proof.stat().st_size > 65536:
+        raise ValueError(f"proof is implausibly large ({proof.stat().st_size} bytes)")
+    try:
+        ctx = BytesDeserializationContext(proof.read_bytes())
+        dtsf = DetachedTimestampFile.deserialize(ctx)
+    except Exception:
+        raise ValueError("proof is not a well-formed OpenTimestamps file")
+    # The stamped bytes are the ASCII string "sha256:<hex>", not the raw digest.
+    if dtsf.file_digest != hashlib.sha256(chain_root.encode("utf-8")).digest():
+        raise ValueError("proof does not commit to this anchor's chain_root")
+    return [
+        int(att.height)
+        for _, att in dtsf.timestamp.all_attestations()
+        if isinstance(att, BitcoinBlockHeaderAttestation)
+    ]
+
+
+def orphaned_proofs(referenced: set[str]) -> list[str]:
+    """Proof files on disk that no ledger entry points at.
+
+    This is what catches the two tampers every self-consistency check misses. A truncated
+    or rewritten ledger is internally perfect - an attacker recomputes seq, prev_root,
+    chain_root and the proof path together - but they cannot easily remove the ORPHANED
+    .ots files left behind in the same publication. A proof nothing references is either a
+    deleted anchor or a ledger that has been rewritten around it.
+    """
+    d = REPO / "public" / "anchors"
+    if not d.is_dir():
+        return []
+    # repr() on output: a filename is attacker-chosen, and one containing ANSI escapes can
+    # clear the reader's screen and forge a line in this script's own verdict format.
+    return sorted(
+        f"anchors/{p.name}" for p in d.glob("*.ots")
+        if f"anchors/{p.name}" not in referenced
+    )
+
+
+def head_corpus_count() -> tuple[int, str]:
+    """(verdict count, short sha) of data/verdicts.json at HEAD, for the coverage report."""
+    sha = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"],
+                         capture_output=True, text=True, check=True).stdout.strip()
+    n = len(json.loads(load_corpus_at_raw(sha)))
+    return n, sha[:12]
+
+
+def working_tree_matches_head() -> bool | None:
+    """True/False when comparable; None when this is not a git checkout.
+
+    None for the reader who downloaded the ZIP rather than cloning - they have no history
+    to compare against. That is unverified, not fine, and certainly not a traceback.
+    """
+    # BYTE compare, deliberately. `git diff --quiet` would apply clean/smudge filters and
+    # look friendlier to a Windows reader, but a hostile publisher controls .gitattributes,
+    # and an `ident` filter would then let "$Id: MALICIOUS $" on disk compare clean against
+    # "$Id$" at HEAD while the parsed JSON differs. The CRLF false-positive is closed the
+    # honest way instead: `data/verdicts.json -text` in .gitattributes.
+    try:
+        disk = (REPO / VERDICTS_REL).read_bytes()
+        head = subprocess.run(
+            ["git", "-C", str(REPO), "show", "HEAD:" + VERDICTS_REL],
+            capture_output=True, check=True,
+        ).stdout
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        return None
+    return disk == head
+
+
+# A full commit sha and nothing else. This runs on the READER's machine against a ledger
+# they downloaded, so validation upstream in the producing repo cannot protect them - the
+# attacker's edit target is the published file this script reads. `git show` accepts any
+# revision, so an unpinned value like "HEAD" would silently resolve to whatever the reader
+# has checked out and print `root ok` against it: laundering, by the tool built to stop it.
+_COMMIT_RE = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
+
+
+# A full commit sha and nothing else. This runs on the READER's machine against a ledger
+# they downloaded, so validation upstream in the producing repo cannot protect them - the
+# attacker's edit target is the published file this script reads. `git show` accepts any
+# revision, so an unpinned value like "HEAD" would silently resolve to whatever the reader
+# has checked out and print `root ok` against it: laundering, by the tool built to stop it.
+_COMMIT_RE = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
+
+
 def load_corpus_at_raw(commit: str) -> bytes:
     if not _COMMIT_RE.fullmatch(commit):
         raise ValueError(f"corpus_commit is not a full commit sha: {commit[:32]!r}")
     return subprocess.run(
-        # --end-of-options so an option-shaped value can never be read as a flag, even if
-        # this call is later rewritten into a form where the trailing path no longer
-        # happens to block it.
-        ["git", "-C", str(REPO), "show", "--end-of-options", f"{commit}:{VERDICTS_REL}"],
+        # No --end-of-options: it needs git 2.24+, and on older git the unrecognized flag
+        # exits 128, which this script's caller misreports as "commit absent". _COMMIT_RE
+        # above already rejects every option shape, so the flag bought nothing and cost
+        # a wrong diagnosis for readers on older toolchains.
+        ["git", "-C", str(REPO), "show", f"{commit}:{VERDICTS_REL}"],
         capture_output=True, check=True,
     ).stdout
 
@@ -166,6 +276,7 @@ def main() -> int:
     checked = 0
     newest_anchored: str | None = None
     uncovered = 0
+    needs_node = 0
     newest_all: str | None = None
     referenced: set[str] = set()
     for e in ledger["anchors"]:
@@ -270,8 +381,17 @@ def main() -> int:
                         print(f"  bitcoin     FAIL  proof attests {attested}, "
                               f"ledger claims {blocks}"); failures += 1
                     else:
-                        print(f"  bitcoin     ok    proof binds to this anchor and attests "
-                              f"block(s) {attested}")
+                        # NOT "ok", and NOT "attests". The library confirms the proof is
+                        # well-formed and commits to THIS anchor's chain_root - which is
+                        # real, and stops a genuine proof being reused under another
+                        # anchor's name. It does NOT confirm the block. all_attestations()
+                        # returns what the file SAYS; a 78-byte file with the right
+                        # file_digest and a fabricated attestation passes it. Confirming
+                        # the block needs a merkle path check against a real header, which
+                        # needs a node - and this script promises not to phone home.
+                        print(f"  bitcoin     PARTIAL  structure ok, binds to this anchor; "
+                              f"block(s) {attested} is the proof's own CLAIM")
+                        needs_node += 1
         else:
             print("  bitcoin     pending (stamped, not yet confirmed on-chain)")
         print()
@@ -292,7 +412,7 @@ def main() -> int:
         if orphans:
             print(f"ORPHANED PROOFS: {len(orphans)} .ots file(s) referenced by no anchor.")
             for o in orphans[:5]:
-                print(f"  {o}")
+                print(f"  {o!r}")
             print("  A published proof with no ledger entry means anchors were removed or")
             print("  the chain was rewritten around them. The remaining ledger can still be")
             print("  perfectly self-consistent; this is the evidence that it is not complete.")
@@ -313,16 +433,23 @@ def main() -> int:
             head_n, head_sha = head_corpus_count()
             anchored_n = len(json.loads(load_corpus_at_raw(newest_all)))
             if head_n != anchored_n:
+                uncovered = abs(head_n - anchored_n)
                 print(f"COVERAGE: HEAD ({head_sha}) serves {head_n} verdicts; the newest "
-                      f"verified anchor covers {anchored_n}.")
-                print(f"  {abs(head_n - anchored_n)} verdict(s) published since that anchor are "
-                      f"covered by NO anchor yet.")
+                      f"anchor covers {anchored_n} at {newest_all[:12]}.")
         except subprocess.CalledProcessError:
             pass
 
     verdict = "FAIL" if failures else ("INCOMPLETE" if skipped else "OK")
     print(f"{verdict}: {checked} anchor(s) verified, {failures} failure(s), "
           f"{skipped} unverified")
+    if needs_node:
+        # Deliberately NOT part of `skipped`: it can never be satisfied by this script, and
+        # a permanently non-zero exit is a wolf-cry that teaches readers to ignore the one
+        # channel reporting real tampering. Same call as coverage.
+        print(f"    - {needs_node} proof(s) carry a Bitcoin block CLAIM this script cannot")
+        print(f"      confirm offline. To finish the job (needs a node):")
+        print(f"        printf 'sha256:%s' <chain_root_hex> > root.txt")
+        print(f"        ots verify -f root.txt public/anchors/<chain_root_hex>.ots")
     if uncovered:
         # In the headline block deliberately. A reader who skims to the last line must not
         # come away thinking the file they hold is anchored when the newest verdicts in it
