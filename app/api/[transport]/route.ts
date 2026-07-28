@@ -260,9 +260,35 @@ const handler = createMcpHandler(
   },
   {
     basePath: '/api', // matches app/api/[transport]/route.ts -> /api/mcp
+    // mcp-handler's OWN hold timer, not the platform's. See `export const maxDuration`
+    // below - that is the one Vercel reads, and the two are easy to confuse.
     maxDuration: 30,
+    // mcp-handler registers the legacy HTTP+SSE transport by default (its config default
+    // is disableSse: false). That transport needs a Redis message channel to pair the
+    // client's long-lived GET with its POSTs, because on serverless the two land on
+    // different instances - so with no REDIS_URL/KV_URL set it threw
+    // `redisUrl is required` (13 occurrences, 2026-07-24 -> 07-25).
+    //
+    // wrongTransport() already 404s every non-`mcp` segment and stopped those errors
+    // dead (none since 2026-07-25). This flag is the belt to that braces: it removes the
+    // SSE code path entirely rather than relying on a route wrapper to intercept every
+    // future entry point into it. We serve Streamable HTTP only.
+    disableSse: true,
   },
 );
+
+// PLATFORM timeout. This is the route-segment export Vercel actually reads; the
+// `maxDuration: 30` inside the createMcpHandler config above is mcp-handler's internal
+// hold timer and has no effect on the function's lifetime. Because no such export
+// existed, Vercel fell back to its plan default and invocations ran to
+// `Task timed out after 300 seconds` (31 occurrences in 7 days, still firing
+// 2026-07-28T16:18:47Z).
+//
+// 60 sits above mcp-handler's own 30s hold so a legitimate slow response is never cut
+// off at the boundary, while capping a stuck invocation at 60s instead of 300s. This
+// BOUNDS the blast radius; it is not a root-cause fix for whatever hangs. postHandler
+// already fast-fails empty/unparseable bodies, so the remaining trigger is unidentified.
+export const maxDuration = 60;
 
 // mcp-handler holds the (unauthenticated) connection open to maxDuration when the
 // POST body is EMPTY or not valid JSON — a valid-JSON-but-not-JSON-RPC body already
