@@ -122,6 +122,58 @@ def load_corpus_at(commit: str | None) -> dict:
     return json.loads(out)
 
 
+def ots_attested_heights(proof: Path) -> list[int]:
+    """Block heights a .ots proof actually asserts, read straight from the file.
+
+    Parses the OpenTimestamps op-tape rather than shelling to `ots`, so this stays
+    dependency-free. We are not validating the merkle path here - that needs a Bitcoin node -
+    only reading which heights the file CLAIMS, so the ledger cannot claim a different one.
+    A ledger asserting block 959980 over a proof that says 959893 is a forgery this catches.
+    """
+    b = proof.read_bytes()
+    # BitcoinBlockHeaderAttestation tag, per the OTS spec.
+    TAG = bytes([0x05, 0x88, 0x96, 0x0d, 0x73, 0xd7, 0x19, 0x01])
+    out: list[int] = []
+    i = 0
+    while (i := b.find(TAG, i)) != -1:
+        j = i + len(TAG)
+        if j >= len(b):
+            break
+        j += 1  # length-prefixed payload; skip the length byte
+        # varint height
+        height, shift = 0, 0
+        while j < len(b):
+            c = b[j]; j += 1
+            height |= (c & 0x7F) << shift
+            if not c & 0x80:
+                break
+            shift += 7
+        out.append(height)
+        i = j
+    return out
+
+
+def head_corpus_count() -> tuple[int, str]:
+    """(verdict count, short sha) of data/verdicts.json at HEAD, for the coverage report."""
+    sha = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"],
+                         capture_output=True, text=True, check=True).stdout.strip()
+    n = len(json.loads(load_corpus_at_raw(sha)))
+    return n, sha[:12]
+
+
+def working_tree_matches_head() -> bool:
+    """True when data/verdicts.json on disk is byte-identical to HEAD's."""
+    disk = (REPO / VERDICTS_REL).read_bytes()
+    return disk == load_corpus_at_raw("HEAD")
+
+
+def load_corpus_at_raw(commit: str) -> bytes:
+    return subprocess.run(
+        ["git", "-C", str(REPO), "show", f"{commit}:{VERDICTS_REL}"],
+        capture_output=True, check=True,
+    ).stdout
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -134,45 +186,89 @@ def main() -> int:
         return 2
 
     prev_chain = None
+    prev_root: str | None = None
+    prev_seq = 0
     failures = 0
+    skipped = 0
     checked = 0
+    newest_anchored: str | None = None
     for e in ledger["anchors"]:
         want_chain = chain_root(prev_chain, e["root"])
         chain_ok = want_chain == e["chain_root"]
-        prev_chain = e["chain_root"]
-        if args.seq and e["seq"] != args.seq:
+        # Structural checks the producer enforces and the first version of this script
+        # dropped. Each one alone lets a forgery through: a renumbered seq, a prev_root
+        # pointing at nothing, or a proof path repointed at another anchor's file.
+        seq_ok = e["seq"] == prev_seq + 1
+        prev_ok = e.get("prev_root") == prev_root
+        hexed = e["chain_root"].replace("sha256:", "")
+        proof_ok = e["proof"] == f"anchors/{hexed}.ots"
+        prev_chain, prev_root, prev_seq = e["chain_root"], e["root"], e["seq"]
+        if args.seq is not None and e["seq"] != args.seq:
             continue
         checked += 1
         commit = e.get("corpus_commit")
 
-        print(f"anchor #{e['seq']}  ({e['verdict_count']} verdicts, stamped {e['stamped_at'][:19]}Z)")
-        if not chain_ok:
-            print(f"  chain_root  FAIL  expected {want_chain}"); failures += 1
-        else:
-            print(f"  chain_root  ok    {e['chain_root']}")
+        print(f"anchor #{e['seq']}  (stamped {e['stamped_at'][:19]}Z)")
+        for label, ok, detail in (
+            ("chain_root", chain_ok, f"expected {want_chain}"),
+            ("seq", seq_ok, f"expected {prev_seq}"),
+            ("prev_root", prev_ok, "does not point at the preceding anchor"),
+            ("proof path", proof_ok, f"expected anchors/{hexed}.ots"),
+        ):
+            if ok:
+                print(f"  {label:<11} ok")
+            else:
+                print(f"  {label:<11} FAIL  {detail}"); failures += 1
 
         if not commit:
-            print("  corpus      SKIP  entry predates corpus_commit; cannot pin the snapshot")
+            # NOT a pass. The field's absence is indistinguishable from an attacker
+            # deleting it, and the previous version printed a reassuring "predates the
+            # field" note and counted it as success.
+            print("  corpus      UNVERIFIED  no corpus_commit; the snapshot cannot be pinned")
+            skipped += 1
         else:
             try:
-                got = corpus_root(load_corpus_at(commit))
+                raw = load_corpus_at_raw(commit)
             except subprocess.CalledProcessError:
-                print(f"  corpus      SKIP  commit {commit[:12]} not in this clone "
-                      f"(try: git fetch --unshallow)")
+                print(f"  corpus      UNVERIFIED  commit {commit[:12]} absent "
+                      f"(shallow clone? try: git fetch --unshallow)")
+                skipped += 1
             else:
+                verdicts = json.loads(raw)
+                got = corpus_root(verdicts)
                 if got == e["root"]:
                     print(f"  root        ok    {got}  @ {commit[:12]}")
+                    newest_anchored = commit
                 else:
                     print(f"  root        FAIL  got {got}\n                    want {e['root']}")
                     failures += 1
+                # verdict_count is rendered on /trust as fact; assert it rather than echo it.
+                if len(verdicts) != e["verdict_count"]:
+                    print(f"  count       FAIL  ledger says {e['verdict_count']}, "
+                          f"corpus has {len(verdicts)}")
+                    failures += 1
+                else:
+                    print(f"  count       ok    {e['verdict_count']} verdicts")
 
         blocks = (e.get("bitcoin") or {}).get("block_heights") or []
-        hexed = e["chain_root"].replace("sha256:", "")
+        proof_path = REPO / "public" / e["proof"]
         if blocks:
-            print(f"  bitcoin     claims block(s) {blocks} - confirm it yourself:")
-            print(f"                ots info public/anchors/{hexed}.ots        # offline, no node")
-            print(f"                printf 'sha256:%s' {hexed} > root.txt")
-            print(f"                ots verify -f root.txt public/anchors/{hexed}.ots   # needs a Bitcoin node")
+            if not proof_path.is_file():
+                print(f"  bitcoin     FAIL  ledger claims block(s) {blocks} but "
+                      f"public/{e['proof']} is missing"); failures += 1
+            else:
+                attested = ots_attested_heights(proof_path)
+                if not attested:
+                    print(f"  bitcoin     FAIL  proof carries no Bitcoin attestation, "
+                          f"ledger claims {blocks}"); failures += 1
+                elif sorted(attested) != sorted(blocks):
+                    print(f"  bitcoin     FAIL  proof attests {attested}, "
+                          f"ledger claims {blocks}"); failures += 1
+                else:
+                    print(f"  bitcoin     ok    proof attests block(s) {attested}")
+                    print(f"                confirm the merkle path yourself:")
+                    print(f"                  printf 'sha256:%s' {hexed} > root.txt")
+                    print(f"                  ots verify -f root.txt public/{e['proof']}")
         else:
             print("  bitcoin     pending (stamped, not yet confirmed on-chain)")
         print()
@@ -180,8 +276,34 @@ def main() -> int:
     if not checked:
         print("no matching anchor", file=sys.stderr)
         return 2
-    print(f"{checked} anchor(s) checked, {failures} failure(s)")
-    return 1 if failures else 0
+
+    # THE ANCHORED CORPUS IS NOT THE ONE YOU ARE READING. The previous version verified a
+    # blob out of git history and said nothing about the file in front of you - so a forged
+    # working tree produced "0 failure(s)" and a reader concluded the file they had was
+    # anchored. Report the gap explicitly, and fail on a dirty tree.
+    dirty = not working_tree_matches_head()
+    if dirty:
+        print("WORKING TREE DIFFERS FROM HEAD: data/verdicts.json has local modifications.")
+        print("  Nothing here vouches for those bytes. Re-check out the file before trusting this run.")
+        failures += 1
+    if newest_anchored:
+        try:
+            head_n, head_sha = head_corpus_count()
+            anchored_n = len(json.loads(load_corpus_at_raw(newest_anchored)))
+            if head_n != anchored_n:
+                print(f"COVERAGE: HEAD ({head_sha}) serves {head_n} verdicts; the newest "
+                      f"verified anchor covers {anchored_n}.")
+                print(f"  {abs(head_n - anchored_n)} verdict(s) published since that anchor are "
+                      f"covered by NO anchor yet.")
+        except subprocess.CalledProcessError:
+            pass
+
+    verdict = "FAIL" if failures else ("INCOMPLETE" if skipped else "OK")
+    print(f"{verdict}: {checked} anchor(s) checked, {failures} failure(s), "
+          f"{skipped} unverified")
+    if skipped and not failures:
+        print("  UNVERIFIED entries proved nothing. Do not read this as a pass.")
+    return 1 if (failures or skipped) else 0
 
 
 if __name__ == "__main__":
