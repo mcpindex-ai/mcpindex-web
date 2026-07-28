@@ -108,10 +108,34 @@ for (const e of entries) {
     const file = route === '/' ? 'app/page.tsx' : `app${route}/page.tsx`;
     if (!exists(file)) {
       errors.push(`diagram "${e.id}" claims placement ${route}, but ${file} does not exist.`);
-    } else if (!read(file).includes(e.id)) {
-      errors.push(
-        `diagram "${e.id}" claims placement ${route}, but ${file} no longer references it - the page was rewritten and the figure was orphaned.`,
-      );
+    } else {
+      const src = read(file);
+      if (!src.includes(e.id)) {
+        errors.push(
+          `diagram "${e.id}" claims placement ${route}, but ${file} no longer references it - the page was rewritten and the figure was orphaned.`,
+        );
+        continue;
+      }
+      // A reference is not a rendering. /ledger shipped with its figure inside the
+      // empty-ledger early return: production always has a ledger, so the branch never ran and
+      // the figure never appeared - while this guard passed, because the id was in the file.
+      // If a page has several return paths, the figure must appear in the LAST one (the main
+      // render); appearing only in an earlier branch is the defect, not a placement.
+      // Scope to the PAGE component only. A first cut counted every `return (` in the file and
+      // false-positived on /docs, /trust and /methodology, whose helper components (Section,
+      // Edge, Dim) each return below the default export.
+      const dStart = src.search(/^export default (?:async )?function/m);
+      if (dStart !== -1) {
+        const after = src.slice(dStart + 1);
+        const nextTop = after.search(/^(?:function|const|class|export) /m);
+        const body = nextTop === -1 ? after : after.slice(0, nextTop);
+        const returns = [...body.matchAll(/^\s*return \(/gm)].map((m) => m.index);
+        if (returns.length > 1 && body.indexOf(e.id, returns[returns.length - 1]) === -1) {
+          errors.push(
+            `diagram "${e.id}" appears in ${file} only BEFORE its final return - it is inside an early-return branch (an empty/error state), so the main render never shows it. Place it in the primary path.`,
+          );
+        }
+      }
     }
   }
 }
