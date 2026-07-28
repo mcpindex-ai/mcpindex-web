@@ -1,7 +1,7 @@
 import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { getServer, loadServers, loadSnapshotMeta } from '@/lib/registry';
+import { getCollidingBase, getServer, loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { computeQuality, rankByQuality } from '@/lib/quality';
 import { buildInstalls } from '@/lib/installs';
 import { getSourceLiveness, livenessSentence } from '@/lib/sourceLiveness';
@@ -25,6 +25,7 @@ import { ServerVerdictCta } from '@/components/ServerVerdictCta';
 import { jsonLdSafe } from '@/lib/jsonLd';
 import { buildServerJsonLd, isEndpointShaped, isSafeHref } from '@/lib/serverJsonLd';
 import { isGoneSlug, resolveServerRedirect } from '@/lib/serverRemovals';
+import type { IndexedServer } from '@/lib/types';
 
 // Trust verdict shape (public projection of the v1.0.0 verdict contract).
 // Full back-history is not surfaced on this public page; the current verdict is what
@@ -80,6 +81,19 @@ export async function generateMetadata(
     if (isGoneSlug(slug)) {
       return { title: 'Gone', robots: { index: false, follow: false } };
     }
+    // A retired colliding base answers 200 with a chooser, so it must NOT be described
+    // as "not found" - but it must stay out of the index, or it would compete in the SERP
+    // with the very pages it exists to route people to. follow:true so the link equity the
+    // bare slug already carries flows through to both real listings.
+    const colliding = await getCollidingBase(slug);
+    if (colliding) {
+      return {
+        title: `${colliding.length} servers share this URL`,
+        description:
+          `${colliding.length} registry names shorten to "${slug}". Pick the one you meant.`,
+        robots: { index: false, follow: true },
+      };
+    }
     return { title: 'Server not found', robots: { index: false, follow: false } };
   }
   const deprecated = server.status === 'deprecated';
@@ -132,6 +146,12 @@ export default async function ServerPage(
   const { slug } = await ctx.params;
   const server = await getServer(slug);
   if (!server) {
+    // A retired COLLIDING base is not a dead URL and must not be redirected. Two names
+    // slugify to it, so picking one would hand a reader the other subject's verdict -
+    // the misattribution disambiguateSlugs exists to prevent. Name both instead.
+    const colliding = await getCollidingBase(slug);
+    if (colliding) return <CollidingSlugPage slug={slug} members={colliding} />;
+
     const active = new Set((await loadServers()).map((s) => s.slug));
     const dest = resolveServerRedirect(slug, active);
     if (dest) permanentRedirect(`/server/${dest}`);
@@ -894,5 +914,64 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
         (calibrated=false at v1). Full verdict history is not shown on this page.
       </p>
     </div>
+  );
+}
+
+/**
+ * The page a RETIRED colliding base slug resolves to.
+ *
+ * `disambiguateSlugs` hashes every member of a colliding set rather than letting one win,
+ * so the bare slug stops resolving the moment a second name collapses onto it - and it may
+ * have been live and indexed until then. In production all five colliding bases were 404ing.
+ *
+ * This answers 200 and names the candidates instead of guessing. A 308 would require
+ * choosing a subject, and handing a reader the wrong server's verdict is the precise
+ * failure disambiguation was built to avoid. noindex keeps it out of the SERP so it never
+ * competes with the real pages; the link itself stays alive for anyone already holding it.
+ */
+function CollidingSlugPage(
+  { slug, members }: { slug: string; members: IndexedServer[] },
+) {
+  const sorted = [...members].sort((a, b) => a.name.localeCompare(b.name));
+  return (
+    <article className="site-container pt-16 pb-24">
+      <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
+        Ambiguous listing
+      </div>
+      <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
+        {sorted.length} servers share this URL.
+      </h1>
+      <p className="mt-5 max-w-[62ch] text-[15px] leading-[1.6] text-[var(--color-cite)]">
+        <code className="font-mono text-[13px]">{slug}</code> is what {sorted.length} different
+        registry names shorten to. Rather than pick one and hand you the other&rsquo;s verdict,
+        this page asks. The names differ only in ways a URL cannot carry - capitalisation, or{' '}
+        <code className="font-mono text-[13px]">_</code> versus{' '}
+        <code className="font-mono text-[13px]">-</code> - so read them closely before choosing.
+      </p>
+      <ul className="mt-8 flex flex-col gap-3">
+        {sorted.map((s) => (
+          <li key={s.slug}>
+            <Link
+              href={`/server/${s.slug}`}
+              className="block rounded border border-[var(--color-rule)] p-4 hover:border-[var(--color-accent-strong)]"
+            >
+              <div className="font-mono text-[13px] text-[var(--color-ink)]">{s.name}</div>
+              <div className="mt-1 text-[13px] leading-[1.5] text-[var(--color-cite)]">
+                {s.description}
+              </div>
+              <div className="mt-2 font-mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
+                v{s.version} · {s.status} · updated {s.updatedAt.slice(0, 10)}
+              </div>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-8 max-w-[62ch] text-[13px] leading-[1.55] text-[var(--color-mute)]">
+        These are separate registry entries with their own versions, packages and verdicts,
+        even when one is a republication of the other. mcpindex does not merge them, because
+        deciding they are the same project would be an inference about the publisher rather
+        than something the registry states.
+      </p>
+    </article>
   );
 }

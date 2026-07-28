@@ -141,3 +141,46 @@ test('findDeprecatedServer ignores active-only entries', () => {
     null,
   );
 });
+
+// --- retired colliding bases -------------------------------------------------------
+// The bare slug stops resolving the moment a second name collapses onto it, and it may
+// have been live and indexed until then. On the 2026-07-28 corpus this was 5 bases over
+// 10 servers, all 404ing in production. These pin the rule that the fix must NOT become
+// a redirect: two subjects claim the slug, and picking one hands a reader the other's
+// verdict - the exact misattribution disambiguateSlugs was written to prevent.
+
+test('a colliding base is recoverable from the disambiguated set', () => {
+  const twins = ['io.github.SceneView/mcp', 'io.github.sceneview/mcp'];
+  const out = disambiguateSlugs(twins.map(stub));
+  const base = slugify(twins[0]);
+  // The base addresses nobody...
+  assert.equal(out.some((s) => s.slug === base), false, 'bare base must not survive');
+  // ...but every member still maps back to it via its unchanged name, which is what
+  // getCollidingBase relies on to find the candidates.
+  const members = out.filter((s) => slugify(s.name) === base);
+  assert.equal(members.length, 2);
+  assert.deepEqual(members.map((s) => s.name).sort(), [...twins].sort());
+});
+
+test('a singleton base still addresses its server, so it is never a colliding base', () => {
+  const out = disambiguateSlugs([stub('io.github.example/only')]);
+  const base = slugify('io.github.example/only');
+  assert.equal(out[0].slug, base, 'a non-colliding slug must not be hashed');
+  // getCollidingBase returns null whenever the slug resolves; this is that precondition.
+  assert.ok(out.some((s) => s.slug === base));
+});
+
+test('members of a colliding set keep DISTINCT slugs (a chooser needs two destinations)', () => {
+  const twins = ['io.github.Zuga-luga/Zugabot', 'io.github.Zuga-luga/zugabot'];
+  const out = disambiguateSlugs(twins.map(stub));
+  assert.notEqual(out[0].slug, out[1].slug);
+  assert.equal(new Set(out.map((s) => s.slug)).size, 2);
+  for (const s of out) assert.equal(s.slug, expectedDisambiguated(s.name));
+});
+
+test('three-way collisions disambiguate too (the chooser is not two-only)', () => {
+  const names = ['a.b/Thing', 'a.b/thing', 'a.b/THING'];
+  const out = disambiguateSlugs(names.map(stub));
+  assert.equal(new Set(out.map((s) => s.slug)).size, 3);
+  assert.equal(out.filter((s) => slugify(s.name) === slugify(names[0])).length, 3);
+});

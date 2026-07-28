@@ -9,6 +9,7 @@
 import type { IndexedServer } from './types';
 import { search, type SearchHit } from './search';
 import { computeQuality } from './quality';
+import { buildProvenance, RANKING_BASIS, type Provenance } from './provenance';
 
 export type RankedServer = { hit: SearchHit; quality: number; composite: number };
 
@@ -60,6 +61,27 @@ export function buildReasoning(hit: SearchHit): string {
     return `Matches "${hit.matchedTerms[0]}" in ${cat}-category server.`;
   }
   return `Closest fit in ${cat} category by description overlap.`;
+}
+
+/**
+ * Provenance for a recommendation payload.
+ *
+ * Lives beside the ranker, not in the routes, because the sentence it carries describes
+ * THIS scoring function - "relevance-dominant keyword match, quality as a tiebreak, not a
+ * safety verdict" - and a copy in each route would drift from the composite the moment
+ * anyone retuned it. /api/v1/recommend, the preflight BFF and the MCP transport all read
+ * the same statement.
+ *
+ * The gap this closes: an agent received `qualityScore: 84` with no basis at all. Quality
+ * Score measures documentation and packaging completeness. Nothing in the payload said so,
+ * and an agent choosing a server to execute is exactly the reader who would assume
+ * otherwise.
+ */
+export function recommendationProvenance(): Provenance {
+  return buildProvenance({
+    basis: RANKING_BASIS,
+    limits: ['quality_score_measures_packaging_not_safety', 'ranking_is_not_a_verdict'],
+  });
 }
 
 export function toRecommendations(ranked: RankedServer[]): Recommendation[] {
