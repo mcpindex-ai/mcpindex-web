@@ -15,6 +15,17 @@ export const revalidate = 86400;
 // until the next registry refresh.
 let baseCache: { version: string; entries: MetadataRoute.Sitemap } | null = null;
 
+// The five queries tracked in tasks/growth/aeo-*.md map to these pages. Keep this set in
+// step with that scorecard: a guide that is measured should be declared and recrawled
+// like it matters.
+const CORNERSTONE_GUIDES = new Set([
+  'mcp-silent-contract-drift',
+  'mcp-tool-trust-vs-authentication',
+  'is-it-safe-to-let-an-ai-agent-call-an-mcp-tool',
+  'how-to-trust-an-mcp-server',
+  'audit-your-mcp-json-what-your-agent-can-do',
+]);
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = 'https://mcpindex.ai';
   const meta = await loadSnapshotMeta();
@@ -110,8 +121,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         { url: `${base}/guides`, priority: 0.6, changeFrequency: 'weekly' },
         ...guides.map((g) => ({
           url: `${base}/guides/${g.slug}`,
-          priority: 0.5,
-          changeFrequency: 'monthly' as const,
+          // Cornerstone guides are the ones on the AEO scorecard: they are the pages we
+          // actually measure and defend. Leaving every guide at a flat 0.5/monthly meant
+          // the page carrying our only organic #1 was declared no more important, and
+          // recrawled no more often, than any other. It was absent from the top 10 by
+          // 2026-07-28. Everything else stays 0.5.
+          priority: CORNERSTONE_GUIDES.has(g.slug) ? 0.8 : 0.5,
+          changeFrequency: CORNERSTONE_GUIDES.has(g.slug)
+            ? ('weekly' as const)
+            : ('monthly' as const),
           ...(g.updated ? { lastModified: new Date(g.updated) } : {}),
         })),
       ]
