@@ -25,6 +25,30 @@ const SNAPSHOT_PATH = path.join(process.cwd(), 'data', 'snapshot.json');
 // Lossy: case, `_`, and `/`/`.` separators can collapse distinct names onto one
 // base slug. Callers that index by slug MUST run disambiguateSlugs() (or
 // loadServers) so colliding subjects never share a public identity.
+/**
+ * Join a disambiguation hash onto a slug with a DOUBLE hyphen.
+ *
+ * `--` is not cosmetic, it is what makes the slug space injective. `slugify` ends with
+ * `.replace(/-+/g, '-')`, so a slug derived from a name can never contain `--` (verified:
+ * 0 of 18,732 on the live corpus). A synthesized slug therefore can never equal a bare one.
+ *
+ * With a SINGLE hyphen it could, and that was a live defect: the hash is `sha256` of a
+ * PUBLIC server name, so an attacker precomputes `{base}-{hash}` and registers a name that
+ * slugifies to exactly it. Both names then claim one slug, `loadServers`' final `seenSlug`
+ * pass silently drops one, and the trust store — which keys by name — writes the attacker's
+ * verdict at the slug the site serves for the victim. A wrong-subject verdict is the one
+ * failure this product cannot have.
+ *
+ * Two synthesized slugs `X--h` are equal only when `X` and `h` both match, and `h` is a
+ * function of the name, so only for the same name. Injective by construction: no runtime
+ * uniqueness check, and no need to ever apply a second suffix.
+ *
+ * mcpindex-trust `corpus_eval/tooling/slug_identity.py` `_suffixed` must match byte for byte.
+ */
+export function withDisambiguator(prefix: string, name: string): string {
+  return `${prefix}--${createHash('sha256').update(name).digest('hex').slice(0, 12)}`;
+}
+
 export function slugify(name: string): string {
   const slug = name
     .toLowerCase()
@@ -37,7 +61,9 @@ export function slugify(name: string): string {
   if (slug) return slug;
   // Names that contain only non-slug characters would collapse to ''.
   // Fall back to a deterministic hash so the index never carries an empty slug.
-  return 'srv-' + createHash('sha256').update(name).digest('hex').slice(0, 12);
+  // `srv--` for the same reason: a name that literally slugifies to `srv-<12 hex>` would
+  // otherwise collide with the fallback for a name that slugifies to nothing.
+  return withDisambiguator('srv', name);
 }
 
 // When slugify() maps two distinct names to the same base, append a short hash of
@@ -57,8 +83,7 @@ export function disambiguateSlugs(servers: IndexedServer[]): IndexedServer[] {
       continue;
     }
     for (const s of group) {
-      const hash = createHash('sha256').update(s.name).digest('hex').slice(0, 12);
-      out.push({ ...s, slug: `${base}-${hash}` });
+      out.push({ ...s, slug: withDisambiguator(base, s.name) });
     }
   }
   return out;
@@ -98,7 +123,12 @@ function normalizeServer(
     slug: slugify(s.name),
     name: s.name,
     title: s.title || s.name,
-    description: s.description ?? '',
+    // TRIMMED. mcpindex-trust's `active_registry_names` does `(description or "").strip()`
+    // and drops a whitespace-only row; this side tested truthiness, so '  ' was a
+    // description here and not there. That difference changes who is in a collision group,
+    // which changes the surviving row's slug on one side only - and the purge then reads
+    // the slug this site serves as owned by nobody and deletes its verdict.
+    description: (s.description ?? '').trim(),
     version: s.version,
     category: categorize(s.name, s.description ?? ''),
     publishedAt: meta.publishedAt,
@@ -206,7 +236,7 @@ export function mergeAdmitted(
         return [];
       }
       if (!registryBaseSlugs.has(s.slug)) return [s];
-      const slug = `${s.slug}-${createHash('sha256').update(s.name).digest('hex').slice(0, 12)}`;
+      const slug = withDisambiguator(s.slug, s.name);
       console.warn('[admitted] slug collides with a registry listing, disambiguated', {
         name: s.name,
         from: s.slug,
@@ -402,8 +432,7 @@ export function findDeprecatedServer(
       continue;
     }
     for (const s of group) {
-      const hash = createHash('sha256').update(s.name).digest('hex').slice(0, 12);
-      resolved.push({ ...s, slug: `${base}-${hash}` });
+      resolved.push({ ...s, slug: withDisambiguator(base, s.name) });
     }
   }
   return resolved.find((s) => s.slug === slug) ?? null;

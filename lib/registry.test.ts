@@ -27,7 +27,10 @@ function stub(name: string): IndexedServer {
 function expectedDisambiguated(name: string): string {
   const base = slugify(name);
   const hash = createHash('sha256').update(name).digest('hex').slice(0, 12);
-  return `${base}-${hash}`;
+  // DOUBLE hyphen. Computed here independently of withDisambiguator so this stays a real
+  // pin: slugify collapses `-+` to `-`, so no name-derived slug can contain `--`, which is
+  // what makes a synthesized slug unable to collide with a bare one.
+  return `${base}--${hash}`;
 }
 
 test('slugify is stable for a non-colliding registry name', () => {

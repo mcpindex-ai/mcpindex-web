@@ -54,6 +54,17 @@ export function resolveServerRedirect(
   const seeded = getSeededRedirect(slug);
   if (seeded && activeSlugs.has(seeded)) return seeded;
 
+  // LEGACY DISAMBIGUATION SUFFIX. The separator changed from `-` to `--` to make the slug
+  // space injective (registry.ts withDisambiguator), which moved every slug carrying a
+  // disambiguation hash. `${base}--${hash}` is only ever produced from a name whose base is
+  // `base` and whose hash is `hash`, so if that slug is live, `${base}-${hash}` was the same
+  // server's previous URL and this is a rename, not a guess.
+  const legacy = /^(.+)-([0-9a-f]{12})$/.exec(slug);
+  if (legacy) {
+    const moved = `${legacy[1]}--${legacy[2]}`;
+    if (activeSlugs.has(moved) && safeSlug(moved)) return moved;
+  }
+
   // Common rename: drop a trailing "-mcp" when that exact active slug exists.
   if (slug.endsWith('-mcp')) {
     const stripped = slug.slice(0, -4);

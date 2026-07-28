@@ -71,6 +71,10 @@ export type Verdict = {
   origin?: string;
   title?: string;
   evaluated_at?: string; // when the screen was produced (freshness signal); ISO string
+  // THE SUBJECT BINDING: the registry name this verdict is ABOUT. Optional because 18,543
+  // records predate it; getVerdict refuses a record whose server_id is present and does not
+  // match the server whose page it landed on. See the comment there.
+  server_id?: string;
   adjudication?: Adjudication;
   preview_badge?: PreviewBadge;
   // Derived (never stored): true when the record carries NO real screening verdict -
@@ -84,6 +88,7 @@ export type Verdict = {
 
 type RawVerdict = {
   status?: string;
+  server_id?: string;
   directive?: { decision?: string; rationale?: string; expires_at?: string };
   dimensions?: Array<{
     id: string;
@@ -208,6 +213,7 @@ function normalize(raw: RawVerdict): Verdict {
     origin: raw.origin,
     title: raw.title,
     evaluated_at: typeof raw.evaluated_at === 'string' ? raw.evaluated_at : undefined,
+    server_id: typeof raw.server_id === 'string' && raw.server_id ? raw.server_id : undefined,
     adjudication: coerceAdjudication(raw.adjudication),
     preview_badge: coercePreviewBadge(raw.preview_badge),
     unscreened: isPreviewOnly(raw),
@@ -296,6 +302,16 @@ export async function getVerdict(slug: string): Promise<Verdict | null> {
   // the prototype object rather than a real verdict.
   const v = Object.hasOwn(all, subject.slug) ? all[subject.slug] : undefined;
   if (!v || v.fixture) return null;
+  // SECOND, INDEPENDENT SUBJECT CHECK. The slug alone used to be the only thing binding a
+  // verdict to a server, so any slug bug became a wrong-subject verdict rendered under
+  // someone else's name. The store is keyed by the trust side's slug derivation; this asks
+  // the record itself who it is about, and refuses if the two disagree.
+  //
+  // Absent server_id still renders: 18,543 records predate the field, and failing them
+  // closed would blank the site. Those are covered by the slug space being injective by
+  // construction (registry.ts withDisambiguator). Every record written from now on carries
+  // it, so the two mechanisms would both have to fail to misattribute.
+  if (v.server_id && v.server_id !== subject.name) return null;
   return applyExpiryOverlay(v);
 }
 
