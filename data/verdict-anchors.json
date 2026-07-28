@@ -1,7 +1,15 @@
 {
   "anchors": [
     {
-      "bitcoin": {},
+      "bitcoin": {
+        "block_hashes": [
+          "a3e802188e5b9656784e2dcc629c0e058f2636eb726aaabd1f80cc5ce800bf31"
+        ],
+        "block_heights": [
+          959893
+        ],
+        "upgraded_at": "2026-07-28T00:12:52.447021Z"
+      },
       "chain_root": "sha256:d7b38306555b9fad0cd8767389289844a40c107bf83a6f4eeab0cde7e7ad81e0",
       "prev_root": null,
       "proof": "anchors/d7b38306555b9fad0cd8767389289844a40c107bf83a6f4eeab0cde7e7ad81e0.ots",
@@ -9,6 +17,24 @@
       "seq": 1,
       "stamped_at": "2026-07-27T21:22:42.366311Z",
       "verdict_count": 18415
+    },
+    {
+      "bitcoin": {
+        "block_hashes": [
+          "8ac3e2b387f64a3020b7827ae6c2aa8b269c648a32fa81df8071404cda6d3970"
+        ],
+        "block_heights": [
+          959933
+        ],
+        "upgraded_at": "2026-07-28T06:13:51.065779Z"
+      },
+      "chain_root": "sha256:f5d9d4438b72ac56308d434261f585c48c3e1aaa11d20f530bc625a7b1ee44d2",
+      "prev_root": "sha256:b9516e5675d0c2015c240c75e7735b71b9119186d85b1f19663e4fae75f2b169",
+      "proof": "anchors/f5d9d4438b72ac56308d434261f585c48c3e1aaa11d20f530bc625a7b1ee44d2.ots",
+      "root": "sha256:98180fa5a456725aa537232f2eccbb82922c9589cb8d6bb9e95d18796e47e237",
+      "seq": 2,
+      "stamped_at": "2026-07-28T04:24:20.387067Z",
+      "verdict_count": 18440
     }
   ],
   "schema_version": "1"
