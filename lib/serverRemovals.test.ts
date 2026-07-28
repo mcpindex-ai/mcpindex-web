@@ -64,3 +64,31 @@ describe('serverRemovals', () => {
     assert.equal(isGoneSlug('xyz-perpvue-mcp'), false);
   });
 });
+
+describe('legacy disambiguation redirects', () => {
+  it('does not fire without an explicit map, and never guesses from the slug shape', () => {
+    // `{x}-{12hex}` is also a perfectly ordinary bare slug. A pattern rule could not tell a
+    // former slug from a live server's real one, so it would 308 a dead URL onto an
+    // UNRELATED subject — permanently, carrying its canonical link equity with it.
+    const active = new Set(['victim-slug--0123456789abcdef']);
+    assert.equal(
+      resolveServerRedirect('victim-slug-0123456789ab', active),
+      null,
+      'the shape alone must never produce a redirect',
+    );
+  });
+
+  it('redirects a legacy slug ONLY to the server it actually belonged to', () => {
+    const active = new Set(['a--1111111111111111', 'unrelated--2222222222222222']);
+    const legacy = new Map([['a-111111111111', 'a--1111111111111111']]);
+    assert.equal(resolveServerRedirect('a-111111111111', active, legacy), 'a--1111111111111111');
+    // A legacy-shaped slug absent from the map resolves to nothing, even though a plausible
+    // `--` target is live.
+    assert.equal(resolveServerRedirect('unrelated-222222222222', active, legacy), null);
+  });
+
+  it('will not redirect to a destination that is no longer active', () => {
+    const legacy = new Map([['a-111111111111', 'a--1111111111111111']]);
+    assert.equal(resolveServerRedirect('a-111111111111', new Set<string>(), legacy), null);
+  });
+});

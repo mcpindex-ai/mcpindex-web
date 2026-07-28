@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getServer, loadServers } from '@/lib/registry';
+import { getServer, legacySlugRedirects, loadServers } from '@/lib/registry';
 import { computeQuality } from '@/lib/quality';
 import { buildInstalls } from '@/lib/installs';
 import { getSourceLiveness, livenessRecommendation } from '@/lib/sourceLiveness';
@@ -23,8 +23,9 @@ export async function GET(
         },
       );
     }
-    const active = new Set((await loadServers()).map((s) => s.slug));
-    const dest = resolveServerRedirect(slug, active);
+    const servers = await loadServers();
+    const active = new Set(servers.map((s) => s.slug));
+    const dest = resolveServerRedirect(slug, active, legacySlugRedirects(servers));
     if (dest) {
       return Response.redirect(new URL(`/api/v1/server/${dest}`, 'https://mcpindex.ai'), 308);
     }

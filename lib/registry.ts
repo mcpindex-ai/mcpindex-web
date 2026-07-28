@@ -58,6 +58,28 @@ export function withDisambiguator(prefix: string, name: string): string {
   return `${prefix}--${createHash('sha256').update(name).digest('hex').slice(0, DISAMBIG_HEX)}`;
 }
 
+/**
+ * `previous slug -> current slug` for every server whose slug carries a disambiguation
+ * suffix, so the URLs that moved when the separator changed still resolve.
+ *
+ * EXACT, not a pattern. The obvious rule — "if the slug looks like `{x}-{12hex}` and
+ * `{x}--{12hex}` is live, redirect" — cannot tell a former slug from a different server's
+ * ordinary bare slug, so it would 308 a dead URL onto an unrelated subject and hand it that
+ * server's canonical link equity. Here the destination's own name is hashed, so a legacy
+ * slug maps only to the server it actually belonged to.
+ */
+export function legacySlugRedirects(
+  servers: readonly IndexedServer[],
+): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const s of servers) {
+    if (!s.slug.includes('--')) continue;
+    const previous = `${s.baseSlug}-${createHash('sha256').update(s.name).digest('hex').slice(0, 12)}`;
+    out.set(previous, s.slug);
+  }
+  return out;
+}
+
 export function slugify(name: string): string {
   const slug = name
     .toLowerCase()
@@ -109,9 +131,19 @@ function safeUrl(u: string | undefined): string | undefined {
   if (!u) return undefined;
   try {
     const parsed = new URL(u);
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
-      ? u
-      : undefined;
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return undefined;
+    // No explicit host check: http/https are WHATWG *special* schemes, so `new URL` THROWS
+    // rather than yielding an empty host (verified across `http:`, `http://`, `http:///`,
+    // `http://:80/` — all throw). A guard here would be dead code.
+    //
+    // The subtlety is on the other side. Special schemes also collapse the slashes after the
+    // colon and read the next segment as the host, so `http:evil`, `http:/evil` and
+    // `http:///x` all parse HERE with hosts `evil`, `evil`, `x`. mcpindex-trust's `_safe_url`
+    // models that explicitly; a `urlsplit`-based version rejected all six forms this accepts,
+    // and these URLs feed `identityKeys`, so a one-sided accept flips the admitted-drop
+    // decision and moves a live slug on one side only. Pinned by a 27-case differential in
+    // that repo's `smoke_slug_identity`.
+    return u;
   } catch {
     return undefined;
   }
@@ -458,26 +490,6 @@ export function findDeprecatedServer(
   return resolved.find((s) => s.slug === slug) ?? null;
 }
 
-/**
- * The servers that a RETIRED bare slug used to address, when two or more names
- * collide onto it. Returns null for every ordinary slug.
- *
- * WHY THIS EXISTS. `disambiguateSlugs` hashes EVERY member of a colliding set rather
- * than letting first-wins pick a survivor, because a survivor would inherit the other
- * subject's inbound links and, with them, the wrong trust verdict. The cost is that the
- * bare slug stops resolving the moment a collision appears - and it may have been a live,
- * indexed URL until that moment. Measured on the 2026-07-28 corpus: 5 colliding bases
- * over 10 servers out of 18,638, every one a case-variant republication by the same
- * author (`io.github.SceneView/mcp` vs `io.github.sceneview/mcp`). All five bare slugs
- * were returning 404 in production.
- *
- * A redirect is NOT the fix, and that is the whole point. Two subjects claim the slug;
- * picking one is exactly the misattribution disambiguation exists to prevent, and
- * "same author, near-identical name" is an inference, not an observation - the two
- * entries can and do carry different versions, packages, and verdicts. So the bare slug
- * resolves to a page that names both and makes the reader choose. The link stays alive,
- * nothing is asserted about which one they meant.
- */
 let _baseIndex: { servers: readonly IndexedServer[]; idx: Map<string, IndexedServer[]> } | null =
   null;
 

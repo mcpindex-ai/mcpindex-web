@@ -1,7 +1,7 @@
 import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { getCollidingBase, getServer, loadServers, loadSnapshotMeta } from '@/lib/registry';
+import { getCollidingBase, getServer, legacySlugRedirects, loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { computeQuality, rankByQuality } from '@/lib/quality';
 import { buildInstalls } from '@/lib/installs';
 import { getSourceLiveness, livenessSentence } from '@/lib/sourceLiveness';
@@ -152,8 +152,9 @@ export default async function ServerPage(
     const colliding = await getCollidingBase(slug);
     if (colliding) return <CollidingSlugPage slug={slug} members={colliding} />;
 
-    const active = new Set((await loadServers()).map((s) => s.slug));
-    const dest = resolveServerRedirect(slug, active);
+    const servers = await loadServers();
+    const active = new Set(servers.map((s) => s.slug));
+    const dest = resolveServerRedirect(slug, active, legacySlugRedirects(servers));
     if (dest) permanentRedirect(`/server/${dest}`);
     // Gone slugs are answered 410 in proxy.ts; this is the RSC fallback.
     notFound();

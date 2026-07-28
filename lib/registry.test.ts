@@ -2,7 +2,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { disambiguateSlugs, findDeprecatedServer, normalize, slugify } from './registry';
+import {
+  disambiguateSlugs,
+  findDeprecatedServer,
+  legacySlugRedirects,
+  normalize,
+  slugify,
+} from './registry';
 import type { IndexedServer, RegistryEntry } from './types';
 
 function stub(name: string): IndexedServer {
@@ -267,4 +273,47 @@ test('three-way collisions disambiguate too (the chooser is not two-only)', () =
   const out = disambiguateSlugs(names.map(stub));
   assert.equal(new Set(out.map((s) => s.slug)).size, 3);
   assert.equal(out.filter((s) => slugify(s.name) === slugify(names[0])).length, 3);
+});
+
+test('legacySlugRedirects maps a previous slug ONLY to its true owner', () => {
+  const a = 'io.github.SceneView/mcp';
+  const b = 'io.github.sceneview/mcp';
+  const servers = disambiguateSlugs([stub(a), stub(b)]);
+  const map = legacySlugRedirects(servers);
+
+  for (const name of [a, b]) {
+    const row = servers.find((s) => s.name === name)!;
+    // The previous slug is the row's BASE joined to a 12-hex hash of its own NAME. Keying
+    // off the current slug instead would produce a string that was never anyone's URL.
+    const previous = `${row.baseSlug}-${createHash('sha256').update(name).digest('hex').slice(0, 12)}`;
+    assert.equal(map.get(previous), row.slug, `${name} must map from its real former slug`);
+    assert.ok(!previous.includes('--'), 'the legacy form used a single hyphen');
+  }
+  assert.equal(map.size, 2, 'only servers whose slug actually moved may appear');
+});
+
+test('legacySlugRedirects ignores servers that never moved', () => {
+  // A server with a bare slug has no previous URL, so listing one would invent a redirect.
+  const map = legacySlugRedirects(disambiguateSlugs([stub('io.github.example/solo')]));
+  assert.equal(map.size, 0);
+});
+
+test('normalize refuses a non-http(s) repository URL', () => {
+  const entry = (url: string): RegistryEntry => ({
+    server: { name: 'io.github.example/u', description: 'd', version: '1.0.0', repository: { url } },
+    _meta: {
+      'io.modelcontextprotocol.registry/official': {
+        status: 'active', publishedAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+      },
+    },
+  } as unknown as RegistryEntry);
+  // repositoryUrl qualifies every package identity key, so a value the two implementations
+  // disagree about flips an admitted-drop decision.
+  assert.equal(normalize(entry('ftp://a.com/x')).repositoryUrl, undefined);
+  assert.equal(normalize(entry('javascript:alert(1)')).repositoryUrl, undefined);
+  assert.equal(normalize(entry('http://a .com')).repositoryUrl, undefined, 'space in host');
+  assert.equal(normalize(entry('http://a.com:99999/')).repositoryUrl, undefined, 'bad port');
+  assert.equal(normalize(entry('https://github.com/a/b')).repositoryUrl, 'https://github.com/a/b');
+  // WHATWG special-scheme slash collapsing: this HAS a host and must be kept.
+  assert.equal(normalize(entry('http:evil')).repositoryUrl, 'http:evil');
 });
