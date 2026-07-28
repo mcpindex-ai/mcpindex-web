@@ -2,13 +2,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { disambiguateSlugs, findDeprecatedServer, slugify } from './registry';
+import { disambiguateSlugs, findDeprecatedServer, mergeAdmitted, slugify } from './registry';
 import type { IndexedServer, RegistryEntry } from './types';
 
 function stub(name: string): IndexedServer {
   return {
     source: 'registry',
     slug: slugify(name),
+    baseSlug: slugify(name),
     name,
     title: name,
     description: 'd',
@@ -183,4 +184,51 @@ test('three-way collisions disambiguate too (the chooser is not two-only)', () =
   const out = disambiguateSlugs(names.map(stub));
   assert.equal(new Set(out.map((s) => s.slug)).size, 3);
   assert.equal(out.filter((s) => slugify(s.name) === slugify(names[0])).length, 3);
+});
+
+// --- baseSlug survives both hashing steps -------------------------------------------
+// getCollidingBase groups on `baseSlug`, NOT on slugify(name), because mergeAdmitted
+// PRE-hashes a colliding admitted row: its slug is already `base-<hash>` while
+// slugify(name) is still the base. Recomputing from the name missed those rows, so a
+// registry listing and an admitted row could claim one URL with the registry row silently
+// owning it. These pin the invariant that makes the index correct.
+
+test('disambiguateSlugs moves slug but never baseSlug', () => {
+  const twins = ['io.github.SceneView/mcp', 'io.github.sceneview/mcp'];
+  const out = disambiguateSlugs(twins.map(stub));
+  for (const s of out) {
+    assert.notEqual(s.slug, s.baseSlug, 'a colliding member must be hashed');
+    assert.equal(s.baseSlug, slugify(s.name), 'baseSlug is the pre-hash slug');
+  }
+  assert.equal(new Set(out.map((s) => s.baseSlug)).size, 1, 'both stay in one group');
+});
+
+test('mergeAdmitted pre-hash keeps the admitted row in its colliding GROUP', () => {
+  // The exact shape from a6a1a4d: registry row keeps the bare slug, admitted row is
+  // pre-hashed. Both must still report the same baseSlug or the group loses a member.
+  const registryRow = stub('io.github.mcp/server_git');
+  const admittedRow = { ...stub('io.github.mcp/server-git'), source: 'admitted' as const };
+  assert.equal(registryRow.baseSlug, admittedRow.baseSlug, 'precondition: they collide');
+
+  const merged = mergeAdmitted([registryRow], [admittedRow]);
+  const admittedOut = merged.find((s) => s.source === 'admitted')!;
+  const registryOut = merged.find((s) => s.source === 'registry')!;
+
+  assert.equal(registryOut.slug, registryRow.baseSlug, 'incumbent keeps the live URL');
+  assert.notEqual(admittedOut.slug, admittedOut.baseSlug, 'admitted row was pre-hashed');
+  assert.equal(
+    admittedOut.baseSlug, registryOut.baseSlug,
+    'the pre-hashed row must remain findable as a claimant of that base',
+  );
+});
+
+test('a doubly-hashed admitted row still reports its ORIGINAL base', () => {
+  // Pre-hash then disambiguate: slug gains two suffixes. baseSlug must not follow, or the
+  // formerly-live URL becomes unreachable with no chooser and no redirect.
+  const registryRow = stub('io.github.mcp/server_git');
+  const admittedRow = { ...stub('io.github.mcp/server-git'), source: 'admitted' as const };
+  const out = disambiguateSlugs(mergeAdmitted([registryRow], [admittedRow]));
+  for (const s of out) {
+    assert.equal(s.baseSlug, slugify('io.github.mcp/server_git'));
+  }
 });

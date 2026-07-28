@@ -58,6 +58,9 @@ export function disambiguateSlugs(servers: IndexedServer[]): IndexedServer[] {
     }
     for (const s of group) {
       const hash = createHash('sha256').update(s.name).digest('hex').slice(0, 12);
+      // `baseSlug` deliberately survives untouched: it is the group key the chooser
+      // looks up, and rewriting it here would erase the only record of what the bare
+      // URL used to address.
       out.push({ ...s, slug: `${base}-${hash}` });
     }
   }
@@ -96,6 +99,7 @@ function normalizeServer(
     source,
     ...(admittedReason ? { admittedReason } : {}),
     slug: slugify(s.name),
+    baseSlug: slugify(s.name),
     name: s.name,
     title: s.title || s.name,
     description: s.description ?? '',
@@ -206,6 +210,9 @@ export function mergeAdmitted(
         return [];
       }
       if (!registryBaseSlugs.has(s.slug)) return [s];
+      // slug moves; baseSlug stays at the colliding base, so getCollidingBase still finds
+      // this row as a claimant of that URL. Without this the pre-hashed row vanishes from
+      // its own collision group and the chooser silently resolves to the registry twin.
       const slug = `${s.slug}-${createHash('sha256').update(s.name).digest('hex').slice(0, 12)}`;
       console.warn('[admitted] slug collides with a registry listing, disambiguated', {
         name: s.name,
@@ -429,14 +436,66 @@ export function findDeprecatedServer(
  * resolves to a page that names both and makes the reader choose. The link stays alive,
  * nothing is asserted about which one they meant.
  */
+let _baseIndex: Map<string, IndexedServer[]> | null = null;
+
+/** `baseSlug -> members`, built once per loaded corpus.
+ *
+ * Replaces a per-call scan: the previous version ran `slugify()` over ~18,600 names on
+ * every 404, twice (generateMetadata and the page), on a route proxy.ts deliberately
+ * exempts from the per-IP limiter - so a slug-spray bought ~18ms of CPU per request for
+ * free. This is O(n) once against the same cache `loadServers` already keeps.
+ */
+async function baseIndex(): Promise<Map<string, IndexedServer[]>> {
+  const servers = await loadServers();
+  if (_baseIndex && _baseIndex.get('__n__')?.length === servers.length) return _baseIndex;
+  const idx = new Map<string, IndexedServer[]>();
+  for (const s of servers) {
+    const g = idx.get(s.baseSlug);
+    if (g) g.push(s);
+    else idx.set(s.baseSlug, [s]);
+  }
+  // Sentinel so a refreshed corpus (new snapshot, different length) rebuilds the index
+  // instead of serving a stale grouping.
+  idx.set('__n__', servers);
+  _baseIndex = idx;
+  return idx;
+}
+
+/**
+ * The servers that a bare slug addresses when two or more names collide onto it.
+ * Returns null for every ordinary slug.
+ *
+ * WHY THIS EXISTS. `disambiguateSlugs` hashes EVERY member of a colliding set rather than
+ * letting first-wins pick a survivor, because a survivor inherits the other subject's
+ * inbound links and, with them, the wrong trust verdict. The cost is that the bare slug
+ * stops resolving the moment a collision appears - and it may have been a live, indexed
+ * URL until then. All colliding bases were returning 404 in production.
+ *
+ * A redirect is NOT the fix. Two subjects claim the slug; picking one is exactly the
+ * misattribution disambiguation exists to prevent. So the bare slug resolves to a page
+ * that names both and makes the reader choose.
+ *
+ * GROUPS ON `baseSlug`, NOT `slugify(name)`. Those diverge: `mergeAdmitted` PRE-hashes a
+ * colliding admitted row, so its `slug` is already `base-<hash>` while its `slugify(name)`
+ * is the base. Recomputing from the name missed those rows entirely, which meant a
+ * registry listing and an admitted row could claim one URL with the registry row silently
+ * owning it - first-wins, reintroduced through the back door.
+ *
+ * WHEN A LIVE SERVER STILL HOLDS THE BARE SLUG, the chooser does not fire - the caller
+ * reaches this only after `getServer` misses. That is correct, not an oversight, and the
+ * distinction is worth stating because it looks like the first-wins this design forbids.
+ * It is not. A pre-hashed ADMITTED row never held the bare URL: `mergeAdmitted` assigns it
+ * a hashed slug at birth precisely so the registry incumbent's live URL does not move. So
+ * one subject holds that URL and always has, and no inbound link ever pointed at the other.
+ * The chooser exists for the case where the bare slug addressed a server and then STOPPED
+ * doing so - two registry names colliding - which is the only case that orphans real links.
+ */
 export async function getCollidingBase(
   slug: string,
 ): Promise<IndexedServer[] | null> {
-  const servers = await loadServers();
-  // A slug that still addresses a server is not a retired base, whatever else is true.
-  if (servers.some((s) => s.slug === slug)) return null;
-  const members = servers.filter((s) => slugify(s.name) === slug);
-  return members.length > 1 ? members : null;
+  const members = (await baseIndex()).get(slug);
+  if (!members || members.length < 2) return null;
+  return members;
 }
 
 export async function getServer(slug: string): Promise<IndexedServer | null> {

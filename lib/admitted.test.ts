@@ -9,6 +9,7 @@ function srv(name: string, source: ServerSource = 'registry'): IndexedServer {
   return {
     source,
     slug: slugify(name),
+    baseSlug: slugify(name),
     name,
     title: name,
     description: 'd',
