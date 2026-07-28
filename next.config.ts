@@ -53,7 +53,19 @@ const nextConfig: NextConfig = {
       { source: "/products", destination: "/", permanent: true },
       { source: "/method", destination: "/methodology", permanent: true },
       // Pricing page retired while we are not charging — keep old links alive.
+      // The :path* rule matters: the bare rule matches "/pricing" EXACTLY, so
+      // /pricing/opengraph-image (which Google has indexed, with its cache-busting
+      // query) fell through to a 404 and landed in Search Console's Redirect error
+      // bucket. Keep both — a catch-all alone does not match the bare path.
       { source: "/pricing", destination: "/", permanent: true },
+      { source: "/pricing/:path*", destination: "/", permanent: true },
+      // The hosted MCP endpoint is served at /api/mcp (mcp-handler's basePath must match
+      // the served path, which is why the /mcp REWRITE was dropped — see
+      // app/api/[transport]/route.ts). A REDIRECT is a different mechanism and is safe
+      // here: `permanent` emits 308, which preserves method AND body, so a client that
+      // POSTs JSON-RPC to /mcp follows through to /api/mcp intact. Before this, /mcp —
+      // the URL people actually guess and that external directories link — was a 404.
+      { source: "/mcp", destination: "/api/mcp", permanent: true },
     ];
   },
   async headers() {
