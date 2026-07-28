@@ -290,6 +290,27 @@ async function loadAllUncached(): Promise<Record<string, Verdict>> {
   return out;
 }
 
+/**
+ * Does this record claim to be about this server?
+ *
+ * A SECOND, INDEPENDENT subject binding. The slug alone used to be the only thing tying a
+ * verdict to a server, so any slug bug became a wrong-subject verdict rendered under
+ * someone else's name — the one failure a trust product cannot have. The store is keyed by
+ * the trust side's slug derivation; this asks the RECORD who it is about and refuses when
+ * the two disagree, so misattribution now requires both mechanisms to fail at once.
+ *
+ * A record with no `server_id` still binds: ~18,543 predate the field and failing them
+ * closed would blank the site. Those rest on the slug space being injective by construction
+ * (`registry.ts` `withDisambiguator`); everything written since carries the field.
+ *
+ * Exported and shared rather than inlined, because a guard on one accessor and not its
+ * siblings is a false sense of safety — `listScreened` reads the same store by slug and
+ * would otherwise count a mismatched record toward published coverage.
+ */
+export function verdictBindsSubject(v: Verdict, subjectName: string): boolean {
+  return !v.server_id || v.server_id === subjectName;
+}
+
 // Bind a verdict to a registry subject by FINAL slug only. No base-key fallback:
 // slugify collisions are disambiguated in loadServers; store keys under the retired
 // bare slug must not attach to either twin (wrong-subject PASS).
@@ -297,21 +318,27 @@ export async function getVerdict(slug: string): Promise<Verdict | null> {
   const servers = await loadServers();
   const subject = servers.find((s) => s.slug === slug);
   if (!subject) return null;
-  const all = await loadAll();
+  return selectVerdictForSubject(await loadAll(), subject);
+}
+
+/**
+ * Pick the verdict a subject is entitled to, from an already-loaded store.
+ *
+ * Split out from `getVerdict` so every rule here is unit-testable. `getVerdict` reads two
+ * real files, so its body could not be exercised in tests: deleting the subject-binding
+ * check from it left the whole suite green, while the check's own predicate was pinned.
+ * Testing the helper and not the wiring is a pin that asserts nothing, so the wiring is now
+ * a single delegation with no logic of its own to lose.
+ */
+export function selectVerdictForSubject(
+  all: Record<string, Verdict>,
+  subject: { slug: string; name: string },
+): Verdict | null {
   // Object.hasOwn guards against prototype keys (e.g. "__proto__") resolving to
   // the prototype object rather than a real verdict.
   const v = Object.hasOwn(all, subject.slug) ? all[subject.slug] : undefined;
   if (!v || v.fixture) return null;
-  // SECOND, INDEPENDENT SUBJECT CHECK. The slug alone used to be the only thing binding a
-  // verdict to a server, so any slug bug became a wrong-subject verdict rendered under
-  // someone else's name. The store is keyed by the trust side's slug derivation; this asks
-  // the record itself who it is about, and refuses if the two disagree.
-  //
-  // Absent server_id still renders: 18,543 records predate the field, and failing them
-  // closed would blank the site. Those are covered by the slug space being injective by
-  // construction (registry.ts withDisambiguator). Every record written from now on carries
-  // it, so the two mechanisms would both have to fail to misattribute.
-  if (v.server_id && v.server_id !== subject.name) return null;
+  if (!verdictBindsSubject(v, subject.name)) return null;
   return applyExpiryOverlay(v);
 }
 
@@ -343,9 +370,21 @@ export async function getScreenedVerdict(slug: string): Promise<Verdict | null> 
 // O(n+m): Set membership against store entries — not getVerdict-per-server (that was O(n²)).
 export async function listScreened(): Promise<Array<{ slug: string; verdict: Verdict }>> {
   const servers = await loadServers();
-  const validSlugs = new Set(servers.map((s) => s.slug));
-  const all = await loadAll();
-  const now = Date.now();
+  const nameBySlug = new Map(servers.map((s) => [s.slug, s.name]));
+  return selectScreened(await loadAll(), nameBySlug, Date.now());
+}
+
+/**
+ * The screened set, from an already-loaded store. Pure, so its rules are testable — the
+ * accessor above reads two real files, and a guard that only exists inside it cannot be
+ * exercised (dropping the subject binding there left the whole suite green).
+ */
+export function selectScreened(
+  all: Record<string, Verdict>,
+  nameBySlug: ReadonlyMap<string, string>,
+  now: number,
+): Array<{ slug: string; verdict: Verdict }> {
+  const validSlugs = new Set(nameBySlug.keys());
   return Object.entries(all)
     // `!v.unscreened` matters as much as `!v.fixture`: a preview-only record is a minted
     // owner badge for a server the platform never screened. Counting it as "screened" would
@@ -353,7 +392,17 @@ export async function listScreened(): Promise<Array<{ slug: string; verdict: Ver
     // (/.well-known/mcp-index.json) - i.e. overstate our own coverage, the one number a
     // trust product must never round up. Zero such records exist today; the owner P1-P4
     // flow is live, so the first external claim would have started the drift.
-    .filter(([slug, v]) => validSlugs.has(slug) && !v.fixture && !v.unscreened)
+    // `verdictBindsSubject` for the same reason getVerdict applies it: a record whose
+    // server_id names a different server must not be counted as that server's screen, or
+    // verdict_coverage.screened_servers overstates our own coverage using someone else's
+    // record — the one number a trust product must never round up.
+    .filter(
+      ([slug, v]) =>
+        validSlugs.has(slug) &&
+        !v.fixture &&
+        !v.unscreened &&
+        verdictBindsSubject(v, nameBySlug.get(slug) ?? ''),
+    )
     .map(([slug, v]) => ({ slug, verdict: applyExpiryOverlay(v, now) }))
     .sort((a, b) => a.slug.localeCompare(b.slug));
 }

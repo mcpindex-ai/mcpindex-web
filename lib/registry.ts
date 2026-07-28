@@ -21,7 +21,7 @@ import {
 const REGISTRY_BASE = 'https://registry.modelcontextprotocol.io/v0/servers';
 const SNAPSHOT_PATH = path.join(process.cwd(), 'data', 'snapshot.json');
 
-// Slug: name "vendor.domain/sub" -> "vendor-domain--sub", reversible-ish.
+// Slug: name "vendor.domain/sub" -> "vendor-domain-sub"
 // Lossy: case, `_`, and `/`/`.` separators can collapse distinct names onto one
 // base slug. Callers that index by slug MUST run disambiguateSlugs() (or
 // loadServers) so colliding subjects never share a public identity.
@@ -43,10 +43,19 @@ const SNAPSHOT_PATH = path.join(process.cwd(), 'data', 'snapshot.json');
  * function of the name, so only for the same name. Injective by construction: no runtime
  * uniqueness check, and no need to ever apply a second suffix.
  *
+ * 16 hex, not 12. The hash input is a PUBLIC name and an attacker has unbounded freedom to
+ * vary their OWN name within one base slug (case, trailing separators — all collapse), so a
+ * 48-bit suffix is a ~2^48 search away from putting two names on one final slug. 64 bits is
+ * not. The `srv--` empty-name fallback stays at 12 precisely so the two forms cannot be
+ * equal — see `slugify`.
+ *
  * mcpindex-trust `corpus_eval/tooling/slug_identity.py` `_suffixed` must match byte for byte.
  */
+export const DISAMBIG_HEX = 16;
+const EMPTY_NAME_HEX = 12;
+
 export function withDisambiguator(prefix: string, name: string): string {
-  return `${prefix}--${createHash('sha256').update(name).digest('hex').slice(0, 12)}`;
+  return `${prefix}--${createHash('sha256').update(name).digest('hex').slice(0, DISAMBIG_HEX)}`;
 }
 
 export function slugify(name: string): string {
@@ -61,9 +70,13 @@ export function slugify(name: string): string {
   if (slug) return slug;
   // Names that contain only non-slug characters would collapse to ''.
   // Fall back to a deterministic hash so the index never carries an empty slug.
-  // `srv--` for the same reason: a name that literally slugifies to `srv-<12 hex>` would
-  // otherwise collide with the fallback for a name that slugifies to nothing.
-  return withDisambiguator('srv', name);
+  // `srv--{12 hex}`, NARROWER than the 16-hex disambiguation suffix, and that width
+  // difference is load-bearing. This fallback is itself a name-derived slug containing `--`,
+  // so it is the one exception to "no name can produce `--`" — colliding with it needed only
+  // a 48-bit BIRTHDAY between a name slugifying to `srv` and one slugifying to nothing
+  // (~2^24 work, seconds), not a preimage. Different widths make `{base}--{16hex}` and
+  // `srv--{12hex}` structurally unable to be equal.
+  return `srv--${createHash('sha256').update(name).digest('hex').slice(0, EMPTY_NAME_HEX)}`;
 }
 
 // When slugify() maps two distinct names to the same base, append a short hash of
@@ -465,7 +478,8 @@ export function findDeprecatedServer(
  * resolves to a page that names both and makes the reader choose. The link stays alive,
  * nothing is asserted about which one they meant.
  */
-let _baseIndex: Map<string, IndexedServer[]> | null = null;
+let _baseIndex: { servers: readonly IndexedServer[]; idx: Map<string, IndexedServer[]> } | null =
+  null;
 
 /** `baseSlug -> members`, built once per loaded corpus.
  *
@@ -473,20 +487,28 @@ let _baseIndex: Map<string, IndexedServer[]> | null = null;
  * every 404, twice (generateMetadata and the page), on a route proxy.ts deliberately
  * exempts from the per-IP limiter - so a slug-spray bought ~18ms of CPU per request for
  * free. This is O(n) once against the same cache `loadServers` already keeps.
+ *
+ * The corpus it was built from is held ALONGSIDE the map, never inside it. A previous
+ * version stashed the server list under a `'__n__'` key to detect staleness, which put an
+ * 18,739-entry array in the same map `getCollidingBase` looks up with an ATTACKER-SUPPLIED
+ * slug: `/server/__n__` answered 200 and rendered a chooser naming every server in the
+ * index, unauthenticated, on the one route with no per-IP limit. The cache added to save
+ * ~18ms per request became an unbounded render costing orders of magnitude more.
+ *
+ * Identity comparison, not length: `loadServers` returns the same array for the lifetime of
+ * a loaded corpus and a fresh one on reload, so `===` detects a refresh exactly. Comparing
+ * lengths could not - two different corpora of equal size read as the same one.
  */
 async function baseIndex(): Promise<Map<string, IndexedServer[]>> {
   const servers = await loadServers();
-  if (_baseIndex && _baseIndex.get('__n__')?.length === servers.length) return _baseIndex;
+  if (_baseIndex && _baseIndex.servers === servers) return _baseIndex.idx;
   const idx = new Map<string, IndexedServer[]>();
   for (const s of servers) {
     const g = idx.get(s.baseSlug);
     if (g) g.push(s);
     else idx.set(s.baseSlug, [s]);
   }
-  // Sentinel so a refreshed corpus (new snapshot, different length) rebuilds the index
-  // instead of serving a stale grouping.
-  idx.set('__n__', servers);
-  _baseIndex = idx;
+  _baseIndex = { servers, idx };
   return idx;
 }
 

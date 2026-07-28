@@ -5,6 +5,9 @@ import {
   applyExpiryOverlay,
   EXPIRED_VERDICT_LIMIT,
   isVerdictExpired,
+  selectScreened,
+  selectVerdictForSubject,
+  verdictBindsSubject,
   type Verdict,
   type Dimension,
 } from './verdicts';
@@ -68,4 +71,75 @@ test('applyExpiryOverlay: warm-cache flip when now advances', () => {
   const v = mk([{ id: DESC, verdict: 'PASS' }], '2026-07-01T00:00:00Z');
   assert.equal(applyExpiryOverlay(v, Date.parse('2026-06-30T00:00:00Z')).status, 'PARTIAL');
   assert.equal(applyExpiryOverlay(v, Date.parse('2026-07-01T00:00:00Z')).status, 'STALE');
+});
+
+
+// The subject binding. Until this existed the slug was the ONLY link between a verdict and
+// the server it is about, which is how a slug bug escalated into a verdict rendered under
+// someone else's name.
+const SUBJECT = 'io.github.example/thing';
+
+function withSubject(server_id?: string): Verdict {
+  return { ...mk([{ id: DESC, verdict: 'PASS' }], ''), ...(server_id ? { server_id } : {}) };
+}
+
+test('verdictBindsSubject: a record naming ANOTHER server does not bind', () => {
+  assert.equal(verdictBindsSubject(withSubject('io.github.attacker/lookalike'), SUBJECT), false);
+  // Case matters: registry names are case-sensitive and two names differing only in case
+  // slugify to the SAME base, which is precisely the collision this guard backstops.
+  assert.equal(verdictBindsSubject(withSubject(SUBJECT.toUpperCase()), SUBJECT), false);
+});
+
+test('verdictBindsSubject: a record naming THIS server binds', () => {
+  assert.equal(verdictBindsSubject(withSubject(SUBJECT), SUBJECT), true);
+});
+
+test('verdictBindsSubject: a legacy record with no server_id still binds', () => {
+  // ~18,543 records predate the field. Failing them closed would blank the site; they rest
+  // on the slug space being injective by construction instead.
+  assert.equal(verdictBindsSubject(withSubject(), SUBJECT), true);
+  assert.equal(verdictBindsSubject({ ...withSubject(), server_id: '' }, SUBJECT), true);
+});
+
+test('selectVerdictForSubject: refuses a record that names a DIFFERENT server', () => {
+  const all = { 'the-slug': withSubject('io.github.attacker/lookalike') };
+  assert.equal(selectVerdictForSubject(all, { slug: 'the-slug', name: SUBJECT }), null);
+});
+
+test('selectVerdictForSubject: serves a matching record, and a legacy one', () => {
+  for (const rec of [withSubject(SUBJECT), withSubject()]) {
+    const got = selectVerdictForSubject({ 'the-slug': rec }, { slug: 'the-slug', name: SUBJECT });
+    assert.ok(got, 'a bound record must be served');
+    assert.equal(got.status, rec.status);
+  }
+});
+
+test('selectVerdictForSubject: a fixture and a prototype key never resolve', () => {
+  const fixture = { ...withSubject(SUBJECT), fixture: true };
+  assert.equal(selectVerdictForSubject({ 'the-slug': fixture }, { slug: 'the-slug', name: SUBJECT }), null);
+  // `__proto__` must not resolve to Object.prototype and read as a verdict.
+  assert.equal(selectVerdictForSubject({}, { slug: '__proto__', name: SUBJECT }), null);
+  assert.equal(selectVerdictForSubject({}, { slug: 'absent', name: SUBJECT }), null);
+});
+
+test('selectScreened: excludes a record whose server_id names another server', () => {
+  const names = new Map([['a', 'io.github.example/a'], ['b', 'io.github.example/b']]);
+  const all = {
+    a: withSubject('io.github.example/a'),
+    b: withSubject('io.github.attacker/lookalike'),
+  };
+  const got = selectScreened(all, names, Date.parse('2026-07-21T12:00:00Z'));
+  assert.deepEqual(got.map((r) => r.slug), ['a'],
+    'a record naming a different server must not count toward published coverage');
+});
+
+test('selectScreened: keeps legacy records, drops fixtures and unknown slugs', () => {
+  const names = new Map([['a', 'io.github.example/a']]);
+  const all = {
+    a: withSubject(),                                    // legacy, no server_id
+    fix: { ...withSubject('io.github.example/a'), fixture: true },
+    ghost: withSubject('io.github.example/gone'),        // slug not in the catalog
+  };
+  const got = selectScreened(all, names, Date.parse('2026-07-21T12:00:00Z'));
+  assert.deepEqual(got.map((r) => r.slug), ['a']);
 });

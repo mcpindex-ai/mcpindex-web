@@ -127,7 +127,7 @@ test('an admitted row colliding with a registry slug is PRE-HASHED, and the live
   const merged = mergeAdmitted(registry, [colliding]);
   assert.equal(merged.length, 2, 'the colliding admitted row must survive, disambiguated');
 
-  const expected = `${liveSlug}--${createHash('sha256').update(colliding.name).digest('hex').slice(0, 12)}`;
+  const expected = `${liveSlug}--${createHash('sha256').update(colliding.name).digest('hex').slice(0, 16)}`;
   const admittedRow = merged.find((s) => s.source === 'admitted')!;
   assert.equal(admittedRow.slug, expected, 'must match the trust-side sha256 utf-8 slice');
   assert.equal(admittedRow.name, colliding.name, 'the row itself must be otherwise untouched');
@@ -151,7 +151,7 @@ test('a name cannot be crafted onto a pre-hashed slug (injective by construction
   // so no name can produce a bare slug containing `--`, and a synthesized slug always does.
   const registry = srv('example.com/thing');
   const colliding = srv('example_com/thing', 'admitted');
-  const h = (n: string) => createHash('sha256').update(n).digest('hex').slice(0, 12);
+  const h = (n: string) => createHash('sha256').update(n).digest('hex').slice(0, 16);
   const pre = `${registry.slug}--${h(colliding.name)}`;
 
   // Every address an attacker could aim at, in both separator forms, to depth 2. Derived

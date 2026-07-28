@@ -27,7 +27,7 @@ function stub(name: string): IndexedServer {
 
 function expectedDisambiguated(name: string): string {
   const base = slugify(name);
-  const hash = createHash('sha256').update(name).digest('hex').slice(0, 12);
+  const hash = createHash('sha256').update(name).digest('hex').slice(0, 16);
   // DOUBLE hyphen. Computed here independently of withDisambiguator so this stays a real
   // pin: slugify collapses `-+` to `-`, so no name-derived slug can contain `--`, which is
   // what makes a synthesized slug unable to collide with a bare one.
@@ -74,6 +74,31 @@ test('shared marketing titles still get distinct slugs (LocalSynapse shape)', ()
   assert.equal(slugify(a), slugify(b));
   const out = disambiguateSlugs([stub(a), stub(b)]);
   assert.equal(new Set(out.map((s) => s.slug)).size, 2);
+});
+
+test('the baseSlug index exposes no addressable sentinel key', () => {
+  // A previous version stashed the whole server list inside the index under a `'__n__'`
+  // key to detect staleness. `getCollidingBase` looks that same map up with an
+  // ATTACKER-SUPPLIED slug, so `/server/__n__` answered 200 and rendered a chooser naming
+  // every server in the catalog - unauthenticated, on the one route proxy.ts exempts from
+  // the per-IP limiter. The cache added to save ~18ms per request became an unbounded
+  // render costing orders of magnitude more.
+  //
+  // Asserted structurally rather than by probing one magic string: ANY key that is not some
+  // server's baseSlug is the same bug under a different name.
+  const names = ['io.github.example/one', 'io.github.example/two', 'io.github.SceneView/mcp',
+                 'io.github.sceneview/mcp'];
+  const servers = disambiguateSlugs(names.map(stub));
+  const legitimate = new Set(servers.map((s) => s.baseSlug));
+  const grouped = new Map<string, IndexedServer[]>();
+  for (const s of servers) {
+    const g = grouped.get(s.baseSlug);
+    if (g) g.push(s); else grouped.set(s.baseSlug, [s]);
+  }
+  for (const key of grouped.keys()) {
+    assert.ok(legitimate.has(key), `index key '${key}' is not any server's baseSlug`);
+  }
+  assert.ok(!grouped.has('__n__'), 'no staleness sentinel may live in a user-addressable map');
 });
 
 test('baseSlug stays at the bare base after disambiguation', () => {
