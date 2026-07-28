@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 import sys
 import unicodedata
@@ -122,35 +123,57 @@ def load_corpus_at(commit: str | None) -> dict:
     return json.loads(out)
 
 
-def ots_attested_heights(proof: Path) -> list[int]:
-    """Block heights a .ots proof actually asserts, read straight from the file.
+def ots_attested_heights(proof: Path, chain_root: str) -> list[int] | None:
+    """Block heights the proof genuinely attests, or None when we cannot tell.
 
-    Parses the OpenTimestamps op-tape rather than shelling to `ots`, so this stays
-    dependency-free. We are not validating the merkle path here - that needs a Bitcoin node -
-    only reading which heights the file CLAIMS, so the ledger cannot claim a different one.
-    A ledger asserting block 959980 over a proof that says 959893 is a forgery this catches.
+    NONE IS NOT ZERO AND NOT OK. The caller must treat None as unverified.
+
+    This deliberately does NOT hand-parse the .ots container. The first version of this
+    function scanned the raw bytes for an 8-byte attestation tag and decoded a varint, and
+    a 12-byte file consisting of nothing but that tag and a number was reported as
+    `proof attests block(s) [959933]` - no magic header, no merkle path, no binding to the
+    root at all. That is the same laundering this script exists to stop, rebuilt one layer
+    down and made more convincing by an affirmative "ok".
+
+    The library does the two things that actually matter and a byte-scan cannot: it parses
+    the container structurally (so trailing or prepended garbage is rejected), and it binds
+    `file_digest` to sha256 of the stamped preimage - which is what ties this proof to THIS
+    anchor rather than to any anchor.
     """
-    b = proof.read_bytes()
-    # BitcoinBlockHeaderAttestation tag, per the OTS spec.
-    TAG = bytes([0x05, 0x88, 0x96, 0x0d, 0x73, 0xd7, 0x19, 0x01])
-    out: list[int] = []
-    i = 0
-    while (i := b.find(TAG, i)) != -1:
-        j = i + len(TAG)
-        if j >= len(b):
-            break
-        j += 1  # length-prefixed payload; skip the length byte
-        # varint height
-        height, shift = 0, 0
-        while j < len(b):
-            c = b[j]; j += 1
-            height |= (c & 0x7F) << shift
-            if not c & 0x80:
-                break
-            shift += 7
-        out.append(height)
-        i = j
-    return out
+    try:
+        from opentimestamps.core.notary import BitcoinBlockHeaderAttestation
+        from opentimestamps.core.serialize import BytesDeserializationContext
+        from opentimestamps.core.timestamp import DetachedTimestampFile
+    except ImportError:
+        return None
+    try:
+        ctx = BytesDeserializationContext(proof.read_bytes())
+        dtsf = DetachedTimestampFile.deserialize(ctx)
+    except Exception:
+        raise ValueError("proof is not a well-formed OpenTimestamps file")
+    # The stamped bytes are the ASCII string "sha256:<hex>", not the raw digest.
+    if dtsf.file_digest != hashlib.sha256(chain_root.encode("utf-8")).digest():
+        raise ValueError("proof does not commit to this anchor's chain_root")
+    return [
+        int(att.height)
+        for _, att in dtsf.timestamp.all_attestations()
+        if isinstance(att, BitcoinBlockHeaderAttestation)
+    ]
+
+
+def orphaned_proofs(referenced: set[str]) -> list[str]:
+    """Proof files on disk that no ledger entry points at.
+
+    This is what catches the two tampers every self-consistency check misses. A truncated
+    or rewritten ledger is internally perfect - an attacker recomputes seq, prev_root,
+    chain_root and the proof path together - but they cannot easily remove the ORPHANED
+    .ots files left behind in the same publication. A proof nothing references is either a
+    deleted anchor or a ledger that has been rewritten around it.
+    """
+    d = REPO / "public" / "anchors"
+    if not d.is_dir():
+        return []
+    return sorted(f"anchors/{p.name}" for p in d.glob("*.ots") if f"anchors/{p.name}" not in referenced)
 
 
 def head_corpus_count() -> tuple[int, str]:
@@ -161,15 +184,39 @@ def head_corpus_count() -> tuple[int, str]:
     return n, sha[:12]
 
 
-def working_tree_matches_head() -> bool:
-    """True when data/verdicts.json on disk is byte-identical to HEAD's."""
-    disk = (REPO / VERDICTS_REL).read_bytes()
-    return disk == load_corpus_at_raw("HEAD")
+def working_tree_matches_head() -> bool | None:
+    """True/False when comparable; None when this is not a git checkout.
+
+    None for the reader who downloaded the ZIP rather than cloning - they have no history
+    to compare against. That is unverified, not fine, and certainly not a traceback.
+    """
+    try:
+        disk = (REPO / VERDICTS_REL).read_bytes()
+        head = subprocess.run(
+            ["git", "-C", str(REPO), "show", "HEAD:" + VERDICTS_REL],
+            capture_output=True, check=True,
+        ).stdout
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        return None
+    return disk == head
+
+
+# A full commit sha and nothing else. This runs on the READER's machine against a ledger
+# they downloaded, so validation upstream in the producing repo cannot protect them - the
+# attacker's edit target is the published file this script reads. `git show` accepts any
+# revision, so an unpinned value like "HEAD" would silently resolve to whatever the reader
+# has checked out and print `root ok` against it: laundering, by the tool built to stop it.
+_COMMIT_RE = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 
 
 def load_corpus_at_raw(commit: str) -> bytes:
+    if not _COMMIT_RE.fullmatch(commit):
+        raise ValueError(f"corpus_commit is not a full commit sha: {commit[:32]!r}")
     return subprocess.run(
-        ["git", "-C", str(REPO), "show", f"{commit}:{VERDICTS_REL}"],
+        # --end-of-options so an option-shaped value can never be read as a flag, even if
+        # this call is later rewritten into a form where the trailing path no longer
+        # happens to block it.
+        ["git", "-C", str(REPO), "show", "--end-of-options", f"{commit}:{VERDICTS_REL}"],
         capture_output=True, check=True,
     ).stdout
 
@@ -192,13 +239,15 @@ def main() -> int:
     skipped = 0
     checked = 0
     newest_anchored: str | None = None
+    referenced: set[str] = set()
     for e in ledger["anchors"]:
         want_chain = chain_root(prev_chain, e["root"])
         chain_ok = want_chain == e["chain_root"]
         # Structural checks the producer enforces and the first version of this script
         # dropped. Each one alone lets a forgery through: a renumbered seq, a prev_root
         # pointing at nothing, or a proof path repointed at another anchor's file.
-        seq_ok = e["seq"] == prev_seq + 1
+        want_seq = prev_seq + 1
+        seq_ok = e["seq"] == want_seq
         prev_ok = e.get("prev_root") == prev_root
         hexed = e["chain_root"].replace("sha256:", "")
         proof_ok = e["proof"] == f"anchors/{hexed}.ots"
@@ -211,7 +260,7 @@ def main() -> int:
         print(f"anchor #{e['seq']}  (stamped {e['stamped_at'][:19]}Z)")
         for label, ok, detail in (
             ("chain_root", chain_ok, f"expected {want_chain}"),
-            ("seq", seq_ok, f"expected {prev_seq}"),
+            ("seq", seq_ok, f"expected {want_seq}"),
             ("prev_root", prev_ok, "does not point at the preceding anchor"),
             ("proof path", proof_ok, f"expected anchors/{hexed}.ots"),
         ):
@@ -229,11 +278,19 @@ def main() -> int:
         else:
             try:
                 raw = load_corpus_at_raw(commit)
+            except ValueError as err:
+                # A malformed commit is a FAILURE, not an "unverified". The ledger is
+                # asserting something it cannot back, and an unpinned ref like "HEAD" would
+                # otherwise resolve against whatever the reader has checked out.
+                print(f"  corpus      FAIL  {err}")
+                failures += 1
+                raw = None
             except subprocess.CalledProcessError:
                 print(f"  corpus      UNVERIFIED  commit {commit[:12]} absent "
                       f"(shallow clone? try: git fetch --unshallow)")
                 skipped += 1
-            else:
+                raw = None
+            if raw is not None:
                 verdicts = json.loads(raw)
                 got = corpus_root(verdicts)
                 if got == e["root"]:
@@ -252,23 +309,32 @@ def main() -> int:
 
         blocks = (e.get("bitcoin") or {}).get("block_heights") or []
         proof_path = REPO / "public" / e["proof"]
+        referenced.add(e["proof"])
         if blocks:
-            if not proof_path.is_file():
+            if not proof_ok:
+                print("  bitcoin     FAIL  proof path is not pinned to this anchor")
+                failures += 1
+            elif not proof_path.is_file():
                 print(f"  bitcoin     FAIL  ledger claims block(s) {blocks} but "
                       f"public/{e['proof']} is missing"); failures += 1
             else:
-                attested = ots_attested_heights(proof_path)
-                if not attested:
-                    print(f"  bitcoin     FAIL  proof carries no Bitcoin attestation, "
-                          f"ledger claims {blocks}"); failures += 1
-                elif sorted(attested) != sorted(blocks):
-                    print(f"  bitcoin     FAIL  proof attests {attested}, "
-                          f"ledger claims {blocks}"); failures += 1
+                try:
+                    attested = ots_attested_heights(proof_path, e["chain_root"])
+                except ValueError as err:
+                    print(f"  bitcoin     FAIL  {err}"); failures += 1
                 else:
-                    print(f"  bitcoin     ok    proof attests block(s) {attested}")
-                    print(f"                confirm the merkle path yourself:")
-                    print(f"                  printf 'sha256:%s' {hexed} > root.txt")
-                    print(f"                  ots verify -f root.txt public/{e['proof']}")
+                    if attested is None:
+                        # Cannot check != checked. Counted as unverified so the summary
+                        # cannot read as a pass.
+                        print("  bitcoin     UNVERIFIED  pip install opentimestamps-client "
+                              "to check the proof")
+                        skipped += 1
+                    elif sorted(attested) != sorted(blocks):
+                        print(f"  bitcoin     FAIL  proof attests {attested}, "
+                              f"ledger claims {blocks}"); failures += 1
+                    else:
+                        print(f"  bitcoin     ok    proof binds to this anchor and attests "
+                              f"block(s) {attested}")
         else:
             print("  bitcoin     pending (stamped, not yet confirmed on-chain)")
         print()
@@ -281,8 +347,27 @@ def main() -> int:
     # blob out of git history and said nothing about the file in front of you - so a forged
     # working tree produced "0 failure(s)" and a reader concluded the file they had was
     # anchored. Report the gap explicitly, and fail on a dirty tree.
-    dirty = not working_tree_matches_head()
-    if dirty:
+    # A ledger can be internally perfect and still be a rewrite. Orphaned proofs are the
+    # external witness: an attacker who truncates or re-genesises the chain leaves the
+    # deleted anchors' .ots files behind in the same publication.
+    if args.seq is None:
+        orphans = orphaned_proofs(referenced)
+        if orphans:
+            print(f"ORPHANED PROOFS: {len(orphans)} .ots file(s) referenced by no anchor.")
+            for o in orphans[:5]:
+                print(f"  {o}")
+            print("  A published proof with no ledger entry means anchors were removed or")
+            print("  the chain was rewritten around them. The remaining ledger can still be")
+            print("  perfectly self-consistent; this is the evidence that it is not complete.")
+            failures += len(orphans)
+
+    matches = working_tree_matches_head()
+    if matches is None:
+        print("WORKING TREE UNVERIFIED: not a git checkout (ZIP download?).")
+        print("  Nothing here can tell whether data/verdicts.json is the published file.")
+        print("  Re-run from `git clone https://github.com/mcpindex-ai/mcpindex-web`.")
+        skipped += 1
+    elif not matches:
         print("WORKING TREE DIFFERS FROM HEAD: data/verdicts.json has local modifications.")
         print("  Nothing here vouches for those bytes. Re-check out the file before trusting this run.")
         failures += 1
