@@ -11,7 +11,7 @@ import { GET as llms } from '../../app/llms.txt/route';
 import { GET as llmsFull } from '../../app/llms-full.txt/route';
 import { gateInstallLine } from '../../lib/install/manifest';
 import { __setAeoRedisForTest, __resetAeoDedupForTest } from '../../lib/aeoCounter';
-import { getServerCount, loadServers, loadSnapshotMeta } from '../../lib/registry';
+import { loadServers, loadSnapshotMeta } from '../../lib/registry';
 import { SOURCE_LIVENESS_CENSUS } from '../../lib/sourceLiveness';
 
 // Per-minute write dedup is module state; reset between tests so a future second same-route+family
