@@ -723,7 +723,19 @@ const ANCHOR_NEGATED = /\bnot\b[^.]{0,40}(anchored|confirmed)|once confirmed|com
 // Deliberately narrow: it exempts lines that reference the state machinery, NOT any line
 // in a file that happens to import it - an unconditional prose claim sitting three
 // paragraphs below a correct conditional one is still a false claim, and still caught.
-const ANCHOR_DERIVED = /anchorClaim|anchorState|latestConfirmed|kind === 'confirmed'/;
+// Deliberately narrow: it exempts lines that reference the state machinery, NOT any line
+// in a file that happens to import it - an unconditional prose claim three paragraphs below
+// a correct conditional one is still a false claim, and still caught.
+const ANCHOR_DERIVED = /anchorClaim|anchorState|latestConfirmed|kind === 'confirmed'|anchor\?\.bitcoin_block|bitcoin_block/;
+// A claim can be GUARDED by a conditional on a preceding line rather than on its own line.
+// app/api/[transport]/route.ts does exactly that:
+//     if (data.provenance?.anchor?.bitcoin_block) {
+//       lines.push(`Corpus anchored to Bitcoin block ${...}`);
+// Line-scoped matching saw only the inner line and blocked the build on correct code - and
+// because this guard now fails CLOSED, that turned a silent no-op into a hard production
+// stop on any tree without the ledger (a fresh clone, a branch cut before the publish PR
+// merged). Look back a couple of lines for the guarding condition.
+const ANCHOR_GUARD_LOOKBEHIND = 3;
 try {
   const anchorFile = path.join(root, 'data', 'verdict-anchors.json');
   // Fail CLOSED. No ledger means no evidence, which means the claim is unsupported -
@@ -759,10 +771,14 @@ try {
     for (const f of surfaces) {
       const body = fs.readFileSync(f, 'utf8');
       // Skip the comment that documents this very guard.
-      for (const line of body.split('\n')) {
+      const lines = body.split('\n');
+      for (const [i, line] of lines.entries()) {
         if (!ANCHOR_CLAIM.test(line)) continue;
         if (ANCHOR_EXEMPT.test(line) || ANCHOR_NEGATED.test(line)) continue;
-        if (ANCHOR_DERIVED.test(line)) continue;
+        // The line itself, or any of the few lines above it, may carry the derivation or
+        // the guarding condition.
+        const window = lines.slice(Math.max(0, i - ANCHOR_GUARD_LOOKBEHIND), i + 1).join('\n');
+        if (ANCHOR_DERIVED.test(window)) continue;
         if (/^\s*(\/\/|\*|\{\/\*)/.test(line)) continue;
         errors.push(
           `${path.relative(root, f)}: asserts Bitcoin/OpenTimestamps anchoring while ` +
