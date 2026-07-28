@@ -14,7 +14,6 @@ import { loadAdmitted } from './admitted';
 import { categorize } from './categorize';
 import { SnapshotZ } from './snapshotSchema';
 import {
-  readKVSnapshot,
   snapshotVersion,
   type StoredSnapshot,
 } from './snapshotStore';
@@ -261,32 +260,37 @@ function resolveSnapshot(): Promise<LoadedSnapshot> {
   return _resolveInflight;
 }
 
-// KV wins over the bundled snapshot when present. That preference is safe ONLY because
-// writeKVSnapshot now sets a 6h TTL (snapshotStore.KV_TTL_SECONDS): a KV blob can be at
-// most one missed 4h sync behind the committed snapshot, and then it expires and the
-// bundled file takes over. Deliberately NOT doing a written_at comparison of the two:
-// that would require reading AND zod-parsing the 24.5MB bundled snapshot on every cold
-// resolve in addition to the ~21MB KV blob, which is the exact double-parse that caused
-// the OOM the _resolveInflight dedup above exists to prevent. Bounded staleness is the
-// cheaper correct answer here; revisit only if the sync cadence goes above the TTL.
+// The RENDER PATH READS THE BUNDLED SNAPSHOT ONLY. Do not reintroduce readKVSnapshot()
+// here.
+//
+// @upstash/redis hardcodes `cache: "no-store"` on its fetch (see nodejs.mjs). Every page
+// that reaches this function is ISR (`revalidate = 3600`), and a no-store fetch during
+// static generation makes Next abort the render:
+//
+//   Error: Page changed from static to dynamic at runtime /server/[slug],
+//   reason: no-store fetch https://<upstash>/pipeline
+//
+// That produced 386 errors on /server/[slug] alone in one week, plus /, /leaderboard,
+// /changelog, /best/[category], /guides/[slug] and /servers/page/[n] — 25 x 500 against
+// 1163 x 200. It only fires on COLD instances (the _cache short-circuits in loadServers /
+// loadSnapshot / loadSnapshotMeta hide it once warm), which is precisely the path a
+// crawler walking an 18k-URL sitemap hits most, and sustained 5xx costs crawl rate
+// site-wide.
+//
+// Dropping KV here costs almost no freshness: the canonical refresh is
+// .github/workflows/sync-registry.yml, which commits data/snapshot.json every 4h AND
+// redeploys. It also removes a ~21MB KV pull per cold render, kills an availability SPOF,
+// and makes the sitemap and the pages it advertises resolve from ONE source — previously
+// they could disagree (sitemap caches its registry block for 24h) and a slug present in
+// the sitemap could notFound() on its own page.
+//
+// NOTE: this was the ONLY reader of the `mcpindex:snapshot:v1` KV key. The cron
+// (app/api/cron/sync-registry) still WRITES it, so that key is now write-only — retained
+// deliberately as a cheap rollback path, not because anything consumes it. If it is still
+// unread by the next sync-registry change, delete writeKVSnapshot and its `kvExpected`
+// health guard together. Every OTHER Redis consumer (drift, ledger, identity, login,
+// ratelimit, aeoCounter) is untouched and legitimately dynamic.
 async function resolveSnapshotUncached(): Promise<LoadedSnapshot> {
-  const kv = await readKVSnapshot();
-  if (kv) {
-    const parsed = SnapshotZ.safeParse(kv);
-    if (!parsed.success) {
-      console.error('registry: KV snapshot schema failure, falling back', parsed.error.message);
-    } else {
-      return {
-        snapshot: {
-          fetchedAt: kv.fetchedAt,
-          totalEntries: kv.totalEntries,
-          servers: kv.servers,
-        },
-        version: kv.snapshot_version,
-        writtenAt: kv.snapshot_written_at,
-      };
-    }
-  }
   const bundled = await readBundledSnapshot();
   return {
     snapshot: {
