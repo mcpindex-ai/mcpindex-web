@@ -234,9 +234,9 @@ type LoadedSnapshot = {
 
 let _cache: { servers: IndexedServer[]; loaded: LoadedSnapshot } | null = null;
 
-// Exported so /api/cron/sync-registry can republish the COMMITTED snapshot into KV without
-// re-fetching upstream (which cannot finish inside maxDuration). Reads the file every call -
-// no cache - so a manual refresh always publishes what is actually on disk right now.
+// The single source of truth for what this deployment serves. Exported so
+// /api/cron/sync-registry can REPORT it (that route is read-only; it cannot change what is
+// served). Reads the file every call - no cache - so callers always see what is on disk.
 export async function readBundledSnapshot(): Promise<StoredSnapshot> {
   const raw = await fs.readFile(SNAPSHOT_PATH, 'utf8');
   const json: unknown = JSON.parse(raw);
@@ -259,10 +259,12 @@ export async function readBundledSnapshot(): Promise<StoredSnapshot> {
 let _resolveInflight: Promise<LoadedSnapshot> | null = null;
 
 // De-dup concurrent cold resolves. N simultaneous callers on a cold instance would otherwise EACH
-// pull the ~21MB KV snapshot and zod-parse ~16k entries (~200MB transient apiece) -> OOM/500s under
-// a traffic spike or parallel crawl. Sharing one resolve also fixes a body/version mismatch: every
-// concurrent cold caller then converges on the SAME winning snapshot, so `servers` and `version`
-// (read separately by loadServers vs loadSnapshotMeta) can never come from two different KV reads.
+// read the ~26MB data/snapshot.json and zod-parse ~19k entries (~200MB transient apiece) ->
+// OOM/500s under a traffic spike or parallel crawl. Still worth keeping for that reason alone.
+//
+// It no longer prevents a body/version MISMATCH, though: that risk existed only while KV could
+// move under a live deployment. The bundled snapshot is a build artifact and immutable for the
+// life of the deployment, so concurrent resolves cannot disagree. Memory, not correctness.
 function resolveSnapshot(): Promise<LoadedSnapshot> {
   if (_resolveInflight) return _resolveInflight;
   _resolveInflight = resolveSnapshotUncached().finally(() => {
@@ -271,36 +273,28 @@ function resolveSnapshot(): Promise<LoadedSnapshot> {
   return _resolveInflight;
 }
 
-// The RENDER PATH READS THE BUNDLED SNAPSHOT ONLY. Do not reintroduce readKVSnapshot()
-// here.
+// THE RENDER PATH READS THE BUNDLED SNAPSHOT ONLY. Do not add a network read here.
 //
-// @upstash/redis hardcodes `cache: "no-store"` on its fetch (see nodejs.mjs). Every page
-// that reaches this function is ISR (`revalidate = 3600`), and a no-store fetch during
-// static generation makes Next abort the render:
+// Any Redis read on this path re-breaks static generation. @upstash/redis DEFAULTS its fetch
+// to `cache: "no-store"` (nodejs.mjs: `cache: configOrRequester.cache ?? "no-store"`) and this
+// code never overrode it. Every page reaching this function is ISR (`revalidate = 3600`), and
+// a no-store fetch during static generation makes Next abort the render with
+// `Page changed from static to dynamic at runtime`, which surfaces as a 500.
 //
-//   Error: Page changed from static to dynamic at runtime /server/[slug],
-//   reason: no-store fetch https://<upstash>/pipeline
+// Note the default is OVERRIDABLE - passing `cache` to the client would silence the bail. That
+// is deliberately NOT the fix taken here, because the reasons below stand on their own:
 //
-// That produced 386 errors on /server/[slug] alone in one week, plus /, /leaderboard,
-// /changelog, /best/[category], /guides/[slug] and /servers/page/[n] — 25 x 500 against
-// 1163 x 200. It only fires on COLD instances (the _cache short-circuits in loadServers /
-// loadSnapshot / loadSnapshotMeta hide it once warm), which is precisely the path a
-// crawler walking an 18k-URL sitemap hits most, and sustained 5xx costs crawl rate
-// site-wide.
+//   - it only fired on COLD instances (the _cache short-circuits in loadServers /
+//     loadSnapshot / loadSnapshotMeta hide it once warm), which is exactly the path a crawler
+//     walking an 18k-URL sitemap hits most, and sustained 5xx costs crawl rate site-wide;
+//   - it made an availability SPOF out of a cache, and pulled ~26MB per cold render;
+//   - a mutable KV blob could move under a live deployment, so `servers` and `version` could
+//     come from different reads and the sitemap could advertise a slug whose page 404s;
+//   - freshness cost is ~nil: .github/workflows/sync-registry.yml commits data/snapshot.json
+//     every 4h AND redeploys, and KV could only ever hold a copy of an already-deployed bundle.
 //
-// Dropping KV here costs almost no freshness: the canonical refresh is
-// .github/workflows/sync-registry.yml, which commits data/snapshot.json every 4h AND
-// redeploys. It also removes a ~21MB KV pull per cold render, kills an availability SPOF,
-// and makes the sitemap and the pages it advertises resolve from ONE source — previously
-// they could disagree (sitemap caches its registry block for 24h) and a slug present in
-// the sitemap could notFound() on its own page.
-//
-// NOTE: this was the ONLY reader of the `mcpindex:snapshot:v1` KV key. The cron
-// (app/api/cron/sync-registry) still WRITES it, so that key is now write-only — retained
-// deliberately as a cheap rollback path, not because anything consumes it. If it is still
-// unread by the next sync-registry change, delete writeKVSnapshot and its `kvExpected`
-// health guard together. Every OTHER Redis consumer (drift, ledger, identity, login,
-// ratelimit, aeoCounter) is untouched and legitimately dynamic.
+// The KV path is fully deleted (read AND write) as of the follow-up to that fix - see
+// lib/snapshotStore.ts. test/routes/snapshot_source.test.ts fails if a network read returns.
 async function resolveSnapshotUncached(): Promise<LoadedSnapshot> {
   const bundled = await readBundledSnapshot();
   return {
