@@ -13,6 +13,23 @@ This is the recipe, in full, in the public repo, using only the standard library
     python3 scripts/verify_anchor.py --seq 2         # just one
 
 It re-derives the roots from YOUR checkout of verdicts.json. It does NOT phone home.
+
+WHAT IT CANNOT TELL YOU, stated plainly rather than left for you to discover:
+
+  * Whether this ledger is COMPLETE. Nothing inside a repository can prove that anchors
+    were not removed from its end. Deleting the newest entries leaves a chain that is
+    perfectly self-consistent. Orphaned .ots files usually give it away and are reported
+    as failures, but an attacker who deletes those too leaves no trace here. To close
+    this you need a witness the publisher does not control: compare the newest `seq` and
+    block height against a copy held elsewhere.
+  * Whether a verdict is TRUE. An anchor fixes when a set of verdicts existed, not
+    whether any of them is correct.
+  * Whether the newest verdicts are anchored at all. They usually are not - the corpus is
+    republished several times a day and anchored once. That gap is reported, and it is why
+    this script says INCOMPLETE rather than OK whenever HEAD has moved past the newest
+    anchor: the file you are reading is not the file that was attested.
+
+Exit codes: 0 verified, 1 tampering detected, 3 could not check, 2 usage.
 To check the Bitcoin attestation as well, install OpenTimestamps and run:
 
     ots info public/anchors/<chain_root_hex>.ots          # offline; prints the block height
