@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { coerceAdmitted } from './admitted';
 import { disambiguateSlugs, mergeAdmitted, normalizeAdmitted, slugify } from './registry';
 import type { AdmittedEntry, IndexedServer, ServerSource } from './types';
@@ -109,20 +110,55 @@ test('admitted rows are appended last so name-dedup favours the registry', () =>
   );
 });
 
-test('an admitted row colliding with a registry slug is DROPPED, not disambiguated', () => {
+test('an admitted row colliding with a registry slug is PRE-HASHED, and the live URL holds', () => {
   // The failure this prevents: disambiguateSlugs() hashes every member of a colliding
-  // set, so admitting a colliding row would rename the live registry URL.
+  // GROUP, so a bare admitted row would drag the registry listing in and rename a live
+  // /server/<slug> URL. Pre-hashing here puts the newcomer in a group of its own.
+  //
+  // It used to be DROPPED for the same reason, which was a silent coverage hole - the
+  // trigger is attacker-controlled, so publishing a colliding name removed an admitted
+  // server from the index and from trust screening.
   const registry = [srv('example.com/thing')];
   const liveSlug = registry[0].slug;
   const colliding = srv('example_com/thing', 'admitted');
   assert.equal(colliding.slug, liveSlug, 'fixture must actually collide');
 
   const merged = mergeAdmitted(registry, [colliding]);
-  assert.equal(merged.length, 1);
-  assert.equal(merged[0].name, 'example.com/thing');
+  assert.equal(merged.length, 2, 'the colliding admitted row must survive, disambiguated');
 
-  // And the live slug survives disambiguation untouched.
-  assert.equal(disambiguateSlugs(merged)[0].slug, liveSlug);
+  const expected = `${liveSlug}-${createHash('sha256').update(colliding.name).digest('hex').slice(0, 12)}`;
+  const admittedRow = merged.find((s) => s.source === 'admitted')!;
+  assert.equal(admittedRow.slug, expected, 'must match the trust-side sha256 utf-8 slice');
+  assert.equal(admittedRow.name, colliding.name, 'the row itself must be otherwise untouched');
+
+  // The incumbent's live slug survives disambiguation untouched: it is now alone in its
+  // group, which is the entire point of pre-hashing rather than deferring.
+  const out = disambiguateSlugs(merged);
+  assert.equal(out.find((s) => s.name === 'example.com/thing')!.slug, liveSlug);
+  assert.equal(out.find((s) => s.name === colliding.name)!.slug, expected);
+  assert.equal(new Set(out.map((s) => s.slug)).size, out.length, 'slugs stay injective');
+});
+
+test('a pre-hashed admitted row is suffixed a SECOND time if anything lands on its slug', () => {
+  // disambiguateSlugs groups by the slug a row ALREADY has, so the pre-hash is not final.
+  // Reachable: the hash is over a PUBLIC admitted name, so an attacker can compute
+  // `${base}-${sha256[:12]}` and register a name that slugifies to exactly it.
+  // mcpindex-trust's public_slug_map models both passes; a single-pass model would key the
+  // verdict at the intermediate slug, which this site would never serve.
+  const registry = srv('example.com/thing');
+  const colliding = srv('example_com/thing', 'admitted');
+  const pre = `${registry.slug}-${createHash('sha256').update(colliding.name).digest('hex').slice(0, 12)}`;
+
+  // Derived from the fixture, not hardcoded, so it cannot rot into a tautology.
+  const attacker = srv(pre);
+  assert.equal(attacker.slug, pre, 'attacker construction is stale');
+
+  const out = disambiguateSlugs(mergeAdmitted([registry, attacker], [colliding]));
+  const slugOf = (n: string) => out.find((s) => s.name === n)!.slug;
+  assert.equal(slugOf(registry.name), registry.slug, 'the untouched incumbent must not move');
+  assert.equal(slugOf(colliding.name), `${pre}-${createHash('sha256').update(colliding.name).digest('hex').slice(0, 12)}`);
+  assert.equal(slugOf(attacker.name), `${pre}-${createHash('sha256').update(attacker.name).digest('hex').slice(0, 12)}`);
+  assert.equal(new Set(out.map((s) => s.slug)).size, out.length, 'slugs stay injective');
 });
 
 test('admitted rows without a description are dropped', () => {

@@ -137,10 +137,19 @@ export function normalize(entry: RegistryEntry): IndexedServer {
  * Two invariants, both about not breaking what already works:
  *  - Admitted rows go LAST, so the name-dedup downstream always resolves a tie in the
  *    registry's favour.
- *  - An admitted row whose base slug already belongs to a registry listing is DROPPED,
- *    not disambiguated. disambiguateSlugs() hashes every member of a colliding set, so
- *    resolving the collision would rename a live /server/<slug> URL. A missing overlay
- *    row is recoverable; a moved public URL is not.
+ *  - An admitted row whose base slug already belongs to a registry listing is PRE-HASHED
+ *    here, not left bare and not dropped. It must be pre-hashed at this point:
+ *    disambiguateSlugs() hashes every member of a colliding GROUP, so a bare admitted row
+ *    would drag the registry listing into its group and rename a live /server/<slug> URL.
+ *    Pre-hashing puts it in a group of its own and leaves the incumbent alone.
+ *
+ *    It used to be DROPPED for that reason, and dropping was a silent coverage hole: the
+ *    trigger is attacker-controlled (the registry is open-publish, and slugify flattens `.`
+ *    and `/` alike, so a lookalike GitHub org is enough), so anyone could remove an admitted
+ *    server from the index - and therefore from trust screening - just by publishing.
+ *
+ *    corpus_eval/tooling/slug_identity.py in mcpindex-trust reimplements BOTH steps and must
+ *    stay byte-identical; a divergence keys a verdict at a slug this site never serves.
  */
 /** Identity keys that survive a rename: what the server IS, not what it is called.
  *
@@ -187,21 +196,23 @@ export function mergeAdmitted(
   const registryIdentities = new Set(registryServers.flatMap(identityKeys));
   const admitted = admittedServers
     .filter((s) => s.description && s.name && s.slug)
-    .filter((s) => {
+    .flatMap((s): IndexedServer[] => {
       const dupe = identityKeys(s).find((k) => registryIdentities.has(k));
       if (dupe) {
         console.warn('[admitted] dropped, upstream now lists this server under another name', {
           name: s.name,
           matchedOn: dupe,
         });
-        return false;
+        return [];
       }
-      if (!registryBaseSlugs.has(s.slug)) return true;
-      console.warn('[admitted] dropped, slug collides with a registry listing', {
+      if (!registryBaseSlugs.has(s.slug)) return [s];
+      const slug = `${s.slug}-${createHash('sha256').update(s.name).digest('hex').slice(0, 12)}`;
+      console.warn('[admitted] slug collides with a registry listing, disambiguated', {
         name: s.name,
-        slug: s.slug,
+        from: s.slug,
+        to: slug,
       });
-      return false;
+      return [{ ...s, slug }];
     });
   return [...registryServers, ...admitted];
 }
