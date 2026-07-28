@@ -99,6 +99,10 @@ export type IndexedServer = {
   /** Public admission rationale. Present only when source === 'admitted'. */
   admittedReason?: string;
   slug: string;
+  /** `slugify(name)` — the slug BEFORE disambiguation, and the group key
+   *  `getCollidingBase` looks up. Kept alongside `slug` because disambiguation rewrites
+   *  `slug` and would otherwise erase the only record of which bare URL this row claims. */
+  baseSlug: string;
   name: string;
   title: string;
   description: string;

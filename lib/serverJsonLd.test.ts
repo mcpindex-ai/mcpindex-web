@@ -35,6 +35,7 @@ function makeServer(over: Partial<IndexedServer>): IndexedServer {
   return {
     source: 'registry',
     slug: 'x',
+    baseSlug: 'x',
     name: 'ns/x',
     title: 'X',
     description: 'desc',

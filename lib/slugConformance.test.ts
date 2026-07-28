@@ -30,7 +30,8 @@ const corpus = JSON.parse(
 
 function srv(name: string, source: ServerSource): IndexedServer {
   return {
-    source, slug: slugify(name), name, title: name, description: 'd', version: '1.0.0',
+    source, slug: slugify(name), baseSlug: slugify(name), name, title: name,
+    description: 'd', version: '1.0.0',
     category: 'other', publishedAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
     status: 'active', hasRemote: false, hasPackage: false, primaryTransport: null, envVars: [],
   };

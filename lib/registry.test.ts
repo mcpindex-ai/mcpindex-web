@@ -2,13 +2,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { disambiguateSlugs, findDeprecatedServer, slugify } from './registry';
+import { disambiguateSlugs, findDeprecatedServer, normalize, slugify } from './registry';
 import type { IndexedServer, RegistryEntry } from './types';
 
 function stub(name: string): IndexedServer {
   return {
     source: 'registry',
     slug: slugify(name),
+    baseSlug: slugify(name),
     name,
     title: name,
     description: 'd',
@@ -73,6 +74,61 @@ test('shared marketing titles still get distinct slugs (LocalSynapse shape)', ()
   assert.equal(slugify(a), slugify(b));
   const out = disambiguateSlugs([stub(a), stub(b)]);
   assert.equal(new Set(out.map((s) => s.slug)).size, 2);
+});
+
+test('baseSlug stays at the bare base after disambiguation', () => {
+  // `getCollidingBase` groups by baseSlug to answer the retired bare URL with a chooser
+  // naming both claimants. If disambiguation rewrote baseSlug along with slug, each twin
+  // would land in its own group, the chooser would find fewer than two members, and the
+  // bare URL would 404 instead of resolving - or, worse, resolve to whichever twin was
+  // left. slug MOVES, baseSlug does NOT: that split is the whole point of the field.
+  const a = 'io.github.SceneView/mcp';
+  const b = 'io.github.sceneview/mcp';
+  const base = slugify(a);
+
+  // Start at the SOURCE. `stub()` hand-builds an IndexedServer, so asserting only on
+  // disambiguateSlugs left normalizeServer's baseSlug entirely untested - a mutation making
+  // it `undefined` for every server in the catalog passed the whole suite.
+  const normalized = normalize({
+    server: { name: a, description: 'd', version: '1.0.0' },
+    _meta: {
+      'io.modelcontextprotocol.registry/official': {
+        status: 'active', publishedAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+      },
+    },
+  } as unknown as RegistryEntry);
+  assert.equal(typeof normalized.baseSlug, 'string', 'baseSlug must always be a string');
+  assert.equal(normalized.baseSlug, base, 'normalize must seed baseSlug from the NAME');
+
+  const out = disambiguateSlugs([stub(a), stub(b)]);
+  for (const name of [a, b]) {
+    const row = out.find((s) => s.name === name)!;
+    assert.equal(row.baseSlug, base, 'baseSlug must remain the bare colliding base');
+    assert.notEqual(row.slug, base, 'slug must have moved off the bare base');
+  }
+  assert.equal(
+    out.filter((s) => s.baseSlug === base).length, 2,
+    'both twins must still be findable as claimants of the retired bare URL',
+  );
+});
+
+test('normalize trims a whitespace-only description to empty', () => {
+  // loadServers drops a row on falsy description, and mcpindex-trust's
+  // `active_registry_names` does `(description or "").strip()`. Testing truthiness without
+  // trimming meant '  ' was a description here and not there, which changes who is in a
+  // collision group - so the surviving row's slug differs by side, and the purge then reads
+  // the slug this site serves as owned by nobody and deletes its verdict.
+  const entry = (desc: string): RegistryEntry => ({
+    server: { name: 'io.github.example/ws', description: desc, version: '1.0.0' },
+    _meta: {
+      'io.modelcontextprotocol.registry/official': {
+        status: 'active', publishedAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+      },
+    },
+  } as unknown as RegistryEntry);
+  assert.equal(normalize(entry('   ')).description, '', 'whitespace-only must trim to empty');
+  assert.equal(normalize(entry(' \t\n ')).description, '', 'tabs and newlines too');
+  assert.equal(normalize(entry('  real  ')).description, 'real', 'and a real one is trimmed');
 });
 
 test('final slugs are injective over a mixed fixture', () => {

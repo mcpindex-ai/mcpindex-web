@@ -8,6 +8,7 @@ function mk(slug: string, title: string): IndexedServer {
   return {
     source: 'registry',
     slug,
+    baseSlug: slug,
     name: slug,
     title,
     description: 'd',
