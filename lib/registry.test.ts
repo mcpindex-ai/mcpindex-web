@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { disambiguateSlugs, findDeprecatedServer, mergeAdmitted, slugify } from './registry';
+import { disambiguateSlugs, findDeprecatedServer, getCollidingBase, loadServers, mergeAdmitted, slugify } from './registry';
 import type { IndexedServer, RegistryEntry } from './types';
 
 function stub(name: string): IndexedServer {
@@ -230,5 +230,30 @@ test('a doubly-hashed admitted row still reports its ORIGINAL base', () => {
   const out = disambiguateSlugs(mergeAdmitted([registryRow], [admittedRow]));
   for (const s of out) {
     assert.equal(s.baseSlug, slugify('io.github.mcp/server_git'));
+  }
+});
+
+test('getCollidingBase never returns the whole corpus for a reserved-looking slug', async () => {
+  // REGRESSION: the base index cached its validity marker under a reserved key IN the same
+  // map, so GET /server/__n__ matched it and rendered a 26.9 MB chooser listing all 18,739
+  // servers - HTTP 200, 7.6s, on a route proxy.ts exempts from rate limiting. Any in-band
+  // sentinel in a map keyed by user input is reachable; these pin that none is.
+  for (const probe of ['__n__', '__proto__', 'constructor', 'toString', 'valueOf', 'hasOwnProperty']) {
+    const r = await getCollidingBase(probe);
+    assert.equal(r, null, `getCollidingBase(${probe}) leaked ${r?.length} members`);
+  }
+});
+
+test('getCollidingBase returns a genuinely small set for a real colliding base', async () => {
+  // Guards the same failure from the other side: a real hit must be a handful of twins,
+  // never a corpus-sized list. Ten members would already be a page nobody should render.
+  const servers = await loadServers();
+  const byBase = new Map<string, number>();
+  for (const s of servers) byBase.set(s.baseSlug, (byBase.get(s.baseSlug) ?? 0) + 1);
+  const colliding = [...byBase.entries()].filter(([, n]) => n > 1);
+  for (const [base] of colliding) {
+    const members = await getCollidingBase(base);
+    assert.ok(members, `${base} should resolve to a chooser`);
+    assert.ok(members.length >= 2 && members.length < 10, `${base} -> ${members.length} members`);
   }
 });

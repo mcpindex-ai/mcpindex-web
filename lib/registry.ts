@@ -436,29 +436,33 @@ export function findDeprecatedServer(
  * resolves to a page that names both and makes the reader choose. The link stays alive,
  * nothing is asserted about which one they meant.
  */
-let _baseIndex: Map<string, IndexedServer[]> | null = null;
+// Cache validity is tracked BESIDE the map, never inside it.
+//
+// The first version stored the server list under a reserved key ('__n__') in the same map
+// and compared its length to detect a refreshed corpus. That put an attacker-reachable
+// string in the same namespace as real slugs: GET /server/__n__ hit the sentinel, saw
+// 18,739 "members", and rendered a 26.9 MB chooser page in 7.6s - on a route proxy.ts
+// deliberately exempts from the per-IP limiter. An in-band sentinel in a lookup keyed by
+// user input is the bug; a separate field is the fix.
+let _baseIndex: { map: Map<string, IndexedServer[]>; size: number } | null = null;
 
 /** `baseSlug -> members`, built once per loaded corpus.
  *
  * Replaces a per-call scan: the previous version ran `slugify()` over ~18,600 names on
- * every 404, twice (generateMetadata and the page), on a route proxy.ts deliberately
- * exempts from the per-IP limiter - so a slug-spray bought ~18ms of CPU per request for
- * free. This is O(n) once against the same cache `loadServers` already keeps.
+ * every 404, twice (generateMetadata and the page), on that same unmetered route. This is
+ * O(n) once against the cache `loadServers` already keeps.
  */
 async function baseIndex(): Promise<Map<string, IndexedServer[]>> {
   const servers = await loadServers();
-  if (_baseIndex && _baseIndex.get('__n__')?.length === servers.length) return _baseIndex;
-  const idx = new Map<string, IndexedServer[]>();
+  if (_baseIndex && _baseIndex.size === servers.length) return _baseIndex.map;
+  const map = new Map<string, IndexedServer[]>();
   for (const s of servers) {
-    const g = idx.get(s.baseSlug);
+    const g = map.get(s.baseSlug);
     if (g) g.push(s);
-    else idx.set(s.baseSlug, [s]);
+    else map.set(s.baseSlug, [s]);
   }
-  // Sentinel so a refreshed corpus (new snapshot, different length) rebuilds the index
-  // instead of serving a stale grouping.
-  idx.set('__n__', servers);
-  _baseIndex = idx;
-  return idx;
+  _baseIndex = { map, size: servers.length };
+  return map;
 }
 
 /**
