@@ -278,6 +278,12 @@ export default async function LedgerPage() {
         )}
       </section>
 
+      {/* The loop that produces every row above. This is the POPULATED path; the figure also
+          renders in the empty-ledger fallback, where it is the only thing explaining what the
+          page would show. Placing it in the fallback ALONE was the defect: production always
+          has a ledger, so that branch never runs and the figure never appeared here at all. */}
+      <Figure id="drift-network-loop">{renderDiagram('drift-network-loop')}</Figure>
+
       <p className="mt-10 font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
         Page refreshed every 5 minutes; the crawler runs daily
       </p>

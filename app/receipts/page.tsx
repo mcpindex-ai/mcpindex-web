@@ -97,6 +97,12 @@ export default async function ReceiptsPage({ searchParams }: PageProps) {
           ))}
         </ul>
       )}
+
+      {/* What each row above means, read against a real HOLD. The figure also renders in the
+          no-install-id branch, but placing it ONLY there was the defect: it appeared for anyone
+          arriving without an id and vanished for the actual user reading their own activity,
+          who is exactly the person a "verdict" column sends looking for an explanation. */}
+      <Figure id="anatomy-of-a-hold">{renderDiagram('anatomy-of-a-hold')}</Figure>
     </article>
   );
 }
