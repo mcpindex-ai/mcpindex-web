@@ -15,6 +15,7 @@ import { z } from 'zod';
 
 // In-process /api/v1 dispatch (no self-fetch); see lib/v1Dispatch.ts.
 import { callV1 } from '@/lib/v1Dispatch';
+import { checkMcpBody } from '@/lib/mcpBodyGuard';
 
 
 // Shared single source of truth for tool name/title/description (also used by the
@@ -310,21 +311,14 @@ export const maxDuration = 60;
 // resource-exhaustion amplifier (each malformed POST ties up a serverless invocation
 // for the full timeout). Pre-validate the body here and return the same fast -32700
 // 400 for empty/unparseable input; valid JSON is forwarded to mcp-handler unchanged.
-function parseError(): Response {
-  return Response.json(
-    { jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error: Invalid JSON' } },
-    { status: 400 },
-  );
-}
-
 async function postHandler(req: Request, ctx: unknown): Promise<Response> {
   const raw = await req.text();
-  if (raw.trim() === '') return parseError();
-  try {
-    JSON.parse(raw);
-  } catch {
-    return parseError();
-  }
+  // Pre-dispatch guards live in lib/mcpBodyGuard.ts (pure, testable - importing THIS module
+  // starts an mcp-handler setInterval that hangs node:test). They bound an unauthenticated
+  // resource-exhaustion primitive; see that file for the full chain.
+  const rejected = checkMcpBody(raw);
+  if (rejected) return rejected;
+
   // Body is a stream consumed once; rebuild an equivalent request for the handler.
   const forwarded = new Request(req.url, { method: req.method, headers: req.headers, body: raw });
   return (handler as (r: Request, c: unknown) => Promise<Response>)(forwarded, ctx);
