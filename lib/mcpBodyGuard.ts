@@ -1,5 +1,8 @@
 /**
- * Pre-dispatch body guards for the UNAUTHENTICATED MCP endpoint (/api/mcp).
+ * Pre-dispatch inspection for the UNAUTHENTICATED MCP endpoint (/api/mcp).
+ *
+ * Does two jobs from ONE parse: reject what we refuse to dispatch, and describe what we DO
+ * dispatch, so a slow request can be identified later without re-reading a consumed body.
  *
  * Lives in lib/ rather than in the route because importing the route module runs
  * createMcpHandler() at module scope, which starts an mcp-handler cleanup setInterval
@@ -7,8 +10,6 @@
  * pure and dependency-free is what makes them testable at all - and it is the repo's
  * "separate orchestration from execution" rule applied to the one surface where the
  * validation, not the transport, is the security control.
- *
- * Returns a JSON-RPC error Response to send, or null to let the request through.
  */
 
 /** JSON-RPC parse error. Wrong-shaped bytes, before we know anything else. */
@@ -32,20 +33,45 @@ export function invalidRequest(message: string): Response {
 // ~4.5MB body ceiling, which is what an attacker would otherwise get to spend.
 export const MAX_BODY_BYTES = 256 * 1024;
 
-export function checkMcpBody(raw: string): Response | null {
-  if (raw.trim() === '') return parseError();
+/**
+ * PII-SAFE request shape, for logs.
+ *
+ * Carries NO caller content by construction: `method` and `tool` come from closed vocabularies
+ * (JSON-RPC method names, our own six registered tools) and `bytes` is a length.
+ * `params.arguments` is the user's prose - a task description, a slug they typed - and never
+ * appears here. That is the entire reason this type exists rather than logging the body.
+ */
+export type McpRequestShape = {
+  method: string;
+  /** Present only for tools/call. One of our own tool names. */
+  tool?: string;
+  bytes: number;
+};
 
-  // Size gate BEFORE JSON.parse: parsing a multi-megabyte adversarial body is itself the
-  // work we are declining to do for an unauthenticated caller.
+export type McpInspection = { reject: Response } | { accept: McpRequestShape };
+
+function shapeOf(parsed: unknown, bytes: number): McpRequestShape {
+  const o = (parsed ?? {}) as Record<string, unknown>;
+  const method = typeof o.method === 'string' ? o.method : '<none>';
+  const params = (o.params ?? {}) as Record<string, unknown>;
+  const tool = method === 'tools/call' && typeof params.name === 'string' ? params.name : undefined;
+  return tool ? { method, tool, bytes } : { method, bytes };
+}
+
+export function inspectMcpBody(raw: string): McpInspection {
+  if (raw.trim() === '') return { reject: parseError() };
+
+  // Size gate BEFORE JSON.parse: parsing a multi-megabyte adversarial body is itself the work
+  // we are declining to do for an anonymous caller.
   if (raw.length > MAX_BODY_BYTES) {
-    return invalidRequest(`Request body exceeds ${MAX_BODY_BYTES} bytes`);
+    return { reject: invalidRequest(`Request body exceeds ${MAX_BODY_BYTES} bytes`) };
   }
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    return parseError();
+    return { reject: parseError() };
   }
 
   // REJECT JSON-RPC BATCHES. This is a resource-exhaustion primitive, not a style rule.
@@ -65,10 +91,12 @@ export function checkMcpBody(raw: string): Response | null {
   // Rejecting outright rather than capping length: this deployment is stateless, has no
   // batching client, and MCP revision 2025-06-18 removed batch support from the spec.
   if (Array.isArray(parsed)) {
-    return invalidRequest(
-      'JSON-RPC batching is not supported. Send one message per request to /api/mcp.',
-    );
+    return {
+      reject: invalidRequest(
+        'JSON-RPC batching is not supported. Send one message per request to /api/mcp.',
+      ),
+    };
   }
 
-  return null;
+  return { accept: shapeOf(parsed, raw.length) };
 }
