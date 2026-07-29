@@ -49,12 +49,29 @@ function safeSeg(v: string, label: string): string {
 }
 
 const text = (t: string) => ({ content: [{ type: 'text' as const, text: t }] });
-const errText = (name: string, e: unknown) => ({
-  isError: true,
-  content: [
-    { type: 'text' as const, text: `Error calling ${name}: ${e instanceof Error ? e.message : String(e)}` },
-  ],
-});
+// Messages we throw DELIBERATELY, and which are safe to hand an unauthenticated caller:
+//   `mcpindex API <status>`  - lib/v1Dispatch on a non-2xx (status only; it is explicitly
+//                              written not to leak the upstream body)
+//   `invalid <label>`        - safeSeg above, fixed labels
+// Anything else reaching this function is unexpected - a formatter TypeError such as
+// "Cannot read properties of undefined (reading 'recommendations')" describes our internal
+// shape to anyone who can POST. /api/mcp is unauthenticated, so that is a free structure
+// probe. Those are logged server-side and answered generically instead.
+//
+// `mcpindex API: unroutable path ...` is deliberately NOT allowlisted: it only fires when our
+// own tool code builds a path that does not exist, which is a bug on our side, not something
+// the caller can act on.
+const PUBLIC_TOOL_ERROR = /^(mcpindex API \d{3}|invalid [a-z_]+)$/;
+
+const errText = (name: string, e: unknown) => {
+  const raw = e instanceof Error ? e.message : String(e);
+  const safe = PUBLIC_TOOL_ERROR.test(raw) ? raw : 'internal error';
+  if (safe !== raw) console.error(`mcp tool ${name} failed:`, e);
+  return {
+    isError: true,
+    content: [{ type: 'text' as const, text: `Error calling ${name}: ${safe}` }],
+  };
+};
 
 // --- formatters ported from the CLI (mcp-server-mcpindex/src/index.mjs) ---
 
