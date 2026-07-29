@@ -3,29 +3,28 @@ name: mcpindex-web CI
 # Lint + typecheck + unit tests for the web app (repo root). Vercel runs `next build`
 # on deploy but never the test suite, so without this a regression in lib/ledger,
 # lib/driftStats, lib/driftQuery, lib/badge, etc. would ship unnoticed. ubuntu-only
-# (macOS runners bill 10x) and scoped to web-app paths so a mcp-server-mcpindex-only
-# change does not trigger it (that package has its own workflow).
+# (macOS runners bill 10x).
 
 on:
+  # DELIBERATELY UNFILTERED. `verify` is the only REQUIRED check on main, and a path filter on
+  # a required check does not report "skipped" to branch protection - it reports nothing, so any
+  # PR touching only unlisted paths is permanently unmergeable. That was first hit by the
+  # source-liveness publisher (PRs touching only data/source-liveness.json were undismissable
+  # and the published census silently sat a week stale) and patched by adding 'data/**'. Adding
+  # one path per outage is the wrong fix: the same trap was still live for content/** (guides),
+  # proxy.ts, next.config.ts, public/**, vercel.json, e2e/** and the lint/postcss/playwright
+  # configs, and every new top-level file would re-arm it. An allowlist is incompatible with a
+  # required check, so PRs now always run. The cost is a few ubuntu minutes on doc-only PRs,
+  # which is cheaper than one unmergeable PR.
+  #
+  # Bonus: `contrast` runs `npm run build`, which is where check-graduation-honesty and
+  # check-diagram-freshness execute. Unfiltered PRs mean a content/ change that trips the
+  # honesty guard now fails review instead of failing the Vercel production deploy.
   pull_request:
-    paths:
-      - 'app/**'
-      - 'lib/**'
-      - 'test/**'
-      - 'components/**'
-      - 'scripts/**'
-      - 'package.json'
-      # data/** is here because `verify` is a REQUIRED check on main. A path filter that
-      # skips it does not report "skipped" to branch protection - it reports nothing, so the
-      # PR is permanently unmergeable. The source-liveness publisher opens a PR touching only
-      # data/source-liveness.json, so every one of those was undismissable and the published
-      # census silently sat a week stale. Data-only PRs are cheap to verify and this keeps
-      # them mergeable without an admin bypass. (The 2-hourly verdict sync pushes straight to
-      # main and never opens a PR, so it is unaffected by a pull_request filter.)
-      - 'data/**'
-      - 'package-lock.json'
-      - 'tsconfig.json'
-      - '.github/workflows/web-ci.yml'
+  # The push filter STAYS, and stays narrow: push is not gated by branch protection, so a skip
+  # here is harmless, and 'data/**' is intentionally absent because the 2-hourly Hetzner verdict
+  # sync pushes straight to main. Without that omission every sync would trigger a full build
+  # plus a Chromium download, 12 times a day, for a machine-generated data refresh.
   push:
     branches: [main]
     paths:
