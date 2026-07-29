@@ -48,7 +48,10 @@ export function isGoneSlug(slug: string): boolean {
 export function resolveServerRedirect(
   slug: string,
   activeSlugs: ReadonlySet<string>,
-  legacySlugs?: ReadonlyMap<string, string>,
+  // REQUIRED, not optional. An optional third parameter immediately leaked: the OG route
+  // never passed it, so OG images 404'd on the exact legacy slugs the page and the API both
+  // redirect. A required parameter makes a missed call site a compile error.
+  legacySlugs: ReadonlyMap<string, string>,
 ): string | null {
   if (!safeSlug(slug) || activeSlugs.has(slug)) return null;
 
@@ -64,7 +67,7 @@ export function resolveServerRedirect(
   // could not tell a former slug from a live server's real one and would 308 a dead URL onto
   // an unrelated subject — permanently, and carrying its canonical link equity. Absent the
   // map the rule simply does not fire, which is the right failure.
-  const moved = legacySlugs?.get(slug);
+  const moved = legacySlugs.get(slug);
   if (moved && activeSlugs.has(moved) && safeSlug(moved)) return moved;
 
   // Common rename: drop a trailing "-mcp" when that exact active slug exists.

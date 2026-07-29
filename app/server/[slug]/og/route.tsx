@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { getServer, loadServers } from '@/lib/registry';
+import { getServer, legacySlugRedirects, loadServers } from '@/lib/registry';
 import { getVerdict } from '@/lib/verdicts';
 import { VerdictOg, OG_SIZE } from '@/lib/og';
 import { isGoneSlug, resolveServerRedirect } from '@/lib/serverRemovals';
@@ -13,8 +13,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
   const server = await getServer(slug);
   if (!server) {
     if (isGoneSlug(slug)) return new Response('gone', { status: 410 });
-    const active = new Set((await loadServers()).map((s) => s.slug));
-    const dest = resolveServerRedirect(slug, active);
+    const servers = await loadServers();
+    const active = new Set(servers.map((s) => s.slug));
+    const dest = resolveServerRedirect(slug, active, legacySlugRedirects(servers));
     if (dest) {
       return Response.redirect(new URL(`/server/${dest}/og`, 'https://mcpindex.ai'), 308);
     }

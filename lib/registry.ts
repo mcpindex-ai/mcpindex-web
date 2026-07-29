@@ -80,6 +80,23 @@ export function legacySlugRedirects(
   return out;
 }
 
+/**
+ * Is this row's name well-formed UTF-16?
+ *
+ * A lone surrogate must be REFUSED, not normalised. `createHash().update(name)` substitutes
+ * U+FFFD before hashing, so all 2,048 lone surrogates share one digest and two distinct
+ * names collapse onto one slug — `disambiguateSlugs` then produces a duplicate and the final
+ * `seenSlug` pass silently drops a subject. mcpindex-trust cannot even reach that point:
+ * `str.encode()` raises there.
+ *
+ * Neither side can be bent to match the other (Python's `errors="replace"` gives `?`, Node
+ * gives U+FFFD), so the only convergent answer is for both to drop the row. Mirrors
+ * `_is_well_formed` in `corpus_eval/tooling/slug_identity.py`.
+ */
+export function hasWellFormedName(s: { name: string }): boolean {
+  return typeof s.name === 'string' && !/[\uD800-\uDFFF]/.test(s.name.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, ''));
+}
+
 export function slugify(name: string): string {
   const slug = name
     .toLowerCase()
@@ -274,7 +291,7 @@ export function mergeAdmitted(
   // the name does not.
   const registryIdentities = new Set(registryServers.flatMap(identityKeys));
   const admitted = admittedServers
-    .filter((s) => s.description && s.name && s.slug)
+    .filter((s) => s.description && s.name && s.slug && hasWellFormedName(s))
     .flatMap((s): IndexedServer[] => {
       const dupe = identityKeys(s).find((k) => registryIdentities.has(k));
       if (dupe) {
@@ -423,7 +440,7 @@ export async function loadServers(): Promise<IndexedServer[]> {
         'active',
     )
     .map(normalize)
-    .filter((s) => s.description && s.name && s.slug);
+    .filter((s) => s.description && s.name && s.slug && hasWellFormedName(s));
   const merged = mergeAdmitted(filtered, (await loadAdmitted()).servers.map(normalizeAdmitted));
 
   // Dedup by name first (publisher isLatest regressions / crawler dupes; first wins).
@@ -461,7 +478,7 @@ export function findDeprecatedServer(
         'deprecated',
     )
     .map(normalize)
-    .filter((s) => s.description && s.name && s.slug);
+    .filter((s) => s.description && s.name && s.slug && hasWellFormedName(s));
   const seenName = new Set<string>();
   const uniqueByName = filtered.filter((s) =>
     seenName.has(s.name) ? false : (seenName.add(s.name), true),
