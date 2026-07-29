@@ -18,13 +18,18 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 
+// SERP coverage note (2026-07-29): the title carries the literal category phrase
+// "MCP servers" and the description carries the "MCP server index" bigram - GSC
+// showed we matched neither the two-token "mcp index" query nor the category term.
+// Title stays gate-led (gate-first positioning); the index claim lives in the
+// description. Keep title <=~60 chars, description <=~160.
 const SITE_DESCRIPTION =
-  'In-path trust gate for MCP tool calls. Pins each contract and HOLDs when it silently changes-before your agent acts. Zero credentials.';
+  'The drift-monitored MCP server index with an in-path trust gate: pins each tool contract and HOLDs when it silently changes - before your agent acts.';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://mcpindex.ai'),
   title: {
-    default: 'mcpindex - the in-path trust gate for agent tool calls',
+    default: 'mcpindex - the trust gate for MCP servers and agent tool calls',
     template: '%s · mcpindex.ai',
   },
   description: SITE_DESCRIPTION,

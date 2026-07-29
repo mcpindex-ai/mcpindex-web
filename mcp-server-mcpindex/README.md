@@ -9,9 +9,9 @@
 [![Smithery](https://smithery.ai/badge/gautamgb/mcpindex)](https://smithery.ai/servers/gautamgb/mcpindex)
 [![Glama](https://glama.ai/mcp/servers/mcpindex-ai/mcp-server-mcpindex/badges/score.svg)](https://glama.ai/mcp/servers/mcpindex-ai/mcp-server-mcpindex)
 
-> An MCP server for finding MCP servers, plus advisory trust verdicts agent frameworks can call before invoking a tool.
+> An MCP server for finding MCP servers, plus advisory trust verdicts agent frameworks can call before invoking a tool - from [mcpindex.ai](https://mcpindex.ai).
 
-A drop-in MCP server that lets your agent discover, compare, install, and pre-flight other MCP servers from inside the agent loop. Backed by [mcpindex.ai](https://mcpindex.ai) - the agent-native index of the official MCP registry (live count at [mcpindex.ai/stats](https://mcpindex.ai/stats)), screened and drift-monitored daily.
+A drop-in MCP server that lets your agent discover, compare, install, and pre-flight other MCP servers from inside the agent loop. Backed by [mcpindex.ai](https://mcpindex.ai) - the agent-native MCP server index of the official registry (live count at [mcpindex.ai/stats](https://mcpindex.ai/stats)), screened and drift-monitored daily.
 
 [Live site](https://mcpindex.ai) · [`npx mcp-server-mcpindex`](https://www.npmjs.com/package/mcp-server-mcpindex) · [Remote MCP](https://mcpindex.ai/api/mcp) · [Install gate](https://mcpindex.ai/#install) · [Docs](https://mcpindex.ai/docs) · [Trust](https://mcpindex.ai/trust)
 

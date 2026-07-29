@@ -2,19 +2,19 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.gautamgb/mcp-server-mcpindex",
   "title": "mcpindex",
-  "description": "The MCP directory that vets servers, not just lists them. Advisory trust screen before you install.",
+  "description": "The MCP server index that vets servers, not just lists them. Advisory screen before you install.",
   "websiteUrl": "https://mcpindex.ai",
   "repository": {
     "url": "https://github.com/mcpindex-ai/mcpindex-web",
     "source": "github",
     "subfolder": "mcp-server-mcpindex"
   },
-  "version": "0.3.12",
+  "version": "0.3.13",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "mcp-server-mcpindex",
-      "version": "0.3.12",
+      "version": "0.3.13",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"

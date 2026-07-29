@@ -4,6 +4,12 @@ All notable changes to `mcp-server-mcpindex` are recorded here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.13] - 2026-07-29
+
+### Changed
+
+- **Copy only, no behaviour change.** README and package descriptions now name the category explicitly - "MCP server index" instead of "MCP directory" / "agent-native index" - and the README's first line links to [mcpindex.ai](https://mcpindex.ai). This repo and the npm page rank for discovery queries that the mcpindex.ai domain itself does not yet; the copy should funnel readers (and search engines) to the canonical site. Added `mcpindex`, `mcp-server-index`, `registry` keywords. `server.json` description reworded within the registry's 100-char cap.
+
 ## [0.3.12] - 2026-07-27
 
 ### Fixed

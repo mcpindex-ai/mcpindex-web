@@ -30,7 +30,7 @@ export const revalidate = 3600;
 // onto every subpage). Canonical stays the root domain (set in the root layout).
 export const metadata: Metadata = {
   openGraph: {
-    title: 'mcpindex - the in-path trust gate for agent tool calls',
+    title: 'mcpindex - the trust gate for MCP servers and agent tool calls',
     description:
       'The tool your agent trusted on Monday can change on Tuesday - silently. mcpindex holds the call before your agent acts on the change.',
     url: 'https://mcpindex.ai',
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     site: '@mcpindex',
-    title: 'mcpindex - the in-path trust gate for agent tool calls',
+    title: 'mcpindex - the trust gate for MCP servers and agent tool calls',
     description:
       'The tool your agent trusted on Monday can change on Tuesday - silently. mcpindex holds the call before your agent acts on the change.',
   },
@@ -83,7 +83,7 @@ export default async function Home() {
         '@id': 'https://mcpindex.ai/#org',
         name: 'mcpindex.ai',
         url: 'https://mcpindex.ai',
-        description: 'The in-path trust gate for agent tool calls.',
+        description: 'The in-path trust gate for MCP servers and agent tool calls.',
       },
       {
         '@type': 'WebSite',
