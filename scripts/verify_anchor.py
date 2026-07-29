@@ -236,12 +236,31 @@ def working_tree_matches_head() -> bool | None:
 _COMMIT_RE = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 
 
-# A full commit sha and nothing else. This runs on the READER's machine against a ledger
-# they downloaded, so validation upstream in the producing repo cannot protect them - the
-# attacker's edit target is the published file this script reads. `git show` accepts any
-# revision, so an unpinned value like "HEAD" would silently resolve to whatever the reader
-# has checked out and print `root ok` against it: laundering, by the tool built to stop it.
-_COMMIT_RE = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
+
+# Shapes every ledger string must match before it is allowed near an f-string.
+_SHA256_RE = re.compile(r"sha256:[0-9a-f]{64}")
+_PROOF_RE = re.compile(r"anchors/[0-9a-f]{64}\.ots")
+_STAMP_RE = re.compile(r"[0-9T:.Z+-]{10,40}")
+
+
+def safe(value: object, shape: re.Pattern[str] | None = None) -> str:
+    """Render a LEDGER-DERIVED string for the terminal. Never use an f-string directly.
+
+    The ledger is the artifact under attack, and its strings were printed raw. A
+    `stamped_at` of "\x1b[8m..." turns on terminal conceal, and with a few more escapes a
+    ledger whose real result is FAIL renders on screen as a clean OK - the verifier made to
+    lie about its own verdict, while the exit code says otherwise and nobody looks.
+
+    Orphan filenames got `!r` two commits ago for exactly this reason; the ledger's own
+    fields, which are more numerous and equally attacker-chosen, did not. Same class, same
+    fix, applied consistently this time. Mirrors _scrub_subprocess_text in
+    mcpindex-trust/src/trust/_ots_helpers.py, which exists for the identical reason.
+    """
+    text = str(value)
+    if shape is not None and shape.fullmatch(text):
+        return text
+    # Anything unexpected is quoted, so control bytes are escaped rather than executed.
+    return repr(text)
 
 
 def load_corpus_at_raw(commit: str) -> bytes:
@@ -280,7 +299,8 @@ def main() -> int:
     newest_all: str | None = None
     referenced: set[str] = set()
     for e in ledger["anchors"]:
-        missing = [k for k in ("seq", "root", "chain_root", "proof") if k not in e]
+        missing = [k for k in ("seq", "root", "chain_root", "proof", "stamped_at",
+                               "verdict_count") if k not in e]
         if missing:
             print(f"anchor #?  FAIL  malformed ledger entry, missing {missing}")
             failures += 1
@@ -305,7 +325,7 @@ def main() -> int:
         checked += 1
         commit = e.get("corpus_commit")
 
-        print(f"anchor #{e['seq']}  (stamped {e['stamped_at'][:19]}Z)")
+        print(f"anchor #{safe(e['seq'])}  (stamped {safe(e.get('stamped_at', ''), _STAMP_RE)})")
         for label, ok, detail in (
             ("chain_root", chain_ok, f"expected {want_chain}"),
             ("seq", seq_ok, f"expected {want_seq}"),
@@ -315,7 +335,7 @@ def main() -> int:
             if ok:
                 print(f"  {label:<11} ok")
             else:
-                print(f"  {label:<11} FAIL  {detail}"); failures += 1
+                print(f"  {label:<11} FAIL  {safe(detail)}"); failures += 1
 
         if not commit:
             # NOT a pass. The field's absence is indistinguishable from an attacker
@@ -334,7 +354,7 @@ def main() -> int:
                 failures += 1
                 raw = None
             except subprocess.CalledProcessError:
-                print(f"  corpus      UNVERIFIED  commit {commit[:12]} absent "
+                print(f"  corpus      UNVERIFIED  commit {safe(commit[:12])} absent "
                       f"(shallow clone? try: git fetch --unshallow)")
                 skipped += 1
                 raw = None
@@ -342,18 +362,18 @@ def main() -> int:
                 verdicts = json.loads(raw)
                 got = corpus_root(verdicts)
                 if got == e["root"]:
-                    print(f"  root        ok    {got}  @ {commit[:12]}")
+                    print(f"  root        ok    {safe(got, _SHA256_RE)}  @ {safe(commit[:12])}")
                     newest_anchored = commit
                 else:
-                    print(f"  root        FAIL  got {got}\n                    want {e['root']}")
+                    print(f"  root        FAIL  got {safe(got, _SHA256_RE)}\n                    want {safe(e['root'], _SHA256_RE)}")
                     failures += 1
                 # verdict_count is rendered on /trust as fact; assert it rather than echo it.
                 if len(verdicts) != e["verdict_count"]:
-                    print(f"  count       FAIL  ledger says {e['verdict_count']}, "
+                    print(f"  count       FAIL  ledger says {safe(e['verdict_count'])}, "
                           f"corpus has {len(verdicts)}")
                     failures += 1
                 else:
-                    print(f"  count       ok    {e['verdict_count']} verdicts")
+                    print(f"  count       ok    {safe(e['verdict_count'])} verdicts")
 
         blocks = (e.get("bitcoin") or {}).get("block_heights") or []
         proof_path = REPO / "public" / e["proof"]
@@ -363,8 +383,8 @@ def main() -> int:
                 print("  bitcoin     FAIL  proof path is not pinned to this anchor")
                 failures += 1
             elif not proof_path.is_file():
-                print(f"  bitcoin     FAIL  ledger claims block(s) {blocks} but "
-                      f"public/{e['proof']} is missing"); failures += 1
+                print(f"  bitcoin     FAIL  ledger claims block(s) {safe(blocks)} but "
+                      f"public/{safe(e['proof'], _PROOF_RE)} is missing"); failures += 1
             else:
                 try:
                     attested = ots_attested_heights(proof_path, e["chain_root"])
@@ -377,9 +397,12 @@ def main() -> int:
                         print("  bitcoin     UNVERIFIED  pip install opentimestamps-client "
                               "to check the proof")
                         skipped += 1
+                    elif not all(isinstance(b, int) for b in blocks):
+                        print(f"  bitcoin     FAIL  ledger block_heights are not "
+                              f"integers: {safe(blocks)}"); failures += 1
                     elif sorted(attested) != sorted(blocks):
-                        print(f"  bitcoin     FAIL  proof attests {attested}, "
-                              f"ledger claims {blocks}"); failures += 1
+                        print(f"  bitcoin     FAIL  proof attests {safe(attested)}, "
+                              f"ledger claims {safe(blocks)}"); failures += 1
                     else:
                         # NOT "ok", and NOT "attests". The library confirms the proof is
                         # well-formed and commits to THIS anchor's chain_root - which is
@@ -390,8 +413,19 @@ def main() -> int:
                         # the block needs a merkle path check against a real header, which
                         # needs a node - and this script promises not to phone home.
                         print(f"  bitcoin     PARTIAL  structure ok, binds to this anchor; "
-                              f"block(s) {attested} is the proof's own CLAIM")
+                              f"block(s) {safe(attested)} is the proof's own CLAIM")
+                        # Folded into `skipped`, so the verdict word becomes INCOMPLETE
+                        # and the exit becomes 3. My earlier reasoning - that a
+                        # permanently non-zero exit cries wolf - conflated NON-ZERO with
+                        # ALARM. Exit 1 is the alarm channel and stays quiet here; exit 3
+                        # already means "could not check" and is ALREADY permanent for
+                        # every ZIP reader and every reader without the library. Routing
+                        # this there costs no new fatigue, and the split it replaces was
+                        # backwards: a reader WITHOUT the library got INCOMPLETE, while a
+                        # reader WITH it who learned the claim was unconfirmable got OK.
+                        # The tool was more reassuring the more it knew.
                         needs_node += 1
+                        skipped += 1
         else:
             print("  bitcoin     pending (stamped, not yet confirmed on-chain)")
         print()
@@ -419,6 +453,25 @@ def main() -> int:
             failures += len(orphans)
 
     matches = working_tree_matches_head()
+    if matches is False:
+        disk = (REPO / VERDICTS_REL).read_bytes()
+        try:
+            head = subprocess.run(
+                ["git", "-C", str(REPO), "show", "HEAD:" + VERDICTS_REL],
+                capture_output=True, check=True,
+            ).stdout
+        except Exception:
+            head = b""
+        if head and disk.replace(b"\r\n", b"\n") == head:
+            # Line-ending drift, not tampering. `.gitattributes -text` fixes fresh clones,
+            # but a clone made BEFORE that attribute keeps CRLF on disk, and accusing that
+            # reader of tampering is a false positive in the one channel that must never
+            # cry wolf.
+            print("WORKING TREE UNVERIFIED: data/verdicts.json differs from HEAD only by")
+            print("  line endings (CRLF). Not tampering. Repair:")
+            print("    git rm --cached data/verdicts.json && git reset --hard HEAD")
+            skipped += 1
+            matches = None
     if matches is None:
         print("WORKING TREE UNVERIFIED: not a git checkout (ZIP download?).")
         print("  Nothing here can tell whether data/verdicts.json is the published file.")
@@ -436,11 +489,14 @@ def main() -> int:
                 uncovered = abs(head_n - anchored_n)
                 print(f"COVERAGE: HEAD ({head_sha}) serves {head_n} verdicts; the newest "
                       f"anchor covers {anchored_n} at {newest_all[:12]}.")
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, ValueError, FileNotFoundError, OSError):
+            # ValueError: a malformed corpus_commit already FAILed per-anchor above;
+            # re-raising it here would replace the verdict with a traceback.
+            # FileNotFoundError: no git binary. Both must degrade, not crash.
             pass
 
     verdict = "FAIL" if failures else ("INCOMPLETE" if skipped else "OK")
-    print(f"{verdict}: {checked} anchor(s) verified, {failures} failure(s), "
+    print(f"{verdict}: {checked} anchor(s) checked, {failures} failure(s), "
           f"{skipped} unverified")
     if needs_node:
         # Deliberately NOT part of `skipped`: it can never be satisfied by this script, and
