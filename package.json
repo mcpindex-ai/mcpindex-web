@@ -10,7 +10,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "npm run test:lib && npm run test:routes",
-    "test:lib": "[ $(find lib -name '*.test.ts' | wc -l) -eq 40 ] || { echo 'ERROR: lib test-suite count changed. Expected exactly 40. A DROP means a suite was renamed/moved and silently stopped running (this guard exists because two suites did exactly that). An ADDITION means a new suite is not yet acknowledged. Either way, verify then update this number.'; exit 1; }; find lib -name '*.test.ts' -print0 | xargs -0 tsx --conditions=react-server --test",
+    "test:lib": "[ $(find lib -name '*.test.ts' | wc -l) -eq 41 ] || { echo 'ERROR: lib test-suite count changed. Expected exactly 41. A DROP means a suite was renamed/moved and silently stopped running (this guard exists because two suites did exactly that). An ADDITION means a new suite is not yet acknowledged. Either way, verify then update this number.'; exit 1; }; find lib -name '*.test.ts' -print0 | xargs -0 tsx --conditions=react-server --test",
     "test:routes": "[ $(find test/routes -name '*.test.ts' | wc -l) -ge 8 ] || { echo 'ERROR: found <8 route test files \u2014 a suite was likely renamed/moved (glob dropped it). If you intentionally consolidated, lower this floor.'; exit 1; }; find test/routes -name '*.test.ts' -print0 | xargs -0 tsx --conditions=react-server --test",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
