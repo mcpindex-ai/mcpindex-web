@@ -63,6 +63,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+
+      # REQUIRED, not an optimisation. sync-registry.mjs emits data/slugmap.json by spawning
+      # scripts/build-slugmap.ts, which imports lib/registry so the map comes from the same
+      # loadServers() the site uses rather than a third reimplementation. That import needs
+      # the project's dependencies. Without this step the sync fetched tsx via npx, then died
+      # on `Cannot find module 'zod'` — and because the slug-map build is fatal by design, it
+      # took the whole sync down with it. The registry snapshot froze for ~12h across two
+      # failed runs (30419097046, 30428716150) before mcpindex-snapshot-freshness paged.
+      - name: Install dependencies
+        run: npm ci
 
       - name: Fetch latest registry
         run: node scripts/sync-registry.mjs
