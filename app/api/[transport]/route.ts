@@ -15,7 +15,8 @@ import { z } from 'zod';
 
 // In-process /api/v1 dispatch (no self-fetch); see lib/v1Dispatch.ts.
 import { callV1 } from '@/lib/v1Dispatch';
-import { checkMcpBody } from '@/lib/mcpBodyGuard';
+import { inspectMcpBody } from '@/lib/mcpBodyGuard';
+import { armMcpWatchdog } from '@/lib/mcpWatchdog';
 
 
 // Shared single source of truth for tool name/title/description (also used by the
@@ -322,15 +323,25 @@ export const maxDuration = 60;
 // 400 for empty/unparseable input; valid JSON is forwarded to mcp-handler unchanged.
 async function postHandler(req: Request, ctx: unknown): Promise<Response> {
   const raw = await req.text();
-  // Pre-dispatch guards live in lib/mcpBodyGuard.ts (pure, testable - importing THIS module
-  // starts an mcp-handler setInterval that hangs node:test). They bound an unauthenticated
-  // resource-exhaustion primitive; see that file for the full chain.
-  const rejected = checkMcpBody(raw);
-  if (rejected) return rejected;
+  // Pre-dispatch inspection lives in lib/mcpBodyGuard.ts (pure, testable - importing THIS
+  // module starts an mcp-handler setInterval that hangs node:test). It bounds an
+  // unauthenticated resource-exhaustion primitive AND returns a PII-safe request shape; see
+  // that file for the full chain.
+  const seen = inspectMcpBody(raw);
+  if ('reject' in seen) return seen.reject;
 
   // Body is a stream consumed once; rebuild an equivalent request for the handler.
   const forwarded = new Request(req.url, { method: req.method, headers: req.headers, body: raw });
-  return (handler as (r: Request, c: unknown) => Promise<Response>)(forwarded, ctx);
+
+  // AWAIT, not a bare return: `finally` must run after the handler settles, or the watchdog
+  // would disarm immediately and observe nothing. See lib/mcpWatchdog.ts for why this is a
+  // timer rather than a completion log.
+  const disarm = armMcpWatchdog(seen.accept);
+  try {
+    return await (handler as (r: Request, c: unknown) => Promise<Response>)(forwarded, ctx);
+  } finally {
+    disarm();
+  }
 }
 
 // mcp-handler's basePath claims EVERY /api/<transport> segment, not just /api/mcp -
