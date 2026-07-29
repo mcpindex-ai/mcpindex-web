@@ -2,7 +2,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  applyContentDriftOverlay,
   applyExpiryOverlay,
+  CONTENT_DRIFT_LIMIT,
+  descriptionHash,
   EXPIRED_VERDICT_LIMIT,
   isVerdictExpired,
   selectScreened,
@@ -123,7 +126,10 @@ test('selectVerdictForSubject: a fixture and a prototype key never resolve', () 
 });
 
 test('selectScreened: excludes a record whose server_id names another server', () => {
-  const names = new Map([['a', 'io.github.example/a'], ['b', 'io.github.example/b']]);
+  const names = new Map([
+    ['a', { name: 'io.github.example/a' }],
+    ['b', { name: 'io.github.example/b' }],
+  ]);
   const all = {
     a: withSubject('io.github.example/a'),
     b: withSubject('io.github.attacker/lookalike'),
@@ -134,7 +140,7 @@ test('selectScreened: excludes a record whose server_id names another server', (
 });
 
 test('selectScreened: keeps legacy records, drops fixtures and unknown slugs', () => {
-  const names = new Map([['a', 'io.github.example/a']]);
+  const names = new Map([['a', { name: 'io.github.example/a' }]]);
   const all = {
     a: withSubject(),                                    // legacy, no server_id
     fix: { ...withSubject('io.github.example/a'), fixture: true },
@@ -142,4 +148,89 @@ test('selectScreened: keeps legacy records, drops fixtures and unknown slugs', (
   };
   const got = selectScreened(all, names, Date.parse('2026-07-21T12:00:00Z'));
   assert.deepEqual(got.map((r) => r.slug), ['a']);
+});
+
+// ---------------------------------------------------------------------------
+// Content-drift overlay: the record's content_hash vs the description published NOW.
+// Doctrine mirrors the expiry overlay: never coerce status away from an accusation.
+
+test('applyContentDriftOverlay: clean drifted -> STALE + content_drift', () => {
+  const v = { ...mk([{ id: DESC, verdict: 'PASS' }], ''), content_hash: descriptionHash('old text') };
+  const out = applyContentDriftOverlay(v, 'new text');
+  assert.equal(out.status, 'STALE');
+  assert.ok(out.honest_limits?.includes(CONTENT_DRIFT_LIMIT));
+});
+
+test('applyContentDriftOverlay: drifted FAIL -> token only, status unchanged', () => {
+  const v = { ...mk([{ id: DESC, verdict: 'FAIL' }], ''), content_hash: descriptionHash('old text') };
+  const out = applyContentDriftOverlay(v, 'new text');
+  assert.equal(out.status, 'PARTIAL',
+    'an accusation must keep its status: marking it STALE would soften the signal');
+  assert.ok(out.honest_limits?.includes(CONTENT_DRIFT_LIMIT));
+});
+
+test('applyContentDriftOverlay: unchanged description -> identity', () => {
+  const v = { ...mk([{ id: DESC, verdict: 'PASS' }], ''), content_hash: descriptionHash('same') };
+  assert.equal(applyContentDriftOverlay(v, 'same'), v);
+});
+
+test('applyContentDriftOverlay: unresolvable subject or hashless record -> identity', () => {
+  const hashless = mk([{ id: DESC, verdict: 'PASS' }], '');
+  assert.equal(applyContentDriftOverlay(hashless, 'anything'), hashless,
+    'a legacy record with no content_hash has nothing to compare');
+  const v = { ...mk([{ id: DESC, verdict: 'PASS' }], ''), content_hash: descriptionHash('old') };
+  assert.equal(applyContentDriftOverlay(v, null), v,
+    'fail-OPEN by design: unresolvable must not flip the site to STALE (AD-4b)');
+});
+
+test('applyContentDriftOverlay: idempotent, no duplicate token', () => {
+  const v = { ...mk([{ id: DESC, verdict: 'PASS' }], ''), content_hash: descriptionHash('old') };
+  const once = applyContentDriftOverlay(v, 'new');
+  const twice = applyContentDriftOverlay(once, 'new');
+  assert.equal(
+    twice.honest_limits?.filter((l) => l === CONTENT_DRIFT_LIMIT).length, 1);
+  assert.equal(twice.status, 'STALE');
+});
+
+test('both overlays compose: expired + drifted -> STALE with BOTH tokens', () => {
+  const v = {
+    ...mk([{ id: DESC, verdict: 'PASS' }], '2020-01-01T00:00:00Z'),
+    content_hash: descriptionHash('old text'),
+  };
+  const out = applyContentDriftOverlay(applyExpiryOverlay(v, NOW), 'new text');
+  assert.equal(out.status, 'STALE');
+  assert.ok(out.honest_limits?.includes(EXPIRED_VERDICT_LIMIT));
+  assert.ok(out.honest_limits?.includes(CONTENT_DRIFT_LIMIT));
+});
+
+test('selectVerdictForSubject: applies the content overlay from subject.description', () => {
+  const rec = { ...withSubject('io.github.example/a'), content_hash: descriptionHash('judged') };
+  const stale = selectVerdictForSubject(
+    { a: rec },
+    { slug: 'a', name: 'io.github.example/a', description: 'republished' },
+  );
+  assert.equal(stale?.status, 'STALE');
+  assert.ok(stale?.honest_limits?.includes(CONTENT_DRIFT_LIMIT));
+  const fresh = selectVerdictForSubject(
+    { a: rec },
+    { slug: 'a', name: 'io.github.example/a', description: 'judged' },
+  );
+  assert.equal(fresh?.status, rec.status);
+  assert.ok(!fresh?.honest_limits?.includes(CONTENT_DRIFT_LIMIT));
+});
+
+test('selectScreened and selectVerdictForSubject agree on staleness', () => {
+  // The leaderboard (selectScreened) and the server page (selectVerdictForSubject)
+  // must never disagree about the same record - on a trust surface, the surfaces
+  // disagreeing IS the defect this overlay exists to prevent.
+  const rec = { ...withSubject('io.github.example/a'), content_hash: descriptionHash('judged') };
+  const subjects = new Map([['a', { name: 'io.github.example/a', description: 'republished' }]]);
+  const listed = selectScreened({ a: rec }, subjects, Date.parse('2026-07-21T12:00:00Z'));
+  const paged = selectVerdictForSubject(
+    { a: rec },
+    { slug: 'a', name: 'io.github.example/a', description: 'republished' },
+  );
+  assert.equal(listed.length, 1);
+  assert.equal(listed[0].verdict.status, paged?.status);
+  assert.deepEqual(listed[0].verdict.honest_limits, paged?.honest_limits);
 });

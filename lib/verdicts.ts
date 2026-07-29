@@ -7,6 +7,7 @@
 
 import path from 'node:path';
 import { promises as fsp } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { loadServers } from './registry';
 
 export type Decision = 'ALLOW' | 'DENY' | 'REVIEW';
@@ -21,6 +22,24 @@ export const SCHEMA_CONTENT_DIMENSION_ID = 'mcpindex.integrity.schema_content';
 
 /** Honest-limits token appended when directive.expires_at is in the past. */
 export const EXPIRED_VERDICT_LIMIT = 'expired_verdict';
+
+/**
+ * Honest-limits token appended when the record's content_hash no longer matches the
+ * sha256 of the description currently published in the registry: the screen judged
+ * text that has since been replaced. Cause-agnostic — it fires for post-judge drift
+ * and for born-stale records (judged from a lagging input snapshot) alike.
+ */
+export const CONTENT_DRIFT_LIMIT = 'content_drift';
+
+/**
+ * Kill switch for the content-drift overlay. Default ON: OFF is the less safe state
+ * (verdicts bound to superseded text render as live assessments), so it must be the
+ * deliberate act — set CONTENT_DRIFT_OVERLAY=0 to revert to clock-only staleness
+ * without a deploy.
+ */
+export function contentDriftOverlayEnabled(): boolean {
+  return process.env.CONTENT_DRIFT_OVERLAY !== '0';
+}
 
 export type Dimension = {
   id: string;
@@ -71,6 +90,11 @@ export type Verdict = {
   origin?: string;
   title?: string;
   evaluated_at?: string; // when the screen was produced (freshness signal); ISO string
+  // THE CONTENT BINDING: "sha256:<hex>" of the exact description this screen judged
+  // (writer: seed_filesystem.project). applyContentDriftOverlay compares it against the
+  // currently published description; a mismatch means the assessment describes text that
+  // is no longer live. Optional: 3 records predate it, and fixtures never carry it.
+  content_hash?: string;
   // THE SUBJECT BINDING: the registry name this verdict is ABOUT. Optional because 18,543
   // records predate it; getVerdict refuses a record whose server_id is present and does not
   // match the server whose page it landed on. See the comment there.
@@ -89,6 +113,7 @@ export type Verdict = {
 type RawVerdict = {
   status?: string;
   server_id?: string;
+  content_hash?: string;
   directive?: { decision?: string; rationale?: string; expires_at?: string };
   dimensions?: Array<{
     id: string;
@@ -213,6 +238,8 @@ function normalize(raw: RawVerdict): Verdict {
     origin: raw.origin,
     title: raw.title,
     evaluated_at: typeof raw.evaluated_at === 'string' ? raw.evaluated_at : undefined,
+    content_hash:
+      typeof raw.content_hash === 'string' && raw.content_hash ? raw.content_hash : undefined,
     server_id: typeof raw.server_id === 'string' && raw.server_id ? raw.server_id : undefined,
     adjudication: coerceAdjudication(raw.adjudication),
     preview_badge: coercePreviewBadge(raw.preview_badge),
@@ -247,6 +274,43 @@ function withExpiredLimit(v: Verdict): Verdict {
 export function applyExpiryOverlay(v: Verdict, now: number = Date.now()): Verdict {
   if (!isVerdictExpired(v, now)) return v;
   const withLimit = withExpiredLimit(v);
+  if (hasFailAxis(v)) return withLimit;
+  if (withLimit.status === 'STALE') return withLimit;
+  return { ...withLimit, status: 'STALE' };
+}
+
+/** "sha256:<hex>" of a registry description — MUST mirror the writer (seed_filesystem.project). */
+export function descriptionHash(description: string): string {
+  return 'sha256:' + createHash('sha256').update(description, 'utf8').digest('hex');
+}
+
+function withContentDriftLimit(v: Verdict): Verdict {
+  const limits = v.honest_limits ?? [];
+  if (limits.includes(CONTENT_DRIFT_LIMIT)) return v;
+  return { ...v, honest_limits: [...limits, CONTENT_DRIFT_LIMIT] };
+}
+
+/**
+ * Read-time content-drift overlay, mirroring applyExpiryOverlay's doctrine exactly:
+ * clean drifted → status STALE + content_drift token; drifted with any FAIL axis →
+ * append token only (never coerce status away from an accusation signal).
+ *
+ * `currentDescription` is the description the registry publishes NOW (from the same
+ * loadServers() the caller already resolved the subject with). Pass null when the
+ * subject cannot be resolved: the overlay is then the identity — deliberately
+ * fail-OPEN for staleness, because the alternative (treat unresolvable as stale)
+ * flips the entire site to STALE on one snapshot read failure. The resolve-rate
+ * healthcheck probe exists to catch this branch silently becoming the common case.
+ * A record with no content_hash (3 legacy records; fixtures) is also the identity —
+ * there is nothing to compare.
+ */
+export function applyContentDriftOverlay(
+  v: Verdict,
+  currentDescription: string | null | undefined,
+): Verdict {
+  if (currentDescription == null || !v.content_hash) return v;
+  if (v.content_hash === descriptionHash(currentDescription)) return v;
+  const withLimit = withContentDriftLimit(v);
   if (hasFailAxis(v)) return withLimit;
   if (withLimit.status === 'STALE') return withLimit;
   return { ...withLimit, status: 'STALE' };
@@ -332,14 +396,20 @@ export async function getVerdict(slug: string): Promise<Verdict | null> {
  */
 export function selectVerdictForSubject(
   all: Record<string, Verdict>,
-  subject: { slug: string; name: string },
+  subject: { slug: string; name: string; description?: string },
 ): Verdict | null {
   // Object.hasOwn guards against prototype keys (e.g. "__proto__") resolving to
   // the prototype object rather than a real verdict.
   const v = Object.hasOwn(all, subject.slug) ? all[subject.slug] : undefined;
   if (!v || v.fixture) return null;
   if (!verdictBindsSubject(v, subject.name)) return null;
-  return applyExpiryOverlay(v);
+  // Compose the two staleness overlays: clock first, then content. Order is
+  // presentation-irrelevant (both only append a token / set STALE) but fixed so
+  // tests can pin one composed result.
+  return applyContentDriftOverlay(
+    applyExpiryOverlay(v),
+    contentDriftOverlayEnabled() ? (subject.description ?? null) : null,
+  );
 }
 
 /**
@@ -370,8 +440,14 @@ export async function getScreenedVerdict(slug: string): Promise<Verdict | null> 
 // O(n+m): Set membership against store entries — not getVerdict-per-server (that was O(n²)).
 export async function listScreened(): Promise<Array<{ slug: string; verdict: Verdict }>> {
   const servers = await loadServers();
-  const nameBySlug = new Map(servers.map((s) => [s.slug, s.name]));
-  return selectScreened(await loadAll(), nameBySlug, Date.now());
+  // {name, description} — not just name: selectScreened applies the SAME content-drift
+  // overlay as selectVerdictForSubject. One selector marking a record STALE while the
+  // other serves it live would have the leaderboard disagreeing with the server's own
+  // page — on a trust surface the surfaces disagreeing IS the defect.
+  const subjectBySlug = new Map(
+    servers.map((s) => [s.slug, { name: s.name, description: s.description }]),
+  );
+  return selectScreened(await loadAll(), subjectBySlug, Date.now());
 }
 
 /**
@@ -381,10 +457,12 @@ export async function listScreened(): Promise<Array<{ slug: string; verdict: Ver
  */
 export function selectScreened(
   all: Record<string, Verdict>,
-  nameBySlug: ReadonlyMap<string, string>,
+  // Widened from `slug -> name` when the content-drift overlay landed, so a stale call
+  // site is a compile error rather than a silently overlay-free listing.
+  subjectBySlug: ReadonlyMap<string, { name: string; description?: string }>,
   now: number,
 ): Array<{ slug: string; verdict: Verdict }> {
-  const validSlugs = new Set(nameBySlug.keys());
+  const validSlugs = new Set(subjectBySlug.keys());
   return Object.entries(all)
     // `!v.unscreened` matters as much as `!v.fixture`: a preview-only record is a minted
     // owner badge for a server the platform never screened. Counting it as "screened" would
@@ -401,9 +479,15 @@ export function selectScreened(
         validSlugs.has(slug) &&
         !v.fixture &&
         !v.unscreened &&
-        verdictBindsSubject(v, nameBySlug.get(slug) ?? ''),
+        verdictBindsSubject(v, subjectBySlug.get(slug)?.name ?? ''),
     )
-    .map(([slug, v]) => ({ slug, verdict: applyExpiryOverlay(v, now) }))
+    .map(([slug, v]) => ({
+      slug,
+      verdict: applyContentDriftOverlay(
+        applyExpiryOverlay(v, now),
+        contentDriftOverlayEnabled() ? (subjectBySlug.get(slug)?.description ?? null) : null,
+      ),
+    }))
     .sort((a, b) => a.slug.localeCompare(b.slug));
 }
 
