@@ -86,36 +86,29 @@ export default function TrustPage() {
           inside the confirmation window, and it does not reach back before the first
           anchor: the chain is real going forward, never retroactively.
         </p>
-        {anchorLedgerState.kind !== 'none' && (
+        {anchorLedgerState.kind === 'confirmed' && (
           <>
             <p className="mt-4">
-              Verify it without trusting us. Install{' '}
-              <a
-                href="https://opentimestamps.org"
-                target="_blank"
-                rel="noreferrer"
-                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
-              >
-                OpenTimestamps
-              </a>
-              , then:
+              Verify it without trusting us. The full recipe is a dependency-free script in
+              this repo - it re-derives the roots from your own checkout and never contacts
+              us:
             </p>
             <pre className="mt-3 overflow-x-auto rounded border border-[var(--color-rule)] bg-[var(--color-surface)] p-3 font-mono text-[11px] leading-[1.7]">
-{`# 1. the corpus that was anchored, and the ledger
-curl -sO https://mcpindex.ai/anchors/${anchorLedgerState.latest.chain_root.replace(/^sha256:/, '')}.ots
-git clone --depth 1 https://github.com/mcpindex-ai/mcpindex-web
+{`git clone https://github.com/mcpindex-ai/mcpindex-web && cd mcpindex-web
+python3 scripts/verify_anchor.py          # stdlib only, no install
 
-# 2. recompute the chain root from the published verdicts
-#    (recipe: sha256 over canonical JSON per verdict, folded per data/verdict-anchors.json)
-
-# 3. check the proof commits to that exact root
-ots verify ${anchorLedgerState.latest.chain_root.replace(/^sha256:/, '')}.ots`}
+# then confirm the Bitcoin attestation itself (pip install opentimestamps-client):
+ots info public/anchors/${anchorLedgerState.latestConfirmed.chain_root.replace(/^sha256:/, '')}.ots`}
             </pre>
             <p className="mt-3 text-[13px] text-[var(--color-cite)]">
-              Anchor #{anchorLedgerState.latest.seq} covers{' '}
-              {anchorLedgerState.latest.verdict_count.toLocaleString('en-US')} verdicts,
-              stamped {anchorLedgerState.latest.stamped_at.slice(0, 10)}. The full ledger
-              is committed at{' '}
+              Anchor #{anchorLedgerState.latestConfirmed.seq} covers{' '}
+              {anchorLedgerState.latestConfirmed.verdict_count.toLocaleString('en-US')} verdicts
+              and is attested in Bitcoin block{' '}
+              {anchorLedgerState.latestConfirmed.bitcoin?.block_heights?.[0]?.toLocaleString('en-US')}.
+              The script pins the exact commit of{' '}
+              <code className="font-mono text-[12px]">data/verdicts.json</code> that was
+              hashed, because the corpus is republished several times a day - without that
+              commit the root would not reproduce. The full ledger is committed at{' '}
               <a
                 href="https://github.com/mcpindex-ai/mcpindex-web/blob/main/data/verdict-anchors.json"
                 target="_blank"

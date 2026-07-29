@@ -618,7 +618,16 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
     },
     /* … 2 more ranked picks … */
   ],
-  "note": "v0 ranker - heuristic score blends keyword match (70%) with MCP Quality Score (30%). See /methodology."
+  "provenance": {
+    "source": "mcpindex.ai",
+    "basis": "Relevance-dominant keyword match over registry title/description, with the MCP Quality Score as a small tiebreak. A rank is not a safety verdict.",
+    "limits": ["conformance_monitored_not_enforced", "calibrated_false_v1", "advisory_deployment",
+               "quality_score_measures_packaging_not_safety", "ranking_is_not_a_verdict"],
+    "anchor": { "chain_root": "sha256:...", "bitcoin_block": 959933, "proof": "https://mcpindex.ai/anchors/....ots",
+                "verify": "https://mcpindex.ai/trust#anchor" },   // null until an anchor confirms
+    "docs": "https://mcpindex.ai/methodology"
+  },
+  "note": "…"   // DEPRECATED alias of provenance.basis; kept for v1 compatibility
 }`}</code>
         </pre>
           </div>

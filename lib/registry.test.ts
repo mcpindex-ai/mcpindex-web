@@ -5,7 +5,10 @@ import { createHash } from 'node:crypto';
 import {
   disambiguateSlugs,
   findDeprecatedServer,
+  getCollidingBase,
   legacySlugRedirects,
+  loadServers,
+  mergeAdmitted,
   normalize,
   slugify,
 } from './registry';
@@ -316,4 +319,76 @@ test('normalize refuses a non-http(s) repository URL', () => {
   assert.equal(normalize(entry('https://github.com/a/b')).repositoryUrl, 'https://github.com/a/b');
   // WHATWG special-scheme slash collapsing: this HAS a host and must be kept.
   assert.equal(normalize(entry('http:evil')).repositoryUrl, 'http:evil');
+});
+
+// --- baseSlug survives both hashing steps -------------------------------------------
+// getCollidingBase groups on `baseSlug`, NOT on slugify(name), because mergeAdmitted
+// PRE-hashes a colliding admitted row: its slug is already `base-<hash>` while
+// slugify(name) is still the base. Recomputing from the name missed those rows, so a
+// registry listing and an admitted row could claim one URL with the registry row silently
+// owning it. These pin the invariant that makes the index correct.
+
+test('disambiguateSlugs moves slug but never baseSlug', () => {
+  const twins = ['io.github.SceneView/mcp', 'io.github.sceneview/mcp'];
+  const out = disambiguateSlugs(twins.map(stub));
+  for (const s of out) {
+    assert.notEqual(s.slug, s.baseSlug, 'a colliding member must be hashed');
+    assert.equal(s.baseSlug, slugify(s.name), 'baseSlug is the pre-hash slug');
+  }
+  assert.equal(new Set(out.map((s) => s.baseSlug)).size, 1, 'both stay in one group');
+});
+
+test('mergeAdmitted pre-hash keeps the admitted row in its colliding GROUP', () => {
+  // The exact shape from a6a1a4d: registry row keeps the bare slug, admitted row is
+  // pre-hashed. Both must still report the same baseSlug or the group loses a member.
+  const registryRow = stub('io.github.mcp/server_git');
+  const admittedRow = { ...stub('io.github.mcp/server-git'), source: 'admitted' as const };
+  assert.equal(registryRow.baseSlug, admittedRow.baseSlug, 'precondition: they collide');
+
+  const merged = mergeAdmitted([registryRow], [admittedRow]);
+  const admittedOut = merged.find((s) => s.source === 'admitted')!;
+  const registryOut = merged.find((s) => s.source === 'registry')!;
+
+  assert.equal(registryOut.slug, registryRow.baseSlug, 'incumbent keeps the live URL');
+  assert.notEqual(admittedOut.slug, admittedOut.baseSlug, 'admitted row was pre-hashed');
+  assert.equal(
+    admittedOut.baseSlug, registryOut.baseSlug,
+    'the pre-hashed row must remain findable as a claimant of that base',
+  );
+});
+
+test('a doubly-hashed admitted row still reports its ORIGINAL base', () => {
+  // Pre-hash then disambiguate: slug gains two suffixes. baseSlug must not follow, or the
+  // formerly-live URL becomes unreachable with no chooser and no redirect.
+  const registryRow = stub('io.github.mcp/server_git');
+  const admittedRow = { ...stub('io.github.mcp/server-git'), source: 'admitted' as const };
+  const out = disambiguateSlugs(mergeAdmitted([registryRow], [admittedRow]));
+  for (const s of out) {
+    assert.equal(s.baseSlug, slugify('io.github.mcp/server_git'));
+  }
+});
+
+test('getCollidingBase never returns the whole corpus for a reserved-looking slug', async () => {
+  // REGRESSION: the base index cached its validity marker under a reserved key IN the same
+  // map, so GET /server/__n__ matched it and rendered a 26.9 MB chooser listing all 18,739
+  // servers - HTTP 200, 7.6s, on a route proxy.ts exempts from rate limiting. Any in-band
+  // sentinel in a map keyed by user input is reachable; these pin that none is.
+  for (const probe of ['__n__', '__proto__', 'constructor', 'toString', 'valueOf', 'hasOwnProperty']) {
+    const r = await getCollidingBase(probe);
+    assert.equal(r, null, `getCollidingBase(${probe}) leaked ${r?.length} members`);
+  }
+});
+
+test('getCollidingBase returns a genuinely small set for a real colliding base', async () => {
+  // Guards the same failure from the other side: a real hit must be a handful of twins,
+  // never a corpus-sized list. Ten members would already be a page nobody should render.
+  const servers = await loadServers();
+  const byBase = new Map<string, number>();
+  for (const s of servers) byBase.set(s.baseSlug, (byBase.get(s.baseSlug) ?? 0) + 1);
+  const colliding = [...byBase.entries()].filter(([, n]) => n > 1);
+  for (const [base] of colliding) {
+    const members = await getCollidingBase(base);
+    assert.ok(members, `${base} should resolve to a chooser`);
+    assert.ok(members.length >= 2 && members.length < 10, `${base} -> ${members.length} members`);
+  }
 });

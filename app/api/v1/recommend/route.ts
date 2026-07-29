@@ -28,17 +28,26 @@ export async function GET(req: NextRequest) {
 
   const servers = await loadServers();
   const ranked = rankServers(servers, task, 3);
+  const prov = recommendationProvenance();
 
   return Response.json(
     {
       task,
       recommendations: toRecommendations(ranked),
-      // The retired note claimed "keyword match (70%) with MCP Quality Score (30%)". That
-      // stopped being true on 2026-06-01, when the composite changed to `score + QS*0.1`
-      // because a 0.3*QS term swamped the search score and floated generic high-QS servers
-      // to rank-1. The weighting moved; the sentence describing it to every API consumer
-      // did not. It now comes from `provenance.basis`, which lives beside the composite.
-      provenance: recommendationProvenance(),
+      provenance: prov,
+      // DEPRECATED alias of `provenance.basis`, kept because REMOVING it was a breaking
+      // change to a versioned public API. /docs promises "breaking changes ship behind
+      // /api/v2; v1 stays available for at least 6 months" - and mcp-server-mcpindex,
+      // our own published npm package, reads `data.note` and printed a bare "Source:"
+      // line for every installed copy the moment this field vanished. A server-side
+      // removal cannot be fixed by a client release, so v1 keeps the key.
+      //
+      // Its VALUE is now derived, not written twice. The old literal claimed the ranker
+      // "blends keyword match (70%) with MCP Quality Score (30%)", which stopped being
+      // true on 2026-06-01 when the composite became `score + QS*0.1`; the weighting
+      // moved and the sentence describing it to every consumer did not. Deriving it is
+      // what stops that recurring.
+      note: prov.basis,
     },
     {
       headers: {
