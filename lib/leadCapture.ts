@@ -30,6 +30,27 @@ export function __setLeadCaptureRedisForTest(client: Redis | null | undefined): 
   _redis = client;
 }
 
+/**
+ * Redact an email for LOG output. Upstash (this module) and Brevo are the systems of record
+ * for the plaintext; runtime logs are not, and anyone with project access or a configured log
+ * drain can read them.
+ *
+ * Keeps the domain because that is the part with operational value ("someone from acme.com
+ * signed up") and drops the local part, which is the identifying half. A hash was the other
+ * option; it would need a salt to resist dictionary lookup of a known address space, and a new
+ * required env var is a worse failure mode than a masked string that needs no configuration.
+ *
+ * Local parts of 1-2 chars are masked ENTIRELY rather than revealing a first initial that
+ * would be most of the address.
+ */
+export function maskEmail(email: string): string {
+  const at = email.lastIndexOf('@');
+  if (at <= 0) return '***'; // not an address shape: reveal nothing
+  const local = email.slice(0, at);
+  const domain = email.slice(at + 1);
+  return `${local.length > 2 ? local[0] : ''}***@${domain}`;
+}
+
 export const LEAD_CAPTURE_KEY = 'lead:capture';
 const CAP = 10_000; // keep the most recent 10k leads; bounds Upstash memory (LTRIM after each push)
 

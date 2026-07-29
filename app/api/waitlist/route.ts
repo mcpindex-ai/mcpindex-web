@@ -8,7 +8,7 @@ import {
   type LeadSource,
 } from '@/lib/brevo';
 import { checkLeadLimit } from '@/lib/ratelimit';
-import { captureLead } from '@/lib/leadCapture';
+import { captureLead, maskEmail } from '@/lib/leadCapture';
 
 function clientIp(req: NextRequest): string {
   // Vercel sets x-vercel-forwarded-for at the edge (client cannot forge it);
@@ -27,6 +27,24 @@ function clientIp(req: NextRequest): string {
  * - Simple email-only forms: log-only update list (changelog RSS is the subscribe path).
  * Fail-soft: always logs; Brevo best-effort; never 500s the visitor when Brevo is down.
  */
+/**
+ * lib/leadCapture is deliberately fail-OPEN: if Upstash is unconfigured or erroring it returns
+ * false, and its own comment names the caller's log line as the last-resort trail. That trail
+ * is why the plaintext log existed at all, and it is worth keeping FOR THAT CASE ONLY - a
+ * Brevo IP-allowlist outage already lost real leads once.
+ *
+ * So: redacted on every request (above), unredacted only when the lead would otherwise be
+ * gone. Residual exposure is a hard crash in the microseconds between the two, which loses
+ * the address from the log but not the submission.
+ */
+async function captureOrShout(lead: Parameters<typeof captureLead>[0]): Promise<void> {
+  if (await captureLead(lead)) return;
+  console.error(
+    `[${lead.source}] LEAD CAPTURE FAILED - durable store unavailable, logging in full for ` +
+      `manual recovery: ${JSON.stringify(lead)}`,
+  );
+}
+
 export async function POST(req: NextRequest) {
   let email = '';
   let company = '';
@@ -58,7 +76,12 @@ export async function POST(req: NextRequest) {
   }
 
   const ts = new Date().toISOString();
-  console.log(`[${source}] ${ts} ${email}` + (company ? ` company=${company}` : ''));
+  // REDACTED trail. This line fires on every accepted submission, so it must not carry the
+  // address: runtime logs are readable by anyone with project access or a configured log
+  // drain, and they are not a system of record - Upstash (captureLead) and Brevo are.
+  // `company` is caller-supplied free text up to 200 chars, so only its presence is logged;
+  // the value itself is in both systems of record.
+  console.log(`[${source}] ${ts} ${maskEmail(email)}` + (company ? ' company=yes' : ''));
 
   // Rich contact leads: Brevo when configured.
   if (source === 'contact') {
@@ -93,15 +116,15 @@ export async function POST(req: NextRequest) {
       const delivery = contact.ok || welcome.ok || notify.ok ? 'sent' : 'failed';
       // Durable capture regardless of Brevo outcome — a 'failed' lead is now recoverable
       // from Upstash, not just an ephemeral log line.
-      await captureLead({ ts, source, email, company: company || undefined, message: message || undefined, delivery });
+      await captureOrShout({ ts, source, email, company: company || undefined, message: message || undefined, delivery });
       return Response.json({ ok: true, delivery });
     }
-    await captureLead({ ts, source, email, company: company || undefined, message: message || undefined, delivery: 'logged' });
+    await captureOrShout({ ts, source, email, company: company || undefined, message: message || undefined, delivery: 'logged' });
     return Response.json({ ok: true, delivery: 'logged' });
   }
 
   // Plain waitlist: log only (RSS is the subscribe path) — still captured durably.
-  await captureLead({ ts, source, email, company: company || undefined, delivery: 'logged' });
+  await captureOrShout({ ts, source, email, company: company || undefined, delivery: 'logged' });
   if (!ct.includes('application/json')) {
     const url = new URL(req.url);
     url.pathname = '/';
