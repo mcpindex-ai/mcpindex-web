@@ -286,6 +286,28 @@ await Promise.all([
     : Promise.resolve(),
 ]);
 
+// The slug map is emitted HERE, from the snapshot just written, so the two can never be
+// produced apart. mcpindex-trust keys every verdict by these slugs and is losing its own
+// (second, divergent) derivation of them; a map that does not bind to the snapshot beside it
+// is a map that silently keys everything wrong. Spawned rather than imported because this
+// file is .mjs and the builder must go through lib/registry.ts — recomputing the pipeline in
+// plain JS would be a third implementation, which is the disease rather than the cure.
+//
+// A failure here is FATAL: committing a snapshot without a matching map is the stale-artifact
+// state the whole design exists to prevent.
+{
+  const { spawnSync } = await import('node:child_process');
+  const r = spawnSync(
+    'npx',
+    ['tsx', '--conditions=react-server', path.join(ROOT, 'scripts', 'build-slugmap.ts')],
+    { cwd: ROOT, stdio: 'inherit', env: process.env },
+  );
+  if (r.status !== 0) {
+    console.error('::error::build-slugmap failed; refusing to leave a snapshot without a matching slug map.');
+    process.exit(1);
+  }
+}
+
 console.log(`Wrote ${SNAP_PATH}`);
 console.log(`Wrote ${SNAP_DIR}/${day}.json`);
 if (removalsChanged) {

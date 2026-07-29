@@ -35,7 +35,7 @@ The gate is the wedge. The directory is the corpus the gate can query — also f
 
 ```bash
 npm install
-node scripts/fetch-snapshot.mjs    # one-time: pull current registry snapshot
+node scripts/sync-registry.mjs     # pull the registry: snapshot + removals + slug map
 npm run dev                         # http://localhost:3000
 ```
 
@@ -61,7 +61,7 @@ mcpindex/
 │   └── ...                 # docs, trust, methodology, ledger, …
 ├── components/             # Header, Footer, DriftGateDemo, LiveTicker, …
 ├── lib/                    # registry, quality, search, verdicts, installs, …
-├── scripts/                # sync-registry.mjs, fetch-snapshot.mjs, honesty guard
+├── scripts/                # sync-registry.mjs, build-slugmap.ts, honesty guard
 ├── data/                   # snapshot.json (committed) + snapshots/ (cron-written)
 ├── mcp-server-mcpindex/    # the npm-distributed MCP directory client
 └── …

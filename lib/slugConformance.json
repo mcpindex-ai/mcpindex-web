@@ -1,0 +1,199 @@
+{
+  "_comment": "Cross-implementation conformance corpus for the public slug rule. TWINNED: an identical copy lives in mcpindex-web/lib/slugConformance.json. Both suites assert their implementation reproduces `expected` exactly, so a change to either side that is not mirrored reddens a build. Regenerate BOTH together, never one.",
+  "_invariants": [
+    "every case is injective: no two names share a slug",
+    "no slug carries a second disambiguation suffix (`--` appears at most once)",
+    "a registry incumbent keeps its bare slug when the only rival is an admitted row"
+  ],
+  "cases": [
+    {
+      "id": "no collision",
+      "registry": [
+        "a.b/one",
+        "c.d/two"
+      ],
+      "admitted": [
+        "e.f/three"
+      ],
+      "expected": {
+        "a.b/one": "a-b-one",
+        "c.d/two": "c-d-two",
+        "e.f/three": "e-f-three"
+      }
+    },
+    {
+      "id": "two registry twins",
+      "registry": [
+        "io.github.SceneView/mcp",
+        "io.github.sceneview/mcp"
+      ],
+      "admitted": [],
+      "expected": {
+        "io.github.SceneView/mcp": "io-github-sceneview-mcp--cbf19c84d738c768",
+        "io.github.sceneview/mcp": "io-github-sceneview-mcp--ff53b5f7818410f0"
+      }
+    },
+    {
+      "id": "three registry twins",
+      "registry": [
+        "x.y/a",
+        "x_y/a",
+        "x-y/a"
+      ],
+      "admitted": [],
+      "expected": {
+        "x.y/a": "x-y-a--7e22608beb070065",
+        "x_y/a": "x-y-a--20065fbb2117e129",
+        "x-y/a": "x-y-a--d7ccb7b1b8deed67"
+      }
+    },
+    {
+      "id": "registry incumbent beats admitted newcomer",
+      "registry": [
+        "io.github.modelcontextprotocol-server/git"
+      ],
+      "admitted": [
+        "io.github.modelcontextprotocol/server-git"
+      ],
+      "expected": {
+        "io.github.modelcontextprotocol-server/git": "io-github-modelcontextprotocol-server-git",
+        "io.github.modelcontextprotocol/server-git": "io-github-modelcontextprotocol-server-git--15c9ecb663fb4f0e"
+      }
+    },
+    {
+      "id": "two admitted collide, no registry",
+      "registry": [
+        "z.z/other"
+      ],
+      "admitted": [
+        "p.q/r",
+        "p_q/r"
+      ],
+      "expected": {
+        "z.z/other": "z-z-other",
+        "p.q/r": "p-q-r--667a28c5ea3af3ba",
+        "p_q/r": "p-q-r--a565a1e53b5aa0eb"
+      }
+    },
+    {
+      "id": "two admitted and one registry all collide",
+      "registry": [
+        "p.q/r"
+      ],
+      "admitted": [
+        "p_q/r",
+        "p-q/r"
+      ],
+      "expected": {
+        "p.q/r": "p-q-r",
+        "p_q/r": "p-q-r--a565a1e53b5aa0eb",
+        "p-q/r": "p-q-r--eb8359d1f397c4fe"
+      }
+    },
+    {
+      "id": "name-identical admitted defers to registry",
+      "registry": [
+        "io.github.modelcontextprotocol/server-git"
+      ],
+      "admitted": [
+        "io.github.modelcontextprotocol/server-git"
+      ],
+      "expected": {
+        "io.github.modelcontextprotocol/server-git": "io-github-modelcontextprotocol-server-git"
+      }
+    },
+    {
+      "id": "dot-variant self collision",
+      "registry": [
+        "io.github.modelcontextprotocol/server.git"
+      ],
+      "admitted": [
+        "io.github.modelcontextprotocol/server-git"
+      ],
+      "expected": {
+        "io.github.modelcontextprotocol/server.git": "io-github-modelcontextprotocol-server-git",
+        "io.github.modelcontextprotocol/server-git": "io-github-modelcontextprotocol-server-git--15c9ecb663fb4f0e"
+      }
+    },
+    {
+      "id": "case variant",
+      "registry": [
+        "io.github.LocalSynapse/LocalSynapse-mcp"
+      ],
+      "admitted": [
+        "io.github.localsynapse/localsynapse-mcp"
+      ],
+      "expected": {
+        "io.github.LocalSynapse/LocalSynapse-mcp": "io-github-localsynapse-localsynapse-mcp",
+        "io.github.localsynapse/localsynapse-mcp": "io-github-localsynapse-localsynapse-mcp--03a2b37a8f9acffc"
+      }
+    },
+    {
+      "id": "empty-slug fallback",
+      "registry": [
+        "///",
+        "..."
+      ],
+      "admitted": [],
+      "expected": {
+        "///": "srv--732c4e971163",
+        "...": "srv--ab5df625bc76"
+      }
+    },
+    {
+      "id": "unicode name",
+      "registry": [
+        "io.github.acme/支払い"
+      ],
+      "admitted": [
+        "io.github.acme/支払い"
+      ],
+      "expected": {
+        "io.github.acme/支払い": "io-github-acme"
+      }
+    },
+    {
+      "id": "admitted alone",
+      "registry": [],
+      "admitted": [
+        "solo.only/x"
+      ],
+      "expected": {
+        "solo.only/x": "solo-only-x"
+      }
+    },
+    {
+      "id": "hash-targeting attack, both separator forms, depth 2",
+      "registry": [
+        "io.github.modelcontextprotocol-server/git",
+        "io.github.modelcontextprotocol-server/git-15c9ecb663fb",
+        "io.github.modelcontextprotocol-server/git--15c9ecb663fb",
+        "io.github.modelcontextprotocol-server/git-15c9ecb663fb-15c9ecb663fb",
+        "io.github.modelcontextprotocol-server/git--15c9ecb663fb--15c9ecb663fb"
+      ],
+      "admitted": [
+        "io.github.modelcontextprotocol/server-git"
+      ],
+      "expected": {
+        "io.github.modelcontextprotocol-server/git": "io-github-modelcontextprotocol-server-git",
+        "io.github.modelcontextprotocol-server/git-15c9ecb663fb": "io-github-modelcontextprotocol-server-git-15c9ecb663fb--0d8305e79d8077f0",
+        "io.github.modelcontextprotocol-server/git--15c9ecb663fb": "io-github-modelcontextprotocol-server-git-15c9ecb663fb--52366a11c43ec288",
+        "io.github.modelcontextprotocol-server/git-15c9ecb663fb-15c9ecb663fb": "io-github-modelcontextprotocol-server-git-15c9ecb663fb-15c9ecb663fb--2b513fe515b4cd20",
+        "io.github.modelcontextprotocol-server/git--15c9ecb663fb--15c9ecb663fb": "io-github-modelcontextprotocol-server-git-15c9ecb663fb-15c9ecb663fb--76d2fe1f19ae52a6",
+        "io.github.modelcontextprotocol/server-git": "io-github-modelcontextprotocol-server-git--15c9ecb663fb4f0e"
+      }
+    },
+    {
+      "id": "a name that slugifies to the srv- empty fallback",
+      "registry": [
+        "///",
+        "srv-732c4e971163"
+      ],
+      "admitted": [],
+      "expected": {
+        "///": "srv--732c4e971163",
+        "srv-732c4e971163": "srv-732c4e971163"
+      }
+    }
+  ]
+}

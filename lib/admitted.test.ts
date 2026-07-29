@@ -127,7 +127,7 @@ test('an admitted row colliding with a registry slug is PRE-HASHED, and the live
   const merged = mergeAdmitted(registry, [colliding]);
   assert.equal(merged.length, 2, 'the colliding admitted row must survive, disambiguated');
 
-  const expected = `${liveSlug}-${createHash('sha256').update(colliding.name).digest('hex').slice(0, 12)}`;
+  const expected = `${liveSlug}--${createHash('sha256').update(colliding.name).digest('hex').slice(0, 16)}`;
   const admittedRow = merged.find((s) => s.source === 'admitted')!;
   assert.equal(admittedRow.slug, expected, 'must match the trust-side sha256 utf-8 slice');
   assert.equal(admittedRow.name, colliding.name, 'the row itself must be otherwise untouched');
@@ -140,28 +140,42 @@ test('an admitted row colliding with a registry slug is PRE-HASHED, and the live
   assert.equal(new Set(out.map((s) => s.slug)).size, out.length, 'slugs stay injective');
 });
 
-test('a pre-hashed admitted row is suffixed a SECOND time if anything lands on its slug', () => {
-  // disambiguateSlugs groups by the slug a row ALREADY has, so the pre-hash is not final.
-  // Reachable: the hash is over a PUBLIC admitted name, so an attacker can compute
-  // `${base}-${sha256[:12]}` and register a name that slugifies to exactly it.
-  // mcpindex-trust's public_slug_map models both passes; a single-pass model would key the
-  // verdict at the intermediate slug, which this site would never serve.
+test('a name cannot be crafted onto a pre-hashed slug (injective by construction)', () => {
+  // This test used to assert the OPPOSITE: that a pre-hashed row gets suffixed a second
+  // time. That was the mitigation when the separator was a single hyphen, and it was not
+  // enough - an attacker could aim at the twice-suffixed slug in turn, and two subjects
+  // ended up sharing one public slug. The site then silently dropped one row and served the
+  // other, while the trust store keyed both there: a wrong-subject verdict.
+  //
+  // With `--` the attack is not mitigated, it is impossible. slugify collapses `-+` to `-`,
+  // so no name can produce a bare slug containing `--`, and a synthesized slug always does.
   const registry = srv('example.com/thing');
   const colliding = srv('example_com/thing', 'admitted');
-  const pre = `${registry.slug}-${createHash('sha256').update(colliding.name).digest('hex').slice(0, 12)}`;
+  const h = (n: string) => createHash('sha256').update(n).digest('hex').slice(0, 16);
+  const pre = `${registry.slug}--${h(colliding.name)}`;
 
-  // Derived from the fixture, not hardcoded, so it cannot rot into a tautology.
-  const attacker = srv(pre);
-  assert.equal(attacker.slug, pre, 'attacker construction is stale');
+  // Every address an attacker could aim at, in both separator forms, to depth 2. Derived
+  // from the fixture rather than hardcoded so it cannot rot into a tautology.
+  const attackers = [
+    `${registry.slug}-${h(colliding.name)}`,
+    pre,
+    `${pre}-${h(colliding.name)}`,
+    `${pre}--${h(colliding.name)}`,
+  ].map((target) => srv(target));
+  for (const a of attackers) {
+    assert.ok(!a.slug.includes('--'), `slugify let a name keep '--': ${a.name} -> ${a.slug}`);
+  }
 
-  const out = disambiguateSlugs(mergeAdmitted([registry, attacker], [colliding]));
+  const out = disambiguateSlugs(mergeAdmitted([registry, ...attackers], [colliding]));
   const slugOf = (n: string) => out.find((s) => s.name === n)!.slug;
-  assert.equal(slugOf(registry.name), registry.slug, 'the untouched incumbent must not move');
-  assert.equal(slugOf(colliding.name), `${pre}-${createHash('sha256').update(colliding.name).digest('hex').slice(0, 12)}`);
-  assert.equal(slugOf(attacker.name), `${pre}-${createHash('sha256').update(attacker.name).digest('hex').slice(0, 12)}`);
+  assert.equal(slugOf(colliding.name), pre, 'the admitted row keeps its single pre-hash');
+  assert.equal(slugOf(registry.name), registry.slug, 'the incumbent must not move');
+  assert.ok(
+    !out.some((s) => s.slug.split('--').length > 2),
+    'a second suffix must be unreachable, not merely handled',
+  );
   assert.equal(new Set(out.map((s) => s.slug)).size, out.length, 'slugs stay injective');
 });
-
 test('admitted rows without a description are dropped', () => {
   const bare = { ...srv('a/x', 'admitted'), description: '' };
   assert.deepEqual(mergeAdmitted([], [bare]), []);

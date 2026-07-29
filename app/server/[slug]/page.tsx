@@ -1,7 +1,7 @@
 import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { getCollidingBase, getServer, loadServers, loadSnapshotMeta } from '@/lib/registry';
+import { getCollidingBase, getServer, legacySlugRedirects, loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { computeQuality, rankByQuality } from '@/lib/quality';
 import { buildInstalls } from '@/lib/installs';
 import { getSourceLiveness, livenessSentence } from '@/lib/sourceLiveness';
@@ -10,6 +10,7 @@ import { CATEGORY_LABELS } from '@/lib/categorize';
 import { D3_PROGRESS } from '@/lib/honest-limits';
 import { CopyField } from '@/components/CopyField';
 import {
+  CONTENT_DRIFT_LIMIT,
   getVerdict,
   type Verdict as FreeTierVerdict,
   type Decision,
@@ -152,8 +153,9 @@ export default async function ServerPage(
     const colliding = await getCollidingBase(slug);
     if (colliding) return <CollidingSlugPage slug={slug} members={colliding} />;
 
-    const active = new Set((await loadServers()).map((s) => s.slug));
-    const dest = resolveServerRedirect(slug, active);
+    const servers = await loadServers();
+    const active = new Set(servers.map((s) => s.slug));
+    const dest = resolveServerRedirect(slug, active, legacySlugRedirects(servers));
     if (dest) permanentRedirect(`/server/${dest}`);
     // Gone slugs are answered 410 in proxy.ts; this is the RSC fallback.
     notFound();
@@ -706,6 +708,8 @@ const LIMIT_LABEL: Record<string, string> = {
   calibrated_false_v1: 'Confidence is reported but not yet calibrated (v1)',
   description_level_screen: 'Screen reads the tool description, not the live behavior',
   advisory_only: 'Advisory - the verdict never moves your agent on its own',
+  expired_verdict: 'Past its expiry date - awaiting re-screen',
+  content_drift: 'The description this screen assessed is no longer the one published',
 };
 function limitLabel(code: string): string {
   return LIMIT_LABEL[code] ?? code.replace(/_/g, ' ');
@@ -884,6 +888,22 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
                   )}
                 </p>
               )}
+              {/* Content-drift disclosure ON the accusation, not buried in the limits list
+                  below: when the description this screen judged has since been replaced,
+                  an evidence quote may no longer appear in the live text. Publishing the
+                  accusation without saying so is a fairness defect if the publisher
+                  remediated - and 7 CRITICAL flags were in exactly that state when this
+                  shipped (see tasks/todo.md, spec v3). */}
+              {d.verdict === 'FAIL' &&
+                verdict.honest_limits?.includes(CONTENT_DRIFT_LIMIT) && (
+                  <p className="mt-1 text-[12px] leading-[1.5] text-[var(--color-warn,#8a6d1a)]">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] mr-2">
+                      note
+                    </span>
+                    The description this screen assessed is no longer the one published;
+                    this finding is pending re-screen against the current text.
+                  </p>
+                )}
             </div>
           ))}
         </div>

@@ -2,7 +2,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { disambiguateSlugs, findDeprecatedServer, getCollidingBase, loadServers, mergeAdmitted, slugify } from './registry';
+import {
+  disambiguateSlugs,
+  findDeprecatedServer,
+  getCollidingBase,
+  legacySlugRedirects,
+  loadServers,
+  mergeAdmitted,
+  normalize,
+  slugify,
+} from './registry';
 import type { IndexedServer, RegistryEntry } from './types';
 
 function stub(name: string): IndexedServer {
@@ -27,8 +36,11 @@ function stub(name: string): IndexedServer {
 
 function expectedDisambiguated(name: string): string {
   const base = slugify(name);
-  const hash = createHash('sha256').update(name).digest('hex').slice(0, 12);
-  return `${base}-${hash}`;
+  const hash = createHash('sha256').update(name).digest('hex').slice(0, 16);
+  // DOUBLE hyphen. Computed here independently of withDisambiguator so this stays a real
+  // pin: slugify collapses `-+` to `-`, so no name-derived slug can contain `--`, which is
+  // what makes a synthesized slug unable to collide with a bare one.
+  return `${base}--${hash}`;
 }
 
 test('slugify is stable for a non-colliding registry name', () => {
@@ -71,6 +83,86 @@ test('shared marketing titles still get distinct slugs (LocalSynapse shape)', ()
   assert.equal(slugify(a), slugify(b));
   const out = disambiguateSlugs([stub(a), stub(b)]);
   assert.equal(new Set(out.map((s) => s.slug)).size, 2);
+});
+
+test('the baseSlug index exposes no addressable sentinel key', () => {
+  // A previous version stashed the whole server list inside the index under a `'__n__'`
+  // key to detect staleness. `getCollidingBase` looks that same map up with an
+  // ATTACKER-SUPPLIED slug, so `/server/__n__` answered 200 and rendered a chooser naming
+  // every server in the catalog - unauthenticated, on the one route proxy.ts exempts from
+  // the per-IP limiter. The cache added to save ~18ms per request became an unbounded
+  // render costing orders of magnitude more.
+  //
+  // Asserted structurally rather than by probing one magic string: ANY key that is not some
+  // server's baseSlug is the same bug under a different name.
+  const names = ['io.github.example/one', 'io.github.example/two', 'io.github.SceneView/mcp',
+                 'io.github.sceneview/mcp'];
+  const servers = disambiguateSlugs(names.map(stub));
+  const legitimate = new Set(servers.map((s) => s.baseSlug));
+  const grouped = new Map<string, IndexedServer[]>();
+  for (const s of servers) {
+    const g = grouped.get(s.baseSlug);
+    if (g) g.push(s); else grouped.set(s.baseSlug, [s]);
+  }
+  for (const key of grouped.keys()) {
+    assert.ok(legitimate.has(key), `index key '${key}' is not any server's baseSlug`);
+  }
+  assert.ok(!grouped.has('__n__'), 'no staleness sentinel may live in a user-addressable map');
+});
+
+test('baseSlug stays at the bare base after disambiguation', () => {
+  // `getCollidingBase` groups by baseSlug to answer the retired bare URL with a chooser
+  // naming both claimants. If disambiguation rewrote baseSlug along with slug, each twin
+  // would land in its own group, the chooser would find fewer than two members, and the
+  // bare URL would 404 instead of resolving - or, worse, resolve to whichever twin was
+  // left. slug MOVES, baseSlug does NOT: that split is the whole point of the field.
+  const a = 'io.github.SceneView/mcp';
+  const b = 'io.github.sceneview/mcp';
+  const base = slugify(a);
+
+  // Start at the SOURCE. `stub()` hand-builds an IndexedServer, so asserting only on
+  // disambiguateSlugs left normalizeServer's baseSlug entirely untested - a mutation making
+  // it `undefined` for every server in the catalog passed the whole suite.
+  const normalized = normalize({
+    server: { name: a, description: 'd', version: '1.0.0' },
+    _meta: {
+      'io.modelcontextprotocol.registry/official': {
+        status: 'active', publishedAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+      },
+    },
+  } as unknown as RegistryEntry);
+  assert.equal(typeof normalized.baseSlug, 'string', 'baseSlug must always be a string');
+  assert.equal(normalized.baseSlug, base, 'normalize must seed baseSlug from the NAME');
+
+  const out = disambiguateSlugs([stub(a), stub(b)]);
+  for (const name of [a, b]) {
+    const row = out.find((s) => s.name === name)!;
+    assert.equal(row.baseSlug, base, 'baseSlug must remain the bare colliding base');
+    assert.notEqual(row.slug, base, 'slug must have moved off the bare base');
+  }
+  assert.equal(
+    out.filter((s) => s.baseSlug === base).length, 2,
+    'both twins must still be findable as claimants of the retired bare URL',
+  );
+});
+
+test('normalize trims a whitespace-only description to empty', () => {
+  // loadServers drops a row on falsy description, and mcpindex-trust's
+  // `active_registry_names` does `(description or "").strip()`. Testing truthiness without
+  // trimming meant '  ' was a description here and not there, which changes who is in a
+  // collision group - so the surviving row's slug differs by side, and the purge then reads
+  // the slug this site serves as owned by nobody and deletes its verdict.
+  const entry = (desc: string): RegistryEntry => ({
+    server: { name: 'io.github.example/ws', description: desc, version: '1.0.0' },
+    _meta: {
+      'io.modelcontextprotocol.registry/official': {
+        status: 'active', publishedAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+      },
+    },
+  } as unknown as RegistryEntry);
+  assert.equal(normalize(entry('   ')).description, '', 'whitespace-only must trim to empty');
+  assert.equal(normalize(entry(' \t\n ')).description, '', 'tabs and newlines too');
+  assert.equal(normalize(entry('  real  ')).description, 'real', 'and a real one is trimmed');
 });
 
 test('final slugs are injective over a mixed fixture', () => {
@@ -184,6 +276,49 @@ test('three-way collisions disambiguate too (the chooser is not two-only)', () =
   const out = disambiguateSlugs(names.map(stub));
   assert.equal(new Set(out.map((s) => s.slug)).size, 3);
   assert.equal(out.filter((s) => slugify(s.name) === slugify(names[0])).length, 3);
+});
+
+test('legacySlugRedirects maps a previous slug ONLY to its true owner', () => {
+  const a = 'io.github.SceneView/mcp';
+  const b = 'io.github.sceneview/mcp';
+  const servers = disambiguateSlugs([stub(a), stub(b)]);
+  const map = legacySlugRedirects(servers);
+
+  for (const name of [a, b]) {
+    const row = servers.find((s) => s.name === name)!;
+    // The previous slug is the row's BASE joined to a 12-hex hash of its own NAME. Keying
+    // off the current slug instead would produce a string that was never anyone's URL.
+    const previous = `${row.baseSlug}-${createHash('sha256').update(name).digest('hex').slice(0, 12)}`;
+    assert.equal(map.get(previous), row.slug, `${name} must map from its real former slug`);
+    assert.ok(!previous.includes('--'), 'the legacy form used a single hyphen');
+  }
+  assert.equal(map.size, 2, 'only servers whose slug actually moved may appear');
+});
+
+test('legacySlugRedirects ignores servers that never moved', () => {
+  // A server with a bare slug has no previous URL, so listing one would invent a redirect.
+  const map = legacySlugRedirects(disambiguateSlugs([stub('io.github.example/solo')]));
+  assert.equal(map.size, 0);
+});
+
+test('normalize refuses a non-http(s) repository URL', () => {
+  const entry = (url: string): RegistryEntry => ({
+    server: { name: 'io.github.example/u', description: 'd', version: '1.0.0', repository: { url } },
+    _meta: {
+      'io.modelcontextprotocol.registry/official': {
+        status: 'active', publishedAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+      },
+    },
+  } as unknown as RegistryEntry);
+  // repositoryUrl qualifies every package identity key, so a value the two implementations
+  // disagree about flips an admitted-drop decision.
+  assert.equal(normalize(entry('ftp://a.com/x')).repositoryUrl, undefined);
+  assert.equal(normalize(entry('javascript:alert(1)')).repositoryUrl, undefined);
+  assert.equal(normalize(entry('http://a .com')).repositoryUrl, undefined, 'space in host');
+  assert.equal(normalize(entry('http://a.com:99999/')).repositoryUrl, undefined, 'bad port');
+  assert.equal(normalize(entry('https://github.com/a/b')).repositoryUrl, 'https://github.com/a/b');
+  // WHATWG special-scheme slash collapsing: this HAS a host and must be kept.
+  assert.equal(normalize(entry('http:evil')).repositoryUrl, 'http:evil');
 });
 
 // --- baseSlug survives both hashing steps -------------------------------------------

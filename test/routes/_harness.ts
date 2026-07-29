@@ -72,7 +72,13 @@ export async function callRoute(handler: Handler, path: string, opts: CallOpts =
 // ---- fixture constants (real, verified against data/verdicts.json + data/snapshot.json) ----
 export const FIX = {
   // In BOTH snapshot and verdicts → server/[slug] + badge + trust API can be asserted to agree.
-  SCREENED: 'ac-inference-sh-mcp',
+  // A screened, currently-FRESH slug: clean PARTIAL, unexpired, and its content_hash
+  // still matches the published description. Pinned live data CAN drift out from under
+  // this pin — the previous pin (ac-inference-sh-mcp) did exactly that when the
+  // content-drift overlay landed and honestly marked it STALE ("re-check due"). If
+  // these suites fail on badge text or status again, first check whether the pinned
+  // server merely drifted; re-pin rather than weakening the overlay.
+  SCREENED: 'ac-tandem-docs-mcp',
   REVIEW: 'ai-dynsoft-sac', // integrity.description fail, adjudication null → badge "review"
   CLEARED: 'io-github-evan-moon-firma', // integrity fail + adjudication "cleared" → badge "screened"
   UNKNOWN: 'does-not-exist', // unknown slug → getVerdict null → UNVERIFIED / gray badge / 404

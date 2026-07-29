@@ -21,10 +21,82 @@ import {
 const REGISTRY_BASE = 'https://registry.modelcontextprotocol.io/v0/servers';
 const SNAPSHOT_PATH = path.join(process.cwd(), 'data', 'snapshot.json');
 
-// Slug: name "vendor.domain/sub" -> "vendor-domain--sub", reversible-ish.
+// Slug: name "vendor.domain/sub" -> "vendor-domain-sub"
 // Lossy: case, `_`, and `/`/`.` separators can collapse distinct names onto one
 // base slug. Callers that index by slug MUST run disambiguateSlugs() (or
 // loadServers) so colliding subjects never share a public identity.
+/**
+ * Join a disambiguation hash onto a slug with a DOUBLE hyphen.
+ *
+ * `--` is not cosmetic, it is what makes the slug space injective. `slugify` ends with
+ * `.replace(/-+/g, '-')`, so a slug derived from a name can never contain `--` (verified:
+ * 0 of 18,732 on the live corpus). A synthesized slug therefore can never equal a bare one.
+ *
+ * With a SINGLE hyphen it could, and that was a live defect: the hash is `sha256` of a
+ * PUBLIC server name, so an attacker precomputes `{base}-{hash}` and registers a name that
+ * slugifies to exactly it. Both names then claim one slug, `loadServers`' final `seenSlug`
+ * pass silently drops one, and the trust store — which keys by name — writes the attacker's
+ * verdict at the slug the site serves for the victim. A wrong-subject verdict is the one
+ * failure this product cannot have.
+ *
+ * Two synthesized slugs `X--h` are equal only when `X` and `h` both match, and `h` is a
+ * function of the name, so only for the same name. Injective by construction: no runtime
+ * uniqueness check, and no need to ever apply a second suffix.
+ *
+ * 16 hex, not 12. The hash input is a PUBLIC name and an attacker has unbounded freedom to
+ * vary their OWN name within one base slug (case, trailing separators — all collapse), so a
+ * 48-bit suffix is a ~2^48 search away from putting two names on one final slug. 64 bits is
+ * not. The `srv--` empty-name fallback stays at 12 precisely so the two forms cannot be
+ * equal — see `slugify`.
+ *
+ * mcpindex-trust `corpus_eval/tooling/slug_identity.py` `_suffixed` must match byte for byte.
+ */
+export const DISAMBIG_HEX = 16;
+const EMPTY_NAME_HEX = 12;
+
+export function withDisambiguator(prefix: string, name: string): string {
+  return `${prefix}--${createHash('sha256').update(name).digest('hex').slice(0, DISAMBIG_HEX)}`;
+}
+
+/**
+ * `previous slug -> current slug` for every server whose slug carries a disambiguation
+ * suffix, so the URLs that moved when the separator changed still resolve.
+ *
+ * EXACT, not a pattern. The obvious rule — "if the slug looks like `{x}-{12hex}` and
+ * `{x}--{12hex}` is live, redirect" — cannot tell a former slug from a different server's
+ * ordinary bare slug, so it would 308 a dead URL onto an unrelated subject and hand it that
+ * server's canonical link equity. Here the destination's own name is hashed, so a legacy
+ * slug maps only to the server it actually belonged to.
+ */
+export function legacySlugRedirects(
+  servers: readonly IndexedServer[],
+): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const s of servers) {
+    if (!s.slug.includes('--')) continue;
+    const previous = `${s.baseSlug}-${createHash('sha256').update(s.name).digest('hex').slice(0, 12)}`;
+    out.set(previous, s.slug);
+  }
+  return out;
+}
+
+/**
+ * Is this row's name well-formed UTF-16?
+ *
+ * A lone surrogate must be REFUSED, not normalised. `createHash().update(name)` substitutes
+ * U+FFFD before hashing, so all 2,048 lone surrogates share one digest and two distinct
+ * names collapse onto one slug — `disambiguateSlugs` then produces a duplicate and the final
+ * `seenSlug` pass silently drops a subject. mcpindex-trust cannot even reach that point:
+ * `str.encode()` raises there.
+ *
+ * Neither side can be bent to match the other (Python's `errors="replace"` gives `?`, Node
+ * gives U+FFFD), so the only convergent answer is for both to drop the row. Mirrors
+ * `_is_well_formed` in `corpus_eval/tooling/slug_identity.py`.
+ */
+export function hasWellFormedName(s: { name: string }): boolean {
+  return typeof s.name === 'string' && !/[\uD800-\uDFFF]/.test(s.name.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, ''));
+}
+
 export function slugify(name: string): string {
   const slug = name
     .toLowerCase()
@@ -37,7 +109,13 @@ export function slugify(name: string): string {
   if (slug) return slug;
   // Names that contain only non-slug characters would collapse to ''.
   // Fall back to a deterministic hash so the index never carries an empty slug.
-  return 'srv-' + createHash('sha256').update(name).digest('hex').slice(0, 12);
+  // `srv--{12 hex}`, NARROWER than the 16-hex disambiguation suffix, and that width
+  // difference is load-bearing. This fallback is itself a name-derived slug containing `--`,
+  // so it is the one exception to "no name can produce `--`" — colliding with it needed only
+  // a 48-bit BIRTHDAY between a name slugifying to `srv` and one slugifying to nothing
+  // (~2^24 work, seconds), not a preimage. Different widths make `{base}--{16hex}` and
+  // `srv--{12hex}` structurally unable to be equal.
+  return `srv--${createHash('sha256').update(name).digest('hex').slice(0, EMPTY_NAME_HEX)}`;
 }
 
 // When slugify() maps two distinct names to the same base, append a short hash of
@@ -57,11 +135,10 @@ export function disambiguateSlugs(servers: IndexedServer[]): IndexedServer[] {
       continue;
     }
     for (const s of group) {
-      const hash = createHash('sha256').update(s.name).digest('hex').slice(0, 12);
       // `baseSlug` deliberately survives untouched: it is the group key the chooser
       // looks up, and rewriting it here would erase the only record of what the bare
       // URL used to address.
-      out.push({ ...s, slug: `${base}-${hash}` });
+      out.push({ ...s, slug: withDisambiguator(base, s.name) });
     }
   }
   return out;
@@ -71,9 +148,19 @@ function safeUrl(u: string | undefined): string | undefined {
   if (!u) return undefined;
   try {
     const parsed = new URL(u);
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
-      ? u
-      : undefined;
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return undefined;
+    // No explicit host check: http/https are WHATWG *special* schemes, so `new URL` THROWS
+    // rather than yielding an empty host (verified across `http:`, `http://`, `http:///`,
+    // `http://:80/` — all throw). A guard here would be dead code.
+    //
+    // The subtlety is on the other side. Special schemes also collapse the slashes after the
+    // colon and read the next segment as the host, so `http:evil`, `http:/evil` and
+    // `http:///x` all parse HERE with hosts `evil`, `evil`, `x`. mcpindex-trust's `_safe_url`
+    // models that explicitly; a `urlsplit`-based version rejected all six forms this accepts,
+    // and these URLs feed `identityKeys`, so a one-sided accept flips the admitted-drop
+    // decision and moves a live slug on one side only. Pinned by a 27-case differential in
+    // that repo's `smoke_slug_identity`.
+    return u;
   } catch {
     return undefined;
   }
@@ -102,7 +189,12 @@ function normalizeServer(
     baseSlug: slugify(s.name),
     name: s.name,
     title: s.title || s.name,
-    description: s.description ?? '',
+    // TRIMMED. mcpindex-trust's `active_registry_names` does `(description or "").strip()`
+    // and drops a whitespace-only row; this side tested truthiness, so '  ' was a
+    // description here and not there. That difference changes who is in a collision group,
+    // which changes the surviving row's slug on one side only - and the purge then reads
+    // the slug this site serves as owned by nobody and deletes its verdict.
+    description: (s.description ?? '').trim(),
     version: s.version,
     category: categorize(s.name, s.description ?? ''),
     publishedAt: meta.publishedAt,
@@ -199,7 +291,7 @@ export function mergeAdmitted(
   // the name does not.
   const registryIdentities = new Set(registryServers.flatMap(identityKeys));
   const admitted = admittedServers
-    .filter((s) => s.description && s.name && s.slug)
+    .filter((s) => s.description && s.name && s.slug && hasWellFormedName(s))
     .flatMap((s): IndexedServer[] => {
       const dupe = identityKeys(s).find((k) => registryIdentities.has(k));
       if (dupe) {
@@ -213,7 +305,7 @@ export function mergeAdmitted(
       // slug moves; baseSlug stays at the colliding base, so getCollidingBase still finds
       // this row as a claimant of that URL. Without this the pre-hashed row vanishes from
       // its own collision group and the chooser silently resolves to the registry twin.
-      const slug = `${s.slug}-${createHash('sha256').update(s.name).digest('hex').slice(0, 12)}`;
+      const slug = withDisambiguator(s.slug, s.name);
       console.warn('[admitted] slug collides with a registry listing, disambiguated', {
         name: s.name,
         from: s.slug,
@@ -348,7 +440,7 @@ export async function loadServers(): Promise<IndexedServer[]> {
         'active',
     )
     .map(normalize)
-    .filter((s) => s.description && s.name && s.slug);
+    .filter((s) => s.description && s.name && s.slug && hasWellFormedName(s));
   const merged = mergeAdmitted(filtered, (await loadAdmitted()).servers.map(normalizeAdmitted));
 
   // Dedup by name first (publisher isLatest regressions / crawler dupes; first wins).
@@ -386,7 +478,7 @@ export function findDeprecatedServer(
         'deprecated',
     )
     .map(normalize)
-    .filter((s) => s.description && s.name && s.slug);
+    .filter((s) => s.description && s.name && s.slug && hasWellFormedName(s));
   const seenName = new Set<string>();
   const uniqueByName = filtered.filter((s) =>
     seenName.has(s.name) ? false : (seenName.add(s.name), true),
@@ -409,60 +501,44 @@ export function findDeprecatedServer(
       continue;
     }
     for (const s of group) {
-      const hash = createHash('sha256').update(s.name).digest('hex').slice(0, 12);
-      resolved.push({ ...s, slug: `${base}-${hash}` });
+      resolved.push({ ...s, slug: withDisambiguator(base, s.name) });
     }
   }
   return resolved.find((s) => s.slug === slug) ?? null;
 }
 
-/**
- * The servers that a RETIRED bare slug used to address, when two or more names
- * collide onto it. Returns null for every ordinary slug.
- *
- * WHY THIS EXISTS. `disambiguateSlugs` hashes EVERY member of a colliding set rather
- * than letting first-wins pick a survivor, because a survivor would inherit the other
- * subject's inbound links and, with them, the wrong trust verdict. The cost is that the
- * bare slug stops resolving the moment a collision appears - and it may have been a live,
- * indexed URL until that moment. Measured on the 2026-07-28 corpus: 5 colliding bases
- * over 10 servers out of 18,638, every one a case-variant republication by the same
- * author (`io.github.SceneView/mcp` vs `io.github.sceneview/mcp`). All five bare slugs
- * were returning 404 in production.
- *
- * A redirect is NOT the fix, and that is the whole point. Two subjects claim the slug;
- * picking one is exactly the misattribution disambiguation exists to prevent, and
- * "same author, near-identical name" is an inference, not an observation - the two
- * entries can and do carry different versions, packages, and verdicts. So the bare slug
- * resolves to a page that names both and makes the reader choose. The link stays alive,
- * nothing is asserted about which one they meant.
- */
-// Cache validity is tracked BESIDE the map, never inside it.
-//
-// The first version stored the server list under a reserved key ('__n__') in the same map
-// and compared its length to detect a refreshed corpus. That put an attacker-reachable
-// string in the same namespace as real slugs: GET /server/__n__ hit the sentinel, saw
-// 18,739 "members", and rendered a 26.9 MB chooser page in 7.6s - on a route proxy.ts
-// deliberately exempts from the per-IP limiter. An in-band sentinel in a lookup keyed by
-// user input is the bug; a separate field is the fix.
-let _baseIndex: { map: Map<string, IndexedServer[]>; size: number } | null = null;
+let _baseIndex: { servers: readonly IndexedServer[]; idx: Map<string, IndexedServer[]> } | null =
+  null;
 
 /** `baseSlug -> members`, built once per loaded corpus.
  *
  * Replaces a per-call scan: the previous version ran `slugify()` over ~18,600 names on
- * every 404, twice (generateMetadata and the page), on that same unmetered route. This is
- * O(n) once against the cache `loadServers` already keeps.
+ * every 404, twice (generateMetadata and the page), on a route proxy.ts deliberately
+ * exempts from the per-IP limiter - so a slug-spray bought ~18ms of CPU per request for
+ * free. This is O(n) once against the same cache `loadServers` already keeps.
+ *
+ * The corpus it was built from is held ALONGSIDE the map, never inside it. A previous
+ * version stashed the server list under a `'__n__'` key to detect staleness, which put an
+ * 18,739-entry array in the same map `getCollidingBase` looks up with an ATTACKER-SUPPLIED
+ * slug: `/server/__n__` answered 200 and rendered a chooser naming every server in the
+ * index, unauthenticated, on the one route with no per-IP limit. The cache added to save
+ * ~18ms per request became an unbounded render costing orders of magnitude more.
+ *
+ * Identity comparison, not length: `loadServers` returns the same array for the lifetime of
+ * a loaded corpus and a fresh one on reload, so `===` detects a refresh exactly. Comparing
+ * lengths could not - two different corpora of equal size read as the same one.
  */
 async function baseIndex(): Promise<Map<string, IndexedServer[]>> {
   const servers = await loadServers();
-  if (_baseIndex && _baseIndex.size === servers.length) return _baseIndex.map;
-  const map = new Map<string, IndexedServer[]>();
+  if (_baseIndex && _baseIndex.servers === servers) return _baseIndex.idx;
+  const idx = new Map<string, IndexedServer[]>();
   for (const s of servers) {
-    const g = map.get(s.baseSlug);
+    const g = idx.get(s.baseSlug);
     if (g) g.push(s);
-    else map.set(s.baseSlug, [s]);
+    else idx.set(s.baseSlug, [s]);
   }
-  _baseIndex = { map, size: servers.length };
-  return map;
+  _baseIndex = { servers, idx };
+  return idx;
 }
 
 /**

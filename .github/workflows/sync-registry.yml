@@ -81,14 +81,35 @@ jobs:
           fi
           echo "ENTRIES=$ENTRIES" >> "$GITHUB_ENV"
 
+      - name: Healthcheck — the slug map must bind to the snapshot just written
+        run: |
+          node -e "
+            const fs = require('node:fs');
+            const { createHash } = require('node:crypto');
+            const m = JSON.parse(fs.readFileSync('data/slugmap.json', 'utf8'));
+            const want = createHash('sha256').update(fs.readFileSync('data/snapshot.json')).digest('hex');
+            if (m.inputs.snapshot_sha256 !== want) {
+              console.error('::error::slugmap.json does not bind to the snapshot beside it. Refusing to commit — the screener would key verdicts against a stale map.');
+              process.exit(1);
+            }
+            const n = Object.keys(m.servers).length;
+            if (n !== m.counts.servers) { console.error('::error::slugmap counts disagree with its payload'); process.exit(1); }
+            const slugs = new Set(Object.values(m.servers));
+            if (slugs.size !== n) { console.error('::error::slugmap is not injective — two names share a slug'); process.exit(1); }
+            console.log('slugmap: ' + n + ' servers, bound to snapshot, injective');
+          "
+
       # snapshot.json is the directory corpus; server-removals.json is the SEO 410/308
-      # ledger consumed by lib/serverRemovals.ts. Both are produced by sync-registry.mjs.
+      # ledger consumed by lib/serverRemovals.ts; slugmap.json is the name -> public slug map
+      # mcpindex-trust keys every verdict by. All three are produced by sync-registry.mjs.
       # Staging only the snapshot (pre-2026-07-22) left removals dirty in the working tree;
       # when main moved under a long fetch, `git rebase` refused ("unstaged changes") and
-      # the successful fetch never landed (run 29958442988).
-      - name: Stage snapshot + removals
+      # the successful fetch never landed (run 29958442988). EVERY file the sync writes must
+      # be staged here or that failure repeats — and for slugmap.json it would also strand
+      # the screener on a map that no longer binds to the snapshot.
+      - name: Stage snapshot + removals + slug map
         run: |
-          git add data/snapshot.json data/server-removals.json
+          git add data/snapshot.json data/server-removals.json data/slugmap.json
           git status --short
 
       - name: Commit and push if changed

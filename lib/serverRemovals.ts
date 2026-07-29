@@ -48,11 +48,27 @@ export function isGoneSlug(slug: string): boolean {
 export function resolveServerRedirect(
   slug: string,
   activeSlugs: ReadonlySet<string>,
+  // REQUIRED, not optional. An optional third parameter immediately leaked: the OG route
+  // never passed it, so OG images 404'd on the exact legacy slugs the page and the API both
+  // redirect. A required parameter makes a missed call site a compile error.
+  legacySlugs: ReadonlyMap<string, string>,
 ): string | null {
   if (!safeSlug(slug) || activeSlugs.has(slug)) return null;
 
   const seeded = getSeededRedirect(slug);
   if (seeded && activeSlugs.has(seeded)) return seeded;
+
+  // LEGACY DISAMBIGUATION SUFFIX. The separator changed from `-` to `--` to make the slug
+  // space injective (registry.ts withDisambiguator), which moved every slug carrying a
+  // disambiguation hash.
+  //
+  // Driven by an EXACT map from `legacySlugRedirects`, never by matching the shape
+  // `{x}-{12hex}`. That shape is also a perfectly ordinary bare slug, so a pattern rule
+  // could not tell a former slug from a live server's real one and would 308 a dead URL onto
+  // an unrelated subject — permanently, and carrying its canonical link equity. Absent the
+  // map the rule simply does not fire, which is the right failure.
+  const moved = legacySlugs.get(slug);
+  if (moved && activeSlugs.has(moved) && safeSlug(moved)) return moved;
 
   // Common rename: drop a trailing "-mcp" when that exact active slug exists.
   if (slug.endsWith('-mcp')) {
