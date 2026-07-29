@@ -89,26 +89,11 @@ export default function TrustPage() {
         {anchorLedgerState.kind === 'confirmed' && (
           <>
             <p className="mt-4">
-              Verify it without trusting us. The full recipe is a dependency-free script in
-              this repo - it re-derives the roots from your own checkout and never contacts
-              us:
-            </p>
-            <pre className="mt-3 overflow-x-auto rounded border border-[var(--color-rule)] bg-[var(--color-surface)] p-3 font-mono text-[11px] leading-[1.7]">
-{`git clone https://github.com/mcpindex-ai/mcpindex-web && cd mcpindex-web
-python3 scripts/verify_anchor.py          # stdlib only, no install
-
-# then confirm the Bitcoin attestation itself (pip install opentimestamps-client):
-ots info public/anchors/${anchorLedgerState.latestConfirmed.chain_root.replace(/^sha256:/, '')}.ots`}
-            </pre>
-            <p className="mt-3 text-[13px] text-[var(--color-cite)]">
-              Anchor #{anchorLedgerState.latestConfirmed.seq} covers{' '}
-              {anchorLedgerState.latestConfirmed.verdict_count.toLocaleString('en-US')} verdicts
-              and is attested in Bitcoin block{' '}
+              What you can check yourself, and what you cannot. Anchor #{anchorLedgerState.latestConfirmed.seq} covers{' '}
+              {anchorLedgerState.latestConfirmed.verdict_count.toLocaleString('en-US')} verdicts and
+              carries an OpenTimestamps proof asserting Bitcoin block{' '}
               {anchorLedgerState.latestConfirmed.bitcoin?.block_heights?.[0]?.toLocaleString('en-US')}.
-              The script pins the exact commit of{' '}
-              <code className="font-mono text-[12px]">data/verdicts.json</code> that was
-              hashed, because the corpus is republished several times a day - without that
-              commit the root would not reproduce. The full ledger is committed at{' '}
+              The proof and the full ledger are committed at{' '}
               <a
                 href="https://github.com/mcpindex-ai/mcpindex-web/blob/main/data/verdict-anchors.json"
                 target="_blank"
@@ -116,8 +101,17 @@ ots info public/anchors/${anchorLedgerState.latestConfirmed.chain_root.replace(/
                 className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
               >
                 data/verdict-anchors.json
-              </a>
-              .
+              </a>{' '}
+              alongside the <code className="font-mono text-[12px]">.ots</code> files in{' '}
+              <code className="font-mono text-[12px]">public/anchors/</code>, so anyone can
+              inspect them with the OpenTimestamps tooling.
+            </p>
+            <p className="mt-4">
+              We are deliberately not publishing a one-command verification script right now.
+              We shipped one, found it reported a clean pass on a checkout where it had in fact
+              checked nothing, and would rather say so than leave a green tick that means
+              nothing. A recipe that genuinely works end to end is being written; until it is
+              tested we will not point you at one.
             </p>
           </>
         )}
