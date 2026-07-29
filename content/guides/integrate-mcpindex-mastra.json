@@ -6,7 +6,7 @@
  "meta_description": "A walkthrough for gating a Mastra agent's MCP tool calls with mcpindex: install the hook, add it to your agent in one line, choose warn vs enforce, and read the honest v1 limits. About 3 minutes.",
  "h1": "Gate your Mastra agent's MCP tool calls",
  "project": "mcpindex",
- "updated": "2026-07-21",
+ "updated": "2026-07-29",
  "est_minutes": 3,
  "outcome": "Your Mastra agent asks mcpindex whether an MCP tool is vetted before it invokes it, warning you (or blocking the call) on your terms, fail-closed.",
  "body": "By default a Mastra agent calls whatever tools an MCP server hands it, trusting each tool's own description. The @mcp-index/mastra package adds a second opinion at the moment of the call: a beforeToolCall hook that checks mcpindex's advisory screen first. It is a client of the advisory screen (has this tool been vetted?), not the in-path drift gate (did this contract change since I pinned it?).",
@@ -29,7 +29,7 @@
   {
    "id": "honest-limits",
    "heading": "Read the honest limit (important)",
-   "body": "The mcpindex public advisory API is at verdict contract 1.0.0, and it does not yet emit ALLOW or DENY - every verdict today is REVIEW or UNVERIFIED. So today this is a visibility and early-warning tool, and `warn` is the sane default. `enforce` blocks every tool call right now, because nothing is ALLOW yet; that is correct fail-closed behavior, and it becomes a real allow-list the moment mcpindex ships ALLOW/DENY verdicts, with no code change on your side. If mcpindex is slow or unreachable, the check fails closed to UNVERIFIED rather than silently trusting."
+   "body": "The mcpindex public advisory API is at verdict contract 1.0.0, and it does not yet emit ALLOW or DENY - every verdict today is REVIEW or UNVERIFIED. So today this is a visibility and early-warning tool, and `warn` is the sane default. `enforce` blocks every tool call right now, because nothing is ALLOW yet; that is correct fail-closed behavior, and it becomes a real allow-list the moment mcpindex ships ALLOW/DENY verdicts, with no code change on your side. If mcpindex is slow or unreachable, the check fails closed to UNVERIFIED rather than silently trusting.\n\nTwo more tokens worth knowing when you read `honest_limits`. Verdicts today are description-level, so the server's screen comes back for whatever tool name you pass, and every per-tool response says so with `tool_name_not_independently_verified`. And each verdict is bound to the exact registry description it judged: if that text has since been replaced, the response carries `content_drift`, and a clean verdict renders STALE until re-screened rather than posing as a live assessment of text the registry no longer publishes."
   },
   {
    "id": "direct",
