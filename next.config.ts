@@ -47,6 +47,13 @@ const embedSecurityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Inline the (small, Tailwind-atomic) stylesheet into <head> instead of a
+  // render-blocking <link>. The CSS chunk was the whole critical-request chain
+  // after the document (~11.7 KiB, +1 RTT before first paint). CSP already
+  // permits style-src 'unsafe-inline', so this needs no header change.
+  experimental: {
+    inlineCss: true,
+  },
   // Ghost paths seen in Analytics (bots/typos) — send humans to real surfaces.
   async redirects() {
     return [
