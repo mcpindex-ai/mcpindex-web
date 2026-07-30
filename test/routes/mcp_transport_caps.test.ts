@@ -136,9 +136,15 @@ test('a non-tools/call method carries no tool field', () => {
 // CAUSE the hang it exists to observe.
 
 import { mock } from 'node:test';
-import { armMcpWatchdog } from '../../lib/mcpWatchdog';
+import { armMcpWatchdog, contentLengthOf } from '../../lib/mcpWatchdog';
 
-const SHAPE = { method: 'tools/call', tool: 'recommend_mcp_for_task', bytes: 120 };
+const SHAPE = {
+  phase: 'dispatch' as const,
+  httpMethod: 'POST',
+  rpcMethod: 'tools/call',
+  tool: 'recommend_mcp_for_task',
+  bytes: 120,
+};
 
 /** Run `fn` with console.error captured and mock timers enabled. */
 function withCapture(fn: (lines: string[], tick: (ms: number) => void) => void): void {
@@ -170,6 +176,7 @@ test('watchdog: past 10s it names the request shape', () => {
     assert.equal(lines.length, 1);
     assert.match(lines[0]!, /mcp-slow 10s/);
     assert.match(lines[0]!, /method=tools\/call/);
+    assert.match(lines[0]!, /phase=dispatch/);
     assert.match(lines[0]!, /tool=recommend_mcp_for_task/);
     disarm();
   });
@@ -204,4 +211,62 @@ test('watchdog: disarm CLEARS its timers - an uncleared one would cause the hang
     tick(120_000); // twice the platform ceiling
     assert.deepEqual(lines, [], 'no timer may survive disarm');
   });
+});
+
+// --- the blind spots that let a real 60s timeout log nothing on 2026-07-30 ---
+
+test('watchdog: the body-read phase is identifiable in the log', () => {
+  withCapture((lines, tick) => {
+    const disarm = armMcpWatchdog({ phase: 'body-read', httpMethod: 'POST', contentLength: 4096 });
+    tick(10_001);
+    assert.equal(lines.length, 1);
+    // Naming the PHASE is the point: it says the stall was the body arriving, not the work.
+    assert.match(lines[0]!, /phase=body-read/);
+    assert.match(lines[0]!, /content-length=4096/);
+    assert.ok(!lines[0]!.includes('tool='), 'nothing is known about the body yet');
+    disarm();
+  });
+});
+
+test('watchdog: a stalled body read that never completes trips both checkpoints', () => {
+  withCapture((lines, tick) => {
+    // Never disarmed: `await req.text()` never returns, which is the hypothesised failure.
+    armMcpWatchdog({ phase: 'body-read', httpMethod: 'POST', contentLength: 128 });
+    tick(60_000);
+    assert.equal(lines.length, 2);
+    assert.match(lines[0]!, /mcp-slow 10s: phase=body-read/);
+    assert.match(lines[1]!, /50s-near-kill: phase=body-read/);
+    assert.ok(!lines.some((l) => l.includes('completed')));
+  });
+});
+
+test('watchdog: GET and DELETE carry a context too (they bypass postHandler)', () => {
+  for (const verb of ['GET', 'DELETE']) {
+    withCapture((lines, tick) => {
+      const disarm = armMcpWatchdog({ phase: 'dispatch', httpMethod: verb });
+      tick(10_001);
+      assert.match(lines[0]!, new RegExp(`http=${verb}`));
+      disarm();
+    });
+  }
+});
+
+test('contentLengthOf: absent or malformed header reads as -1, never NaN in a log line', () => {
+  const mk = (h: Record<string, string>) => new Request('https://x/api/mcp', { method: 'POST', headers: h });
+  assert.equal(contentLengthOf(mk({ 'content-length': '4096' })), 4096);
+  assert.equal(contentLengthOf(mk({})), -1);
+  assert.equal(contentLengthOf(mk({ 'content-length': 'banana' })), -1);
+});
+
+test('the watchdog context has no field capable of carrying caller prose', () => {
+  const ctx = {
+    phase: 'dispatch' as const,
+    httpMethod: 'POST',
+    rpcMethod: 'tools/call',
+    tool: 'recommend_mcp_for_task',
+    bytes: 120,
+  };
+  // Every field is a closed vocabulary or a number. If a future edit adds a free-text field,
+  // this list changes and the reviewer has to justify it.
+  assert.deepEqual(Object.keys(ctx).sort(), ['bytes', 'httpMethod', 'phase', 'rpcMethod', 'tool']);
 });
