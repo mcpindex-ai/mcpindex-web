@@ -5,31 +5,20 @@
 // The size tripwire converts the unbounded-growth concern on /llms-full.txt into a deferred,
 // data-triggered decision: it goes red only if the catalog dump grows into genuinely harmful
 // territory — that, not design taste, is when we revisit slimming it.
-import { test, afterEach } from 'node:test';
+import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GET as llms } from '../../app/llms.txt/route';
 import { GET as llmsFull } from '../../app/llms-full.txt/route';
 import { gateInstallLine } from '../../lib/install/manifest';
-import { __setAeoRedisForTest, __resetAeoDedupForTest } from '../../lib/aeoCounter';
 import { loadServers, loadSnapshotMeta } from '../../lib/registry';
 import { SOURCE_LIVENESS_CENSUS } from '../../lib/sourceLiveness';
-
-// Per-minute write dedup is module state; reset between tests so a future second same-route+family
-// bot test can't silently dedup to a confusing keys.length===0 failure.
-afterEach(() => __resetAeoDedupForTest());
-
-// Handlers now read User-Agent (AEO counter), so pass a Request. A plain browser UA is
-// classified as non-bot → recordAeoFetch is a no-op, keeping these tests side-effect free.
-const REQ = new Request('https://mcpindex.ai/x', {
-  headers: { 'user-agent': 'Mozilla/5.0 (test-suite)' },
-});
 
 async function bodyOf(res: Response): Promise<string> {
   return res.text();
 }
 
 test('/llms.txt: canonical install line is generated from source (no hand-drift)', async () => {
-  const res = await llms(REQ);
+  const res = await llms();
   const body = await bodyOf(res);
   // The route renders gateInstallLine({ code: true }); assert its exact output is present,
   // so the install copy can never drift from lib/install/manifest.
@@ -40,7 +29,7 @@ test('/llms.txt: canonical install line is generated from source (no hand-drift)
 });
 
 test('/llms.txt: load-bearing honest claims are intact', async () => {
-  const body = await bodyOf(await llms(REQ));
+  const body = await bodyOf(await llms());
   for (const phrase of [
     'Not a safety oracle',
     'ALLOW and DENY are reserved in the contract, not emitted today',
@@ -53,17 +42,22 @@ test('/llms.txt: load-bearing honest claims are intact', async () => {
 });
 
 test('/llms.txt: structure + content-type', async () => {
-  const res = await llms(REQ);
+  const res = await llms();
   const body = await bodyOf(res);
   assert.equal(res.headers.get('content-type'), 'text/plain; charset=utf-8');
-  // Must stay uncached, or the function stops running per-request and counting silently dies.
-  assert.match(res.headers.get('cache-control') ?? '', /no-store/, 'llms.txt must be no-store during the window');
+  // Edge-cacheable with a long stale-while-revalidate. Both halves are load-bearing: rendering this
+  // body costs a cold isolate a ~25MB snapshot parse, so without SWR every TTL expiry puts one
+  // fetcher on the origin-render path — which is exactly how an agent-accessibility audit timed out
+  // fetching llms.txt while the route was no-store.
+  const cc = res.headers.get('cache-control') ?? '';
+  assert.match(cc, /s-maxage=3600\b/, 'llms.txt must be edge-cached for an hour');
+  assert.match(cc, /stale-while-revalidate=86400\b/, 'llms.txt must keep SWR so a cold render never blocks a fetcher');
   assert.ok(body.startsWith('# mcpindex.ai'), 'llms.txt must open with the H1 title');
   assert.ok(body.includes('/api/mcp'), 'llms.txt must advertise the remote MCP endpoint');
 });
 
 test('/llms-full.txt: canonical install line is generated from source', async () => {
-  const body = await bodyOf(await llmsFull(REQ));
+  const body = await bodyOf(await llmsFull());
   // The full doc renders gateInstallLine() (no code fences).
   assert.ok(
     body.includes(gateInstallLine()),
@@ -72,7 +66,7 @@ test('/llms-full.txt: canonical install line is generated from source', async ()
 });
 
 test('/llms-full.txt: load-bearing honest claims are intact', async () => {
-  const body = await bodyOf(await llmsFull(REQ));
+  const body = await bodyOf(await llmsFull());
   for (const phrase of [
     'Contract states: ALLOW / DENY / REVIEW / UNVERIFIED',
     'ALLOW and DENY are reserved, not produced',
@@ -84,12 +78,14 @@ test('/llms-full.txt: load-bearing honest claims are intact', async () => {
 });
 
 test('/llms-full.txt: catalog present, content-type, and runaway size tripwire', async () => {
-  const res = await llmsFull(REQ);
+  const res = await llmsFull();
   const body = await bodyOf(res);
   assert.equal(res.headers.get('content-type'), 'text/plain; charset=utf-8');
-  // Short shared edge TTL during the window (bounds 4MB egress); a revert to s-maxage=3600 or a
-  // regression to a long cache would be caught here. Must NOT be a multi-hour cache.
-  assert.match(res.headers.get('cache-control') ?? '', /s-maxage=60\b/, 'llms-full.txt must use s-maxage=60 during the window');
+  // Same contract as llms.txt, and it matters more here: this body is ~4MB, so an uncached origin
+  // render is both a slow path and an egress cost.
+  const cc = res.headers.get('cache-control') ?? '';
+  assert.match(cc, /s-maxage=3600\b/, 'llms-full.txt must be edge-cached for an hour');
+  assert.match(cc, /stale-while-revalidate=86400\b/, 'llms-full.txt must keep SWR so a cold render never blocks a fetcher');
   assert.ok(body.includes('Total servers:'), 'llms-full.txt must state the catalog total');
   // One detail link per indexed server — tie to the source of truth so a RENDER-side partial collapse
   // is caught. (A source-side collapse would move both sides together; the coarse absolute floor below
@@ -114,73 +110,12 @@ test('/llms-full.txt: catalog present, content-type, and runaway size tripwire',
   );
 });
 
-// Capture the Redis key a route records, to prove the route actually calls recordAeoFetch
-// with the correct route literal — without this, the record call could be deleted or miswired
-// and every other test would still pass (they use a non-bot UA that no-ops).
-function captureRedis() {
-  const keys: string[] = [];
-  const pipe = {
-    incr(k: string) { keys.push(k); return pipe; },
-    expire() { return pipe; },
-    exec() { return Promise.resolve([]); },
-  };
-  return { client: { pipeline: () => pipe }, keys };
-}
-
-test('/llms.txt: a bot fetch is wired to the aeo:llms:* counter', async () => {
-  const cap = captureRedis();
-  __setAeoRedisForTest(cap.client as never);
-  try {
-    await llms(new Request('https://mcpindex.ai/llms.txt', { headers: { 'user-agent': 'GPTBot/1.2' } }));
-  } finally {
-    __setAeoRedisForTest(undefined);
-  }
-  assert.equal(cap.keys.length, 1, 'route did not record the bot fetch');
-  assert.match(cap.keys[0], /^aeo:llms:openai:\d{8}$/);
-});
-
-test('/llms-full.txt: a bot fetch is wired to the aeo:llms-full:* counter', async () => {
-  const cap = captureRedis();
-  __setAeoRedisForTest(cap.client as never);
-  try {
-    await llmsFull(new Request('https://mcpindex.ai/llms-full.txt', { headers: { 'user-agent': 'ClaudeBot/1.0' } }));
-  } finally {
-    __setAeoRedisForTest(undefined);
-  }
-  assert.equal(cap.keys.length, 1, 'route did not record the bot fetch');
-  assert.match(cap.keys[0], /^aeo:llms-full:anthropic:\d{8}$/);
-});
-
-test('/llms.txt: a HEAD probe (auto-implemented from GET) is NOT counted', async () => {
-  const cap = captureRedis();
-  __setAeoRedisForTest(cap.client as never);
-  try {
-    // Next 16 dispatches HEAD through the GET handler; the `req.method === 'GET'` guard must skip
-    // recording so a HEAD-then-GET crawler isn't double-counted.
-    await llms(new Request('https://mcpindex.ai/llms.txt', { method: 'HEAD', headers: { 'user-agent': 'GPTBot/1.2' } }));
-  } finally {
-    __setAeoRedisForTest(undefined);
-  }
-  assert.equal(cap.keys.length, 0, 'HEAD must not record a fetch');
-});
-
 test('/llms-full.txt: X-Snapshot-Version equals the current snapshot version', async () => {
-  const res = await llmsFull(REQ);
+  const res = await llmsFull();
   // Assert the VALUE, not mere presence: a refactor setting a constant or the wrong source would
   // pass a non-empty check but fail this. (Process _cache is frozen, so meta.version is stable here.)
   const expected = (await loadSnapshotMeta()).version;
   assert.equal(res.headers.get('x-snapshot-version'), expected);
-});
-
-test('/llms-full.txt: a HEAD probe is NOT counted (symmetric guard on the 4MB route)', async () => {
-  const cap = captureRedis();
-  __setAeoRedisForTest(cap.client as never);
-  try {
-    await llmsFull(new Request('https://mcpindex.ai/llms-full.txt', { method: 'HEAD', headers: { 'user-agent': 'ClaudeBot/1.0' } }));
-  } finally {
-    __setAeoRedisForTest(undefined);
-  }
-  assert.equal(cap.keys.length, 0, 'HEAD must not record a fetch on llms-full');
 });
 
 // llms.txt is a third copy of the source-liveness census figures, alongside the page
@@ -190,7 +125,7 @@ test('/llms-full.txt: a HEAD probe is NOT counted (symmetric guard on the 4MB ro
 // sat in production for four days precisely because each copy was hand-maintained.
 test('/llms.txt: every source-liveness figure, including the derived ones, is present',
   async () => {
-    const body = await bodyOf(await llms(REQ));
+    const body = await bodyOf(await llms());
     for (const key of ['reposUnreachable', 'reposTotal', 'serversAffected', 'sweepDate',
                        'pctUnreachable', 'ratioPhrase'] as const) {
       assert.ok(

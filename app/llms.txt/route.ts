@@ -1,16 +1,16 @@
 import { getServerCount, getCategoryCount } from '@/lib/registry';
 import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
 import { gateInstallLine } from '@/lib/install/manifest';
-import { recordAeoFetch } from '@/lib/aeoCounter';
 import { SOURCE_LIVENESS_CENSUS } from '@/lib/sourceLiveness';
 import { DIAGRAMS, renderTwin } from '@/lib/diagrams';
 
-// Uncached for the AEO measurement window so every fetch invokes the function (see lib/aeoCounter.ts).
-// The counter is per-isolate/per-minute deduped, so it records ACTIVE-MINUTES (presence), not raw hits —
-// no-store here means /llms.txt catches every distinct active minute per family (finer than /llms-full's
-// s-maxage=60 floor), not raw fetch volume. REVERT after the window: restore `revalidate = 3600` and the
-// `s-maxage=3600` Cache-Control below.
-export const revalidate = 0;
+// Rendering this body costs a cold isolate a full loadServers() — a ~25MB snapshot parse — so the
+// origin render must never sit in a crawler's request path. An hourly ISR TTL plus a long
+// stale-while-revalidate keeps a servable copy at the edge at all times: the edge answers instantly
+// from cache (fresh, or stale while it refreshes behind the request), and only the background
+// revalidation pays the cold-start cost. Without SWR, every TTL expiry puts one unlucky fetcher on
+// the slow path, which is what timed out the agent-accessibility audit during the AEO window.
+export const revalidate = 3600;
 
 // The figures worth spending answer-engine budget on: the positional claim, the data-flow
 // boundary, the category map, the generated posture table, and the verdict-vocabulary split.
@@ -23,13 +23,7 @@ const TWIN_IDS = [
   'two-verdict-surfaces',
 ] as const;
 
-export async function GET(req: Request) {
-  // Only GET is counted: Next 16 auto-implements HEAD from GET, which would otherwise double-count.
-  // Fire-and-forget (not awaited) so the counter adds zero TTFB. The synchronous console.log inside
-  // recordAeoFetch is the RELIABLE read path (always lands pre-response); the un-awaited Upstash write
-  // is best-effort — initiated synchronously but may be dropped if the isolate freezes post-response
-  // (fail-open, per-minute-deduped, self-heals next minute). recordAeoFetch never rejects.
-  if (req.method === 'GET') void recordAeoFetch('llms', req.headers.get('user-agent'));
+export async function GET() {
   const [servers, categories] = await Promise.all([
     getServerCount(),
     getCategoryCount(),
@@ -169,8 +163,9 @@ Unofficial. Not affiliated with Anthropic.
   return new Response(body, {
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
-      // Uncached during the AEO measurement window; revert to s-maxage=3600 afterward.
-      'Cache-Control': 'no-store',
+      // Matches `revalidate` above. The long stale-while-revalidate is the part that keeps a cold
+      // origin render out of the request path — see the note on `revalidate`.
+      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
     },
   });
 }

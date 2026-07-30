@@ -104,9 +104,10 @@ export function proxy(req: NextRequest) {
     !p.startsWith('/api/health/') &&
     p !== '/.well-known/mcpindex-challenge' &&
     p !== '/api/mcp' &&
-    // AEO measurement window: /llms.txt and /llms-full.txt are temporarily uncached (dynamic)
-    // so fetches can be counted. Un-caching removed their CDN shield, so bring them under the
-    // same per-IP limit to cap abuse of the now-per-request 4MB /llms-full.txt render.
+    // PERMANENT, not tied to any measurement window: /llms.txt and /llms-full.txt are edge-cached,
+    // but a cache-busting query forces an origin render of a ~5MB body. Keep them under the per-IP
+    // limit so a cache-MISS flood stays capped; the query-strip 308 below is the other half of this
+    // defense. Removing either one re-opens the origin to a bandwidth-DoS tail.
     p !== '/llms.txt' &&
     p !== '/llms-full.txt'
   ) {
@@ -121,7 +122,7 @@ export function proxy(req: NextRequest) {
     req.headers.get('x-real-ip') ||
     'unknown';
 
-  // Namespace the limit bucket by route class so the temporary /llms.* window does NOT deplete
+  // Namespace the limit bucket by route class so /llms.* does NOT deplete
   // the same per-IP budget as /api/v1/* (a client pulling /llms-full.txt must not 429 its own
   // /api/v1/search). Coarse two-class split keeps the map bounded.
   // `mcp` is its own class so one agent driving the remote-MCP endpoint cannot exhaust the

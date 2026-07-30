@@ -5,22 +5,12 @@ import { CATEGORY_LABELS } from '@/lib/categorize';
 import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
 import { gateInstallLine } from '@/lib/install/manifest';
 import type { IndexedServer } from '@/lib/types';
-import { recordAeoFetch } from '@/lib/aeoCounter';
 import { createVersionedBodyCache } from '@/lib/llmsFullCache';
 
-// AEO measurement window: dynamic render + a SHORT shared edge TTL. `no-store` would force a
-// per-request 4MB origin render (bandwidth-DoS tail); `s-maxage=60` lets each edge PoP serve a
-// flood from cache (~1 origin render/min/PoP) while real AI crawlers — which fetch this niche URL
-// far more than once a minute apart — still hit the function on a cache miss and get counted.
-// MEASUREMENT CAVEATS (because of the edge cache): /llms-full.txt records a FLOOR — at most ~1 fetch
-// per 60s per edge PoP, not raw hits. Read its counter as "distinct fetches >60s apart per PoP". Two
-// traps: (a) a family whose fetch lands within 60s of another family's cache-priming fetch at the same
-// PoP is edge-served and never counted, so a ZERO for a family here does NOT prove it didn't fetch —
-// cross-check family presence against /llms.txt (no-store = every active minute); (b) a bot that appends a
-// query and doesn't follow the 308 is redirected away from the function and not counted.
-// REVERT after the window (see the checklist in lib/aeoCounter.ts): restore `revalidate = 3600` and
-// `s-maxage=3600`, drop the recordAeoFetch call; keep bodyCacheStore.
-export const revalidate = 0;
+// This body is ~4MB and a cold render also pays a full loadServers() snapshot parse, so an hourly
+// TTL plus a long stale-while-revalidate keeps the origin render off the request path entirely and
+// bounds egress: the edge serves every fetcher from cache and refreshes in the background.
+export const revalidate = 3600;
 
 // Process-lifetime, version-keyed body cache with concurrent-build de-dup (see lib/llmsFullCache.ts).
 const bodyCacheStore = createVersionedBodyCache();
@@ -117,12 +107,7 @@ function buildBody(servers: IndexedServer[], guides: Guide[]): string {
   return parts.join('\n');
 }
 
-export async function GET(req: Request) {
-  // Only GET is counted: Next 16 auto-implements HEAD from GET, so a HEAD probe would otherwise
-  // double-count a crawler that HEADs-then-GETs. Fire-and-forget → zero TTFB; the console.log is the
-  // reliable channel, the Upstash write is best-effort (may drop on post-response freeze; self-heals).
-  if (req.method === 'GET') void recordAeoFetch('llms-full', req.headers.get('user-agent'));
-
+export async function GET() {
   // loadServers() first so it populates the registry `_cache`; loadSnapshotMeta() then reads that
   // cache instead of resolving (and re-parsing the 22MB snapshot) a second time on a cold instance.
   const servers = await loadServers();
@@ -136,9 +121,7 @@ export async function GET(req: Request) {
   return new Response(cached.body, {
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
-      // Short shared edge TTL during the window (bounds 4MB egress under flood); revert to
-      // s-maxage=3600 afterward.
-      'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=86400',
+      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
       // Reflect the version actually served (cached.version), not meta.version — under a rollover
       // that coincides with an in-flight build these can differ for one request.
       'X-Snapshot-Version': cached.version,
