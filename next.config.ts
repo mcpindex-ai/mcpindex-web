@@ -86,6 +86,17 @@ const nextConfig: NextConfig = {
         source: "/embed.html",
         headers: embedSecurityHeaders,
       },
+      {
+        // API surfaces (JSON, badges, the MCP endpoint) are for machines, not
+        // the search index. Google was crawling ~15 of them into the
+        // "Crawled - currently not indexed" bucket; an explicit noindex moves
+        // them to "Excluded by noindex" so that report only shows real pages.
+        // Headers-level (not robots.txt) on purpose: the URLs stay fetchable
+        // by every consumer (GitHub badge proxy, MCP clients) - they just
+        // never enter the index.
+        source: "/api/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex" }],
+      },
     ];
   },
 };

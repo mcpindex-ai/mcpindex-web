@@ -169,9 +169,35 @@ export default async function ServerPage(
   const verdictState = await loadVerdictForServer(server.slug);
   // Crawl-date framing for the post-verdict CTA; memoized snapshot, no extra fetch.
   const snapshotDay = (await loadSnapshotMeta()).fetchedAt?.slice(0, 10) ?? '';
-  const alternatives = all
-    .filter((s) => s.category === server.category && s.slug !== server.slug)
-    .slice(0, 3);
+  // Alternatives are the page's only server->server links, so they are also the
+  // internal-link graph. Registry-order slice(0,3) pointed every page in a category
+  // at the same 3 arbitrary servers; the corpus's best pages earned no links and the
+  // tail was reachable only through /servers pagination. Two deterministic picks fix
+  // both: the top category peers by quality score (every page votes for the pages
+  // most worth indexing) plus the registry-order successor (threads a closed chain
+  // through the whole category, so every page is crawlable without pagination).
+  const categoryPeers = all.filter(
+    (s) => s.category === server.category && s.slug !== server.slug,
+  );
+  const topPeers = rankByQuality(categoryPeers)
+    .slice(0, 2)
+    .map((r) => r.server);
+  // selfIdx is -1 on deprecated-server pages (getServer falls back to a list that
+  // loadServers excludes); those pages are noindexed, so they get no successor.
+  const selfIdx = all.findIndex((s) => s.slug === server.slug);
+  let catAfterSelf: IndexedServer | undefined;
+  if (selfIdx !== -1) {
+    for (let i = 1; i < all.length; i++) {
+      const cand = all[(selfIdx + i) % all.length];
+      if (cand.category === server.category) {
+        catAfterSelf = cand;
+        break;
+      }
+    }
+  }
+  const alternatives = [...topPeers, ...(catAfterSelf ? [catAfterSelf] : [])].filter(
+    (s, i, arr) => arr.findIndex((x) => x.slug === s.slug) === i,
+  );
 
   const jsonLd = buildServerJsonLd(server);
 
