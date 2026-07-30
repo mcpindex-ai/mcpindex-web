@@ -16,7 +16,7 @@ import { z } from 'zod';
 // In-process /api/v1 dispatch (no self-fetch); see lib/v1Dispatch.ts.
 import { callV1 } from '@/lib/v1Dispatch';
 import { inspectMcpBody } from '@/lib/mcpBodyGuard';
-import { armMcpWatchdog } from '@/lib/mcpWatchdog';
+import { armMcpWatchdog, contentLengthOf } from '@/lib/mcpWatchdog';
 
 
 // Shared single source of truth for tool name/title/description (also used by the
@@ -322,7 +322,22 @@ export const maxDuration = 60;
 // for the full timeout). Pre-validate the body here and return the same fast -32700
 // 400 for empty/unparseable input; valid JSON is forwarded to mcp-handler unchanged.
 async function postHandler(req: Request, ctx: unknown): Promise<Response> {
-  const raw = await req.text();
+  // PHASE 1: the body read. A client can send headers with a Content-Length and then stall
+  // the body, hanging here indefinitely - before the guard, before the descriptor, and
+  // before the old watchdog, which armed only after this line. That blind spot is why a 60s
+  // timeout on 2026-07-30 logged nothing. Content-Length is all we know until the body lands.
+  const readDone = armMcpWatchdog({
+    phase: 'body-read',
+    httpMethod: req.method,
+    contentLength: contentLengthOf(req),
+  });
+  let raw: string;
+  try {
+    raw = await req.text();
+  } finally {
+    readDone();
+  }
+
   // Pre-dispatch inspection lives in lib/mcpBodyGuard.ts (pure, testable - importing THIS
   // module starts an mcp-handler setInterval that hangs node:test). It bounds an
   // unauthenticated resource-exhaustion primitive AND returns a PII-safe request shape; see
@@ -333,10 +348,15 @@ async function postHandler(req: Request, ctx: unknown): Promise<Response> {
   // Body is a stream consumed once; rebuild an equivalent request for the handler.
   const forwarded = new Request(req.url, { method: req.method, headers: req.headers, body: raw });
 
-  // AWAIT, not a bare return: `finally` must run after the handler settles, or the watchdog
-  // would disarm immediately and observe nothing. See lib/mcpWatchdog.ts for why this is a
-  // timer rather than a completion log.
-  const disarm = armMcpWatchdog(seen.accept);
+  // PHASE 2: dispatch. AWAIT, not a bare return: `finally` must run after the handler
+  // settles, or the watchdog would disarm immediately and observe nothing.
+  const disarm = armMcpWatchdog({
+    phase: 'dispatch',
+    httpMethod: req.method,
+    rpcMethod: seen.accept.method,
+    tool: seen.accept.tool,
+    bytes: seen.accept.bytes,
+  });
   try {
     return await (handler as (r: Request, c: unknown) => Promise<Response>)(forwarded, ctx);
   } finally {
@@ -383,6 +403,20 @@ const onlyCanonical =
 
 const mcpHandler = handler as RouteHandler;
 
-export const GET = onlyCanonical(mcpHandler);
+// GET and DELETE go straight to mcp-handler and never enter postHandler, so they had no
+// watchdog at all - a hang on either was invisible. They carry no body, so one phase covers
+// them.
+const watched =
+  (h: RouteHandler, httpMethod: string): RouteHandler =>
+  async (req, ctx) => {
+    const disarm = armMcpWatchdog({ phase: 'dispatch', httpMethod });
+    try {
+      return await h(req, ctx);
+    } finally {
+      disarm();
+    }
+  };
+
+export const GET = onlyCanonical(watched(mcpHandler, 'GET'));
 export const POST = onlyCanonical(postHandler);
-export const DELETE = onlyCanonical(mcpHandler);
+export const DELETE = onlyCanonical(watched(mcpHandler, 'DELETE'));
