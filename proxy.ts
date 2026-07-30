@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import type { NextFetchEvent, NextRequest } from 'next/server';
 import {
   getSeededRedirect,
   goneHtml,
   isGoneSlug,
 } from '@/lib/serverRemovals';
+import { recordAeoFetch } from '@/lib/aeoCounter';
 
 // Per-IP rate limit on /api/v1/*. Sliding window in-memory map (per-instance).
 // Production-grade limit should use Upstash Redis - this is good enough for
@@ -57,7 +58,7 @@ function serverSlugFromPath(pathname: string): string | null {
   }
 }
 
-export function proxy(req: NextRequest) {
+export function proxy(req: NextRequest, event: NextFetchEvent) {
   const p = req.nextUrl.pathname;
 
   // SEO: former /server/<slug> URLs that left the registry. Answer before RSC so
@@ -104,10 +105,14 @@ export function proxy(req: NextRequest) {
     !p.startsWith('/api/health/') &&
     p !== '/.well-known/mcpindex-challenge' &&
     p !== '/api/mcp' &&
-    // PERMANENT, not tied to any measurement window: /llms.txt and /llms-full.txt are edge-cached,
-    // but a cache-busting query forces an origin render of a ~5MB body. Keep them under the per-IP
-    // limit so a cache-MISS flood stays capped; the query-strip 308 below is the other half of this
-    // defense. Removing either one re-opens the origin to a bandwidth-DoS tail.
+    // PERMANENT, not tied to any measurement window, and load-bearing for TWO reasons:
+    //   1. DoS. /llms.txt and /llms-full.txt are edge-cached, but a cache-busting query forces an
+    //      origin render of a ~5MB body. Keep them under the per-IP limit so a cache-MISS flood
+    //      stays capped; the query-strip 308 below is the other half of that defense.
+    //   2. AEO counting. These two exceptions are the ONLY reason the llms paths fall through to
+    //      the bottom of this function, where the crawler counter lives. Delete either line and the
+    //      early return below fires and counting silently stops.
+    // Removing either one re-opens the origin to a bandwidth-DoS tail AND blinds the counter.
     p !== '/llms.txt' &&
     p !== '/llms-full.txt'
   ) {
@@ -178,6 +183,27 @@ export function proxy(req: NextRequest) {
     const clean = new URL(req.url);
     clean.search = '';
     return NextResponse.redirect(clean, 308);
+  }
+
+  // AI-crawler counting. Deliberately LAST, so it records only requests that actually reach the
+  // content: a 429 and a query-strip 308 both return above and are not counted. A blocked fetch is
+  // not a fetch, and the retired route-handler counter behaved the same way (both also returned
+  // before the handler), so the exclusions carry over unchanged.
+  //
+  // Counting HERE rather than in the route handler is the point: proxy runs before the CDN cache,
+  // so this sees edge-served hits while both routes stay prerendered. See lib/aeoCounter.ts for
+  // why the previous placement forced `no-store` and what that cost.
+  //
+  // GET only: Next auto-implements HEAD from GET, so counting HEAD would double-count a crawler
+  // that HEADs-then-GETs. waitUntil keeps the isolate alive for the write without delaying the
+  // response. recordAeoFetch does not reject today; the catch logs rather than swallows so that if
+  // one is ever introduced it surfaces instead of vanishing into an ignored promise.
+  if (req.method === 'GET' && (p === '/llms.txt' || p === '/llms-full.txt')) {
+    const route = p === '/llms.txt' ? 'llms' : 'llms-full';
+    event.waitUntil(
+      recordAeoFetch(route, req.headers.get('user-agent'))
+        .catch((e) => console.error('AEO_COUNT_ERR', e)),
+    );
   }
 
   return NextResponse.next();
