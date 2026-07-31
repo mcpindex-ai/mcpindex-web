@@ -6,6 +6,7 @@ import {
   isGoneSlug,
 } from '@/lib/serverRemovals';
 import { recordAeoFetch } from '@/lib/aeoCounter';
+import { recordApiCall, usageRouteFor } from '@/lib/apiUsage';
 
 // Per-IP rate limit on /api/v1/*. Sliding window in-memory map (per-instance).
 // Production-grade limit should use Upstash Redis - this is good enough for
@@ -82,6 +83,28 @@ export function proxy(req: NextRequest, event: NextFetchEvent) {
         },
       });
     }
+  }
+
+  // Durable usage counting for the three surfaces the monthly metrics snapshot reports.
+  // Vercel runtime-log retention here is ~24h and the logs API answers `since=30d` with 24h of
+  // data without erroring, so nothing durable was recording these. See lib/apiUsage.ts.
+  //
+  // PLACED BEFORE the rate-limit early-return below, on purpose. Everything after that return
+  // is reachable only for paths on the rate-limit allowlist, so counting down there would mean
+  // adding /ledger to that allowlist — putting a public content page under the 60/min per-IP
+  // limiter and letting it start returning 429s. Degrading a page to make a metric convenient
+  // is the wrong trade. The cost of counting here instead: a request that goes on to be 429'd
+  // is still counted (aeoCounter, which sits after the limiter, excludes them). At ~200 req/day
+  // against a 60/min limit that is noise, and the generated snapshot states it.
+  //
+  // HEAD is skipped because Next auto-implements HEAD from GET, so a client that HEADs then GETs
+  // would count twice. OPTIONS is a CORS preflight, not a call.
+  const usageRoute = usageRouteFor(p);
+  if (usageRoute && req.method !== 'HEAD' && req.method !== 'OPTIONS') {
+    event.waitUntil(
+      recordApiCall(usageRoute, req.headers.get('user-agent'))
+        .catch((e) => console.error('API_USAGE_ERR', e)),
+    );
   }
 
   // Defense-in-depth, NOT dead code: Next 16 invokes proxy for every route,
@@ -221,5 +244,10 @@ export const config = {
     '/llms-full.txt',
     '/.well-known/mcpindex-challenge',
     '/api/mcp',
+    // NOT rate-limited — /ledger is here purely so proxy runs for it and lib/apiUsage can count
+    // page views. The in-function allowlist above deliberately omits it, so it falls straight
+    // through `NextResponse.next()` with no limiter and no behaviour change. Removing this line
+    // silently stops ledger counting; the in-function usage block is the other half.
+    '/ledger',
   ],
 };

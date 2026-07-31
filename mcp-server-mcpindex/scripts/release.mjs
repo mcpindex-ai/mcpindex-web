@@ -12,6 +12,8 @@
 //   4. assert the version is not already on npm (no accidental re-publish)
 //   5. npm publish
 //   6. git tag pkg-v<version> and push the tag
+//   7. mirror source to the Glama-bound standalone repo (best-effort)
+//   8. publish server.json to the MCP registry (best-effort)
 //
 // No auto-bump on purpose: the version + CHANGELOG entry are an explicit,
 // reviewable commit; this script only gates and ships what is already committed.
@@ -122,6 +124,38 @@ try {
   console.error(
     'release: WARNING - published to npm but the Glama mirror push failed. ' +
       'Re-run `npm run sync-glama` (check the standalone repo is unarchived).',
+  );
+}
+
+// 8: publish server.json to the MCP registry. Until 2026-07-31 this was a separate
+// manual ritual, so it simply got skipped: npm reached 0.3.13 while the registry sat on
+// 0.3.11, published 2026-07-16. Two releases of stale metadata on the official registry
+// is a bad look for a product whose thesis is that registry metadata goes stale.
+//
+// Auth is non-interactive when `gh` is logged in - `mcp-publisher login github -token`
+// takes a PAT, so no device-code prompt in the middle of a release. Same best-effort
+// contract as the Glama mirror above: npm has already published and the tag is pushed, so
+// a registry failure must not fail the release. `mcpindex-registry-version-drift` in
+// tools/healthcheck catches it within ~10 min if this step is skipped or silently fails.
+//
+// ACCEPTED EXPOSURE: mcp-publisher takes the token as an argv flag, so it is visible in
+// `ps` for the ~1s the login runs. Single-user workstation, short-lived `gho_` token, and
+// the documented manual fallback has the identical shape - but if this ever runs on a
+// shared or multi-tenant host, switch to the interactive `mcp-publisher login github`
+// device flow, which never puts the credential on a command line.
+try {
+  const ghToken = capture('gh', ['auth', 'token']).trim();
+  if (!ghToken) throw new Error('gh auth token returned empty');
+  run('mcp-publisher', ['login', 'github', '-token', ghToken]);
+  run('mcp-publisher', ['publish']);
+} catch {
+  // Never echo the token or the underlying error text - execFileSync error objects
+  // carry the full argv, which includes the PAT.
+  console.error(
+    'release: WARNING - published to npm but the MCP registry publish failed. ' +
+      'Re-run by hand from this directory:\n' +
+      '  mcp-publisher login github -token "$(gh auth token)" && mcp-publisher publish\n' +
+      '(needs `gh auth login` and `brew install mcp-publisher`).',
   );
 }
 
