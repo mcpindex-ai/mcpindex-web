@@ -28,13 +28,20 @@ const CORNERSTONE_GUIDES = new Set([
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = 'https://mcpindex.ai';
-  const meta = await loadSnapshotMeta();
+  // CONCURRENT, not sequential. `loadSnapshot*` and `loadServers` both go through
+  // resolveSnapshot(), whose `_resolveInflight` de-dup only covers CONCURRENT resolves -
+  // awaiting them one after the other made a cold sitemap render read and zod-parse the
+  // 26MB snapshot TWICE. This is the crawler's entry point, so it was the worst place in
+  // the app to pay that. Hoisting loadServers() out of the cache-miss branch is free:
+  // `baseCache` here and `_cache` in lib/registry are both module-scope, so they are warm
+  // and cold together, and on a warm isolate loadServers() returns from `_cache` without
+  // touching disk.
+  const [meta, servers] = await Promise.all([loadSnapshotMeta(), loadServers()]);
 
   let baseEntries: MetadataRoute.Sitemap;
   if (baseCache && baseCache.version === meta.version) {
     baseEntries = baseCache.entries;
   } else {
-    const servers = await loadServers();
     const staticRoutes: MetadataRoute.Sitemap = [
       { url: `${base}/`, priority: 1.0, changeFrequency: 'daily' },
       { url: `${base}/search`, priority: 0.8, changeFrequency: 'monthly' },

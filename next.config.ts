@@ -97,6 +97,22 @@ const nextConfig: NextConfig = {
         source: "/api/:path*",
         headers: [{ key: "X-Robots-Tag", value: "noindex" }],
       },
+      {
+        // The PDF and /whitepaper are one asset on two URLs, and Google was
+        // indexing them separately: the PDF earned 292 impressions at avg
+        // position 26.9 with zero clicks while the HTML page sat at 8.6 (GSC,
+        // 3 months to 2026-08-01). A rel=canonical HTTP header is the only way
+        // to state the relationship for a non-HTML file, and it CONSOLIDATES
+        // the signal onto the page - X-Robots-Tag: noindex would have thrown
+        // those impressions away instead.
+        source: "/whitepaper.pdf",
+        headers: [
+          {
+            key: "Link",
+            value: '<https://mcpindex.ai/whitepaper>; rel="canonical"',
+          },
+        ],
+      },
     ];
   },
 };

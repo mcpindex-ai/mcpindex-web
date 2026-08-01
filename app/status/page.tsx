@@ -30,7 +30,12 @@ export default async function StatusPage() {
     {
       k: 'Registry snapshot',
       v: timeAgo(snap.fetchedAt),
-      note: 'synced daily at 06:00 UTC from the official MCP registry',
+      // No clock time and no fixed interval here on purpose. This said "synced
+      // daily at 06:00 UTC" while sync-registry.yml ran `0 */4 * * *` - six runs
+      // a day, none of them at 06:00. The row above already publishes the real
+      // age from the snapshot itself, so the note only has to name the source
+      // and stay true across a schedule change.
+      note: 'synced several times a day from the official MCP registry',
     },
     { k: 'Servers tracked', v: servers.length.toLocaleString() },
     {
