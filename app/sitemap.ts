@@ -49,6 +49,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { url: `${base}/which-mcpindex`, priority: 0.5, changeFrequency: 'monthly' },
       { url: `${base}/stats`, priority: 0.6, changeFrequency: 'daily' },
       { url: `${base}/status`, priority: 0.4, changeFrequency: 'daily' },
+      { url: `${base}/reliability`, priority: 0.5, changeFrequency: 'monthly' },
       { url: `${base}/brand`, priority: 0.3, changeFrequency: 'monthly' },
       { url: `${base}/diagrams`, priority: 0.7, changeFrequency: 'monthly' },
       { url: `${base}/ledger`, priority: 0.7, changeFrequency: 'hourly' },

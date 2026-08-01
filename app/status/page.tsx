@@ -56,8 +56,20 @@ export default async function StatusPage() {
       </h1>
       <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)]">
         The figures below are real and revalidate hourly. Authoritative uptime
-        is monitored externally; the endpoints are public, so you can check
-        liveness yourself rather than take a green light on faith.
+        is monitored externally on{' '}
+        <a
+          href="https://stats.uptimerobot.com/BmOwSpYXOj"
+          className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+        >
+          an independent status page
+        </a>{' '}
+        that stays up when this site does not; the endpoints are public, so you
+        can check liveness yourself rather than take a green light on faith.
+        Failure behavior per surface is documented at{' '}
+        <Link href="/reliability" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
+          /reliability
+        </Link>
+        .
       </p>
 
       <div className="mt-10 font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
@@ -107,10 +119,29 @@ export default async function StatusPage() {
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
           Incident log
         </div>
-        <p className="text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
-          No incidents recorded. When one occurs, it will be posted here with a
-          timestamp and a short postmortem - failures stated plainly are part of
-          the same honesty contract as the verdicts.
+        <div className="rule-t">
+          <div className="rule-b py-5">
+            <div className="font-mono text-[12px] tabular-nums text-[var(--color-ink)]">
+              2026-08-01 · 13:27-17:05 UTC · full outage, 3h40m
+            </div>
+            <p className="mt-2 text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
+              The hosting platform disabled all deployments after the account
+              crossed a compute usage cap; every page and API on this domain
+              returned HTTP 402 until the plan was upgraded. Detected by
+              monitoring in 6 minutes; resolved in 3h40m. No data was lost, no
+              verdict changed, and locally installed gates kept enforcing their
+              pins throughout - the failure boundary held as documented at{' '}
+              <Link href="/reliability" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
+                /reliability
+              </Link>
+              . Follow-ups shipped: an independent status page, account usage
+              alerting, and a scoped write credential for the verdict pipeline.
+            </p>
+          </div>
+        </div>
+        <p className="mt-4 text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
+          Failures stated plainly are part of the same honesty contract as the
+          verdicts.
         </p>
       </section>
 
