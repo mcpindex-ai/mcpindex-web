@@ -161,19 +161,31 @@ jobs:
             if git rebase origin/main; then
               continue
             fi
-            # Rebase started but hit conflicts — resolve snapshot/removals in favor of
-            # this run's commit (--theirs during rebase = the commit being applied).
+            # Rebase started but hit conflicts — resolve every file this sync writes in
+            # favor of this run's commit (--theirs during rebase = the commit being applied).
+            #
+            # The list MUST match the "Stage snapshot + removals + slug map" step above.
+            # slugmap.json was missing here until 2026-08-01 while being staged there, and
+            # the two lists drifting is a self-inflicted lost-sync bug: an unresolved
+            # conflict makes `git rebase --continue` fail on unmerged paths, so the branch
+            # below aborts the whole run and a GOOD upstream fetch window is thrown away.
+            # That is exactly the failure the every-4h sampling cadence exists to avoid, and
+            # it is the same shape as the pre-2026-07-22 server-removals.json bug (run
+            # 29958442988). It fails CLOSED, so it never shipped a snapshot bound to a
+            # stale slug map — but a discarded good window is not free on a flaky upstream.
+            #
+            # --theirs is right for all three: slugmap.json and server-removals.json are both
+            # derived from snapshot.json by this run, so taking any of them from a different
+            # commit than the snapshot is what would break the binding the step above checks.
             if [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; then
-              if [ -f data/snapshot.json ]; then
-                git checkout --theirs -- data/snapshot.json
-                git add data/snapshot.json
-              fi
-              if [ -f data/server-removals.json ]; then
-                git checkout --theirs -- data/server-removals.json
-                git add data/server-removals.json
-              fi
+              for f in data/snapshot.json data/server-removals.json data/slugmap.json; do
+                if [ -f "$f" ]; then
+                  git checkout --theirs -- "$f"
+                  git add "$f"
+                fi
+              done
               if ! GIT_EDITOR=true git rebase --continue; then
-                echo "::error::rebase --continue failed after resolving snapshot/removals; aborting"
+                echo "::error::rebase --continue failed after resolving snapshot/removals/slugmap; aborting"
                 git rebase --abort || true
                 exit 1
               fi

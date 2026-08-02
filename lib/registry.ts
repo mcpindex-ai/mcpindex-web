@@ -394,8 +394,26 @@ function resolveSnapshot(): Promise<LoadedSnapshot> {
 //
 // The KV path is fully deleted (read AND write) as of the follow-up to that fix - see
 // lib/snapshotStore.ts. test/routes/snapshot_source.test.ts fails if a network read returns.
+// COLD-LOAD INSTRUMENT (added 2026-08-01, temporary — see the block comment on
+// `_coldLoadSeq` below for the question it answers and when to delete it).
+let _snapshotResolveSeq = 0;
+
 async function resolveSnapshotUncached(): Promise<LoadedSnapshot> {
+  const t0 = Date.now();
   const bundled = await readBundledSnapshot();
+  // This is the exact moment a 26MB read + full SnapshotZ zod parse was paid. It is shared
+  // by loadServers / loadSnapshot / loadSnapshotMeta, so counting it here catches every
+  // entry point rather than just the one. console.log ONLY, deliberately: see _coldLoadSeq.
+  _snapshotResolveSeq += 1;
+  console.log(
+    '[registry] snapshot-resolve ' +
+      JSON.stringify({
+        ms: Date.now() - t0,
+        seq: _snapshotResolveSeq,
+        entries: bundled.servers.length,
+        build: process.env.NEXT_PHASE === 'phase-production-build',
+      }),
+  );
   return {
     snapshot: {
       fetchedAt: bundled.fetchedAt,
@@ -430,8 +448,33 @@ export async function loadSnapshotMeta(): Promise<{ version: string; writtenAt: 
   };
 }
 
+// COLD-LOAD INSTRUMENT (added 2026-08-01, TEMPORARY — delete once the question is answered).
+//
+// THE QUESTION. `_cache` above is a module-level singleton, so this whole pipeline is paid
+// ONCE PER ISOLATE, not per request. Whether that matters to Googlebot depends entirely on
+// how often production runs on a cold isolate, and nothing here could answer that: Vercel
+// runtime-log retention on this project is ~24h and Web Analytics is off (see lib/apiUsage.ts
+// for the receipts). A build-time server-index artifact has been designed to remove this cost
+// — a multi-file refactor of the path that keys every verdict by slug — and it should not be
+// built on a guess. Two days of this log decides it. Denominator comes free from the same
+// Vercel logs API by grouping on route `/server/[slug]`.
+//
+// WHY console.log AND NOT A REDIS COUNTER. lib/aeoCounter.ts and lib/apiUsage.ts both document
+// at length that counting belongs in proxy.ts and NEVER in a route/render path: the last
+// handler-side counter forced `Cache-Control: no-store`, removed the CDN shield, exposed a
+// ~25MB parse per cold isolate and timed out an external audit. proxy.ts cannot see `_cache`,
+// so the counter has to live here — which means it must cost nothing and touch nothing. A
+// console.log does no I/O, cannot make a static render bail to dynamic, and cannot fail a
+// request. 24h retention is not a limitation here; it is longer than the measurement window.
+//
+// READ IT WITH: Vercel logs, query "[registry] cold-load", vs group_by route `/server/[slug]`.
+// DECISION RULE: cold loads under ~10% of server-page renders -> the artifact refactor saves
+// under ~45ms average and is NOT worth touching slug disambiguation. Over ~40% -> build it.
+let _coldLoadSeq = 0;
+
 export async function loadServers(): Promise<IndexedServer[]> {
   if (_cache) return _cache.servers;
+  const t0 = Date.now();
   const loaded = await resolveSnapshot();
   const filtered = loaded.snapshot.servers
     .filter(
@@ -456,6 +499,21 @@ export async function loadServers(): Promise<IndexedServer[]> {
     seenSlug.has(s.slug) ? false : (seenSlug.add(s.slug), true),
   );
   _cache = { servers, loaded };
+  // Logged AFTER _cache is set so the line is never on the critical path to a first render.
+  // `ms` is the whole cold path (snapshot resolve + normalize + mergeAdmitted + both dedupes
+  // + disambiguateSlugs); subtract the paired [registry] snapshot-resolve line to isolate the
+  // pipeline from the parse. `seq` > 1 on one isolate means the cache was evicted and reloaded,
+  // which would be a finding in its own right.
+  _coldLoadSeq += 1;
+  console.log(
+    '[registry] cold-load ' +
+      JSON.stringify({
+        ms: Date.now() - t0,
+        seq: _coldLoadSeq,
+        servers: servers.length,
+        build: process.env.NEXT_PHASE === 'phase-production-build',
+      }),
+  );
   // Return from _cache (not the local `servers`) so a caller's servers and a later loadSnapshotMeta()
   // version always come from the same winning snapshot even if a concurrent cold caller reassigned _cache.
   return _cache.servers;
