@@ -295,16 +295,27 @@ await Promise.all([
 //
 // A failure here is FATAL: committing a snapshot without a matching map is the stale-artifact
 // state the whole design exists to prevent.
+//
+// data/server-index.json is emitted from the same snapshot for the same reason, and is
+// MORE dangerous to leave stale than the slug map: lib/registry.ts `loadServers()` PREFERS
+// that file, so a snapshot committed beside a stale index means the site serves the OLD
+// catalog while the new snapshot.json sits there unread. Driven off one list so the two
+// builders can never drift apart, and so this stays in step with the workflow's
+// "Stage snapshot + removals + slug map" step and its rebase-conflict resolver.
 {
   const { spawnSync } = await import('node:child_process');
-  const r = spawnSync(
-    'npx',
-    ['tsx', '--conditions=react-server', path.join(ROOT, 'scripts', 'build-slugmap.ts')],
-    { cwd: ROOT, stdio: 'inherit', env: process.env },
-  );
-  if (r.status !== 0) {
-    console.error('::error::build-slugmap failed; refusing to leave a snapshot without a matching slug map.');
-    process.exit(1);
+  for (const builder of ['build-slugmap.ts', 'build-server-index.ts']) {
+    const r = spawnSync(
+      'npx',
+      ['tsx', '--conditions=react-server', path.join(ROOT, 'scripts', builder)],
+      { cwd: ROOT, stdio: 'inherit', env: process.env },
+    );
+    if (r.status !== 0) {
+      console.error(
+        `::error::${builder} failed; refusing to leave a snapshot without its matching derived artifact.`,
+      );
+      process.exit(1);
+    }
   }
 }
 

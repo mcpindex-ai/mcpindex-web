@@ -110,6 +110,44 @@ jobs:
             console.log('slugmap: ' + n + ' servers, bound to snapshot, injective');
           "
 
+      - name: Healthcheck — the server index must bind to the snapshot just written
+        run: |
+          node -e "
+            const fs = require('node:fs');
+            const { createHash } = require('node:crypto');
+            const d = JSON.parse(fs.readFileSync('data/server-index.json', 'utf8'));
+            // lib/registry.ts loadServers() PREFERS this file, so a stale one means the site
+            // serves the OLD catalog while the new snapshot.json sits beside it unread. That
+            // is strictly worse than a stale slug map and gets the same gate.
+            const want = createHash('sha256').update(fs.readFileSync('data/snapshot.json')).digest('hex');
+            if (d.inputs.snapshot_sha256 !== want) {
+              console.error('::error::server-index.json does not bind to the snapshot beside it. Refusing to commit — loadServers() prefers this file, so the site would serve a stale catalog.');
+              process.exit(1);
+            }
+            const wantAdmitted = createHash('sha256').update(fs.readFileSync('data/admitted.json')).digest('hex');
+            if (d.inputs.admitted_sha256 !== wantAdmitted) {
+              console.error('::error::server-index.json does not bind to data/admitted.json beside it.');
+              process.exit(1);
+            }
+            if (d.counts.servers !== d.servers.length) { console.error('::error::server-index counts disagree with its payload'); process.exit(1); }
+            const slugs = new Set(d.servers.map(s => s.slug));
+            if (slugs.size !== d.servers.length) { console.error('::error::server-index is not injective — two servers share a public slug'); process.exit(1); }
+            // Cross-check the two committed artifacts against each other. Catches the real
+            // failure: one regenerated, the other not.
+            const m = JSON.parse(fs.readFileSync('data/slugmap.json', 'utf8'));
+            if (Object.keys(m.servers).length !== d.servers.length) {
+              console.error('::error::slugmap and server-index disagree on server count — one is stale');
+              process.exit(1);
+            }
+            for (const s of d.servers) {
+              if (m.servers[s.name] !== s.slug) {
+                console.error('::error::slugmap and server-index disagree on the slug for ' + s.name);
+                process.exit(1);
+              }
+            }
+            console.log('server-index: ' + d.servers.length + ' servers, bound to snapshot + admitted, injective, agrees with slugmap');
+          "
+
       # snapshot.json is the directory corpus; server-removals.json is the SEO 410/308
       # ledger consumed by lib/serverRemovals.ts; slugmap.json is the name -> public slug map
       # mcpindex-trust keys every verdict by. All three are produced by sync-registry.mjs.
@@ -118,9 +156,9 @@ jobs:
       # the successful fetch never landed (run 29958442988). EVERY file the sync writes must
       # be staged here or that failure repeats — and for slugmap.json it would also strand
       # the screener on a map that no longer binds to the snapshot.
-      - name: Stage snapshot + removals + slug map
+      - name: Stage snapshot + removals + slug map + server index
         run: |
-          git add data/snapshot.json data/server-removals.json data/slugmap.json
+          git add data/snapshot.json data/server-removals.json data/slugmap.json data/server-index.json
           git status --short
 
       - name: Commit and push if changed
@@ -178,7 +216,7 @@ jobs:
             # derived from snapshot.json by this run, so taking any of them from a different
             # commit than the snapshot is what would break the binding the step above checks.
             if [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; then
-              for f in data/snapshot.json data/server-removals.json data/slugmap.json; do
+              for f in data/snapshot.json data/server-removals.json data/slugmap.json data/server-index.json; do
                 if [ -f "$f" ]; then
                   git checkout --theirs -- "$f"
                   git add "$f"

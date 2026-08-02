@@ -358,7 +358,99 @@ type LoadedSnapshot = {
   writtenAt: string;
 };
 
-let _cache: { servers: IndexedServer[]; loaded: LoadedSnapshot } | null = null;
+let _cache: IndexedServer[] | null = null;
+
+// ---------------------------------------------------------------------------------------
+// Pre-built server index (data/server-index.json)
+//
+// WHY. A cold `loadServersFromSnapshot()` costs ~2.2s IN PRODUCTION (measured 2026-08-02:
+// ~1.0s to read+zod 26MB of snapshot.json, ~1.2s for the pipeline; a local M-series box runs
+// this ~6x faster, so local numbers mislead). Next forces a full dynamic render for bot
+// User-Agents regardless of prerendering (base-server.js:1039 `supportsDynamicResponse:
+// !botType`), and a bot request does not populate the edge cache — so on ~19.4k tail pages
+// whose only visitor is a crawler, that ~2.2s is paid on essentially every crawl. Reading a
+// pre-computed array instead is a plain JSON.parse.
+//
+// The builder (scripts/build-server-index.ts) runs the identical pipeline via the
+// artifact-blind `loadServersFromSnapshot()` and writes the result. ORDER IS PRESERVED
+// EXACTLY and must never be sorted: pipeline order is semantically load-bearing (the
+// server page's Alternatives block walks a registry-order successor, and the sitemap emits
+// in this order).
+//
+// VALIDATION BOUNDARY, STATED PLAINLY. Runtime does a cheap structural check only — it
+// cannot verify `inputs.snapshot_sha256` without reading the very 26MB file the artifact
+// exists to avoid. The real binding is build-time + lib/serverIndexArtifact.test.ts, which
+// strict-deepEquals the committed file against a fresh `loadServersFromSnapshot()` and
+// checks both input digests. Same risk profile data/slugmap.json already accepts.
+//
+// DEGRADE, DO NOT 500. Missing OR malformed both fall back to the live pipeline with a loud
+// console.error. The fallback source is the same data, just slower, so failing closed here
+// would trade a correct-and-slow page for an outage. The loud log plus the `build:false`
+// cold-load line is how a broken artifact surfaces.
+const SERVER_INDEX_PATH = path.join(process.cwd(), 'data', 'server-index.json');
+const SERVER_INDEX_SCHEMA_VERSION = '1';
+
+export type ServerIndexArtifact = {
+  schema_version: string;
+  inputs: { snapshot_sha256: string | null; admitted_sha256: string | null };
+  meta: { snapshot_version: string; snapshot_written_at: string; fetched_at: string };
+  counts: { servers: number; total_entries: number };
+  servers: IndexedServer[];
+};
+
+// `undefined` = not looked at yet; `null` = looked at, unusable (fall back every time).
+let _indexCache: ServerIndexArtifact | null | undefined = undefined;
+let _indexInflight: Promise<ServerIndexArtifact | null> | null = null;
+
+function loadServerIndex(): Promise<ServerIndexArtifact | null> {
+  if (_indexCache !== undefined) return Promise.resolve(_indexCache);
+  if (_indexInflight) return _indexInflight;
+  _indexInflight = readServerIndex()
+    .then((r) => {
+      _indexCache = r;
+      return r;
+    })
+    .finally(() => {
+      _indexInflight = null;
+    });
+  return _indexInflight;
+}
+
+async function readServerIndex(): Promise<ServerIndexArtifact | null> {
+  let raw: string;
+  try {
+    raw = await fs.readFile(SERVER_INDEX_PATH, 'utf8');
+  } catch (e) {
+    if ((e as { code?: string }).code === 'ENOENT') {
+      // Expected on a fresh checkout before the first sync, and in any environment that
+      // never ran the builder. Not an error; the pipeline covers it.
+      console.warn('[registry] server-index absent, using the live pipeline');
+      return null;
+    }
+    throw e;
+  }
+  try {
+    const doc = JSON.parse(raw) as ServerIndexArtifact;
+    // Cheap and structural on purpose — anything proportional to 19k rows would give back
+    // the time this exists to save.
+    if (doc?.schema_version !== SERVER_INDEX_SCHEMA_VERSION) {
+      throw new Error(`schema_version ${String(doc?.schema_version)} != ${SERVER_INDEX_SCHEMA_VERSION}`);
+    }
+    if (!Array.isArray(doc.servers) || doc.servers.length === 0) {
+      throw new Error('servers missing or empty');
+    }
+    if (doc.counts?.servers !== doc.servers.length) {
+      throw new Error(`counts.servers ${doc.counts?.servers} != servers.length ${doc.servers.length}`);
+    }
+    if (!doc.meta?.snapshot_version || !doc.meta?.snapshot_written_at || !doc.meta?.fetched_at) {
+      throw new Error('meta incomplete');
+    }
+    return doc;
+  } catch (e) {
+    console.error('[registry] server-index REJECTED, falling back to the live pipeline:', (e as Error).message);
+    return null;
+  }
+}
 
 // The single source of truth for what this deployment serves. Exported so
 // /api/cron/sync-registry can REPORT it (that route is read-only; it cannot change what is
@@ -487,6 +579,18 @@ export async function loadSnapshot(): Promise<Snapshot> {
 }
 
 export async function loadSnapshotMeta(): Promise<{ version: string; writtenAt: string; fetchedAt: string }> {
+  // Served from the artifact header when present. Without this the artifact would buy the
+  // sitemap NOTHING: app/sitemap.ts keys its `baseCache` on `meta.version`, so it awaits
+  // loadSnapshotMeta() on every render and would still pull the full 26MB parse — on the
+  // crawler's actual entry point. lib/llmsFullCache keys on the same value.
+  const idx = await loadServerIndex();
+  if (idx) {
+    return {
+      version: idx.meta.snapshot_version,
+      writtenAt: idx.meta.snapshot_written_at,
+      fetchedAt: idx.meta.fetched_at,
+    };
+  }
   const loaded = await resolveSnapshot();
   return {
     version: loaded.version,
@@ -538,15 +642,34 @@ let _loadInflight: Promise<IndexedServer[]> | null = null;
 // and each reassigned `_cache`, which is why the return below has to read `_cache.servers`
 // rather than the local. With one in-flight promise there is one winner by construction.
 export async function loadServers(): Promise<IndexedServer[]> {
-  if (_cache) return _cache.servers;
+  if (_cache) return _cache;
   if (_loadInflight) return _loadInflight;
-  _loadInflight = loadServersUncached().finally(() => {
+  _loadInflight = loadServersResolved().finally(() => {
     _loadInflight = null;
   });
   return _loadInflight;
 }
 
-async function loadServersUncached(): Promise<IndexedServer[]> {
+// Prefer the pre-built artifact; fall back to the live pipeline.
+async function loadServersResolved(): Promise<IndexedServer[]> {
+  const idx = await loadServerIndex();
+  const servers = idx ? idx.servers : await loadServersFromSnapshot();
+  _cache = servers;
+  return servers;
+}
+
+/**
+ * The full pipeline, read straight from data/snapshot.json. ARTIFACT-BLIND ON PURPOSE.
+ *
+ * EVERY BUILDER AND EVERY ARTIFACT TEST MUST CALL THIS, NEVER `loadServers()`. `loadServers()`
+ * prefers data/server-index.json, so a builder that called it would read its own output and
+ * re-emit it — self-perpetuating and undetectable once one bad artifact lands. It would also
+ * poison scripts/build-slugmap.ts (which calls into this module too), which in turn would
+ * reduce lib/slugmapArtifact.test.ts — today the only live check on the slug pipeline against
+ * the real snapshot — to `assert(x === x)`. Losing that on the one computation where being
+ * wrong means a wrong-subject verdict PASS is not a trade worth making for a cache.
+ */
+export async function loadServersFromSnapshot(): Promise<IndexedServer[]> {
   const t0 = Date.now();
   const loaded = await resolveSnapshot();
   const filtered = loaded.snapshot.servers
@@ -571,12 +694,11 @@ async function loadServersUncached(): Promise<IndexedServer[]> {
   const servers = disambiguated.filter((s) =>
     seenSlug.has(s.slug) ? false : (seenSlug.add(s.slug), true),
   );
-  _cache = { servers, loaded };
-  // Logged AFTER _cache is set so the line is never on the critical path to a first render.
-  // `ms` is the whole cold path (snapshot resolve + normalize + mergeAdmitted + both dedupes
+  // `ms` is the whole pipeline (snapshot resolve + normalize + mergeAdmitted + both dedupes
   // + disambiguateSlugs); subtract the paired [registry] snapshot-resolve line to isolate the
-  // pipeline from the parse. `seq` > 1 on one isolate means the cache was evicted and reloaded,
-  // which would be a finding in its own right.
+  // pipeline from the parse. Once the artifact is in place this should fire only at build
+  // time and in the builders — a `build:false` line in production means the artifact was
+  // missing or rejected and the site fell back, which is exactly what we want to see logged.
   _coldLoadSeq += 1;
   console.log(
     '[registry] cold-load ' +
@@ -587,9 +709,7 @@ async function loadServersUncached(): Promise<IndexedServer[]> {
         build: process.env.NEXT_PHASE === 'phase-production-build',
       }),
   );
-  // Return from _cache (not the local `servers`) so a caller's servers and a later loadSnapshotMeta()
-  // version always come from the same winning snapshot even if a concurrent cold caller reassigned _cache.
-  return _cache.servers;
+  return servers;
 }
 
 // Resolve a deprecated registry entry by the public slug it would have had while
