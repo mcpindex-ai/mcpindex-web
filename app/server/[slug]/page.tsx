@@ -59,12 +59,29 @@ async function loadVerdictForServer(slug: string): Promise<VerdictState> {
 
 export const revalidate = 3600;
 
-// Prerender only the top servers by quality; the long tail is generated on-demand via ISR
-// (dynamicParams defaults to true) and then cached like any prerendered page. Prerendering ALL
-// ~11.6k pages made build time scale linearly with registry growth (+250 servers in one day) and
-// pushed Vercel builds toward resource-exhaustion errors. 1,500 covers what the leaderboard /
-// best-of / search funnels actually link to; a tail page costs one on-demand render on first visit.
-const PRERENDER_TOP_N = 1500;
+// Prerender the top servers by quality; the long tail is generated on-demand via ISR
+// (dynamicParams defaults to true) and then cached like any prerendered page.
+//
+// RAISED 1,500 -> 6,000 on 2026-08-01 after measuring what the old ceiling actually cost.
+// A prerendered page is a static artifact served from the edge in ~0.15s. A tail page is an
+// on-demand origin render measured at ~2.2s in production (~1.0s snapshot-resolve + ~1.2s
+// pipeline; Vercel runs this ~6x slower than a local M-series box, so local numbers mislead).
+// The visitor paying that 2.2s is almost always Googlebot, page after page, and Google lowers
+// crawl rate on slow responses - GSC crawl went from ~2,900 req/day at ~147ms mean response to
+// ~87/day at >=400ms. So the tail size is a crawl-budget lever, not a nicety.
+//
+// THE OLD COMMENT'S FEAR WAS THE WRONG VARIABLE. It blamed build time and "resource
+// exhaustion" from prerendering ~11.6k. Measured 2026-08-01 across 1,500 / 3,000 / 6,000:
+//   time   16.1s -> 28.2s -> 42.0s generation (marginal ~4.6ms/page, SUB-linear)
+//   RSS    1.09GB -> 1.04GB -> 1.11GB        (FLAT - bounded by worker count, not pages)
+//   .next  1.07GB -> ~2.1GB  -> 4.09GB       (LINEAR at ~0.67 MB/page)  <- the real ceiling
+// Memory and time are fine. Deploy ARTIFACT SIZE is the wall: the full ~19.4k catalog
+// extrapolates to ~13GB, which is what the earlier attempt most likely hit.
+//
+// 6,000 buys 4x the edge-served coverage for +29s build and +3GB artifact. Do not raise this
+// further without re-measuring .next size, and weigh it against deploy frequency - ~11
+// production deploys/day each ship the artifact and reset the whole ISR cache.
+const PRERENDER_TOP_N = 6000;
 
 export async function generateStaticParams() {
   const servers = await loadServers();
