@@ -388,7 +388,76 @@ let _cache: IndexedServer[] | null = null;
 // would trade a correct-and-slow page for an outage. The loud log plus the `build:false`
 // cold-load line is how a broken artifact surfaces.
 const SERVER_INDEX_PATH = path.join(process.cwd(), 'data', 'server-index.json');
-const SERVER_INDEX_SCHEMA_VERSION = '1';
+// Exported so scripts/build-server-index.ts and the artifact test cannot drift from the
+// reader. Bumping the reader alone would reject every artifact forever and silently drop the
+// site back to the ~2.2s pipeline, with a console.error as the only signal.
+export const SERVER_INDEX_SCHEMA_VERSION = '1';
+
+// Restores, cheaply, the invariants the zod pipeline used to guarantee by construction.
+//
+// This is the part the first draft got wrong. It shipped with only whole-document checks
+// (schema_version, non-empty, counts agree) on the grounds that "anything proportional to 19k
+// rows would give back the time this exists to save". That was measured and is false: the
+// whole row pass below costs single-digit milliseconds against a ~2,200ms production pipeline.
+// What it buys:
+//
+//   * SLUG UNIQUENESS. Trust verdicts are keyed by slug and getServer() is a `.find()` on
+//     first match, so two rows sharing a slug renders one server's verdict against another
+//     server's install commands - a wrong-subject PASS, the exact failure disambiguateSlugs()
+//     exists to prevent. The pipeline guaranteed this via its final seenSlug filter; a data
+//     file guarantees nothing.
+//   * SLUG SHAPE. slugify() guaranteed /^[a-z0-9-]+$/, and downstream code relies on it -
+//     app/server/[slug]/page.tsx builds a copy-paste HTML embed snippet by interpolating the
+//     slug into an href/src. React escapes our DOM, but the copied bytes are raw, so a slug
+//     containing quotes would be stored XSS on the EMBEDDER's site.
+//   * URL PROTOCOL. safeUrl() gated these at normalize time and does not run on artifact
+//     rows. lib/installs.ts and lib/recommend.ts hand remoteUrl to agents and to a copy
+//     field on the strength of that gate. A prefix test is enough for the property that
+//     matters (no javascript:/data:) and avoids 19k `new URL()` constructions.
+//   * ROW TYPES. Without this a row missing `envVars` passes every whole-document check, is
+//     memoised as good, and then throws TypeError in lib/quality.ts for the isolate's whole
+//     life - the "degrade, do not 500" promise inverted into a permanent 500.
+const SLUG_RE = /^[a-z0-9-]+$/;
+const HTTP_RE = /^https?:\/\//i;
+const URL_FIELDS = ['remoteUrl', 'repositoryUrl', 'websiteUrl', 'iconUrl'] as const;
+
+/** Pure: no I/O, so the rejection branches are table-testable. */
+export function validateServerIndex(
+  doc: unknown,
+): { ok: ServerIndexArtifact } | { reason: string } {
+  const d = doc as ServerIndexArtifact | null;
+  if (!d || typeof d !== 'object') return { reason: 'not an object' };
+  if (d.schema_version !== SERVER_INDEX_SCHEMA_VERSION) {
+    return { reason: `schema_version ${String(d.schema_version)} != ${SERVER_INDEX_SCHEMA_VERSION}` };
+  }
+  if (!Array.isArray(d.servers) || d.servers.length === 0) return { reason: 'servers missing or empty' };
+  if (d.counts?.servers !== d.servers.length) {
+    return { reason: `counts.servers ${d.counts?.servers} != servers.length ${d.servers.length}` };
+  }
+  if (!d.meta?.snapshot_version || !d.meta?.snapshot_written_at || !d.meta?.fetched_at) {
+    return { reason: 'meta incomplete' };
+  }
+  const seen = new Set<string>();
+  for (const s of d.servers) {
+    if (!s || typeof s !== 'object') return { reason: 'a row is not an object' };
+    if (typeof s.slug !== 'string' || !SLUG_RE.test(s.slug)) {
+      return { reason: `bad slug shape: ${JSON.stringify(s.slug)?.slice(0, 40)}` };
+    }
+    if (seen.has(s.slug)) return { reason: `duplicate slug ${s.slug} - wrong-subject verdict risk` };
+    seen.add(s.slug);
+    if (typeof s.name !== 'string' || typeof s.description !== 'string' || typeof s.title !== 'string') {
+      return { reason: `row ${s.slug} has a non-string name/title/description` };
+    }
+    if (!Array.isArray(s.envVars)) return { reason: `row ${s.slug} has non-array envVars` };
+    for (const f of URL_FIELDS) {
+      const v = s[f];
+      if (v !== undefined && (typeof v !== 'string' || !HTTP_RE.test(v))) {
+        return { reason: `row ${s.slug} has a non-http ${f}` };
+      }
+    }
+  }
+  return { ok: d };
+}
 
 export type ServerIndexArtifact = {
   schema_version: string;
@@ -416,40 +485,52 @@ function loadServerIndex(): Promise<ServerIndexArtifact | null> {
   return _indexInflight;
 }
 
+// NEVER THROWS. Every failure returns null and the caller falls back to the live pipeline.
+//
+// The first draft rethrew everything except ENOENT, which contradicted the "DEGRADE, DO NOT
+// 500" contract stated above it. The realistic case is not a missing file: it is EMFILE/ENFILE
+// under exactly the parallel crawl this change exists to survive, and EISDIR/EACCES after a bad
+// deploy. Because loadSnapshotMeta() now reads this file too, one transient fd exhaustion would
+// otherwise have 500'd the sitemap, /stats, /status, /changelog.rss and every server page at
+// once - a strictly larger blast radius than before the artifact existed.
+/**
+ * TEST SEAM ONLY. Exposes the memoised artifact so a test can assert that `loadServers()`
+ * returns the artifact's own array by reference — i.e. that it served the file rather than
+ * recomputing. Without it that property is untestable, and a deploy where the file is missing
+ * or untraced passes the whole suite while production silently pays the pipeline per crawl.
+ */
+export function loadServerIndexForTest(): Promise<ServerIndexArtifact | null> {
+  return loadServerIndex();
+}
+
 async function readServerIndex(): Promise<ServerIndexArtifact | null> {
   let raw: string;
   try {
     raw = await fs.readFile(SERVER_INDEX_PATH, 'utf8');
   } catch (e) {
-    if ((e as { code?: string }).code === 'ENOENT') {
-      // Expected on a fresh checkout before the first sync, and in any environment that
-      // never ran the builder. Not an error; the pipeline covers it.
+    const code = (e as { code?: string }).code;
+    if (code === 'ENOENT') {
+      // Expected on a fresh checkout before the first sync, and anywhere the builder never
+      // ran. Not an error; the pipeline covers it.
       console.warn('[registry] server-index absent, using the live pipeline');
-      return null;
+    } else {
+      console.error('[registry] server-index unreadable, using the live pipeline:', code);
     }
-    throw e;
-  }
-  try {
-    const doc = JSON.parse(raw) as ServerIndexArtifact;
-    // Cheap and structural on purpose — anything proportional to 19k rows would give back
-    // the time this exists to save.
-    if (doc?.schema_version !== SERVER_INDEX_SCHEMA_VERSION) {
-      throw new Error(`schema_version ${String(doc?.schema_version)} != ${SERVER_INDEX_SCHEMA_VERSION}`);
-    }
-    if (!Array.isArray(doc.servers) || doc.servers.length === 0) {
-      throw new Error('servers missing or empty');
-    }
-    if (doc.counts?.servers !== doc.servers.length) {
-      throw new Error(`counts.servers ${doc.counts?.servers} != servers.length ${doc.servers.length}`);
-    }
-    if (!doc.meta?.snapshot_version || !doc.meta?.snapshot_written_at || !doc.meta?.fetched_at) {
-      throw new Error('meta incomplete');
-    }
-    return doc;
-  } catch (e) {
-    console.error('[registry] server-index REJECTED, falling back to the live pipeline:', (e as Error).message);
     return null;
   }
+  let doc: unknown;
+  try {
+    doc = JSON.parse(raw);
+  } catch (e) {
+    console.error('[registry] server-index unparseable, using the live pipeline:', (e as Error).message);
+    return null;
+  }
+  const res = validateServerIndex(doc);
+  if ('reason' in res) {
+    console.error('[registry] server-index REJECTED, using the live pipeline:', res.reason);
+    return null;
+  }
+  return res.ok;
 }
 
 // The single source of truth for what this deployment serves. Exported so
@@ -833,7 +914,13 @@ export async function getServer(slug: string): Promise<IndexedServer | null> {
   const servers = await loadServers();
   const hit = servers.find((s) => s.slug === slug);
   if (hit) return hit;
-  // Warm path: loadSnapshot() is free once loadServers() filled _cache.
+  // NOT free any more, and this is the only path that still needs raw RegistryEntry rows.
+  // loadServers() serves from data/server-index.json and never resolves the snapshot, so the
+  // FIRST miss on an isolate pays the full 26MB read + SnapshotZ parse (~138ms local, so
+  // ~0.8-1.0s in production, plus ~200MB transient). Memoised by `_loadedSnapshot` after
+  // that, so it is once per isolate, not per request - but /server/[slug] is exempt from the
+  // per-IP limiter, so a 404 spray is what triggers it. Carrying the deprecated set in the
+  // artifact would remove the last raw-snapshot read from the request path entirely.
   const snapshot = await loadSnapshot();
   return findDeprecatedServer(
     slug,

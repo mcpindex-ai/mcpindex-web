@@ -1,8 +1,10 @@
 // The committed data/slugmap.json is the contract mcpindex-trust will key every verdict by.
 //
 // These assertions are deliberately against the FILE ON DISK, not against the builder's own
-// output. Comparing the builder to `loadServers()` would be tautological — it is built from
-// `loadServers()`. The risk worth testing is that the committed artifact has gone stale
+// output. Comparing the builder to its own source would be tautological. It must also NOT use
+// `loadServers()`, which prefers data/server-index.json: that would compare one committed
+// artifact against another and stop touching the snapshot entirely (measured: zero pipeline
+// runs). The risk worth testing is that the committed artifact has gone stale
 // relative to the snapshot beside it, which is exactly what happens when a sync writes one
 // file and not the other.
 import test from 'node:test';
@@ -12,7 +14,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { buildSlugMap } from '../scripts/build-slugmap';
-import { loadServers } from './registry';
+import { loadServersFromSnapshot } from './registry';
 
 const DATA = path.join(process.cwd(), 'data');
 
@@ -27,8 +29,8 @@ type SlugMap = {
 const raw = readFileSync(path.join(DATA, 'slugmap.json'), 'utf8');
 const doc = JSON.parse(raw) as SlugMap;
 
-test('the committed artifact matches what loadServers computes right now', async () => {
-  const servers = await loadServers();
+test('the committed artifact matches what the snapshot pipeline computes right now', async () => {
+  const servers = await loadServersFromSnapshot();
   const expected = Object.fromEntries(servers.map((s) => [s.name, s.slug]));
   assert.deepEqual(
     doc.servers,
@@ -50,7 +52,7 @@ test('the input digests bind the artifact to the files beside it', () => {
 });
 
 test('retired lists every base slug no server holds, and nothing else', async () => {
-  const servers = await loadServers();
+  const servers = await loadServersFromSnapshot();
   const held = new Set(servers.map((s) => s.slug));
   const want = [...new Set(servers.map((s) => s.baseSlug))].filter((b) => !held.has(b)).sort();
   assert.deepEqual(doc.retired, want);

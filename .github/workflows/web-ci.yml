@@ -37,6 +37,17 @@ on:
       - 'package-lock.json'
       - 'tsconfig.json'
       - '.github/workflows/web-ci.yml'
+      # These two DERIVED artifacts are runtime-trusted and must be gated, even though
+      # 'data/**' as a whole is deliberately excluded above. lib/registry.ts loadServers()
+      # PREFERS data/server-index.json over the snapshot, and mcpindex-trust keys every verdict
+      # by data/slugmap.json. lib/serverIndexArtifact.test.ts and lib/slugmapArtifact.test.ts
+      # are the only things binding either file to the pipeline, and Vercel runs `npm run
+      # build`, not the tests — so before this, a commit touching only these files deployed to
+      # production having executed ZERO validation of them. Naming them individually rather
+      # than widening to 'data/**' keeps the ~12/day verdicts.json syncs from triggering a full
+      # build plus a Chromium download, which is why the omission exists in the first place.
+      - 'data/server-index.json'
+      - 'data/slugmap.json'
 
 permissions:
   contents: read

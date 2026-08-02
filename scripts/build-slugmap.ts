@@ -10,9 +10,13 @@
 //
 // So: this side computes the answer once, publishes it, and the screener looks it up.
 //
-// It MUST go through `loadServers()`. Recomputing the pipeline here — even "just the slug
+// It MUST go through `loadServersFromSnapshot()`. Recomputing the pipeline here — even "just the slug
 // part" — would make three implementations instead of two, which is the disease rather than
-// the cure. `loadServers` reads only the bundled snapshot (no KV, no network), so this runs
+// the cure. NOT `loadServers()`: that PREFERS data/server-index.json, so this builder would
+// derive the slug map from a cache of itself instead of from the snapshot — and on a sync it
+// would read the PREVIOUS run's index while stamping the NEW snapshot's digest, producing a
+// map that lies about its own binding. `loadServersFromSnapshot()` reads only the bundled
+// snapshot (no KV, no network, no artifact), so this runs
 // offline from the repo root.
 //
 //   npx tsx --conditions=react-server scripts/build-slugmap.ts
@@ -23,7 +27,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { loadServers } from '../lib/registry';
+import { loadServersFromSnapshot } from '../lib/registry';
 
 const ROOT = path.resolve(new URL('..', import.meta.url).pathname);
 const DATA = path.join(ROOT, 'data');
@@ -40,7 +44,7 @@ async function digest(file: string): Promise<string | null> {
 }
 
 export async function buildSlugMap(): Promise<string> {
-  const servers = await loadServers();
+  const servers = await loadServersFromSnapshot();
 
   // Sorted, so the output is byte-stable across runs and `git diff data/slugmap.json` on a
   // keying change shows exactly which slugs moved. That review artifact is the reason there

@@ -16,7 +16,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { loadServersFromSnapshot, readBundledSnapshot } from './registry';
+import { loadServersFromSnapshot, readBundledSnapshot, validateServerIndex } from './registry';
 import type { ServerIndexArtifact } from './registry';
 
 const DATA = path.join(process.cwd(), 'data');
@@ -93,4 +93,60 @@ test('slugs agree with data/slugmap.json', () => {
 test('slugs are unique — a shared slug is a wrong-subject verdict', () => {
   const slugs = new Set(doc.servers.map((s) => s.slug));
   assert.equal(slugs.size, doc.servers.length, 'two servers share a public slug in the artifact');
+});
+
+// ---------------------------------------------------------------------------------------
+// The property with no coverage before: that loadServers() SERVES the artifact.
+//
+// Every test above reads the file with readFileSync and never exercises the loader. Delete
+// data/server-index.json, or ship a deploy where the file is not traced into the bundle, and
+// all 44 lib suites still pass while production silently pays the ~2.2s pipeline per crawl.
+// Reference equality is the exact property, and it needs no timing.
+test('loadServers() serves the artifact rather than recomputing', async () => {
+  const { loadServers, loadServerIndexForTest } = await import('./registry');
+  const idx = await loadServerIndexForTest();
+  assert.ok(idx, 'server-index was absent or REJECTED — loadServers() is falling back');
+  assert.equal(
+    await loadServers(),
+    idx.servers,
+    'loadServers() did not return the artifact array — it recomputed the pipeline',
+  );
+});
+
+// The rejection branches. These are the "degrade, do not 500" promise; before this they had
+// no coverage at all, and one of them (duplicate slug) is the wrong-subject failure mode.
+// A 3-row VALID artifact. counts must track the slice or every case would trip the counts
+// check first and the assertions would all pass for the wrong reason.
+const base = () => {
+  const d = JSON.parse(JSON.stringify({ ...doc, servers: doc.servers.slice(0, 3) }));
+  d.counts.servers = d.servers.length;
+  return d;
+};
+const withCount = (d: ReturnType<typeof base>) => ((d.counts.servers = d.servers.length), d);
+
+test('validateServerIndex rejects the artifacts that matter', () => {
+  const cases: Array<[string, () => unknown]> = [
+    ['not an object', () => null],
+    ['schema_version', () => ({ ...base(), schema_version: '2' })],
+    ['servers missing or empty', () => withCount(Object.assign(base(), { servers: [] }))],
+    ['counts.servers', () => Object.assign(base(), { counts: { servers: 999, total_entries: 1 } })],
+    ['meta incomplete', () => Object.assign(base(), { meta: { snapshot_version: '', snapshot_written_at: '', fetched_at: '' } })],
+    ['a row is not an object', () => { const d = base(); d.servers[1] = null; return d; }],
+    // The one that renders one server's verdict under another's name.
+    ['duplicate slug', () => { const d = base(); d.servers[1].slug = d.servers[0].slug; return d; }],
+    ['bad slug shape', () => { const d = base(); d.servers[0].slug = 'a"><script>'; return d; }],
+    ['non-array envVars', () => { const d = base(); d.servers[0].envVars = 'nope'; return d; }],
+    // safeUrl() no longer runs on artifact rows; this is what replaces it.
+    ['non-http remoteUrl', () => { const d = base(); d.servers[0].remoteUrl = 'javascript:alert(1)'; return d; }],
+  ];
+  for (const [label, make] of cases) {
+    const res = validateServerIndex(make());
+    assert.ok('reason' in res, `expected rejection for: ${label}`);
+    assert.match(res.reason, new RegExp(label.split(' ')[0]!, 'i'), `wrong reason for ${label}: ${res.reason}`);
+  }
+});
+
+test('validateServerIndex accepts the real committed artifact', () => {
+  const res = validateServerIndex(doc);
+  assert.ok('ok' in res, `real artifact rejected: ${'reason' in res ? res.reason : ''}`);
 });
