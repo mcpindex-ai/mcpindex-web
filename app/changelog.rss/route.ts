@@ -1,4 +1,4 @@
-import { loadServers, loadSnapshot } from '@/lib/registry';
+import { loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { CATEGORY_LABELS } from '@/lib/categorize';
 
 export const revalidate = 3600;
@@ -13,7 +13,7 @@ function escapeXml(s: string): string {
 }
 
 export async function GET() {
-  const [servers, snap] = await Promise.all([loadServers(), loadSnapshot()]);
+  const [servers, snap] = await Promise.all([loadServers(), loadSnapshotMeta()]);
   const sorted = [...servers]
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
     .slice(0, 100);

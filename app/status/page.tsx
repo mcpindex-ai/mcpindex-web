@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { loadSnapshot, loadServers } from '@/lib/registry';
+import { loadSnapshotMeta, loadServers } from '@/lib/registry';
 import { listScreened } from '@/lib/verdicts';
 import { timeAgo } from '@/lib/time';
 
@@ -16,7 +16,7 @@ export const revalidate = 3600;
 
 export default async function StatusPage() {
   const [snap, servers, screened] = await Promise.all([
-    loadSnapshot(),
+    loadSnapshotMeta(),
     loadServers(),
     listScreened(),
   ]);

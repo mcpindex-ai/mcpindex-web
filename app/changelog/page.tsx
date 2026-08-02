@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { loadServers, loadSnapshot } from '@/lib/registry';
+import { loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { CATEGORY_LABELS } from '@/lib/categorize';
 
 export const revalidate = 3600;
@@ -25,7 +25,7 @@ function bucketByDay(servers: Array<{ publishedAt: string }>) {
 }
 
 export default async function Changelog() {
-  const [servers, snap] = await Promise.all([loadServers(), loadSnapshot()]);
+  const [servers, snap] = await Promise.all([loadServers(), loadSnapshotMeta()]);
 
   // Group servers by publishedAt day, latest 30 days only.
   const sorted = [...servers].sort((a, b) =>

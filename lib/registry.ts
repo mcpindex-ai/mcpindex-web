@@ -384,6 +384,11 @@ export async function readBundledSnapshot(): Promise<StoredSnapshot> {
 
 let _resolveInflight: Promise<LoadedSnapshot> | null = null;
 
+// Memo for the resolved snapshot, INDEPENDENT of `_cache`. The bundled snapshot is a build
+// artifact and immutable for the life of a deployment (see the block comment on
+// resolveSnapshotUncached), so holding it is safe and two resolves can never disagree.
+let _loadedSnapshot: LoadedSnapshot | null = null;
+
 // De-dup concurrent cold resolves. N simultaneous callers on a cold instance would otherwise EACH
 // read the ~26MB data/snapshot.json and zod-parse ~19k entries (~200MB transient apiece) ->
 // OOM/500s under a traffic spike or parallel crawl. Still worth keeping for that reason alone.
@@ -392,10 +397,16 @@ let _resolveInflight: Promise<LoadedSnapshot> | null = null;
 // move under a live deployment. The bundled snapshot is a build artifact and immutable for the
 // life of the deployment, so concurrent resolves cannot disagree. Memory, not correctness.
 function resolveSnapshot(): Promise<LoadedSnapshot> {
+  if (_loadedSnapshot) return Promise.resolve(_loadedSnapshot);
   if (_resolveInflight) return _resolveInflight;
-  _resolveInflight = resolveSnapshotUncached().finally(() => {
-    _resolveInflight = null;
-  });
+  _resolveInflight = resolveSnapshotUncached()
+    .then((r) => {
+      _loadedSnapshot = r;
+      return r;
+    })
+    .finally(() => {
+      _resolveInflight = null;
+    });
   return _resolveInflight;
 }
 
@@ -452,21 +463,30 @@ async function resolveSnapshotUncached(): Promise<LoadedSnapshot> {
   };
 }
 
+// These two now memoise through `_loadedSnapshot` in resolveSnapshot() and NO LONGER depend
+// on `_cache`.
+//
+// They used to short-circuit on `_cache`, which loadServers() populates - a free ride that
+// worked only because loadServers() happened to resolve the snapshot on its way through. The
+// forthcoming build-time server-index artifact removes exactly that: loadServers() will read
+// a pre-computed file and never touch resolveSnapshot(). Had this free ride still been in
+// place, every loadSnapshot()/loadSnapshotMeta() call would have degraded to a fresh 26MB
+// read + full SnapshotZ zod parse (~200MB transient) - on the HOMEPAGE via
+// components/LiveTicker.tsx, on /changelog.rss (the feed submitted to GSC as a sitemap), and
+// inside getServer() on every miss, which runs TWICE per request on /server/[slug], a route
+// deliberately exempt from the per-IP limiter. An unauthenticated slug-spray would have
+// bought two 26MB parses per request. Memoising here closes that BEFORE the artifact lands.
+//
+// No new memory cost today: `_cache.loaded.snapshot.servers` already retains the parsed raw
+// entries for the isolate's life. After the artifact, this memo is only populated by callers
+// that genuinely need raw RegistryEntry rows - in practice just getServer()'s deprecated
+// fallback - so pages that need only `fetchedAt` stop pulling 26MB at all.
 export async function loadSnapshot(): Promise<Snapshot> {
-  if (_cache) return _cache.loaded.snapshot; // warm short-circuit (mirror loadServers/loadSnapshotMeta):
-  // without this, a caller that ever went dynamic would re-resolve the 21MB snapshot per request.
   const loaded = await resolveSnapshot();
   return loaded.snapshot;
 }
 
 export async function loadSnapshotMeta(): Promise<{ version: string; writtenAt: string; fetchedAt: string }> {
-  if (_cache) {
-    return {
-      version: _cache.loaded.version,
-      writtenAt: _cache.loaded.writtenAt,
-      fetchedAt: _cache.loaded.snapshot.fetchedAt,
-    };
-  }
   const loaded = await resolveSnapshot();
   return {
     version: loaded.version,

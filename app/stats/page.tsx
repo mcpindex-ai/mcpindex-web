@@ -3,7 +3,7 @@ import { Figure } from '@/components/Figure';
 import { renderDiagram } from '@/components/diagrams';
 import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
-import { loadServers, loadSnapshot } from '@/lib/registry';
+import { loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { ALL_CATEGORIES } from '@/lib/categorize';
 import { daysAgoCutoff } from '@/lib/time';
 import { jsonLdSafe } from '@/lib/jsonLd';
@@ -19,7 +19,7 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default async function StatsPage() {
-  const [allServers, snap] = await Promise.all([loadServers(), loadSnapshot()]);
+  const [allServers, snap] = await Promise.all([loadServers(), loadSnapshotMeta()]);
   // Registry-sourced only: the copy and the FAQ JSON-LD on this page assert "active entries
   // in the official registry ... not self-submitted listings", and loadServers() also returns
   // editorially admitted servers. Same reasoning as lib/registry.ts getServerCount().
