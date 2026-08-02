@@ -166,6 +166,33 @@ function safeUrl(u: string | undefined): string | undefined {
   }
 }
 
+// Strip keys whose value is `undefined`, in place, before the row escapes this function.
+//
+// WHY THIS EXISTS. `JSON.stringify` DROPS an undefined-valued key, but an in-memory object
+// still HAS it, and `node:assert/strict` deepEqual distinguishes own-key presence. Seven of
+// IndexedServer's fields are optional and were assigned unconditionally (`npmPackage:
+// npmPkg?.identifier` etc.), so every one of 19,353 rows carried at least one
+// explicit-undefined key and row 0 alone lost SIX keys (22 -> 16) across a JSON round-trip.
+//
+// That is load-bearing for the build-time server-index artifact: the only thing binding the
+// artifact to this pipeline is a strict deepEqual in its test (the runtime check cannot
+// verify the snapshot digest without reading the 26MB file it exists to avoid). A test that
+// fails on row 0 invites loosening that comparison, and a loosened comparison means a
+// structurally-valid-but-wrong artifact can serve in production with a green suite.
+//
+// Done here rather than as seven conditional spreads so an eighth optional field added later
+// is covered automatically instead of silently reintroducing the problem. Verified: nothing
+// in lib/, app/ or components/ tests key PRESENCE on a server row (no `in`, no
+// hasOwnProperty, no Object.keys), and `!== undefined` rather than truthiness so an empty
+// string identifier is still preserved.
+function omitUndefined<T extends object>(o: T): T {
+  const rec = o as Record<string, unknown>;
+  for (const k of Object.keys(rec)) {
+    if (rec[k] === undefined) delete rec[k];
+  }
+  return o;
+}
+
 // Shared field mapping for both provenances. Registry entries read their dates and status
 // from the official _meta block; admitted entries carry their own, because stamping them
 // with a registry block would have them claim listing they do not have (see lib/admitted.ts).
@@ -182,7 +209,7 @@ function normalizeServer(
     (p) => p.registryType === 'docker' || p.registryType === 'oci',
   );
   const primary = remote ?? s.packages?.[0];
-  return {
+  return omitUndefined({
     source,
     ...(admittedReason ? { admittedReason } : {}),
     slug: slugify(s.name),
@@ -216,7 +243,7 @@ function normalizeServer(
     iconUrl: safeUrl(s.icons?.[0]?.src),
     envVars:
       s.packages?.flatMap((p) => p.environmentVariables ?? []) ?? [],
-  };
+  });
 }
 
 export function normalize(entry: RegistryEntry): IndexedServer {
