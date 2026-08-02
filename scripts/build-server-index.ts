@@ -24,14 +24,22 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { loadServersFromSnapshot, loadSnapshot, readBundledSnapshot } from '../lib/registry';
+import {
+  loadServersFromSnapshot,
+  loadSnapshot,
+  readBundledSnapshot,
+  resolveDeprecatedServers,
+  SERVER_INDEX_SCHEMA_VERSION,
+} from '../lib/registry';
 import type { ServerIndexArtifact } from '../lib/registry';
 
 const ROOT = path.resolve(new URL('..', import.meta.url).pathname);
 const DATA = path.join(ROOT, 'data');
 const OUT = path.join(DATA, 'server-index.json');
 
-const SCHEMA_VERSION = '1';
+// Imported, never redeclared. A local copy is how the writer and the reader drift: bump the
+// reader alone and every artifact is rejected forever, silently dropping the site back to
+// the ~2.2s pipeline with a console.error as the only signal.
 
 /** sha256 of a file's bytes, or null when it does not exist. */
 async function digest(file: string): Promise<string | null> {
@@ -53,6 +61,10 @@ export async function buildServerIndex(): Promise<ServerIndexArtifact> {
     throw new Error('refusing to write an empty server index');
   }
 
+  // Same activeSlugs the runtime would have passed: deprecated slugs are resolved so they can
+  // never alias a live subject.
+  const deprecated = resolveDeprecatedServers(snap.servers, new Set(servers.map((s) => s.slug)));
+
   const [snapshot_sha256, admitted_sha256] = await Promise.all([
     digest(path.join(DATA, 'snapshot.json')),
     digest(path.join(DATA, 'admitted.json')),
@@ -68,7 +80,7 @@ export async function buildServerIndex(): Promise<ServerIndexArtifact> {
   // No generatedAt / timestamp field, matching build-slugmap.ts: the input digests carry
   // identity, and a timestamp would make every sync look like a change.
   const doc: ServerIndexArtifact = {
-    schema_version: SCHEMA_VERSION,
+    schema_version: SERVER_INDEX_SCHEMA_VERSION,
     inputs: { snapshot_sha256, admitted_sha256 },
     // snapshot_version and snapshot_written_at are NOT decorative. loadSnapshotMeta() serves
     // them from here, and app/sitemap.ts keys its baseCache on the version — without them the
@@ -79,8 +91,16 @@ export async function buildServerIndex(): Promise<ServerIndexArtifact> {
       snapshot_written_at: bundled.snapshot_written_at,
       fetched_at: snap.fetchedAt,
     },
-    counts: { servers: servers.length, total_entries: snap.totalEntries },
+    counts: {
+      servers: servers.length,
+      total_entries: snap.totalEntries,
+      deprecated: deprecated.length,
+    },
     servers,
+    // Precomputed so getServer()'s miss branch never reads raw RegistryEntry rows. That was
+    // the last 26MB parse left on the request path, and it landed on whichever visitor first
+    // hit an unknown slug on a fresh isolate — on a route exempt from the per-IP limiter.
+    deprecated,
   };
 
   // Compact, not pretty-printed. This is a ~14MB derived blob that is regenerated wholesale;

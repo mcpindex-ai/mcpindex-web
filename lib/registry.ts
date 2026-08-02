@@ -391,7 +391,10 @@ const SERVER_INDEX_PATH = path.join(process.cwd(), 'data', 'server-index.json');
 // Exported so scripts/build-server-index.ts and the artifact test cannot drift from the
 // reader. Bumping the reader alone would reject every artifact forever and silently drop the
 // site back to the ~2.2s pipeline, with a console.error as the only signal.
-export const SERVER_INDEX_SCHEMA_VERSION = '1';
+// Bumped to '2' when `deprecated` was added. An artifact without it would otherwise serve a
+// permanently empty deprecated set — every retired /server/<slug> a soft-404 — so the reader
+// must reject the older shape and fall back rather than quietly half-work.
+export const SERVER_INDEX_SCHEMA_VERSION = '2';
 
 // Restores, cheaply, the invariants the zod pipeline used to guarantee by construction.
 //
@@ -437,8 +440,14 @@ export function validateServerIndex(
   if (!d.meta?.snapshot_version || !d.meta?.snapshot_written_at || !d.meta?.fetched_at) {
     return { reason: 'meta incomplete' };
   }
+  if (!Array.isArray(d.deprecated)) return { reason: 'deprecated missing' };
+  if (d.counts?.deprecated !== d.deprecated.length) {
+    return { reason: `counts.deprecated ${d.counts?.deprecated} != deprecated.length ${d.deprecated.length}` };
+  }
   const seen = new Set<string>();
-  for (const s of d.servers) {
+  // Deprecated rows are rendered on real pages too, so they get the identical per-row pass.
+  // Their slugs are resolved to be distinct from active ones, so they share the `seen` set.
+  for (const s of [...d.servers, ...d.deprecated]) {
     if (!s || typeof s !== 'object') return { reason: 'a row is not an object' };
     if (typeof s.slug !== 'string' || !SLUG_RE.test(s.slug)) {
       return { reason: `bad slug shape: ${JSON.stringify(s.slug)?.slice(0, 40)}` };
@@ -463,8 +472,10 @@ export type ServerIndexArtifact = {
   schema_version: string;
   inputs: { snapshot_sha256: string | null; admitted_sha256: string | null };
   meta: { snapshot_version: string; snapshot_written_at: string; fetched_at: string };
-  counts: { servers: number; total_entries: number };
+  counts: { servers: number; total_entries: number; deprecated: number };
   servers: IndexedServer[];
+  /** Deprecated subjects with slugs already resolved — see resolveDeprecatedServers(). */
+  deprecated: IndexedServer[];
 };
 
 // `undefined` = not looked at yet; `null` = looked at, unusable (fall back every time).
@@ -803,6 +814,26 @@ export function findDeprecatedServer(
   entries: RegistryEntry[],
   activeSlugs: ReadonlySet<string>,
 ): IndexedServer | null {
+  return resolveDeprecatedServers(entries, activeSlugs).find((s) => s.slug === slug) ?? null;
+}
+
+/**
+ * The whole deprecated set with its slugs already resolved. Split out of findDeprecatedServer
+ * so scripts/build-server-index.ts can precompute it.
+ *
+ * WHY IT IS PRECOMPUTED. After the artifact landed, loadServers() stopped resolving the
+ * snapshot on its way through, so the FIRST getServer() miss on an isolate became the only
+ * thing still paying the 26MB read + SnapshotZ parse — ~241-368ms locally, roughly +1.3s in
+ * production. /server/[slug] is deliberately exempt from the per-IP limiter, so an unknown-slug
+ * spray decided which real visitor absorbed it, and no instrument covered that leg. Carrying
+ * the resolved set in the artifact removes the last raw-snapshot read from the request path.
+ *
+ * Pure in (entries, activeSlugs), so the build-time result is identical to the runtime one.
+ */
+export function resolveDeprecatedServers(
+  entries: RegistryEntry[],
+  activeSlugs: ReadonlySet<string>,
+): IndexedServer[] {
   const filtered = entries
     .filter(
       (e) =>
@@ -836,7 +867,7 @@ export function findDeprecatedServer(
       resolved.push({ ...s, slug: withDisambiguator(base, s.name) });
     }
   }
-  return resolved.find((s) => s.slug === slug) ?? null;
+  return resolved;
 }
 
 let _baseIndex: { servers: readonly IndexedServer[]; idx: Map<string, IndexedServer[]> } | null =
@@ -914,13 +945,18 @@ export async function getServer(slug: string): Promise<IndexedServer | null> {
   const servers = await loadServers();
   const hit = servers.find((s) => s.slug === slug);
   if (hit) return hit;
-  // NOT free any more, and this is the only path that still needs raw RegistryEntry rows.
-  // loadServers() serves from data/server-index.json and never resolves the snapshot, so the
-  // FIRST miss on an isolate pays the full 26MB read + SnapshotZ parse (~138ms local, so
-  // ~0.8-1.0s in production, plus ~200MB transient). Memoised by `_loadedSnapshot` after
-  // that, so it is once per isolate, not per request - but /server/[slug] is exempt from the
-  // per-IP limiter, so a 404 spray is what triggers it. Carrying the deprecated set in the
-  // artifact would remove the last raw-snapshot read from the request path entirely.
+  // Served from the artifact, which carries the deprecated set with slugs already resolved.
+  //
+  // This branch used to be the LAST thing on the request path still reading raw
+  // RegistryEntry rows. Once loadServers() started serving from the artifact it stopped
+  // resolving the snapshot on its way through, so the first miss on an isolate paid the full
+  // 26MB read + SnapshotZ parse (~241-368ms local, roughly +1.3s in production, ~200MB
+  // transient) — and /server/[slug] is exempt from the per-IP limiter, so an unknown-slug
+  // spray chose which real visitor absorbed it. resolveDeprecatedServers() is pure in
+  // (entries, activeSlugs), so precomputing it is identical to running it here.
+  const idx = await loadServerIndex();
+  if (idx) return idx.deprecated.find((s) => s.slug === slug) ?? null;
+  // Fallback only: no artifact, so we are already on the slow path anyway.
   const snapshot = await loadSnapshot();
   return findDeprecatedServer(
     slug,

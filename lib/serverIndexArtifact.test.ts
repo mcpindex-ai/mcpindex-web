@@ -16,7 +16,12 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { loadServersFromSnapshot, readBundledSnapshot, validateServerIndex } from './registry';
+import {
+  loadServersFromSnapshot,
+  readBundledSnapshot,
+  validateServerIndex,
+  SERVER_INDEX_SCHEMA_VERSION,
+} from './registry';
 import type { ServerIndexArtifact } from './registry';
 
 const DATA = path.join(process.cwd(), 'data');
@@ -73,7 +78,7 @@ test('the meta header matches the snapshot, so loadSnapshotMeta can be served fr
 
 test('counts agree with the payload (this is the runtime check; prove it holds)', () => {
   assert.equal(doc.counts.servers, doc.servers.length);
-  assert.equal(doc.schema_version, '1');
+  assert.equal(doc.schema_version, SERVER_INDEX_SCHEMA_VERSION);
   assert.ok(doc.servers.length > 14000, `only ${doc.servers.length} servers — partial snapshot?`);
 });
 
@@ -90,9 +95,20 @@ test('slugs agree with data/slugmap.json', () => {
   assert.deepEqual(fromIndex, map.servers, `server-index and slugmap disagree on slugs — regenerate BOTH`);
 });
 
-test('slugs are unique — a shared slug is a wrong-subject verdict', () => {
-  const slugs = new Set(doc.servers.map((s) => s.slug));
-  assert.equal(slugs.size, doc.servers.length, 'two servers share a public slug in the artifact');
+test('slugs are unique across active AND deprecated — a shared slug is a wrong-subject verdict', () => {
+  const all = [...doc.servers, ...doc.deprecated];
+  assert.equal(new Set(all.map((s) => s.slug)).size, all.length, 'two subjects share a public slug');
+});
+
+test('the precomputed deprecated set matches what the runtime would have resolved', async () => {
+  // getServer()'s miss branch now reads doc.deprecated instead of parsing the 26MB snapshot.
+  // resolveDeprecatedServers is pure in (entries, activeSlugs), so this must be identical —
+  // otherwise a retired /server/<slug> silently becomes a soft-404.
+  const { resolveDeprecatedServers, loadSnapshot } = await import('./registry');
+  const servers = await loadServersFromSnapshot();
+  const snap = await loadSnapshot();
+  const want = resolveDeprecatedServers(snap.servers, new Set(servers.map((s) => s.slug)));
+  assert.deepEqual(doc.deprecated, want, `deprecated set is stale — ${REGEN}`);
 });
 
 // ---------------------------------------------------------------------------------------
@@ -118,8 +134,11 @@ test('loadServers() serves the artifact rather than recomputing', async () => {
 // A 3-row VALID artifact. counts must track the slice or every case would trip the counts
 // check first and the assertions would all pass for the wrong reason.
 const base = () => {
-  const d = JSON.parse(JSON.stringify({ ...doc, servers: doc.servers.slice(0, 3) }));
+  const d = JSON.parse(
+    JSON.stringify({ ...doc, servers: doc.servers.slice(0, 3), deprecated: doc.deprecated.slice(0, 2) }),
+  );
   d.counts.servers = d.servers.length;
+  d.counts.deprecated = d.deprecated.length;
   return d;
 };
 const withCount = (d: ReturnType<typeof base>) => ((d.counts.servers = d.servers.length), d);
@@ -127,9 +146,11 @@ const withCount = (d: ReturnType<typeof base>) => ((d.counts.servers = d.servers
 test('validateServerIndex rejects the artifacts that matter', () => {
   const cases: Array<[string, () => unknown]> = [
     ['not an object', () => null],
-    ['schema_version', () => ({ ...base(), schema_version: '2' })],
+    ['schema_version', () => ({ ...base(), schema_version: 'nope' })],
     ['servers missing or empty', () => withCount(Object.assign(base(), { servers: [] }))],
-    ['counts.servers', () => Object.assign(base(), { counts: { servers: 999, total_entries: 1 } })],
+    ['counts.servers', () => { const d = base(); d.counts.servers = 999; return d; }],
+    ['deprecated missing', () => { const d = base(); delete d.deprecated; return d; }],
+    ['counts.deprecated', () => { const d = base(); d.counts.deprecated = 999; return d; }],
     ['meta incomplete', () => Object.assign(base(), { meta: { snapshot_version: '', snapshot_written_at: '', fetched_at: '' } })],
     ['a row is not an object', () => { const d = base(); d.servers[1] = null; return d; }],
     // The one that renders one server's verdict under another's name.
@@ -138,6 +159,9 @@ test('validateServerIndex rejects the artifacts that matter', () => {
     ['non-array envVars', () => { const d = base(); d.servers[0].envVars = 'nope'; return d; }],
     // safeUrl() no longer runs on artifact rows; this is what replaces it.
     ['non-http remoteUrl', () => { const d = base(); d.servers[0].remoteUrl = 'javascript:alert(1)'; return d; }],
+    // A deprecated row aliasing a LIVE slug is the same wrong-subject failure: the retired
+    // subject would answer at the live subject's URL. They share one `seen` set for this.
+    ['duplicate slug', () => { const d = base(); d.deprecated[0].slug = d.servers[0].slug; return d; }],
   ];
   for (const [label, make] of cases) {
     const res = validateServerIndex(make());
