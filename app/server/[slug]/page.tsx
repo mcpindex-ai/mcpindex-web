@@ -78,10 +78,26 @@ export const revalidate = 3600;
 // Memory and time are fine. Deploy ARTIFACT SIZE is the wall: the full ~19.4k catalog
 // extrapolates to ~13GB, which is what the earlier attempt most likely hit.
 //
-// 6,000 buys 4x the edge-served coverage for +29s build and +3GB artifact. Do not raise this
-// further without re-measuring .next size, and weigh it against deploy frequency - ~11
-// production deploys/day each ship the artifact and reset the whole ISR cache.
-const PRERENDER_TOP_N = 6000;
+// REVERTED 6,000 -> 1,500 the same day (2026-08-02). The raise was justified on "Googlebot
+// stops waiting for an origin render", and that justification is FALSE. Next.js forces a
+// full dynamic render for bot User-Agents regardless of whether a page is prerendered:
+// base-server.js:1124 sets `renderOpts.botType = getBotType(ua)` and :1039 sets
+// `supportsDynamicResponse: !botType`, so a bot request goes to the function, not to the
+// prerender store. Verified end-to-end on production, 6/6 by User-Agent on cold pages:
+// Googlebot BYPASS, bingbot BYPASS, GPTBot / Chrome / a nonsense UA / an empty UA all
+// PRERENDER. (Regexes: HEADLESS_BROWSER_BOT_UA_RE = /Googlebot(?!-)|Googlebot$/i, plus
+// HTML_LIMITED_BOT_UA_RE in shared/lib/router/utils/html-bots.js.) The `htmlLimitedBots`
+// config option can exempt bingbot but NOT Googlebot, which is hardcoded.
+//
+// So prerendering ranks 1,500-6,000 bought nothing for the audience those pages actually
+// have - crawlers - while costing ~+2.8GB per deployment across ~11 production deploys/day.
+//
+// RAISING THIS AGAIN ONLY HELPS HUMAN TRAFFIC. The measured build cost, if that ever becomes
+// the goal: generation 16.1s / 28.2s / 42-54s and `.next` 1.07GB / ~2.1GB / 3.85GB at
+// 1,500 / 3,000 / 6,000. Peak RSS is FLAT (~1.05GB, bounded by worker count, not pages);
+// output size is the ceiling at ~0.67 MB/page, so the full ~19.4k catalog is ~13GB.
+// The crawler-facing fix is making the render itself cheap, not prerendering more of it.
+const PRERENDER_TOP_N = 1500;
 
 export async function generateStaticParams() {
   const servers = await loadServers();
