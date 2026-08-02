@@ -472,8 +472,34 @@ export async function loadSnapshotMeta(): Promise<{ version: string; writtenAt: 
 // under ~45ms average and is NOT worth touching slug disambiguation. Over ~40% -> build it.
 let _coldLoadSeq = 0;
 
+let _loadInflight: Promise<IndexedServer[]> | null = null;
+
+// De-dup concurrent cold loads. `_resolveInflight` above already does this for the 26MB
+// read + zod parse, but the guard stopped there and the PIPELINE after it was left
+// unprotected — so N simultaneous callers on a cold isolate each ran normalize +
+// mergeAdmitted + both dedupes + disambiguateSlugs over ~19.4k servers. That is the exact
+// harm `_resolveInflight`'s comment was written to prevent, one layer up.
+//
+// MEASURED IN PRODUCTION 2026-08-02 00:13 UTC, which is how this was found: a single cold
+// isolate logged `cold-load` seq 1..6 across four concurrent requests against ONE
+// `snapshot-resolve` seq:1 — six full pipelines, serialising on the single-threaded event
+// loop and dragging wall time to 6.4-7.0s. Warm requests were 0.15s. `/server/[slug]` is
+// deliberately exempt from the per-IP limiter, so a parallel crawl is enough to trigger it.
+//
+// The computation is unchanged; only the number of times it runs is. This also removes a
+// race the old code merely mitigated: concurrent cold callers each built their own array
+// and each reassigned `_cache`, which is why the return below has to read `_cache.servers`
+// rather than the local. With one in-flight promise there is one winner by construction.
 export async function loadServers(): Promise<IndexedServer[]> {
   if (_cache) return _cache.servers;
+  if (_loadInflight) return _loadInflight;
+  _loadInflight = loadServersUncached().finally(() => {
+    _loadInflight = null;
+  });
+  return _loadInflight;
+}
+
+async function loadServersUncached(): Promise<IndexedServer[]> {
   const t0 = Date.now();
   const loaded = await resolveSnapshot();
   const filtered = loaded.snapshot.servers
