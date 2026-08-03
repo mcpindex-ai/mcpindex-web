@@ -106,3 +106,28 @@ absolute CPU. The concern is quota/billing from invocation and edge-request
 **count**. No emergency action required; recommend confirming the source
 (step 1) before any code change, since every mitigation here trades against the
 crawlability the tail pages exist to provide.
+
+## Resolution & source attribution (closed 2026-08-03)
+
+**Spike over.** Live re-check at ~09:00 UTC: ~631 requests / 15 min
+(~210 per 5 min; function invocations ~69 per 5 min — below the 7-day
+baseline of 137). Status codes clean (378×200, single-digit 4xx). The
+sweep ran only the 06:00–06:15 UTC window and did not recur.
+
+**Source identified via Firewall → Traffic (dashboard screenshot).**
+A single AWS-hosted headless-browser crawler farm:
+
+- Top IPs: 54.174.58.235 (8.5k), .247 (5.0k), .240 (4.9k), .227 (3.9k)
+  — one tight AWS block; top AS = Amazon.com, Inc. at 28.6k requests.
+- Top User-Agent: generic `Mozilla/5.0 AppleWebKit/537.36` (Chrome-like,
+  24.4k) — consistent with the JS-executing scraper the `.segments`
+  prefetch traffic implied. SemrushBot present but minor (~1.7k).
+- Firewall verdicts for the window: 23.9k allowed, 698 bypass (Agent
+  Surfaces rule), 13 DDoS-mitigation denies. Bot Protection is Inactive.
+
+**Disposition:** no action taken. One-time corpus sweep, self-resolved,
+trivial cost. If the same 54.174.58.x block returns at volume, a
+Firewall IP/JA4 rule (deny or challenge) resolves it with no code and
+no SEO cost — the JA4 digests in the dashboard identify the client even
+if IPs rotate. Recommendation 2 (MCP in-process fan-out) remains the
+one durable cost reduction and is still deferred.
