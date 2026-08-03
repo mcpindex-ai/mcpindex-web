@@ -1,7 +1,7 @@
 // A1 — GET /api/v1/badge/[slug]. SVG, always 200, fail-closed to a gray "not screened" badge.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { callRoute, FIX } from './_harness';
+import { callRoute, FIX, screenedSlug } from './_harness';
 import { GET } from '../../app/api/v1/badge/[slug]/route';
 
 const svg = (r: { status: number; headers: Headers; text: string }) => {
@@ -11,7 +11,8 @@ const svg = (r: { status: number; headers: Headers; text: string }) => {
 };
 
 test('badge: screened slug renders the SCREENED badge (not the gray fail-closed one)', async () => {
-  const r = await callRoute(GET, `/api/v1/badge/${FIX.SCREENED}`, { params: { slug: FIX.SCREENED } });
+  const slug = await screenedSlug();
+  const r = await callRoute(GET, `/api/v1/badge/${slug}`, { params: { slug } });
   svg(r);
   // Bite on a regression that flips a real screened server to the fail-closed gray badge:
   // the gray badge says "not screened"; the screened one must not.
@@ -45,6 +46,7 @@ test('badge: over-long slug (>256) → gray "not screened" (cap defends edge cac
 });
 
 test('badge: sets a 300s cache-control', async () => {
-  const r = await callRoute(GET, `/api/v1/badge/${FIX.SCREENED}`, { params: { slug: FIX.SCREENED } });
+  const slug = await screenedSlug();
+  const r = await callRoute(GET, `/api/v1/badge/${slug}`, { params: { slug } });
   assert.match(r.headers.get('cache-control') ?? '', /max-age=300/);
 });

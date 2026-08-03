@@ -129,7 +129,8 @@ test('ledger: flag on + no Redis → 503 (honest, never stale)', async () => {
   assert.equal(r.status, 503);
 });
 test('server-drift: flag off → 404', async () => {
-  const r = await callRoute(serverDrift, '/api/v1/server-drift', { query: { server: FIX.SCREENED } });
+  // Flag-off 404s before `server` is ever read — any literal works; don't pay a corpus load here.
+  const r = await callRoute(serverDrift, '/api/v1/server-drift', { query: { server: FIX.UNKNOWN } });
   assert.equal(r.status, 404);
 });
 test('server-drift: flag on + missing server → 400', async () => {
