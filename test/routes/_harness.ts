@@ -71,16 +71,6 @@ export async function callRoute(handler: Handler, path: string, opts: CallOpts =
 
 // ---- fixture constants (real, verified against data/verdicts.json + data/snapshot.json) ----
 export const FIX = {
-  // In BOTH snapshot and verdicts → server/[slug] + badge + trust API can be asserted to agree.
-  // A screened, currently-FRESH slug: clean PARTIAL, unexpired, and its content_hash
-  // still matches the published description. Pinned live data CAN drift out from under
-  // this pin — the previous pin (ac-inference-sh-mcp) did exactly that when the
-  // content-drift overlay landed and honestly marked it STALE ("re-check due"). If
-  // these suites fail on badge text or status again, first check whether the pinned
-  // server merely drifted; re-pin rather than weakening the overlay.
-  SCREENED: 'ac-tandem-docs-mcp',
-  REVIEW: 'ai-dynsoft-sac', // integrity.description fail, adjudication null → badge "review"
-  CLEARED: 'io-github-evan-moon-firma', // integrity fail + adjudication "cleared" → badge "screened"
   UNKNOWN: 'does-not-exist', // unknown slug → getVerdict null → UNVERIFIED / gray badge / 404
   FIXTURE: 'fixture--ssh-key-exfil-read-file', // fixture:true → excluded by getVerdict → UNVERIFIED
   // 32-hex / 64-hex validators used across drift/receipts/oauth.
@@ -89,6 +79,52 @@ export const FIX = {
   FP32_OK: '0123456789abcdef0123456789abcdef',
   STATE64_OK: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
 } as const;
+
+// A screened, CURRENTLY-fresh slug: clean PARTIAL, unexpired, content_hash still matching
+// the published description — selected from the shipped data at RUN time, not pinned.
+//
+// This was a hardcoded pin, twice. Both pins decayed exactly as live data must: the first
+// (ac-inference-sh-mcp) went STALE when the content-drift overlay landed; the second
+// (ac-tandem-docs-mcp) hit its directive.expires_at and turned every `verify` run on main
+// red the moment the wall clock passed it (2026-08-03) — which also makes the daily data
+// PRs (registry sync, liveness, anchors) unmergeable, the same deadlock the liveness
+// publisher hit on 2026-07-27. A pin into a corpus with a 30-day TTL and ~12x/day registry
+// refresh is a time bomb by construction, so: select, don't pin.
+//
+// Selection uses the PRODUCTION predicates (listScreened applies the expiry + content-drift
+// overlays; isVerdictExpired is the route's own clock check), but only data-level ones — the
+// suites still assert route behavior (wiring, fail-closed gates, SVG/contract rendering)
+// against the chosen slug, so a code regression that flips real screened servers to gray
+// still bites. What no longer bites is the DATA aging: staleness of the shipped corpus is
+// the healthcheck probes' job (mcpindex-verdicts-content*), not CI's.
+let _screened: Promise<string> | null = null;
+export function screenedSlug(): Promise<string> {
+  _screened ??= (async () => {
+    // Margin so a verdict expiring between selection and the last assertion cannot flake
+    // the run; generous because CI queue delay is unbounded, and with ~19k servers on a
+    // rolling re-screen there are always candidates nowhere near their expiry.
+    const soon = Date.now() + 6 * 3_600_000;
+    const { listScreened, isVerdictExpired } = await import('../../lib/verdicts');
+    const hit = (await listScreened()).find(
+      ({ verdict: v }) =>
+        v.status === 'PARTIAL' && // post-overlay: fresh now, no content drift
+        !v.adjudication &&
+        v.dimensions.every((d) => d.verdict !== 'FAIL') &&
+        v.dimensions.some((d) => d.id === 'mcpindex.integrity.description' && d.verdict === 'PASS') &&
+        !isVerdictExpired(v, soon),
+    );
+    if (!hit) {
+      throw new Error(
+        'screenedSlug: no fresh clean screened slug in the shipped data. Two causes produce ' +
+          'this: the corpus is globally stale (see the mcpindex-verdicts-content healthcheck ' +
+          'probes), or a lib/verdicts regression emptied/grayed listScreened() — check which ' +
+          'before touching the data. Route suites cannot exercise the "screened" path until then.',
+      );
+    }
+    return hit.slug;
+  })();
+  return _screened;
+}
 
 const GATE_FLAGS = [
   'DRIFT_IDENTITY',

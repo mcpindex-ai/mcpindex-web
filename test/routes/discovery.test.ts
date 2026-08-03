@@ -2,7 +2,7 @@
 // A9 registry-count. All read committed data/*.json (KV-preferred, file fallback when Upstash unset).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { callRoute, FIX } from './_harness';
+import { callRoute, FIX, screenedSlug } from './_harness';
 import { GET as server } from '../../app/api/v1/server/[slug]/route';
 import { GET as search } from '../../app/api/v1/search/route';
 import { GET as recommend } from '../../app/api/v1/recommend/route';
@@ -15,11 +15,22 @@ const obj = (r: { json: () => unknown }) => r.json() as Record<string, any>;
 
 // ---- A4 server/[slug] ----
 test('server/[slug]: known slug → 200 with the right, full detail body', async () => {
-  const r = await callRoute(server, `/api/v1/server/${FIX.SCREENED}`, { params: { slug: FIX.SCREENED } });
+  const slug = await screenedSlug();
+  const r = await callRoute(server, `/api/v1/server/${slug}`, { params: { slug } });
   assert.equal(r.status, 200);
   const b = obj(r);
-  assert.equal(b.slug, FIX.SCREENED); // right server, not a 200 with the wrong/blank one
+  assert.equal(b.slug, slug); // right server, not a 200 with the wrong/blank one
   assert.ok(Object.keys(b).length > 3); // a full detail object, not a truncated stub
+});
+
+// Guard against ADVERSE SELECTION in the dynamic screenedSlug() pick: a regression that
+// grays out a whole CLASS of screened servers (a binding/normalize bug dropping every
+// record with a server_id, say) would be invisible to suites that only ever see one
+// surviving slug. The floor is far below today's ~10.6k screened records but far above
+// zero, so it reds on "most of the corpus went gray" while staying immune to data aging.
+test('screened corpus floor: a collapse of listScreened() is a code bug, not data aging', async () => {
+  const { listScreened } = await import('../../lib/verdicts');
+  assert.ok((await listScreened()).length > 100);
 });
 
 test('server/[slug]: unknown slug → 404 not_found', async () => {

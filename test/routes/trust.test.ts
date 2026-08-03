@@ -2,7 +2,7 @@
 // JSON. Always 200 except 400 on a bad path param. Unknown/fixture → UNVERIFIED (fail-closed), never 404.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { callRoute, FIX } from './_harness';
+import { callRoute, FIX, screenedSlug } from './_harness';
 import { GET as trustServer } from '../../app/api/v1/trust/server/[server_id]/route';
 import { GET as trustTool } from '../../app/api/v1/trust/tool/[server_id]/[tool_name]/route';
 
@@ -10,11 +10,12 @@ const asObj = (r: { json: () => unknown }) => r.json() as Record<string, any>;
 
 // ---- A2 trust/server ----
 test('trust/server: known server → 200 verdict, contract v1.0.0', async () => {
-  const r = await callRoute(trustServer, `/api/v1/trust/server/${FIX.SCREENED}`, { params: { server_id: FIX.SCREENED } });
+  const slug = await screenedSlug();
+  const r = await callRoute(trustServer, `/api/v1/trust/server/${slug}`, { params: { server_id: slug } });
   assert.equal(r.status, 200);
   const b = asObj(r);
   assert.equal(b.verdict_contract_version, '1.0.0');
-  assert.equal(b.subject.server_id, FIX.SCREENED);
+  assert.equal(b.subject.server_id, slug);
   assert.equal(b.subject.tool_name, null);
   assert.equal(b.status, 'PARTIAL'); // advisory, conformance not run
   // the dimension that drives the badge/page must survive to the API
@@ -51,12 +52,13 @@ test('trust/server: empty param → 400', async () => {
 
 // ---- A3 trust/tool ----
 test('trust/tool: known server + tool → 200, echoes tool_name', async () => {
-  const r = await callRoute(trustTool, `/api/v1/trust/tool/${FIX.SCREENED}/read_file`, {
-    params: { server_id: FIX.SCREENED, tool_name: 'read_file' },
+  const slug = await screenedSlug();
+  const r = await callRoute(trustTool, `/api/v1/trust/tool/${slug}/read_file`, {
+    params: { server_id: slug, tool_name: 'read_file' },
   });
   assert.equal(r.status, 200);
   const b = asObj(r);
-  assert.equal(b.subject.server_id, FIX.SCREENED);
+  assert.equal(b.subject.server_id, slug);
   assert.equal(b.subject.tool_name, 'read_file');
 });
 
@@ -68,8 +70,9 @@ test('trust/tool: unknown server → 200 UNVERIFIED (not 404)', async () => {
 });
 
 test('trust/tool: missing tool_name → 400', async () => {
-  const r = await callRoute(trustTool, `/api/v1/trust/tool/${FIX.SCREENED}/`, {
-    params: { server_id: FIX.SCREENED, tool_name: '' },
+  const slug = await screenedSlug();
+  const r = await callRoute(trustTool, `/api/v1/trust/tool/${slug}/`, {
+    params: { server_id: slug, tool_name: '' },
   });
   assert.equal(r.status, 400);
 });
