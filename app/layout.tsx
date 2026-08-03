@@ -6,12 +6,40 @@
 import type { Metadata, Viewport } from 'next';
 // Self-hosted Geist (bundled woff2) - NOT next/font/google. next/font/google fetches the font
 // files from Google AT BUILD; a transient socket drop there fails the whole Vercel build with
-// UND_ERR_SOCKET (errorStep direct:build). The `geist` package ships the same fonts locally, so
-// the build has zero outbound font dependency. Variable names ('--font-geist-sans'/'-mono') are
-// the package defaults and match globals.css, so no CSS change is needed.
-// next/font/local (used by geist) defaults to font-display: swap - do not add next/font/google.
-import { GeistSans } from 'geist/font/sans';
-import { GeistMono } from 'geist/font/mono';
+// UND_ERR_SOCKET (errorStep direct:build). The woff2 files come from the `geist` package so the
+// build has zero outbound font dependency, but we declare them ourselves instead of importing
+// `geist/font/*`: the package hardcodes font-display: swap (and adjustFontFallback: false for
+// mono), which cost 0.232 CLS on the hero h1 when the fonts swapped in (Lighthouse 2026-08-02).
+// display: 'optional' removes the swap - same-origin + preload means the real font is ready at
+// first paint on effectively every visit; on the rare cold slow load the fallback just stays.
+// Variable names ('--font-geist-sans'/'-mono') match globals.css, so no CSS change is needed.
+import localFont from 'next/font/local';
+
+const GeistSans = localFont({
+  src: '../node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2',
+  variable: '--font-geist-sans',
+  weight: '100 900',
+  display: 'optional',
+});
+
+const GeistMono = localFont({
+  src: '../node_modules/geist/dist/fonts/geist-mono/GeistMono-Variable.woff2',
+  variable: '--font-geist-mono',
+  weight: '100 900',
+  display: 'optional',
+  adjustFontFallback: false,
+  fallback: [
+    'ui-monospace',
+    'SFMono-Regular',
+    'Roboto Mono',
+    'Menlo',
+    'Monaco',
+    'Liberation Mono',
+    'DejaVu Sans Mono',
+    'Courier New',
+    'monospace',
+  ],
+});
 import './globals.css';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
