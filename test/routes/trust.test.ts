@@ -9,12 +9,15 @@ import { GET as trustTool } from '../../app/api/v1/trust/tool/[server_id]/[tool_
 const asObj = (r: { json: () => unknown }) => r.json() as Record<string, any>;
 
 // ---- A2 trust/server ----
-test('trust/server: known server → 200 verdict, contract v1.0.0', async () => {
+test('trust/server: known server → 200 verdict, contract v1.1.0', async () => {
   const slug = await screenedSlug();
   const r = await callRoute(trustServer, `/api/v1/trust/server/${slug}`, { params: { server_id: slug } });
   assert.equal(r.status, 200);
   const b = asObj(r);
-  assert.equal(b.verdict_contract_version, '1.0.0');
+  // Pinned as a LITERAL, not imported from lib/verdictContract: importing the
+  // constant would assert it equals itself and a bump would sail through. This is
+  // the wire value a consumer actually sees, so it must be spelled out here.
+  assert.equal(b.verdict_contract_version, '1.1.0');
   assert.equal(b.subject.server_id, slug);
   assert.equal(b.subject.tool_name, null);
   assert.equal(b.status, 'PARTIAL'); // advisory, conformance not run

@@ -13,6 +13,7 @@
 import type { NextRequest } from 'next/server';
 import { getScreenedVerdict } from '@/lib/verdicts';
 import { ADVISORY_FLOOR } from '@/lib/honest-limits';
+import { VERDICT_CONTRACT_VERSION } from '@/lib/verdictContract';
 
 export const revalidate = 300;
 
@@ -75,7 +76,7 @@ export async function GET(
         })),
         expires_at: v.directive.expires_at || null,
         honest_limits: [...new Set([...(v.honest_limits ?? [...FLOOR]), TOOL_UNVERIFIED_LIMIT])],
-        verdict_contract_version: '1.0.0',
+        verdict_contract_version: VERDICT_CONTRACT_VERSION,
       }
     : {
         subject,
@@ -85,7 +86,7 @@ export async function GET(
         dimensions: [],
         expires_at: null,
         honest_limits: [...NO_VERDICT_LIMITS, TOOL_UNVERIFIED_LIMIT],
-        verdict_contract_version: '1.0.0',
+        verdict_contract_version: VERDICT_CONTRACT_VERSION,
       };
 
   return Response.json(body, {

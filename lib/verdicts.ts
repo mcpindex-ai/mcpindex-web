@@ -8,7 +8,7 @@
 import path from 'node:path';
 import { promises as fsp } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { loadServers } from './registry';
+import { loadServers, loadSnapshotMeta } from './registry';
 
 export type Decision = 'ALLOW' | 'DENY' | 'REVIEW';
 export type VerdictStatus = 'EVALUATED' | 'PARTIAL' | 'STALE' | 'ERROR';
@@ -39,6 +39,68 @@ export const CONTENT_DRIFT_LIMIT = 'content_drift';
  */
 export function contentDriftOverlayEnabled(): boolean {
   return process.env.CONTENT_DRIFT_OVERLAY !== '0';
+}
+
+/**
+ * Honest-limits token appended when a verdict's freshness window was extended by
+ * RE-CONFIRMING the screened text rather than by a fresh screen. It is the reader's cue
+ * that this record is current because nothing it depends on changed - not because we
+ * screened it again today.
+ */
+export const FRESHNESS_CONFIRMED_LIMIT = 'freshness_confirmed';
+
+/**
+ * Records screened before this instant are treated as produced under a RETIRED screen
+ * policy and are never confirmed - they must be re-screened before their freshness can be
+ * extended.
+ *
+ * THIS IS THE INVALIDATION LEVER. Bump it whenever the screen model, system prompt, or
+ * calibration changes, exactly as COMPOSITE_PROBE_POLICY_HASH is hand-bumped for the probe
+ * corpus (mcpindex-trust proberunner.py:54). It encodes the same discipline the D3 corpus
+ * already follows (tasks/decisions.md): bump the policy identity, re-screen, and only THEN
+ * let conclusions stand - never carry a conclusion forward under a definition that moved.
+ *
+ * Bumping this makes the ENTIRE corpus unconfirmable at once, so every record decays to
+ * "re-check due" until the backfill lane re-screens it (~16 days at the current rate). That
+ * is the correct cost of a policy change, but it is not a small one - plan the re-screen
+ * pass alongside the bump.
+ *
+ * MUST stay in lockstep with POLICY_EPOCH in
+ * tools/healthcheck/mcpindex_verdict_confirmable_share.py, which grades how much of the
+ * corpus this predicate can still confirm. If they drift, the probe reports on a different
+ * corpus than the site renders.
+ */
+export const POLICY_EPOCH = '2026-01-01T00:00:00Z';
+
+// NOTE: an earlier draft of this overlay ALSO required the `screen_model_8b` honest-limit
+// before confirming, on the theory that a record without it came from an unrecorded, older
+// lane. That was backwards and is deliberately not done. `screen_model_8b` is a LIMITATION
+// disclosure, not a quality marker: seed_registry_batch appends it only when the run used a
+// model other than the 70B default, so the ~1,032 records WITHOUT it are the ones screened by
+// the STRONGER llama-3.3-70b-versatile via the demand-priority lane. Gating on it refused to
+// confirm the best evidence in the corpus, and would have driven a "re-screen the legacy
+// cohort" pass that replaced 70B verdicts with 8B ones - burning a thousand model calls to
+// make the corpus worse. Screen-policy currency is governed by POLICY_EPOCH alone.
+
+/**
+ * How long a confirmation is good for, measured from the snapshot's own `fetchedAt`.
+ *
+ * Short ON PURPOSE. The registry sync refreshes the snapshot every ~4h, so 7 days is a ~42x
+ * margin against normal jitter, while capping how long a DEAD pipeline stays invisible: if
+ * the sync stops, `fetchedAt` stops advancing, `fetchedAt + TTL` slides into the past, and
+ * the whole corpus goes amber on its own. The dead-man's switch is this arithmetic - no
+ * alert has to fire and no monitoring has to be trusted for staleness to surface.
+ */
+const CONFIRM_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Kill switch for the freshness-confirmation overlay. Default ON. OFF is the more
+ * conservative state (every record decays on its stored TTL, the pre-2026-08-04 behavior),
+ * so unlike the content-drift switch this one can be flipped without a safety argument -
+ * set CONFIRMATION_OVERLAY=0 to revert without a deploy.
+ */
+export function confirmationOverlayEnabled(): boolean {
+  return process.env.CONFIRMATION_OVERLAY !== '0';
 }
 
 export type Dimension = {
@@ -335,6 +397,72 @@ export function applyContentDriftOverlay(
   return { ...withLimit, status: 'STALE' };
 }
 
+/**
+ * Read-time freshness confirmation - the mirror image of applyContentDriftOverlay.
+ *
+ * WHY THIS EXISTS. `directive.expires_at` is stamped at screen time and nothing ever reset
+ * it: SEED_VERDICT_TTL (30 days) was written against a "weekly refresh job" that was never
+ * built, so ~1,100 records/day aged into the amber "re-check due" badge. On 2026-08-04 that
+ * was 3,565 of 19,542 records - and every one of them was byte-identical to the text it was
+ * screened against. We compare each server's published description to its bound
+ * `content_hash` on every render already; we simply threw the MATCH away and kept only the
+ * mismatch.
+ *
+ * WHY EXTENDING IS HONEST, AND NOT A RUBBER STAMP. The screen is a pure function of the
+ * description (temperature 0, description-only input). If the input is unchanged AND the
+ * policy that produced the conclusion is unchanged, re-running it is a no-op that yields no
+ * new evidence - so extending the window records a verification we actually performed rather
+ * than skipping one. Both halves are required; extending on the hash alone would silently
+ * carry a conclusion forward under a screen definition that had since moved.
+ *
+ * Deliberately NOT re-screening unchanged text: `content_hash` binds a human adjudication to
+ * the description only, so a re-screen that flipped PASS->FAIL on identical input would leave
+ * the hash unchanged and re-attach an old `cleared` ruling to a brand-new flag no human ever
+ * saw. Confirming is not just cheaper than re-screening here, it is safer.
+ *
+ * The window is anchored to the snapshot's own `fetchedAt`, not to `now`: it keeps the
+ * published `expires_at` stable between renders, ties the claim to a real observation, and
+ * makes staleness self-enforcing - see CONFIRM_TTL_MS.
+ *
+ * FAIL-CLOSED at every step. No description, no content_hash, no usable snapshot timestamp,
+ * a hash mismatch, or a pre-epoch record all return the verdict untouched, leaving it to
+ * decay exactly as it does today. Never shortens an existing window, and never touches
+ * `status` or `dimensions` - so it cannot clear an accusation. (computeBadgeState returns on
+ * a flagged/held axis before it ever consults expiry, and this overlay's own composition
+ * order keeps applyContentDriftOverlay authoritative over a drifted record.)
+ */
+export function applyConfirmationOverlay(
+  v: Verdict,
+  currentDescription: string | null | undefined,
+  snapshotFetchedAt: string | null | undefined,
+): Verdict {
+  if (currentDescription == null || !v.content_hash) return v;
+  const anchor = Date.parse(snapshotFetchedAt ?? '');
+  // A missing/unparseable snapshot timestamp must never read as "fresh": a lagging input is
+  // exactly what minted 379 born-stale verdicts in July 2026.
+  if (!Number.isFinite(anchor)) return v;
+  if (v.content_hash !== descriptionHash(currentDescription)) return v;
+
+  const limits = v.honest_limits ?? [];
+  // Screen-policy currency is a DATE question, not a model-tier one (see POLICY_TOKEN note
+  // above). An undated record cannot be shown to post-date the epoch, so it is never confirmed.
+  const evaluatedAt = Date.parse(v.evaluated_at ?? '');
+  const epoch = Date.parse(POLICY_EPOCH);
+  if (!Number.isFinite(evaluatedAt) || evaluatedAt < epoch) return v;
+
+  const extended = anchor + CONFIRM_TTL_MS;
+  const current = Date.parse(v.directive.expires_at);
+  // Monotonic: a record whose own window already runs longer keeps it.
+  if (Number.isFinite(current) && current >= extended) return v;
+  return {
+    ...v,
+    directive: { ...v.directive, expires_at: new Date(extended).toISOString() },
+    honest_limits: limits.includes(FRESHNESS_CONFIRMED_LIMIT)
+      ? limits
+      : [...limits, FRESHNESS_CONFIRMED_LIMIT],
+  };
+}
+
 let _loadInflight: Promise<Record<string, Verdict>> | null = null;
 
 // De-dup concurrent cold loads, mirroring registry.ts's _resolveInflight. Without this, N
@@ -401,7 +529,27 @@ export async function getVerdict(slug: string): Promise<Verdict | null> {
   const servers = await loadServers();
   const subject = servers.find((s) => s.slug === slug);
   if (!subject) return null;
-  return selectVerdictForSubject(await loadAll(), subject);
+  return selectVerdictForSubject(await loadAll(), subject, await snapshotFetchedAt());
+}
+
+/**
+ * The snapshot's own `fetchedAt`, or null if it cannot be established.
+ *
+ * Goes through loadSnapshotMeta, which serves this from the server-index artifact HEADER
+ * when one is present. That matters: reading data/snapshot.json for the timestamp would
+ * reintroduce the 26MB read + zod parse the artifact exists to avoid, on ~19.4k tail pages
+ * whose only visitor is a crawler (which never populates the edge cache). Do not "simplify"
+ * this to a direct snapshot read.
+ *
+ * Returns null rather than throwing: confirmation is an enhancement, and a verdict that
+ * simply decays on its stored TTL is the safe outcome.
+ */
+async function snapshotFetchedAt(): Promise<string | null> {
+  try {
+    return (await loadSnapshotMeta()).fetchedAt || null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -416,18 +564,31 @@ export async function getVerdict(slug: string): Promise<Verdict | null> {
 export function selectVerdictForSubject(
   all: Record<string, Verdict>,
   subject: { slug: string; name: string; description?: string },
+  // Required, not optional, for the same reason subjectBySlug carries `description`: if one
+  // selector confirmed freshness and the other did not, the leaderboard and the server's own
+  // page would disagree about staleness - on a trust surface, the surfaces disagreeing IS the
+  // defect. A stale call site must be a compile error, not a silently unconfirmed listing.
+  snapshotFetchedAt: string | null,
 ): Verdict | null {
   // Object.hasOwn guards against prototype keys (e.g. "__proto__") resolving to
   // the prototype object rather than a real verdict.
   const v = Object.hasOwn(all, subject.slug) ? all[subject.slug] : undefined;
   if (!v || v.fixture) return null;
   if (!verdictBindsSubject(v, subject.name)) return null;
-  // Compose the two staleness overlays: clock first, then content. Order is
-  // presentation-irrelevant (both only append a token / set STALE) but fixed so
-  // tests can pin one composed result.
+  // ORDER IS LOAD-BEARING - do not reorder. Confirmation must run FIRST so the clock check
+  // evaluates the extended window; drift must run LAST so a record whose text has moved is
+  // marked STALE even if confirmation somehow extended it (it cannot today - confirmation
+  // requires a hash match - but the ordering keeps drift authoritative by construction
+  // rather than by argument). Before confirmation existed these two were genuinely
+  // order-independent; that is no longer true.
+  const description = subject.description ?? null;
   return applyContentDriftOverlay(
-    applyExpiryOverlay(v),
-    contentDriftOverlayEnabled() ? (subject.description ?? null) : null,
+    applyExpiryOverlay(
+      confirmationOverlayEnabled()
+        ? applyConfirmationOverlay(v, description, snapshotFetchedAt)
+        : v,
+    ),
+    contentDriftOverlayEnabled() ? description : null,
   );
 }
 
@@ -466,7 +627,12 @@ export async function listScreened(): Promise<Array<{ slug: string; verdict: Ver
   const subjectBySlug = new Map(
     servers.map((s) => [s.slug, { name: s.name, description: s.description }]),
   );
-  return selectScreened(await loadAll(), subjectBySlug, Date.now());
+  return selectScreened(
+    await loadAll(),
+    subjectBySlug,
+    Date.now(),
+    await snapshotFetchedAt(),
+  );
 }
 
 /**
@@ -480,6 +646,9 @@ export function selectScreened(
   // site is a compile error rather than a silently overlay-free listing.
   subjectBySlug: ReadonlyMap<string, { name: string; description?: string }>,
   now: number,
+  // Required for the same reason as on selectVerdictForSubject: the two selectors must apply
+  // the SAME freshness rules or the leaderboard and the server page disagree.
+  snapshotFetchedAt: string | null,
 ): Array<{ slug: string; verdict: Verdict }> {
   const validSlugs = new Set(subjectBySlug.keys());
   return Object.entries(all)
@@ -500,13 +669,22 @@ export function selectScreened(
         !v.unscreened &&
         verdictBindsSubject(v, subjectBySlug.get(slug)?.name ?? ''),
     )
-    .map(([slug, v]) => ({
-      slug,
-      verdict: applyContentDriftOverlay(
-        applyExpiryOverlay(v, now),
-        contentDriftOverlayEnabled() ? (subjectBySlug.get(slug)?.description ?? null) : null,
-      ),
-    }))
+    .map(([slug, v]) => {
+      // Same load-bearing order as selectVerdictForSubject: confirm, then clock, then drift.
+      const description = subjectBySlug.get(slug)?.description ?? null;
+      return {
+        slug,
+        verdict: applyContentDriftOverlay(
+          applyExpiryOverlay(
+            confirmationOverlayEnabled()
+              ? applyConfirmationOverlay(v, description, snapshotFetchedAt)
+              : v,
+            now,
+          ),
+          contentDriftOverlayEnabled() ? description : null,
+        ),
+      };
+    })
     .sort((a, b) => a.slug.localeCompare(b.slug));
 }
 

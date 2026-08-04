@@ -4,6 +4,7 @@ import { listScreened } from '@/lib/verdicts';
 // machine-readable descriptor can't drift from the real npm release — a stale version
 // here is exactly the silent-drift this product exists to catch.
 import { version as mcpServerVersion } from '../../../mcp-server-mcpindex/package.json';
+import { VERDICT_CONTRACT_VERSION } from '@/lib/verdictContract';
 
 export const revalidate = 3600;
 
@@ -25,7 +26,7 @@ export async function GET() {
     trust_layer: {
       capability: 'check_tool_trust',
       version: 'v1-advisory',
-      verdict_contract_version: '1.0.0',
+      verdict_contract_version: VERDICT_CONTRACT_VERSION,
       // UPPERCASE per the AD-B contract (contract-schema.md S3). At v1 a screened
       // server returns REVIEW (semantic-only); a server not on file returns
       // UNVERIFIED (fail-closed). ALLOW/DENY are reserved in the contract.

@@ -20,6 +20,7 @@ import { loadServers } from '@/lib/registry';
 import { rankServers, toRecommendations } from '@/lib/recommend';
 import { getScreenedVerdict } from '@/lib/verdicts';
 import { ADVISORY_FLOOR } from '@/lib/honest-limits';
+import { VERDICT_CONTRACT_VERSION } from '@/lib/verdictContract';
 
 export const revalidate = 300;
 
@@ -80,7 +81,7 @@ export async function GET(req: NextRequest) {
       screened_for: top?.slug ?? null,
       verdict, // advisory verdict | null (UPPERCASE enums, feeds VerdictCard directly)
       honest_limits: ADVISORY_FLOOR, // endpoint posture; verdict carries its own richer set
-      verdict_contract_version: '1.0.0',
+      verdict_contract_version: VERDICT_CONTRACT_VERSION,
     },
     {
       headers: {

@@ -97,7 +97,9 @@ test('preflight: valid task → 200 with the advisory contract fields', async ()
   assert.equal(b.task, 'read a file');
   assert.ok(Array.isArray(b.recommendations));
   // the load-bearing advisory-boundary fields (the whole point of preflight)
-  assert.equal(b.verdict_contract_version, '1.0.0');
+  // Literal, not the imported constant: every emitter must agree on the SAME wire value,
+  // and a test that imports it would pass even if this route were left behind on a bump.
+  assert.equal(b.verdict_contract_version, '1.1.0');
   assert.ok('honest_limits' in b);
   assert.ok(b.verdict === null || typeof b.verdict === 'object');
 });
