@@ -542,6 +542,19 @@ export default async function DriftReportPage() {
         (archived, DOI 10.5281/zenodo.21501868).
       </p>
 
+      <p className="mt-4 text-[14px] leading-[1.6] text-[var(--color-mute)]">
+        Peer-reviewable write-up:{' '}
+        <a
+          href="https://arxiv.org/abs/2608.00997"
+          className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+        >
+          Registry Descriptions Go Stale Unevenly
+        </a>{' '}
+        - an 89-day measurement of drift in the official MCP registry, and why
+        re-auditing servers ranked by prior drift under-covers the tool-description
+        surface (arXiv:2608.00997).
+      </p>
+
       <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
         Page refreshed every 5 minutes · frozen edition numbers never change
       </p>
