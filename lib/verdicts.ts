@@ -32,6 +32,28 @@ export const EXPIRED_VERDICT_LIMIT = 'expired_verdict';
 export const CONTENT_DRIFT_LIMIT = 'content_drift';
 
 /**
+ * Honest-limits token appended when the registry LISTING changed after the screen ran, while
+ * the screened description itself did not.
+ *
+ * The screen reads the description and nothing else — `description_level_screen` and
+ * `registry_description_only_no_input_schema` say so on every verdict. So a version bump, a
+ * new package, or a changed repository link moves the server without moving the one input we
+ * judged, and a re-screen of that unchanged text would return the same verdict. 1,835 of
+ * 19,574 resolvable records (9.4%) are in this state today.
+ *
+ * Reported, never gated. Demoting the badge for this would imply the screen covered the
+ * artifact, which it never did — over-claiming in the opposite direction from the staleness
+ * bug this file's confirmation overlay exists to fix. The badge is a two-pill SVG with no room
+ * for nuance; `honest_limits` is the mechanism built to carry exactly this.
+ *
+ * KNOWN LIMIT, stated rather than papered over: the store does not record which version was
+ * screened, so this can say "the listing moved after we looked" but not "we screened v0.3.2
+ * and v0.3.3 is now published." Recording the screened version at write time is what would
+ * close that, and it cannot be backfilled.
+ */
+export const LISTING_CHANGED_LIMIT = 'listing_changed_since_screen';
+
+/**
  * Kill switch for the content-drift overlay. Default ON: OFF is the less safe state
  * (verdicts bound to superseded text render as live assessments), so it must be the
  * deliberate act — set CONTENT_DRIFT_OVERLAY=0 to revert to clock-only staleness
@@ -398,6 +420,30 @@ export function applyContentDriftOverlay(
 }
 
 /**
+ * Read-time listing-drift disclosure. See LISTING_CHANGED_LIMIT for why this reports rather
+ * than gates.
+ *
+ * Purely additive: appends one honest-limit and touches nothing else - not `status`, not
+ * `directive`, not `dimensions` - so it can neither demote a clean verdict nor soften a
+ * flagged one, and its position in the overlay chain does not matter.
+ *
+ * Fail-closed in the quiet direction: an unusable timestamp on either side says nothing, so
+ * we say nothing. Silence here means "no claim", never "nothing changed".
+ */
+export function applyListingDriftOverlay(
+  v: Verdict,
+  listingUpdatedAt: string | null | undefined,
+): Verdict {
+  const updated = Date.parse(listingUpdatedAt ?? '');
+  const screened = Date.parse(v.evaluated_at ?? '');
+  if (!Number.isFinite(updated) || !Number.isFinite(screened)) return v;
+  if (updated <= screened) return v;
+  const limits = v.honest_limits ?? [];
+  if (limits.includes(LISTING_CHANGED_LIMIT)) return v;
+  return { ...v, honest_limits: [...limits, LISTING_CHANGED_LIMIT] };
+}
+
+/**
  * Read-time freshness confirmation - the mirror image of applyContentDriftOverlay.
  *
  * WHY THIS EXISTS. `directive.expires_at` is stamped at screen time and nothing ever reset
@@ -563,7 +609,9 @@ async function snapshotFetchedAt(): Promise<string | null> {
  */
 export function selectVerdictForSubject(
   all: Record<string, Verdict>,
-  subject: { slug: string; name: string; description?: string },
+  // `updatedAt` rides along for the listing-drift disclosure. Widened rather than added as a
+  // separate arg so the two selectors keep taking the SAME subject shape.
+  subject: { slug: string; name: string; description?: string; updatedAt?: string },
   // Required, not optional, for the same reason subjectBySlug carries `description`: if one
   // selector confirmed freshness and the other did not, the leaderboard and the server's own
   // page would disagree about staleness - on a trust surface, the surfaces disagreeing IS the
@@ -582,13 +630,16 @@ export function selectVerdictForSubject(
   // rather than by argument). Before confirmation existed these two were genuinely
   // order-independent; that is no longer true.
   const description = subject.description ?? null;
-  return applyContentDriftOverlay(
-    applyExpiryOverlay(
-      confirmationOverlayEnabled()
-        ? applyConfirmationOverlay(v, description, snapshotFetchedAt)
-        : v,
+  return applyListingDriftOverlay(
+    applyContentDriftOverlay(
+      applyExpiryOverlay(
+        confirmationOverlayEnabled()
+          ? applyConfirmationOverlay(v, description, snapshotFetchedAt)
+          : v,
+      ),
+      contentDriftOverlayEnabled() ? description : null,
     ),
-    contentDriftOverlayEnabled() ? description : null,
+    subject.updatedAt ?? null,
   );
 }
 
@@ -625,7 +676,10 @@ export async function listScreened(): Promise<Array<{ slug: string; verdict: Ver
   // other serves it live would have the leaderboard disagreeing with the server's own
   // page — on a trust surface the surfaces disagreeing IS the defect.
   const subjectBySlug = new Map(
-    servers.map((s) => [s.slug, { name: s.name, description: s.description }]),
+    servers.map((s) => [
+      s.slug,
+      { name: s.name, description: s.description, updatedAt: s.updatedAt },
+    ]),
   );
   return selectScreened(
     await loadAll(),
@@ -644,7 +698,7 @@ export function selectScreened(
   all: Record<string, Verdict>,
   // Widened from `slug -> name` when the content-drift overlay landed, so a stale call
   // site is a compile error rather than a silently overlay-free listing.
-  subjectBySlug: ReadonlyMap<string, { name: string; description?: string }>,
+  subjectBySlug: ReadonlyMap<string, { name: string; description?: string; updatedAt?: string }>,
   now: number,
   // Required for the same reason as on selectVerdictForSubject: the two selectors must apply
   // the SAME freshness rules or the leaderboard and the server page disagree.
@@ -674,14 +728,17 @@ export function selectScreened(
       const description = subjectBySlug.get(slug)?.description ?? null;
       return {
         slug,
-        verdict: applyContentDriftOverlay(
-          applyExpiryOverlay(
-            confirmationOverlayEnabled()
-              ? applyConfirmationOverlay(v, description, snapshotFetchedAt)
-              : v,
-            now,
+        verdict: applyListingDriftOverlay(
+          applyContentDriftOverlay(
+            applyExpiryOverlay(
+              confirmationOverlayEnabled()
+                ? applyConfirmationOverlay(v, description, snapshotFetchedAt)
+                : v,
+              now,
+            ),
+            contentDriftOverlayEnabled() ? description : null,
           ),
-          contentDriftOverlayEnabled() ? description : null,
+          subjectBySlug.get(slug)?.updatedAt ?? null,
         ),
       };
     })

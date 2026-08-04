@@ -5,10 +5,12 @@ import {
   applyConfirmationOverlay,
   applyContentDriftOverlay,
   applyExpiryOverlay,
+  applyListingDriftOverlay,
   CONTENT_DRIFT_LIMIT,
   descriptionHash,
   EXPIRED_VERDICT_LIMIT,
   FRESHNESS_CONFIRMED_LIMIT,
+  LISTING_CHANGED_LIMIT,
   isVerdictExpired,
   coercePreviewBadge,
   selectScreened,
@@ -391,4 +393,68 @@ test('selectScreened and selectVerdictForSubject agree once confirmation is on',
   assert.equal(listed[0].verdict.directive.expires_at, paged?.directive.expires_at);
   assert.deepEqual(listed[0].verdict.honest_limits, paged?.honest_limits);
   assert.equal(listed[0].verdict.status, paged?.status);
+});
+
+// ---------------------------------------------------------------------------
+// Listing-drift disclosure. Reports, never gates - so the tests pin that it says
+// the true thing AND that it leaves every decision field alone.
+// ---------------------------------------------------------------------------
+
+test('listing drift: a listing updated after the screen is disclosed', () => {
+  const rec = { ...withSubject(SUBJECT), evaluated_at: '2026-06-01T00:00:00Z' };
+  const out = applyListingDriftOverlay(rec, '2026-07-01T00:00:00Z');
+  assert.ok(out.honest_limits?.includes(LISTING_CHANGED_LIMIT));
+});
+
+test('listing drift: a listing older than the screen says nothing', () => {
+  const rec = { ...withSubject(SUBJECT), evaluated_at: '2026-07-01T00:00:00Z' };
+  const out = applyListingDriftOverlay(rec, '2026-06-01T00:00:00Z');
+  assert.ok(!out.honest_limits?.includes(LISTING_CHANGED_LIMIT));
+  // Equal timestamps are not a change.
+  const same = applyListingDriftOverlay(rec, '2026-07-01T00:00:00Z');
+  assert.ok(!same.honest_limits?.includes(LISTING_CHANGED_LIMIT));
+});
+
+test('listing drift: an unusable timestamp makes no claim', () => {
+  // Silence must mean "no claim", never "nothing changed".
+  const rec = { ...withSubject(SUBJECT), evaluated_at: '2026-06-01T00:00:00Z' };
+  for (const bad of [null, undefined, '', 'not-a-date']) {
+    assert.ok(!applyListingDriftOverlay(rec, bad).honest_limits?.includes(LISTING_CHANGED_LIMIT));
+  }
+  const undated = { ...withSubject(SUBJECT), evaluated_at: undefined };
+  assert.ok(!applyListingDriftOverlay(undated, '2026-07-01T00:00:00Z').honest_limits
+    ?.includes(LISTING_CHANGED_LIMIT));
+});
+
+test('listing drift: reports without gating - no decision field moves', () => {
+  const flagged: Verdict = {
+    ...mk([{ id: DESC, verdict: 'FAIL' }], '2027-01-01T00:00:00Z'),
+    evaluated_at: '2026-06-01T00:00:00Z',
+  };
+  const out = applyListingDriftOverlay(flagged, '2026-07-01T00:00:00Z');
+  assert.equal(out.status, flagged.status);
+  assert.deepEqual(out.dimensions, flagged.dimensions);
+  assert.deepEqual(out.directive, flagged.directive);
+  assert.ok(out.honest_limits?.includes(LISTING_CHANGED_LIMIT),
+    'a flagged verdict still gets the disclosure - it is information, not a verdict change');
+});
+
+test('listing drift: idempotent, and both selectors agree', () => {
+  const rec = { ...withSubject('io.github.example/a'), evaluated_at: '2026-06-01T00:00:00Z' };
+  const once = applyListingDriftOverlay(rec, '2026-07-01T00:00:00Z');
+  assert.deepEqual(applyListingDriftOverlay(once, '2026-07-01T00:00:00Z').honest_limits,
+    once.honest_limits, 'must not append the token twice');
+
+  const subject = {
+    slug: 'a', name: 'io.github.example/a', description: 'judged',
+    updatedAt: '2026-07-01T00:00:00Z',
+  };
+  const subjects = new Map([['a', {
+    name: subject.name, description: subject.description, updatedAt: subject.updatedAt,
+  }]]);
+  const nowMs = Date.now();
+  const listed = selectScreened({ a: rec }, subjects, nowMs, new Date(nowMs).toISOString());
+  const paged = selectVerdictForSubject({ a: rec }, subject, new Date(nowMs).toISOString());
+  assert.deepEqual(listed[0].verdict.honest_limits, paged?.honest_limits);
+  assert.ok(paged?.honest_limits?.includes(LISTING_CHANGED_LIMIT));
 });
