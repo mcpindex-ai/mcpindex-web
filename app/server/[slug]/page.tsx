@@ -791,8 +791,15 @@ const LIMIT_LABEL: Record<string, string> = {
   calibrated_false_v1: 'Confidence is reported but not yet calibrated (v1)',
   description_level_screen: 'Screen reads the tool description, not the live behavior',
   advisory_only: 'Advisory - the verdict never moves your agent on its own',
-  expired_verdict: 'Past its expiry date - awaiting re-screen',
+  // Reworded 2026-08-04: this used to promise "awaiting re-screen", which no job performed.
+  // A verdict now lapses only when we could not re-confirm it, so say that instead of
+  // implying a queue that does not exist.
+  expired_verdict: 'Past its freshness window - we could not re-confirm this listing',
   content_drift: 'The description this screen assessed is no longer the one published',
+  freshness_confirmed:
+    'Still current: the description we screened is unchanged, re-checked against the registry',
+  listing_changed_since_screen:
+    'The registry listing (version, packages, links) changed after this screen ran - the description we assessed did not',
 };
 function limitLabel(code: string): string {
   return LIMIT_LABEL[code] ?? code.replace(/_/g, ' ');
