@@ -135,15 +135,41 @@ test('apiKey goes to the Authorization header only — never the URL, never a lo
   assert.ok(!cc.logs.some((l) => l.includes(KEY)), 'apiKey must never be logged');
 });
 
-test('tools action → GET with slash-preserving encoded path, no body', async () => {
+// tools became a POST so a gated server's owner can supply a discovery credential (~26% of
+// reachable remotes answer 401 to an unauthenticated tools/list). The path encoding is
+// unchanged, and omitting the credential must stay byte-equivalent to the old open-server call.
+test('tools action → POST with slash-preserving encoded path, empty body when no credential', async () => {
   fx = installFetch(new Response(JSON.stringify({ tools: [] }), { status: 200 }));
   await callRoute(owner, '/api/owner/tools', {
     method: 'POST', params: { action: 'tools' }, body: { apiKey: KEY, serverId: SERVER },
   });
   const call = fx.calls[0];
-  assert.equal(call.init.method, 'GET');
+  assert.equal(call.init.method, 'POST');
   assert.ok(call.url.endsWith('/owner/tools/io.github.you/srv'), `unexpected path: ${call.url}`);
-  assert.equal(call.init.body, undefined, 'GET action must not send a body');
+  const sent = JSON.parse(String(call.init.body));
+  assert.deepEqual(sent, {}, 'no credential supplied → no credential field upstream');
+});
+
+test('tools action forwards an optional discovery credential in the BODY, never the URL', async () => {
+  fx = installFetch(new Response(JSON.stringify({ tools: [] }), { status: 200 }));
+  const cc = captureConsole();
+  try {
+    await callRoute(owner, '/api/owner/tools', {
+      method: 'POST', params: { action: 'tools' },
+      body: { apiKey: KEY, serverId: SERVER, credential: 'Bearer tok_discovery_123' },
+    });
+  } finally {
+    cc.restore();
+  }
+  const call = fx.calls[0];
+  const sent = JSON.parse(String(call.init.body));
+  assert.equal(sent.credential, 'Bearer tok_discovery_123');
+  // The whole reason this is a POST: a credential in a query string lands in access logs and
+  // Referer headers. If it ever appears in the URL, that is the bug this asserts against.
+  assert.ok(!call.url.includes('tok_discovery_123'), 'credential must never reach the URL');
+  assert.ok(!cc.logs.some((l) => l.includes('tok_discovery_123')), 'credential must never be logged');
+  // The caller's api_key must not be forwarded into the upstream body (closed allowlist).
+  assert.equal(sent.apiKey, undefined);
 });
 
 test('verify-behavior forwards optional credential + risk_acknowledged', async () => {
