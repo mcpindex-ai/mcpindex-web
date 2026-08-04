@@ -559,7 +559,7 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
         </p>
         <pre className="overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[11.5px] leading-snug">
           <code>{`{
-  "verdict_contract_version": "1.0.0",
+  "verdict_contract_version": "1.1.0",
   "subject": { "server_id": "community/quickpay-mcp", "tool_name": null },
   "status": "PARTIAL",              // EVALUATED | PARTIAL | STALE | ERROR
   "directive": "REVIEW",            // REVIEW/UNVERIFIED today; ALLOW/DENY reserved
@@ -567,11 +567,12 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
   "dimensions": [
     { "id": "mcpindex.integrity.description", "verdict": "PASS", "severity": "INFO" }
   ],
-  "expires_at": "2026-06-07T00:00:00Z",   // re-screen after this; trust decays
+  "expires_at": "2026-06-07T00:00:00Z",   // do not act on this verdict after this instant
   "honest_limits": [
     "conformance_monitored_not_enforced",
     "calibrated_false_v1",
-    "advisory_deployment"
+    "advisory_deployment",
+    "freshness_confirmed"           // window rolled forward by re-confirming, not re-screening
   ]
 }`}</code>
         </pre>
@@ -581,6 +582,28 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
           empty <Mono>dimensions</Mono>, and an added{' '}
           <Mono>no_verdict_data_in_v1_advisory</Mono> honest limit. An agent must treat
           UNVERIFIED as fail-closed - never as permission to proceed.
+        </p>
+        <p>
+          <strong>What <Mono>expires_at</Mono> means (changed in 1.1.0).</strong> Do not act on a
+          verdict once it has passed - that rule is unchanged. What changed is how the date is
+          set. It used to be stamped once, thirty days after the screen ran, and never renewed,
+          so a verdict aged out even when the server it describes had not changed at all. It is
+          now <em>last confirmation + 7 days</em>. On every request we re-check whether the
+          description the registry publishes today still matches the exact text the screen
+          judged; when it does, and the verdict was produced under the current screen policy,
+          the window rolls forward and <Mono>freshness_confirmed</Mono> appears in{' '}
+          <Mono>honest_limits</Mono> so you can tell the two cases apart in code.
+        </p>
+        <p>
+          The practical effect: a verdict on an unchanged server stays valid instead of decaying
+          on a timer, so if you gate on <Mono>expires_at</Mono> that gate now fires far less
+          often. Freshness is still bounded, and bounded by something real - the window is
+          anchored to the moment we last observed the registry, not to the moment you asked. If
+          our registry sync stops, that anchor stops moving, every verdict lapses within seven
+          days, and the badges go amber on their own. Nothing has to notice and alert for
+          staleness to surface. <Mono>freshness_confirmed</Mono> never appears on a server whose
+          description has changed, and it can never turn a flagged verdict clean - confirmation
+          only ever moves the date.
         </p>
         <p className="text-[13.5px]" style={{ color: 'var(--color-mute)' }}>
           At v1 the screen produces only <Mono>REVIEW</Mono> (a semantic-only read) or{' '}

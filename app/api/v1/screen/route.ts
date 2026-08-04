@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { screenDescription, MAX_DESCRIPTION } from '@/lib/screen';
 import { checkScreenLimit } from '@/lib/ratelimit';
+import { VERDICT_CONTRACT_VERSION } from '@/lib/verdictContract';
 
 // Live screen of a single pasted tool description. POST only. Rate-limiting on
 // /api/v1/* is enforced by proxy.ts (per-IP); this route adds a hard length cap
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
   // because the deterministic conformance leg did not run.
   return Response.json({
     schema_version: '1.0',
-    verdict_contract_version: '1.0.0',
+    verdict_contract_version: VERDICT_CONTRACT_VERSION,
     status: 'PARTIAL',
     directive: {
       decision: 'REVIEW',
