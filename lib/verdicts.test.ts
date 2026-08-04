@@ -2,11 +2,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  applyConfirmationOverlay,
   applyContentDriftOverlay,
   applyExpiryOverlay,
   CONTENT_DRIFT_LIMIT,
   descriptionHash,
   EXPIRED_VERDICT_LIMIT,
+  FRESHNESS_CONFIRMED_LIMIT,
   isVerdictExpired,
   coercePreviewBadge,
   selectScreened,
@@ -107,12 +109,12 @@ test('verdictBindsSubject: a legacy record with no server_id still binds', () =>
 
 test('selectVerdictForSubject: refuses a record that names a DIFFERENT server', () => {
   const all = { 'the-slug': withSubject('io.github.attacker/lookalike') };
-  assert.equal(selectVerdictForSubject(all, { slug: 'the-slug', name: SUBJECT }), null);
+  assert.equal(selectVerdictForSubject(all, { slug: 'the-slug', name: SUBJECT }, null), null);
 });
 
 test('selectVerdictForSubject: serves a matching record, and a legacy one', () => {
   for (const rec of [withSubject(SUBJECT), withSubject()]) {
-    const got = selectVerdictForSubject({ 'the-slug': rec }, { slug: 'the-slug', name: SUBJECT });
+    const got = selectVerdictForSubject({ 'the-slug': rec }, { slug: 'the-slug', name: SUBJECT }, null);
     assert.ok(got, 'a bound record must be served');
     assert.equal(got.status, rec.status);
   }
@@ -120,10 +122,10 @@ test('selectVerdictForSubject: serves a matching record, and a legacy one', () =
 
 test('selectVerdictForSubject: a fixture and a prototype key never resolve', () => {
   const fixture = { ...withSubject(SUBJECT), fixture: true };
-  assert.equal(selectVerdictForSubject({ 'the-slug': fixture }, { slug: 'the-slug', name: SUBJECT }), null);
+  assert.equal(selectVerdictForSubject({ 'the-slug': fixture }, { slug: 'the-slug', name: SUBJECT }, null), null);
   // `__proto__` must not resolve to Object.prototype and read as a verdict.
-  assert.equal(selectVerdictForSubject({}, { slug: '__proto__', name: SUBJECT }), null);
-  assert.equal(selectVerdictForSubject({}, { slug: 'absent', name: SUBJECT }), null);
+  assert.equal(selectVerdictForSubject({}, { slug: '__proto__', name: SUBJECT }, null), null);
+  assert.equal(selectVerdictForSubject({}, { slug: 'absent', name: SUBJECT }, null), null);
 });
 
 test('selectScreened: excludes a record whose server_id names another server', () => {
@@ -135,7 +137,7 @@ test('selectScreened: excludes a record whose server_id names another server', (
     a: withSubject('io.github.example/a'),
     b: withSubject('io.github.attacker/lookalike'),
   };
-  const got = selectScreened(all, names, Date.parse('2026-07-21T12:00:00Z'));
+  const got = selectScreened(all, names, Date.parse('2026-07-21T12:00:00Z'), null);
   assert.deepEqual(got.map((r) => r.slug), ['a'],
     'a record naming a different server must not count toward published coverage');
 });
@@ -147,7 +149,7 @@ test('selectScreened: keeps legacy records, drops fixtures and unknown slugs', (
     fix: { ...withSubject('io.github.example/a'), fixture: true },
     ghost: withSubject('io.github.example/gone'),        // slug not in the catalog
   };
-  const got = selectScreened(all, names, Date.parse('2026-07-21T12:00:00Z'));
+  const got = selectScreened(all, names, Date.parse('2026-07-21T12:00:00Z'), null);
   assert.deepEqual(got.map((r) => r.slug), ['a']);
 });
 
@@ -209,12 +211,14 @@ test('selectVerdictForSubject: applies the content overlay from subject.descript
   const stale = selectVerdictForSubject(
     { a: rec },
     { slug: 'a', name: 'io.github.example/a', description: 'republished' },
+    null,
   );
   assert.equal(stale?.status, 'STALE');
   assert.ok(stale?.honest_limits?.includes(CONTENT_DRIFT_LIMIT));
   const fresh = selectVerdictForSubject(
     { a: rec },
     { slug: 'a', name: 'io.github.example/a', description: 'judged' },
+    null,
   );
   assert.equal(fresh?.status, rec.status);
   assert.ok(!fresh?.honest_limits?.includes(CONTENT_DRIFT_LIMIT));
@@ -226,10 +230,11 @@ test('selectScreened and selectVerdictForSubject agree on staleness', () => {
   // disagreeing IS the defect this overlay exists to prevent.
   const rec = { ...withSubject('io.github.example/a'), content_hash: descriptionHash('judged') };
   const subjects = new Map([['a', { name: 'io.github.example/a', description: 'republished' }]]);
-  const listed = selectScreened({ a: rec }, subjects, Date.parse('2026-07-21T12:00:00Z'));
+  const listed = selectScreened({ a: rec }, subjects, Date.parse('2026-07-21T12:00:00Z'), null);
   const paged = selectVerdictForSubject(
     { a: rec },
     { slug: 'a', name: 'io.github.example/a', description: 'republished' },
+    null,
   );
   assert.equal(listed.length, 1);
   assert.equal(listed[0].verdict.status, paged?.status);
@@ -260,4 +265,127 @@ test('preview badge: credentialed is strict-true only', () => {
       `non-boolean ${JSON.stringify(bad)} must not read as credentialed`,
     );
   }
+});
+
+// ---------------------------------------------------------------------------
+// Freshness confirmation overlay. The predicate that decides whether a verdict's
+// window may be extended WITHOUT a fresh screen, so every fail-closed branch is
+// pinned: a hole here silently extends trust we did not re-earn.
+// ---------------------------------------------------------------------------
+
+const FETCHED = '2026-07-21T00:00:00.000Z';
+const CONFIRMED_AT = '2026-07-28T00:00:00.000Z'; // FETCHED + 7d
+
+/** A record eligible for confirmation: current policy token, post-epoch, bound hash. */
+function confirmable(overrides: Partial<Verdict> = {}): Verdict {
+  return {
+    ...mk([{ id: DESC, verdict: 'PASS' }], '2026-07-01T00:00:00Z'), // already expired at NOW
+    honest_limits: ['screen_model_8b'],
+    evaluated_at: '2026-06-01T00:00:00Z',
+    content_hash: descriptionHash('judged'),
+    ...overrides,
+  };
+}
+
+test('confirmation: unchanged text under current policy extends the window', () => {
+  const out = applyConfirmationOverlay(confirmable(), 'judged', FETCHED);
+  assert.equal(out.directive.expires_at, CONFIRMED_AT, 'anchored to fetchedAt + TTL, not to now');
+  assert.ok(out.honest_limits?.includes(FRESHNESS_CONFIRMED_LIMIT),
+    'the reader must be told freshness came from confirmation, not a fresh screen');
+  // And that is enough to clear the amber badge.
+  assert.equal(applyExpiryOverlay(out, NOW).status, 'PARTIAL');
+});
+
+test('confirmation: a drifted description is never confirmed', () => {
+  const out = applyConfirmationOverlay(confirmable(), 'republished', FETCHED);
+  assert.equal(out.directive.expires_at, '2026-07-01T00:00:00Z', 'window untouched');
+  assert.ok(!out.honest_limits?.includes(FRESHNESS_CONFIRMED_LIMIT));
+});
+
+test('confirmation: fail-closed on missing description, hash, or snapshot timestamp', () => {
+  const rec = confirmable();
+  for (const [desc, fetched, why] of [
+    [null, FETCHED, 'unresolvable subject'],
+    ['judged', null, 'no snapshot timestamp'],
+    ['judged', 'not-a-date', 'unparseable snapshot timestamp'],
+    ['judged', '', 'empty snapshot timestamp'],
+  ] as Array<[string | null, string | null, string]>) {
+    assert.equal(applyConfirmationOverlay(rec, desc, fetched).directive.expires_at,
+      rec.directive.expires_at, `must not confirm: ${why}`);
+  }
+  const noHash = confirmable({ content_hash: undefined });
+  assert.equal(applyConfirmationOverlay(noHash, 'judged', FETCHED).directive.expires_at,
+    noHash.directive.expires_at, 'must not confirm a record with no content binding');
+});
+
+test('confirmation: a retired screen policy is never confirmed', () => {
+  // No current-policy token: the model that produced this is unrecorded.
+  const legacy = confirmable({ honest_limits: ['advisory'] });
+  assert.equal(applyConfirmationOverlay(legacy, 'judged', FETCHED).directive.expires_at,
+    legacy.directive.expires_at, 'a pre-token record must be re-screened, not confirmed');
+  // Screened before POLICY_EPOCH.
+  const preEpoch = confirmable({ evaluated_at: '2025-11-01T00:00:00Z' });
+  assert.equal(applyConfirmationOverlay(preEpoch, 'judged', FETCHED).directive.expires_at,
+    preEpoch.directive.expires_at, 'a pre-epoch record must be re-screened, not confirmed');
+  // Unparseable evaluated_at cannot be shown to be post-epoch.
+  const undated = confirmable({ evaluated_at: undefined });
+  assert.equal(applyConfirmationOverlay(undated, 'judged', FETCHED).directive.expires_at,
+    undated.directive.expires_at, 'an undated record cannot be proven current');
+});
+
+test('confirmation: never SHORTENS an existing window', () => {
+  const longer = confirmable({
+    directive: { decision: 'REVIEW', rationale: '', expires_at: '2027-01-01T00:00:00Z' },
+  });
+  const out = applyConfirmationOverlay(longer, 'judged', FETCHED);
+  assert.equal(out.directive.expires_at, '2027-01-01T00:00:00Z');
+  assert.ok(!out.honest_limits?.includes(FRESHNESS_CONFIRMED_LIMIT),
+    'no confirmation token when nothing was extended');
+});
+
+test('confirmation: a stalled snapshot stops extending (the dead-man switch)', () => {
+  // fetchedAt frozen 30 days back: fetchedAt + 7d is still in the past, so the record
+  // stays expired even though its text is unchanged. If the sync dies, badges go amber.
+  const stalled = new Date(NOW - 30 * 864e5).toISOString();
+  const out = applyConfirmationOverlay(confirmable(), 'judged', stalled);
+  assert.equal(applyExpiryOverlay(out, NOW).status, 'STALE');
+  assert.ok(applyExpiryOverlay(out, NOW).honest_limits?.includes(EXPIRED_VERDICT_LIMIT));
+});
+
+test('confirmation: cannot clear a FAIL accusation', () => {
+  const flagged = confirmable({ dimensions: [{ id: DESC, verdict: 'FAIL', severity: 'CRITICAL' }] });
+  const out = applyConfirmationOverlay(flagged, 'judged', FETCHED);
+  assert.deepEqual(out.dimensions, flagged.dimensions, 'dimensions are never touched');
+  assert.equal(out.status, flagged.status, 'status is never touched');
+});
+
+test('confirmation: drift stays authoritative when composed in selector order', () => {
+  // Confirmation runs first, expiry second, drift last. A record whose text moved must end
+  // STALE regardless of what confirmation did upstream.
+  const rec = confirmable();
+  const composed = applyContentDriftOverlay(
+    applyExpiryOverlay(applyConfirmationOverlay(rec, 'republished', FETCHED), NOW),
+    'republished',
+  );
+  assert.equal(composed.status, 'STALE');
+  assert.ok(composed.honest_limits?.includes(CONTENT_DRIFT_LIMIT));
+});
+
+test('selectScreened and selectVerdictForSubject agree once confirmation is on', () => {
+  const rec = { ...confirmable(), server_id: 'io.github.example/a' };
+  const subject = { slug: 'a', name: 'io.github.example/a', description: 'judged' };
+  const subjects = new Map([['a', { name: subject.name, description: subject.description }]]);
+  // Anchored to the REAL clock, not the fixed NOW the other tests use: selectScreened takes
+  // an injected `now` but selectVerdictForSubject reads Date.now() internally, so a fixed
+  // test clock makes the two disagree about expiry for reasons that have nothing to do with
+  // the rule under test. Production always drives both from the same real clock
+  // (listScreened passes Date.now()), which is the case this pins.
+  const nowMs = Date.now();
+  const fetchedNow = new Date(nowMs).toISOString();
+  const listed = selectScreened({ a: rec }, subjects, nowMs, fetchedNow);
+  const paged = selectVerdictForSubject({ a: rec }, subject, fetchedNow);
+  assert.equal(listed.length, 1);
+  assert.equal(listed[0].verdict.directive.expires_at, paged?.directive.expires_at);
+  assert.deepEqual(listed[0].verdict.honest_limits, paged?.honest_limits);
+  assert.equal(listed[0].verdict.status, paged?.status);
 });
