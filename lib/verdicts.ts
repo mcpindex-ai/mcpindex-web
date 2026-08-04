@@ -72,12 +72,15 @@ export const FRESHNESS_CONFIRMED_LIMIT = 'freshness_confirmed';
  */
 export const POLICY_EPOCH = '2026-01-01T00:00:00Z';
 
-/**
- * The honest-limit token identifying the current screen tier. A record lacking it came from
- * an earlier lane whose model is not recorded anywhere on the record, so it cannot be shown
- * to be current-policy and is never confirmed.
- */
-const POLICY_TOKEN = 'screen_model_8b';
+// NOTE: an earlier draft of this overlay ALSO required the `screen_model_8b` honest-limit
+// before confirming, on the theory that a record without it came from an unrecorded, older
+// lane. That was backwards and is deliberately not done. `screen_model_8b` is a LIMITATION
+// disclosure, not a quality marker: seed_registry_batch appends it only when the run used a
+// model other than the 70B default, so the ~1,032 records WITHOUT it are the ones screened by
+// the STRONGER llama-3.3-70b-versatile via the demand-priority lane. Gating on it refused to
+// confirm the best evidence in the corpus, and would have driven a "re-screen the legacy
+// cohort" pass that replaced 70B verdicts with 8B ones - burning a thousand model calls to
+// make the corpus worse. Screen-policy currency is governed by POLICY_EPOCH alone.
 
 /**
  * How long a confirmation is good for, measured from the snapshot's own `fetchedAt`.
@@ -441,7 +444,8 @@ export function applyConfirmationOverlay(
   if (v.content_hash !== descriptionHash(currentDescription)) return v;
 
   const limits = v.honest_limits ?? [];
-  if (!limits.includes(POLICY_TOKEN)) return v;
+  // Screen-policy currency is a DATE question, not a model-tier one (see POLICY_TOKEN note
+  // above). An undated record cannot be shown to post-date the epoch, so it is never confirmed.
   const evaluatedAt = Date.parse(v.evaluated_at ?? '');
   const epoch = Date.parse(POLICY_EPOCH);
   if (!Number.isFinite(evaluatedAt) || evaluatedAt < epoch) return v;

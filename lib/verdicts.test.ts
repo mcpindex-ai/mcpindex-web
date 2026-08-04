@@ -319,10 +319,13 @@ test('confirmation: fail-closed on missing description, hash, or snapshot timest
 });
 
 test('confirmation: a retired screen policy is never confirmed', () => {
-  // No current-policy token: the model that produced this is unrecorded.
-  const legacy = confirmable({ honest_limits: ['advisory'] });
-  assert.equal(applyConfirmationOverlay(legacy, 'judged', FETCHED).directive.expires_at,
-    legacy.directive.expires_at, 'a pre-token record must be re-screened, not confirmed');
+  // A record from the 70B demand-priority lane carries NO `screen_model_8b` limit - that
+  // token is a limitation disclosure, not a quality marker. It must still confirm: gating on
+  // it would refuse the strongest evidence in the corpus and invite a re-screen that
+  // DOWNGRADES 70B verdicts to 8B ones.
+  const stronger = confirmable({ honest_limits: ['advisory'] });
+  assert.notEqual(applyConfirmationOverlay(stronger, 'judged', FETCHED).directive.expires_at,
+    stronger.directive.expires_at, 'a 70B-screened record must confirm like any other');
   // Screened before POLICY_EPOCH.
   const preEpoch = confirmable({ evaluated_at: '2025-11-01T00:00:00Z' });
   assert.equal(applyConfirmationOverlay(preEpoch, 'judged', FETCHED).directive.expires_at,
