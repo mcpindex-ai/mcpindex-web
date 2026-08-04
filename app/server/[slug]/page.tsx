@@ -719,10 +719,34 @@ function OwnerPreviewPanel({ badge }: { badge: PreviewBadge }) {
               as of {badge.date}
             </span>
           )}
+          {/* AD-3: an owner-mediated observation must NOT render at the same visual weight as an
+              unauthenticated one. A chip in the header rather than a footnote, because a reader
+              who skims only the header must still learn that the evidence came through the
+              owner's own credential. */}
+          {badge.credentialed && (
+            <span
+              className="font-mono text-[11px] uppercase tracking-[0.14em] px-2 py-1 bg-amber-50 text-amber-900 border border-amber-300"
+              title="Observed through a short-lived credential the owner supplied, because the server requires authentication."
+            >
+              owner-mediated
+            </span>
+          )}
         </div>
         {badge.statement && (
           <p className="mt-3 text-[14px] leading-[1.6] text-[var(--color-ink)]">
             {badge.statement}
+          </p>
+        )}
+        {/* The one thing the statement prose cannot convey on its own: WHY owner-mediated
+            evidence is weaker, in terms a reader can act on. Named threat, not a hedge. */}
+        {badge.credentialed && (
+          <p className="mt-3 text-[13px] leading-[1.6] text-amber-900 border-l-2 border-amber-300 pl-3">
+            This server requires authentication, so mcpindex could only observe it using a
+            short-lived credential its owner supplied. That is one vantage, at one moment, through
+            a key the operator chose to hand over. A server can present one tool surface to that
+            key and a different one to real users, and this check cannot detect that. Weigh it as
+            the owner&rsquo;s evidence, corroborated by us, rather than as an independent
+            observation.
           </p>
         )}
         <p className="mt-3 font-mono text-[10.5px] leading-[1.55] text-[var(--color-mute)]">

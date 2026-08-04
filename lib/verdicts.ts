@@ -76,6 +76,11 @@ export type PreviewBadge = {
   server_id: string;
   statement: string;
   re_check_policy: string;
+  // AD-3: the observation was made through a credential the OWNER supplied, because the server
+  // requires authentication. A single owner-mediated vantage, not an independent one. It must not
+  // render at the same visual weight as an unauthenticated observation, and a consumer must be
+  // able to filter on it without regex-matching the statement prose.
+  credentialed: boolean;
 };
 
 export type Verdict = {
@@ -139,6 +144,10 @@ type RawVerdict = {
     server_id?: string;
     statement?: string;
     re_check_policy?: string;
+    // `unknown` rather than `boolean?`: this is untrusted store input, and typing it as an
+    // optional boolean would let a JSON `"true"` string pass review as if the type system had
+    // checked it. The coercer does a strict `=== true`.
+    credentialed?: unknown;
   };
 };
 
@@ -183,7 +192,11 @@ const PREVIEW_STATES = new Set<string>(['clean', 'drift', 'inconclusive']);
 // never trust a raw object) and render every field as escaped text. State is coerced fail-closed
 // to 'inconclusive' on a garbage value so a corrupt store can never surface a "clean" chip - the
 // honest `statement` prose is the source of truth and renders verbatim (escaped).
-function coercePreviewBadge(raw: RawVerdict['preview_badge']): PreviewBadge | undefined {
+// Exported for test: the AD-3 `credentialed` disclosure is a claim about EVIDENCE
+// PROVENANCE, and its coercion is exactly the kind of one-line boolean check that rots
+// silently. `normalize` is module-private, so without this the strictness below could
+// only be asserted indirectly through a full store record.
+export function coercePreviewBadge(raw: RawVerdict['preview_badge']): PreviewBadge | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
   const state = (raw.state ?? '').toLowerCase();
   const nDrift =
@@ -198,6 +211,12 @@ function coercePreviewBadge(raw: RawVerdict['preview_badge']): PreviewBadge | un
     server_id: typeof raw.server_id === 'string' ? raw.server_id : '',
     statement: typeof raw.statement === 'string' ? raw.statement : '',
     re_check_policy: typeof raw.re_check_policy === 'string' ? raw.re_check_policy : '',
+    // STRICT true only. Anything else (absent, "true", 1, null) reads false, which is the safe
+    // direction for a DISCLOSURE that must never be invented: a badge is only labelled
+    // owner-mediated when the writer said so with a real boolean. The opposite failure - dropping
+    // a genuine disclosure - is prevented upstream, where the adjudicator fail-closed SKIPS a line
+    // whose `credentialed` is present but not a bool rather than coercing it here.
+    credentialed: raw.credentialed === true,
   };
 }
 

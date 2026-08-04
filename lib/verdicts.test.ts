@@ -8,6 +8,7 @@ import {
   descriptionHash,
   EXPIRED_VERDICT_LIMIT,
   isVerdictExpired,
+  coercePreviewBadge,
   selectScreened,
   selectVerdictForSubject,
   verdictBindsSubject,
@@ -233,4 +234,30 @@ test('selectScreened and selectVerdictForSubject agree on staleness', () => {
   assert.equal(listed.length, 1);
   assert.equal(listed[0].verdict.status, paged?.status);
   assert.deepEqual(listed[0].verdict.honest_limits, paged?.honest_limits);
+});
+
+// ---- AD-3: owner-mediated disclosure on the preview badge -------------------------
+// A credentialed badge is evidence the OWNER mediated: observed through a key they supplied,
+// one vantage, one moment. The page renders it differently and the API lets consumers filter
+// on it, so the coercion of this single boolean decides whether a reader is told at all.
+test('preview badge: credentialed is strict-true only', () => {
+  const base = {
+    tier: 'preview', by: 'gb', confirmed_by: 'gb', state: 'clean',
+    n_drift: 0, date: '2026-08-04', server_id: 'com.example/mcp',
+    statement: 's', re_check_policy: 'p',
+  };
+  assert.equal(coercePreviewBadge({ ...base, credentialed: true })?.credentialed, true);
+  // Absent is the overwhelmingly common case (every uncredentialed observation, and every
+  // badge written before the field existed). It must read false, never undefined.
+  assert.equal(coercePreviewBadge(base)?.credentialed, false);
+  // Truthy non-booleans must NOT invent a disclosure. A store value of "false" is the nasty
+  // one: it is truthy in JS, so a `!!` coercion would label an ordinary badge owner-mediated
+  // and quietly cast doubt on a server whose owner handed us nothing.
+  for (const bad of ['true', 'false', 1, 0, null, [], {}] as unknown[]) {
+    assert.equal(
+      coercePreviewBadge({ ...base, credentialed: bad })?.credentialed,
+      false,
+      `non-boolean ${JSON.stringify(bad)} must not read as credentialed`,
+    );
+  }
 });
