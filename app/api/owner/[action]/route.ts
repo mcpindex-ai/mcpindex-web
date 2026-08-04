@@ -85,10 +85,19 @@ const ACTIONS: Record<string, Plan> = {
     timeoutMs: 20_000,
     build: (server_id) => ({ path: '/owner/verify-ownership', json: { server_id } }),
   },
+  // POST, not GET: ~26% of reachable remotes answer 401 to an unauthenticated tools/list, and
+  // those owners need to supply a short-lived credential for discovery to observe anything.
+  // The credential rides the JSON BODY for the same reason api_key does (never a query param,
+  // so it cannot land in an access log or a Referer). Omitting it is the open-server path and
+  // behaves exactly as the previous GET did.
   tools: {
-    method: 'GET',
+    method: 'POST',
     timeoutMs: 20_000,
-    build: (server_id) => ({ path: `/owner/tools/${encodeServerPath(server_id)}` }),
+    build: (server_id, body) => {
+      const json: Record<string, unknown> = {};
+      if (body.credential !== undefined) json.credential = body.credential;
+      return { path: `/owner/tools/${encodeServerPath(server_id)}`, json };
+    },
   },
   attest: {
     method: 'POST',

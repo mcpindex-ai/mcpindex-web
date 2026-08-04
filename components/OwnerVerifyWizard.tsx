@@ -175,6 +175,11 @@ export default function OwnerVerifyWizard() {
   const [tools, setTools] = useState<OwnerTool[] | null>(null);
   const [checked, setChecked] = useState<Record<number, boolean>>({});
   const [ack, setAck] = useState(false);
+  // Optional discovery credential for a server that answers 401 to an unauthenticated
+  // tools/list. Deliberately NOT in sessionStorage (unlike the api_key): it is a short-lived
+  // token the owner minted for one read, and persisting it across reloads would outlive the
+  // reason it exists. Never logged, never echoed back by the proxy or the owner service.
+  const [discoveryCred, setDiscoveryCred] = useState('');
 
   // ATTEST
   const [confirmedBy, setConfirmedBy] = useState('');
@@ -473,7 +478,12 @@ export default function OwnerVerifyWizard() {
     setError('');
     setBusy(true);
     try {
-      const r = await callOwner('tools');
+      // The discovery credential is REQUEST-SCOPED, exactly like the api_key: it is held in
+      // component state for this call, sent in the POST body (never a query param, so it
+      // cannot reach an access log or a Referer), and never written to sessionStorage. A
+      // reload loses it, which is the correct trade for a token the owner minted short-lived.
+      const cred = discoveryCred.trim();
+      const r = await callOwner('tools', cred ? { credential: cred } : {});
       if (!r.ok) {
         setError(errorLine(r));
         setTools([]);
@@ -961,7 +971,7 @@ export default function OwnerVerifyWizard() {
             <div className="mt-4 border border-[var(--color-rule)] bg-[var(--color-accent-soft)]/40 px-4 py-3">
               <p className="text-[13.5px] leading-[1.6] text-[var(--color-cite)]">
                 mcpindex could not observe any tools on this server right now, so there is nothing to
-                attest. Confirm the remote is reachable and live, then{' '}
+                attest. If the remote is up but not reachable this second,{' '}
                 <button
                   type="button"
                   onClick={() => void loadTools()}
@@ -970,6 +980,45 @@ export default function OwnerVerifyWizard() {
                   retry
                 </button>
                 .
+              </p>
+              {/* The likeliest cause by far, and retrying will NEVER clear it: ~26% of reachable
+                  remotes answer 401 to an unauthenticated tools/list. Two owners hit this, were
+                  told to check their remote was live (it was), and had to read our source to find
+                  the real reason. Naming it here is the fix for that. */}
+              <p className="mt-2 text-[13.5px] leading-[1.6] text-[var(--color-cite)]">
+                <strong className="text-[var(--color-ink)] font-medium">
+                  If your server requires OAuth or an API key,
+                </strong>{' '}
+                a plain retry will not help: an unauthenticated tools/list correctly answers 401
+                and we observe nothing. Supply a short-lived token below and mcpindex will read
+                your tool list once with it.{' '}
+                <a
+                  href="/claim/gated"
+                  className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+                >
+                  What this can and cannot mean
+                </a>
+                .
+              </p>
+              <label className="mt-3 block">
+                <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
+                  Discovery credential (optional)
+                </span>
+                <input
+                  type="password"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className={`${INPUT} mt-1.5`}
+                  placeholder="Bearer eyJhbGciOi…"
+                  value={discoveryCred}
+                  onChange={(e) => setDiscoveryCred(e.target.value)}
+                />
+              </label>
+              <p className="mt-2 text-[12px] leading-[1.55] text-[var(--color-mute)]">
+                Sent once, used only to read your tool list, and never stored, logged, or able to
+                call a tool. Include the scheme exactly as your server expects it (usually{' '}
+                <span className="font-mono">Bearer &lt;token&gt;</span>). Mint it short-lived and
+                scoped to reading tools. It is not kept if you reload this page.
               </p>
             </div>
           ) : (
