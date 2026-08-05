@@ -539,7 +539,7 @@ export default async function DriftReportPage() {
           Source Liveness
         </Link>{' '}
         - a census of which listed servers&apos; source is still publicly auditable
-        (archived, DOI 10.5281/zenodo.21501868).
+        (archived, concept DOI 10.5281/zenodo.21501867).
       </p>
 
       <p className="mt-4 text-[14px] leading-[1.6] text-[var(--color-mute)]">

@@ -522,7 +522,7 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
   listed servers affected           ${SOURCE_LIVENESS_CENSUS.serversAffected}
 
   census date ${SOURCE_LIVENESS_CENSUS.sweepDate}. digest anchored to bitcoin via OpenTimestamps.
-  CC-BY-4.0, DOI 10.5281/zenodo.21501868.
+  CC-BY-4.0, DOI 10.5281/zenodo.21501867 (concept DOI - resolves to the current version).
   NEGATIVE-ONLY evidence: an absent entry means nothing publishable, never
   "verified healthy" - a reachable repo proves only that a URL resolves.`,
   },
