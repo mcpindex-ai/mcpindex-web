@@ -6,7 +6,7 @@
   "meta_description": "A walkthrough of the gate's three postures, Monitor, Guard, and Strict: toggle them on the live demo, set the one you want for your install, and confirm which is active. About 3 minutes.",
   "h1": "Tune how strictly the gate holds",
   "project": "mcpindex",
-  "updated": "2026-07-28",
+  "updated": "2026-08-05",
   "est_minutes": 3,
   "outcome": "You understand Monitor, Guard, and Strict by toggling them on the live demo, and you know how to set the one you want for the way you installed the gate.",
   "body": "The gate reaches a contract-diff verdict first, then a posture decides what to do with it. The verdict underneath never changes; the posture only sets how cautious the hold is. Guard is the default.",
@@ -43,7 +43,6 @@
     "label": "Integrate the gate in your own code"
   },
   "depends_on": [
-    "app/docs/page.tsx",
     "components/DriftGateDemo.tsx"
   ],
   "faq": [
