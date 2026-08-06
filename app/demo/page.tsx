@@ -59,7 +59,7 @@ export default function DemoPage() {
           href="#overview"
           className="text-[var(--color-cite)] hover:text-[var(--color-accent-strong)] underline decoration-[var(--color-rule)] underline-offset-4"
         >
-          Overview film (~70s) →
+          Overview film →
         </a>
         <Link
           href="/#demo"

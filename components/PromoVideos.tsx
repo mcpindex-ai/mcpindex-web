@@ -13,7 +13,10 @@ type Film = {
 const FILMS: ReadonlyArray<Film> = [
   {
     id: 'concept',
-    label: 'The concept, in ~70 seconds',
+    // No duration in the label. A runtime baked into copy goes stale on the next re-cut
+    // and is the same class of defect as a hardcoded count - the film's own length is
+    // visible in the player's scrubber, so stating it buys nothing.
+    label: 'Why the gate exists',
     blurb:
       "Why the gate exists: a tool's contract can change silently after you trust it. Watch mcpindex hold the call before your agent acts on the change.",
     src: '/promo/mcpindex-promo.mp4',

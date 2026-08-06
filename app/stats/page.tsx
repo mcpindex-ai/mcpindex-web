@@ -151,17 +151,20 @@ export default async function StatsPage() {
           </li>
           <li>
             <strong className="text-[var(--color-ink)]">Not everything is reachable:</strong>{' '}
-            {withRemote.toLocaleString()} of these expose a remote endpoint. The drift
-            pipeline re-crawls the reachable remote population daily and publishes every
-            silent tool-contract change in the{' '}
+            {withRemote.toLocaleString()} of these <em>declare</em> a remote endpoint, which is a
+            ceiling rather than a coverage figure - declaring one is not the same as answering.
+            The drift pipeline diffs only the servers reachable in both of two consecutive
+            snapshots, a strict and materially smaller subset, and publishes every silent
+            tool-contract change in the{' '}
             <Link
               href="/ledger"
               className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
             >
               public ledger
             </Link>
-            . Indexed and re-crawled-daily are different populations; we state both rather
-            than blur them.
+            . Indexed, remote-declaring and actually-crawled are three different populations, and
+            only the first two are counted on this page - so do not read the number above as
+            drift-pipeline coverage.
           </li>
           <li>
             <strong className="text-[var(--color-ink)]">Freshness:</strong> the snapshot

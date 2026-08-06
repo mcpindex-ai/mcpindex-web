@@ -102,11 +102,26 @@ export default async function LedgerPage() {
             Observed
           </div>
           <p className="mt-2 font-mono text-[32px] leading-none text-[var(--color-ink)] tabular-nums">
-            {stat.tools_observed_drifting.toLocaleString()} tools changed their contract
+            {stat.tools_observed_drifting.toLocaleString()} tools changed a contract field we
+            publish
           </p>
+          {/*
+            These two numbers are a FRACTION, not a product. `total_contract_drifts_observed` is
+            len({tool_fp ...}) over every crawl-observed drift INCLUDING the description-only ones
+            the surfacing filter drops (drift_corpus_drain.py:1335-1339), and
+            `tools_observed_drifting` is len(events) - the surfaced, contract-affecting subset of
+            that same set (:750). The drain's own comment states the intent: "N (surfaced) of M
+            (all observed)".
+
+            This block previously read "N tools changed their contract across M contract changes
+            observed (a tool can change more than once)", which read M as a count of CHANGES. It is
+            not, and the error was load-bearing: it is why the per-ChangeKind buckets below never
+            reconciled to M and never could.
+          */}
           <p className="mt-2 font-mono text-[13px] text-[var(--color-cite)] tabular-nums">
-            across {stat.total_contract_drifts_observed.toLocaleString()} contract changes observed
-            (a tool can change more than once)
+            of {stat.total_contract_drifts_observed.toLocaleString()} tools observed drifting. The
+            remainder changed in ways we record but do not publish, predominantly description-only
+            edits.
           </p>
         </div>
 
