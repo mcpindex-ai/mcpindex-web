@@ -2,12 +2,15 @@ import type { Metadata } from 'next';
 import { Figure } from '@/components/Figure';
 import { renderDiagram } from '@/components/diagrams';
 import { ObfuscatedEmail } from '@/components/ObfuscatedEmail';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Privacy',
-  description: 'Privacy policy for mcpindex.ai.',
-  alternates: { canonical: 'https://mcpindex.ai/privacy' },
-};
+  description:
+    'mcpindex.ai privacy policy: no third-party ad trackers; standard server logs kept 30 days for operations and security only; logs are not sold or shared.',
+  path: '/privacy',
+  image: '/opengraph-image',
+});
 
 export default function PrivacyPage() {
   return (

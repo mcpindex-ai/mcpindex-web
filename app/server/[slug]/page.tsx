@@ -26,6 +26,7 @@ import { ServerVerdictCta } from '@/components/ServerVerdictCta';
 import { jsonLdSafe } from '@/lib/jsonLd';
 import { buildServerJsonLd, isEndpointShaped, isSafeHref } from '@/lib/serverJsonLd';
 import { isGoneSlug, resolveServerRedirect } from '@/lib/serverRemovals';
+import { buildServerMetaDescription } from '@/lib/serverMetaDescription';
 import type { IndexedServer } from '@/lib/types';
 
 // Trust verdict shape (public projection of the v1.0.0 verdict contract).
@@ -142,10 +143,18 @@ export async function generateMetadata(
   // a 404 cannot tell a deleted repo from a deliberately private one. The snippet is the
   // highest-visibility place that sentence appears and often the only place someone reads
   // it, so it carries the caveat too - shortened to survive Google's ~155-char truncation.
+  //
+  // Outside the liveness case, bare registry blurbs are also too short for Bing (~median
+  // 88 chars). buildServerMetaDescription appends an mcpindex-unique inventory of page
+  // features (description-screen status / Quality Score) — never a per-server verdict.
+  // Reachability appears only when the negative-liveness lead is present.
   const liveness = await getSourceLiveness(server.name);
-  const description = liveness
-    ? `Source repo returns HTTP ${liveness.evidence.http_status} (may be private or moved). ${server.description}`
-    : server.description;
+  const description = buildServerMetaDescription({
+    description: server.description,
+    name: server.name,
+    title: server.title,
+    livenessHttpStatus: liveness?.evidence.http_status,
+  });
   return {
     // ~half of registry servers have title === name; emitting "X - X" duplicated the
     // slug in the <title>. Collapse to a single value when they match (the parent

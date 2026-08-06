@@ -1,11 +1,14 @@
 import type { Metadata } from 'next';
 import { ObfuscatedEmail } from '@/components/ObfuscatedEmail';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Terms',
-  description: 'Terms of use for mcpindex.ai.',
-  alternates: { canonical: 'https://mcpindex.ai/terms' },
-};
+  description:
+    'mcpindex.ai terms of use for the in-path MCP trust gate, advisory screen, server index, and recommendation API. Free subject to the rate limit at /docs.',
+  path: '/terms',
+  image: '/opengraph-image',
+});
 
 export default function TermsPage() {
   return (
