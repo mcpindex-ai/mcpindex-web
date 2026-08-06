@@ -205,6 +205,23 @@ export default function MethodologyPage() {
           </a>
           .
         </p>
+        <p className="mt-4 text-[14.5px] leading-[1.6] text-[var(--color-cite)]">
+          One correction the score applies: when the{' '}
+          <a
+            href="/research/source-liveness"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+          >
+            source-liveness census
+          </a>{' '}
+          has corroborated that a listing&rsquo;s repository is no longer publicly
+          reachable, that listing earns no repository-derived credit in the
+          completeness and documentation dimensions. A repository a reader cannot
+          open is not documentation they can use. Installability and freshness are
+          deliberately untouched: an unreachable repository does not make a remote
+          server uninstallable, because for a remote entry the endpoint was never the
+          repository. The census is negative-only evidence, so it can withhold credit
+          and can never add any &mdash; an absent flag is not a clean bill of health.
+        </p>
       </section>
 
       <section className="mt-12 rule-t pt-10">

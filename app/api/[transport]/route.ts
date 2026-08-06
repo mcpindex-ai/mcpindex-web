@@ -82,6 +82,18 @@ function formatRecommend(data: any): string {
     lines.push(`[${r.rank}] ${r.title}  ·  QS ${r.qualityScore}/100  ·  ${r.category}`);
     lines.push(`    ${r.name}`);
     lines.push(`    ${r.reasoning}`);
+    // Same rule as formatSearch below, and it matters more here: this is the in-path
+    // gate's own output. A qualityScore silently reduced by 10 with nothing saying why
+    // is the same defect as an undocked one - the reader cannot see the correction.
+    if (r.sourceLiveness) {
+      const seen = r.sourceLiveness.confirmed_unavailable
+        ? `, confirmed ${r.sourceLiveness.confirmed_unavailable}`
+        : '';
+      lines.push(
+        `    ! Source repository not publicly accessible ` +
+          `(HTTP ${r.sourceLiveness.evidence.http_status}${seen}); may be private or relocated.`,
+      );
+    }
     const i = r.installs ?? {};
     const install = i.npm
       ? `npx -y ${i.npm}`
@@ -114,6 +126,19 @@ function formatSearch(data: any): string {
   for (const r of data.results) {
     lines.push(`- ${r.title}  (${r.name})  ·  QS ${r.qualityScore}/100  ·  ${r.category}`);
     lines.push(`  ${r.description}`);
+    // The caveat travels with the number or it does not travel at all. This is the line
+    // an agent reads when deciding what to install, and it is a different medium from
+    // the web page - nobody scrolls to a banner here. Observation plus hedge, never the
+    // inference: a 404 cannot tell a deleted repository from a deliberately private one.
+    if (r.sourceLiveness) {
+      const seen = r.sourceLiveness.confirmed_unavailable
+        ? `, confirmed ${r.sourceLiveness.confirmed_unavailable}`
+        : '';
+      lines.push(
+        `  ! Source repository not publicly accessible ` +
+          `(HTTP ${r.sourceLiveness.evidence.http_status}${seen}); may be private or relocated.`,
+      );
+    }
     lines.push(`  ${r.url ?? `https://mcpindex.ai/server/${r.slug}`}`);
   }
   // Quality Score rides on every row above and measures documentation and packaging

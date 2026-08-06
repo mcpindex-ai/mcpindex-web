@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import { getCollidingBase, getServer, legacySlugRedirects, loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { computeQuality, rankByQuality } from '@/lib/quality';
 import { buildInstalls } from '@/lib/installs';
-import { getSourceLiveness, livenessSentence } from '@/lib/sourceLiveness';
+import { getSourceLiveness, livenessLookup, livenessSentence } from '@/lib/sourceLiveness';
 import { anchorClaim } from '@/lib/verdictAnchor';
 import { CATEGORY_LABELS } from '@/lib/categorize';
 import { D3_PROGRESS } from '@/lib/honest-limits';
@@ -101,8 +101,8 @@ export const revalidate = 3600;
 const PRERENDER_TOP_N = 1500;
 
 export async function generateStaticParams() {
-  const servers = await loadServers();
-  return rankByQuality(servers)
+  const [servers, livenessOf] = await Promise.all([loadServers(), livenessLookup()]);
+  return rankByQuality(servers, livenessOf)
     .slice(0, PRERENDER_TOP_N)
     .map(({ server }) => ({ slug: server.slug }));
 }
@@ -204,10 +204,12 @@ export default async function ServerPage(
   }
 
   const all = await loadServers();
-  const { score, breakdown } = computeQuality(server);
+  // One bulk load serves this page's own liveness, the peer ranking below, and the
+  // JSON-LD. Absent => nothing publishable, NOT 'verified healthy'.
+  const livenessOf = await livenessLookup();
+  const liveness = livenessOf(server);
+  const { score, breakdown } = computeQuality(server, liveness);
   const installs = buildInstalls(server);
-  // Absent => nothing publishable, NOT 'verified healthy'.
-  const liveness = await getSourceLiveness(server.name);
   const verdictState = await loadVerdictForServer(server.slug);
   // Crawl-date framing for the post-verdict CTA; memoized snapshot, no extra fetch.
   const snapshotDay = (await loadSnapshotMeta()).fetchedAt?.slice(0, 10) ?? '';
@@ -221,7 +223,7 @@ export default async function ServerPage(
   const categoryPeers = all.filter(
     (s) => s.category === server.category && s.slug !== server.slug,
   );
-  const topPeers = rankByQuality(categoryPeers)
+  const topPeers = rankByQuality(categoryPeers, livenessOf)
     .slice(0, 2)
     .map((r) => r.server);
   // selfIdx is -1 on deprecated-server pages (getServer falls back to a list that
@@ -241,7 +243,7 @@ export default async function ServerPage(
     (s, i, arr) => arr.findIndex((x) => x.slug === s.slug) === i,
   );
 
-  const jsonLd = buildServerJsonLd(server);
+  const jsonLd = buildServerJsonLd(server, liveness);
 
   const repoHref = isSafeHref(server.repositoryUrl) ? server.repositoryUrl : undefined;
   const remoteHref = isSafeHref(server.remoteUrl) ? server.remoteUrl : undefined;

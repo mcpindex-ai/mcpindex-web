@@ -1,5 +1,7 @@
 import type { IndexedServer } from '@/lib/types';
 import { anchorProvenance } from '@/lib/provenance';
+// Type-only: @/lib/sourceLiveness is server-only and this module is unit-tested.
+import type { SourceLiveness } from '@/lib/sourceLiveness';
 
 // Belt-and-suspenders URL-scheme guard. normalize() already strips non-http(s) at
 // registry load; this guards any future code path that bypasses it, and keeps the
@@ -49,12 +51,32 @@ export function isEndpointShaped(url: string, remoteUrl?: string): boolean {
   }
 }
 
-export function buildServerJsonLd(server: IndexedServer): Record<string, unknown> {
+/**
+ * `liveness` is required for the same reason it is required in computeQuality: this block
+ * makes machine-readable CLAIMS about the repository, and the comment below says search
+ * and answer engines read it and nothing else on the page. Emitting a confirmed-404 URL
+ * here is the structured-data form of the same contradiction the visible banner exists to
+ * prevent.
+ */
+export function buildServerJsonLd(
+  server: IndexedServer,
+  liveness: SourceLiveness | null,
+): Record<string, unknown> {
   const repoHref = isSafeHref(server.repositoryUrl) ? server.repositoryUrl : undefined;
   const siteHrefRaw = isSafeHref(server.websiteUrl) ? server.websiteUrl : undefined;
   const remoteHref = isSafeHref(server.remoteUrl) ? server.remoteUrl : undefined;
   const siteHref =
     siteHrefRaw && !isEndpointShaped(siteHrefRaw, remoteHref) ? siteHrefRaw : undefined;
+  // The split is deliberate and the two keys are NOT interchangeable.
+  //
+  // `sameAs` asserts identity equivalence - schema.org: a URL that "unambiguously
+  // indicates the item's identity". A URL two vantages agreed returns 404 indicates
+  // nothing, so it is withdrawn. `codeRepository` is retained: it is what the registry
+  // DECLARES as the source of record, and mirroring the declaration while publishing our
+  // own observation alongside it is the same split this project keeps everywhere else.
+  // Deleting a third party's declaration would be editing their entry, not annotating it.
+  const repoUnreachable = Boolean(repoHref) && liveness !== null;
+  const repoSameAs = repoUnreachable ? undefined : repoHref;
   const url = `https://mcpindex.ai/server/${server.slug}`;
   const runtimePlatform = runtimePlatformOf(server);
 
@@ -69,7 +91,7 @@ export function buildServerJsonLd(server: IndexedServer): Record<string, unknown
       softwareVersion: server.version,
       url,
       ...(runtimePlatform ? { runtimePlatform } : {}),
-      sameAs: [repoHref, siteHref].filter((u): u is string => !!u),
+      sameAs: [repoSameAs, siteHref].filter((u): u is string => !!u),
     };
   } else if (remoteHref) {
     entity = {
@@ -104,12 +126,29 @@ export function buildServerJsonLd(server: IndexedServer): Record<string, unknown
   // and mixing our proof URL into it would claim the proof is another identity for
   // someone else's project.
   const anchor = anchorProvenance();
+  // The reachability observation rides in creativeWorkStatus because that is where the
+  // posture of the listing belongs, and because for an answer engine this block is the
+  // whole page. It states the OBSERVATION and keeps the hedge: a 404 cannot tell a
+  // deleted repository from a deliberately private one, and this is a public statement
+  // about someone's work. Same discipline as livenessSentence(), compressed to one line -
+  // never "dead", "gone" or "abandoned".
+  // Gated on repoUnreachable, NOT on `liveness` alone: 11 listings in the corpus carry a
+  // census entry while declaring no repository URL at all. Claiming their "source
+  // repository" is unreachable would be a machine-readable statement about a repository
+  // this listing never names.
+  const status = repoUnreachable
+    ? ` Source repository not publicly accessible (HTTP ${liveness.evidence.http_status},` +
+      ` ${liveness.evidence.vantages} independent vantages` +
+      `${liveness.confirmed_unavailable ? `, confirmed ${liveness.confirmed_unavailable}` : ''});` +
+      ` may be private or relocated.`
+    : '';
   return {
     '@context': 'https://schema.org',
     ...entity,
     isBasedOn: 'https://registry.modelcontextprotocol.io',
     citation: 'https://mcpindex.ai/methodology',
-    creativeWorkStatus: 'Advisory listing; semantic-only screen, not a safety verdict',
+    creativeWorkStatus:
+      `Advisory listing; semantic-only screen, not a safety verdict.${status}`,
     ...(anchor
       ? {
           subjectOf: {

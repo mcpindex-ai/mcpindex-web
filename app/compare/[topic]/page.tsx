@@ -91,7 +91,7 @@ export default async function CompareTopic(
   const rows: Row[] = impls
     .map((server) => ({
       server,
-      score: computeQuality(server).score,
+      score: computeQuality(server, liveness.servers[server.name] ?? null).score,
       sourceGone: Boolean(liveness.servers[server.name]),
       verdict: verdictBySlug.get(server.slug) ?? null,
     }))

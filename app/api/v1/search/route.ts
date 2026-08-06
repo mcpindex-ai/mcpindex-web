@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { loadServers } from '@/lib/registry';
 import { search } from '@/lib/search';
 import { toListItem } from '@/lib/projection';
+import { livenessLookup } from '@/lib/sourceLiveness';
 
 export const revalidate = 300;
 
@@ -25,10 +26,14 @@ export async function GET(req: NextRequest) {
         { status: 400, headers: { 'Cache-Control': 'no-store' } },
       );
     }
-    const servers = await loadServers();
+    const [servers, livenessOf] = await Promise.all([loadServers(), livenessLookup()]);
     const found = servers.find((s) => s.slug === slug);
     return Response.json(
-      { query: slug, total: found ? 1 : 0, results: found ? [toListItem(found)] : [] },
+      {
+        query: slug,
+        total: found ? 1 : 0,
+        results: found ? [toListItem(found, livenessOf(found))] : [],
+      },
       {
         headers: {
           'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
@@ -57,7 +62,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const servers = await loadServers();
+  const [servers, livenessOf] = await Promise.all([loadServers(), livenessLookup()]);
   const hits = search(servers, q, { limit, categoryFilter: category ?? undefined });
 
   return Response.json(
@@ -65,7 +70,7 @@ export async function GET(req: NextRequest) {
       query: q,
       total: hits.length,
       results: hits.map((h) => ({
-        ...toListItem(h.server),
+        ...toListItem(h.server, livenessOf(h.server)),
         score: h.score,
         matched: h.matchedTerms,
       })),

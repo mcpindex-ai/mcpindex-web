@@ -188,3 +188,78 @@ test('servers: category filter narrows the pool', async () => {
   assert.ok(b.total <= all.total); // filtered corpus is a subset
   for (const s of b.servers) assert.equal(s.category, cat);
 });
+
+// ---- source liveness on the PUBLISHED CONTRACT surfaces ----
+// lib/projection.ts carries a PUBLISHED CONTRACT comment (external registry aggregators
+// read those field names) and had no route-level coverage at all. computeQuality and
+// buildServerJsonLd each got fixture + corpus tests; the projection that actually ships
+// to aggregators got none, so a regression dropping `sourceLiveness` or flipping the
+// `recommendation` semantics would have shipped silently.
+
+async function aFlaggedServer() {
+  const [{ loadServers }, { loadSourceLiveness }] = await Promise.all([
+    import('../../lib/registry'),
+    import('../../lib/sourceLiveness'),
+  ]);
+  const [servers, doc] = await Promise.all([loadServers(), loadSourceLiveness()]);
+  const s = servers.find((x) => doc.servers[x.name] && !x.hasPackage);
+  assert.ok(s, 'expected at least one flagged remote-only listing in the corpus');
+  return s;
+}
+
+test('search ?slug=: a flagged listing publishes sourceLiveness alongside its score', async () => {
+  const s = await aFlaggedServer();
+  const r = await callRoute(search, '/api/v1/search', { query: { slug: s.slug } });
+  assert.equal(r.status, 200);
+  const item = obj(r).results[0];
+  assert.equal(item.slug, s.slug);
+  assert.ok(item.sourceLiveness, 'the caveat must ship with the number');
+  assert.ok(item.sourceLiveness.evidence.vantages >= 2, 'never publish a single-vantage claim');
+  // Remote-only: the repo was never the executing artifact, so the machine-actionable
+  // hint must NOT tell the caller to pin and review a source they never ran.
+  assert.equal(
+    item.sourceLiveness.recommendation,
+    'informational_only_remote_endpoint_is_the_artifact',
+  );
+  // The published contract itself must be intact — additive means additive.
+  for (const k of ['slug', 'name', 'title', 'description', 'updatedAt', 'qualityScore']) {
+    assert.ok(k in item, `published contract field ${k} went missing`);
+  }
+});
+
+test('an unflagged listing carries NO sourceLiveness key (absence is not an all-clear)', async () => {
+  const { loadServers } = await import('../../lib/registry');
+  const { loadSourceLiveness } = await import('../../lib/sourceLiveness');
+  const [servers, doc] = await Promise.all([loadServers(), loadSourceLiveness()]);
+  const clean = servers.find((x) => !doc.servers[x.name]);
+  assert.ok(clean);
+  const r = await callRoute(search, '/api/v1/search', { query: { slug: clean.slug } });
+  const item = obj(r).results[0];
+  assert.equal('sourceLiveness' in item, false);
+});
+
+test('servers feed: sourceLiveness rides the aggregator surface too', async () => {
+  const r = await callRoute(servers, '/api/v1/servers', { query: { limit: '250' } });
+  assert.equal(r.status, 200);
+  const rows = obj(r).servers as any[];
+  // Not asserting a flagged row appears in the top-250 by score — docking pushes them
+  // down, which is the point. Assert the shape is honest wherever it does appear.
+  for (const row of rows) {
+    if (!row.sourceLiveness) continue;
+    assert.equal(row.sourceLiveness.state, 'unavailable');
+    assert.ok(row.sourceLiveness.evidence.vantages >= 2);
+  }
+});
+
+test('preflight: the in-path gate republishes the caveat, not just the docked number', async () => {
+  const s = await aFlaggedServer();
+  // Query by the listing's own title so it ranks; if it does surface, it must carry
+  // the caveat rather than a silently-reduced score with no explanation.
+  const r = await callRoute(preflight, '/api/v1/preflight', { query: { task: s.title } });
+  assert.equal(r.status, 200);
+  for (const rec of obj(r).recommendations as any[]) {
+    if (rec.slug !== s.slug) continue;
+    assert.ok(rec.sourceLiveness, 'preflight dropped the caveat it docked the score for');
+    assert.ok(rec.sourceLiveness.evidence.vantages >= 2);
+  }
+});
