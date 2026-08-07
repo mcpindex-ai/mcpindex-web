@@ -86,6 +86,12 @@ export default function DocsPage() {
             your host config so each MCP server launches <em>behind</em> the gate.
             Auto-wire covers Claude Desktop, Claude Code, Cursor, Gemini CLI
             (<Mono>~/.gemini/settings.json</Mono>), Cline, Zed, Windsurf, and VS Code.
+            One honest limit: VS Code and Zed settings files may contain comments.
+            Since 0.11.0 the gate <em>reads</em> those (before, a single comment made the
+            whole host unreadable and its servers silently unprotected), but it will
+            <em>not</em> rewrite them - a rewrite re-serialises the file and would delete
+            your comments. For a commented config the gate prints the entry to add and you
+            paste it in.
             The <Mono>curl | sh</Mono> one-liner does the same thing in one step
             - inspect it first if you prefer:
           </p>
