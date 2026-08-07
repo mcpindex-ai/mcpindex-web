@@ -3,7 +3,7 @@
 // input resolves to an empty result, not an exception.
 
 import type { ToolDef } from './vendor/preflight-types';
-import type { ScannedServer, Transport } from './types';
+import type { PathScope, Reach, ScannedServer, Transport } from './types';
 
 // Secret-looking env KEY names. We report the key name, never the value.
 // ('session' dropped: it over-matched SESSION_TIMEOUT/SESSION_ID; a real session
@@ -270,6 +270,125 @@ function isInsecureTransport(def: Record<string, unknown>): boolean {
   }
 }
 
+// ---------------------------------------------------------------- blast radius
+
+/** A config value that POINTS at a secret rather than containing one: `${TOKEN}`,
+ * `$TOKEN`, and the `Bearer ${TOKEN}` form headers use. The distinction is the
+ * whole finding - an env reference keeps the credential out of a file that syncs
+ * to iCloud and gets committed to dotfiles repos by accident. */
+const ENV_REF_RE = /^\s*(\$\{[^}]+\}|\$[A-Za-z_][A-Za-z0-9_]*)\s*$/;
+
+export function isEnvReference(value: string): boolean {
+  const v = value.trim();
+  const bare = /^bearer\s+/i.test(v) ? v.replace(/^bearer\s+/i, '') : v;
+  return ENV_REF_RE.test(bare);
+}
+
+/** Secret-bearing keys whose value is literally present in the file. Only `env`
+ * and `headers` are inspectable this way; a secret found inside a URL or an arg is
+ * a literal by construction and is added by the caller. */
+function literalSecretKeys(def: Record<string, unknown>): string[] {
+  const out: string[] = [];
+  const scan = (node: unknown, prefix: string, isSecretKey: (k: string, v: unknown) => boolean) => {
+    if (!isObj(node)) return;
+    for (const [k, v] of Object.entries(node)) {
+      if (!isSecretKey(k, v)) continue;
+      // Not a string (a number, an object): it is in the file, whatever it is.
+      if (typeof v !== 'string' || (v.trim() !== '' && !isEnvReference(v))) out.push(`${prefix}${k}`);
+    }
+  };
+  scan(def['env'], '', (k, v) => SECRET_KEY_RE.test(k) || isSecretValue(v));
+  scan(
+    normalizeHeaders(def['headers']),
+    'header:',
+    (k, v) => SECRET_KEY_RE.test(k) || AUTH_HEADER_RE.test(k) || isSecretValue(v),
+  );
+  return out;
+}
+
+/** stdio subprocess, a service on this machine, or something reachable off it.
+ * Reuses the loopback matcher that guards the plaintext-http finding, so
+ * `127.0.0.1.evil.com` is not read as local here either. */
+function reachOf(def: Record<string, unknown>): Reach {
+  if (transportOf(def) === 'local') return 'process';
+  const raw = def['url'];
+  if (typeof raw !== 'string') return transportOf(def) === 'remote' ? 'unknown' : 'unknown';
+  const s = raw.trim();
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(s) ? s : `http://${s}`;
+  try {
+    return isLoopbackHost(new URL(withScheme).hostname) ? 'loopback' : 'internet';
+  } catch {
+    return 'unknown';
+  }
+}
+
+/** Reconstruct what a gate-wrapped entry actually runs. Two shapes in the wild:
+ * the `_mcpindexWired.original` marker the installer writes, and the raw proxy
+ * invocation (`--upstream-command=X --upstream-arg=Y`). Without this the report
+ * shows the proxy's own command line - mcpindex describing itself. */
+function unwrapGate(def: Record<string, unknown>): { gated: boolean; upstream: string | null } {
+  const args = Array.isArray(def['args']) ? def['args'].map(String) : [];
+  const marker = def['_mcpindexWired'];
+  const viaArgs = args.some((a) => a === '--mcpindex-stdio' || a.startsWith('--upstream-command='));
+  if (!isObj(marker) && !viaArgs) return { gated: false, upstream: null };
+
+  // The unwrapped command goes on screen, so it goes through the same redactors as
+  // any other command line. A wrapped `--upstream-arg=--api-key=VALUE` would
+  // otherwise arrive here as plain text, having bypassed every mask on the way.
+  const unredacted = (parts: string[]): { gated: true; upstream: string | null } => {
+    const clean = parts.filter(Boolean);
+    return { gated: true, upstream: clean.length > 0 ? redactArgs(clean).text : null };
+  };
+
+  if (isObj(marker) && isObj(marker['original'])) {
+    const o = marker['original'] as Record<string, unknown>;
+    const oArgs = Array.isArray(o['args']) ? o['args'].map(String) : [];
+    const cmd = typeof o['command'] === 'string' ? o['command'] : '';
+    if (cmd || oArgs.length > 0) return unredacted([cmd, ...oArgs]);
+  }
+  const cmd = args.find((a) => a.startsWith('--upstream-command='))?.slice('--upstream-command='.length);
+  const rest = args.filter((a) => a.startsWith('--upstream-arg=')).map((a) => a.slice('--upstream-arg='.length));
+  return unredacted([cmd ?? '', ...rest]);
+}
+
+// A version that actually names something: `pkg@1.2.3`, `pkg==1.2.3`, `@sha256:...`.
+// `@latest` deliberately does NOT count - it names the newest, which is a moving target.
+const VERSION_PIN_RE = /(@\d[\w.-]*|==\s*\d[\w.*-]*|@sha256:[0-9a-f]+|~=\s*\d|>=\s*\d)/;
+const RESOLVER_RE = /^(npx|bunx|pnpx|uvx|pipx|deno)$/i;
+
+/** Does launching this download code from a public registry first? True is proven
+ * from the command line. False means only that this config does not show it - a
+ * bare binary path can point at anything, including a live checkout that rebuilds
+ * itself, which is exactly why this is never rendered as "stable". */
+function fetchesAtLaunchFrom(command: string | null, args: readonly string[]): boolean {
+  if (!command) return false;
+  const base = command.split('/').pop() ?? command;
+  const joined = args.join(' ');
+
+  if (RESOLVER_RE.test(base)) {
+    // `uvx --from pkg==1.2.3 entry` pins; `uvx pkg` and `npx -y pkg` do not.
+    if (/@latest\b/.test(joined)) return true;
+    return !VERSION_PIN_RE.test(joined);
+  }
+  if (base === 'docker' || base === 'podman') {
+    const image = args.find((a) => !a.startsWith('-') && a !== 'run' && a !== 'pull');
+    if (!image) return false;
+    return /:latest$/.test(image) || !image.includes(':');
+  }
+  return false;
+}
+
+// Paths that hand over far more than a project: a root, a home, a bare volume.
+const BROAD_PATH_RE = /^(\/|~\/?|\$HOME\/?|\/Users\/[^/]+\/?|\/home\/[^/]+\/?|\/Volumes\/[^/]+\/?|[A-Z]:\\?)$/;
+
+/** Filesystem breadth handed over by a path argument. Biased hard toward 'unknown':
+ * a wrong 'broad' is an accusation about someone's setup. */
+function pathScopeOf(args: readonly string[]): PathScope {
+  const paths = args.filter((a) => !a.startsWith('-') && /^(\/|~|\$HOME|[A-Z]:\\)/.test(a));
+  if (paths.length === 0) return 'unknown';
+  return paths.some((p) => BROAD_PATH_RE.test(p.replace(/\/+$/, '') || '/')) ? 'broad' : 'narrow';
+}
+
 function commandString(def: Record<string, unknown>): Redacted | null {
   if (typeof def['command'] !== 'string') return null;
   // Stringify non-string args as JSON (not "[object Object]") so embedded text stays legible.
@@ -288,6 +407,14 @@ export function parseConfig(root: unknown): ScannedServer[] {
     if (!isObj(defRaw)) continue;
     const u = typeof defRaw['url'] === 'string' ? redactUrl(defRaw['url'] as string) : null;
     const c = commandString(defRaw);
+    const gate = unwrapGate(defRaw);
+    const rawArgs = Array.isArray(defRaw['args']) ? defRaw['args'].map(String) : [];
+    // Judge the code that actually runs, not the wrapper around it. A gated entry's
+    // own command line is always `uvx --from mcpindex-gate==x.y.z` - reading that
+    // would score every gated server as pinned and hide the upstream entirely.
+    const effective = gate.gated && gate.upstream ? gate.upstream.split(' ') : [String(defRaw['command'] ?? ''), ...rawArgs];
+    const [effCommand, ...effArgs] = effective;
+
     out.push({
       name: String(name),
       transport: transportOf(defRaw),
@@ -297,6 +424,14 @@ export function parseConfig(root: unknown): ScannedServer[] {
       // had to mask is by definition a credential this server carries.
       secretKeys: [...secretKeys(defRaw), ...(u?.found ?? []), ...(c?.found ?? [])],
       insecureTransport: isInsecureTransport(defRaw),
+      reach: reachOf(defRaw),
+      // A secret the redactors pulled out of a URL or an arg is in the file by
+      // construction - there is nowhere else it could have been.
+      secretsInFile: [...literalSecretKeys(defRaw), ...(u?.found ?? []), ...(c?.found ?? [])],
+      fetchesAtLaunch: fetchesAtLaunchFrom(effCommand || null, effArgs),
+      pathScope: pathScopeOf(effArgs.length > 0 ? effArgs : rawArgs),
+      gated: gate.gated,
+      upstream: gate.upstream,
     });
   }
   return out;

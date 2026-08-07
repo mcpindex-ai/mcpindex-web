@@ -447,3 +447,145 @@ test('analyze names the double-paste case instead of a generic "not JSON"', () =
   const decoy = JSON.stringify({ mcpServers: { x: { command: 'cat', args: ['"mcpServers":'] } } });
   assert.equal(analyze(decoy).kind, 'summary');
 });
+
+// ------------------------------------------------- blast radius (server level)
+
+test('secretsInFile separates a literal credential from an ${ENV} reference', () => {
+  const servers = parseConfig({
+    mcpServers: {
+      literal: { url: 'https://a/mcp', headers: { Authorization: 'Bearer ghp_realLookingToken1234567890' } },
+      ref: { url: 'https://b/mcp', headers: { Authorization: 'Bearer ${GITHUB_TOKEN}' } },
+      bare: { url: 'https://c/mcp', headers: { Authorization: '$GITHUB_TOKEN' } },
+      envRef: { command: 'x', env: { API_KEY: '${MY_KEY}' } },
+      envLiteral: { command: 'x', env: { API_KEY: 'sk-live-abcdef1234567890' } },
+    },
+  });
+  const by = (n: string) => servers.find((s) => s.name === n)!;
+  // All five carry a credential...
+  assert.equal(servers.filter((s) => s.secretKeys.length > 0).length, 5);
+  // ...but only the two literals put it in the file.
+  assert.deepEqual(
+    servers.filter((s) => s.secretsInFile.length > 0).map((s) => s.name).sort(),
+    ['envLiteral', 'literal'],
+  );
+  assert.equal(by('ref').secretsInFile.length, 0);
+  assert.equal(by('bare').secretsInFile.length, 0);
+});
+
+test('reach separates a service on this machine from one reachable off it', () => {
+  const servers = parseConfig({
+    mcpServers: {
+      loop: { url: 'http://127.0.0.1:8000/mcp' },
+      named: { url: 'http://localhost:8000/mcp' },
+      six: { url: 'http://[::1]:8000/mcp' },
+      out: { url: 'https://mcp.example.com/mcp' },
+      // Not loopback: a registrable domain that merely starts with 127.
+      spoof: { url: 'https://127.0.0.1.evil.com/mcp' },
+      proc: { command: 'npx', args: ['-y', 'thing@1.0.0'] },
+    },
+  });
+  const reach = Object.fromEntries(servers.map((s) => [s.name, s.reach]));
+  assert.deepEqual(reach, {
+    loop: 'loopback', named: 'loopback', six: 'loopback',
+    out: 'internet', spoof: 'internet', proc: 'process',
+  });
+});
+
+test('fetchesAtLaunch is proven from the resolver, never assumed absent', () => {
+  const servers = parseConfig({
+    mcpServers: {
+      floating: { command: 'npx', args: ['-y', '@scope/pkg'] },
+      latest: { command: 'npx', args: ['@playwright/mcp@latest'] },
+      pinnedNpm: { command: 'npx', args: ['-y', 'pkg@1.2.3'] },
+      pinnedPy: { command: 'uvx', args: ['--from', 'pkg==1.2.3', 'entry'] },
+      floatingPy: { command: 'uvx', args: ['mcp-server-git'] },
+      dockerLatest: { command: 'docker', args: ['run', 'org/img:latest'] },
+      dockerPinned: { command: 'docker', args: ['run', 'org/img:1.4'] },
+      // A bare binary: unknowable from a config, so NOT flagged - the absence of a
+      // flag is never a claim of stability.
+      binary: { command: '/Users/me/tools/thing', args: [] },
+    },
+  });
+  const flagged = servers.filter((s) => s.fetchesAtLaunch).map((s) => s.name).sort();
+  assert.deepEqual(flagged, ['dockerLatest', 'floating', 'floatingPy', 'latest']);
+});
+
+test('a gate-wrapped server reports its upstream, not the gate talking about itself', () => {
+  const servers = parseConfig({
+    mcpServers: {
+      viaMarker: {
+        command: 'uvx',
+        args: ['--from', 'mcpindex-gate==0.9.2', 'mcpindex-proxy', '--mcpindex-stdio'],
+        _mcpindexWired: { marker: 'mcpindex', original: { command: 'uvx', args: ['mcp-google-search-console'] } },
+      },
+      viaArgs: {
+        command: 'uvx',
+        args: [
+          '--from', 'mcpindex-gate==0.10.0', 'mcpindex-proxy', '--mcpindex-stdio',
+          '--upstream-command=npx', '--upstream-arg=-y', '--upstream-arg=mcp-server-mcpindex@0.3.0',
+        ],
+      },
+      plain: { command: 'uvx', args: ['mcp-server-git'] },
+    },
+  });
+  const by = (n: string) => servers.find((s) => s.name === n)!;
+  assert.equal(by('viaMarker').gated, true);
+  assert.equal(by('viaMarker').upstream, 'uvx mcp-google-search-console');
+  // The wrapper pins mcpindex-gate; the UPSTREAM is what gets judged, and it floats.
+  assert.equal(by('viaMarker').fetchesAtLaunch, true);
+
+  assert.equal(by('viaArgs').gated, true);
+  assert.equal(by('viaArgs').upstream, 'npx -y mcp-server-mcpindex@0.3.0');
+  assert.equal(by('viaArgs').fetchesAtLaunch, false); // upstream is pinned
+  assert.equal(by('plain').gated, false);
+});
+
+test('an unwrapped upstream is redacted like any other command line', () => {
+  const [s] = parseConfig({
+    mcpServers: {
+      x: {
+        command: 'uvx',
+        args: ['mcpindex-proxy', '--mcpindex-stdio', '--upstream-command=serve', '--upstream-arg=--api-key=sk-live-9f8e7d6c5b4a'],
+      },
+    },
+  });
+  assert.equal(s.gated, true);
+  assert.ok(!/sk-live-9f8e7d6c5b4a/.test(s.upstream ?? ''), 'the secret must not survive into the upstream string');
+  assert.ok(/--api-key=/.test(s.upstream ?? ''), 'the flag itself still shows, so the finding stays legible');
+});
+
+test('pathScope claims broad only for unmistakable grants', () => {
+  const servers = parseConfig({
+    mcpServers: {
+      root: { command: 'npx', args: ['-y', 'fs@1.0.0', '/'] },
+      home: { command: 'npx', args: ['-y', 'fs@1.0.0', '/Users/bharti'] },
+      tilde: { command: 'npx', args: ['-y', 'fs@1.0.0', '~'] },
+      volume: { command: 'npx', args: ['-y', 'fs@1.0.0', '/Volumes/GB990Pro'] },
+      project: { command: 'npx', args: ['-y', 'fs@1.0.0', '/Volumes/GB990Pro/GBCode'] },
+      none: { command: 'npx', args: ['-y', 'fs@1.0.0'] },
+    },
+  });
+  const scope = Object.fromEntries(servers.map((s) => [s.name, s.pathScope]));
+  assert.deepEqual(scope, {
+    root: 'broad', home: 'broad', tilde: 'broad', volume: 'broad',
+    project: 'narrow', none: 'unknown',
+  });
+});
+
+test('summarize rolls the blast-radius counts', () => {
+  const servers = parseConfig({
+    mcpServers: {
+      a: { url: 'https://x/mcp', headers: { Authorization: 'Bearer ghp_literalTokenValue123456' } },
+      b: { url: 'http://127.0.0.1:9/mcp' },
+      c: { command: 'npx', args: ['-y', 'pkg'] },
+      d: { command: 'uvx', args: ['--from', 'p==1.0.0', 'e'], _mcpindexWired: { original: { command: 'uvx', args: ['real@2.0.0'] } } },
+    },
+  });
+  const c = summarize(servers, []).counts;
+  assert.equal(c.servers, 4);
+  assert.equal(c.internetReach, 1);
+  assert.equal(c.loopbackServers, 1);
+  assert.equal(c.secretsInFile, 1);
+  assert.equal(c.fetchAtLaunch, 1); // only `c`; d's upstream is pinned
+  assert.equal(c.gatedServers, 1);
+});

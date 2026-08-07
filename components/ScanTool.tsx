@@ -46,6 +46,14 @@ const REVERSIBILITY: Record<string, string> = {
   irreversible: 'irreversible',
 };
 const EGRESS: Record<string, string> = { none: EMPTY, internal: 'internal', external: 'off-machine' };
+// Where a server runs and what can reach it. Descriptive only - none of these
+// says anything about whether its contract holds still.
+const REACH: Record<string, string> = {
+  process: 'local process',
+  loopback: 'on this machine',
+  internet: 'reachable off-machine',
+  unknown: 'unknown',
+};
 
 function toneOf(t: ScannedTool): 'high' | 'warn' | 'calm' {
   if (t.reversibility === 'irreversible' || t.sideEffect === 'destructive') return 'high';
@@ -323,11 +331,11 @@ export function ScanTool() {
     ? ''
     : summary?.level === 'tool'
       ? `/scan/card?tools=${c.tools}&irrev=${c.irreversible}&egress=${c.egressExternal}&unpinned=${c.unpinned}`
-      : `/scan/card?servers=${c.servers}&remote=${c.remoteServers}&local=${c.localServers}&creds=${c.serversWithSecrets}`;
+      : `/scan/card?servers=${c.servers}&creds=${c.serversWithSecrets}&fetch=${c.fetchAtLaunch}&net=${c.internetReach}`;
   const cardAlt =
     summary?.level === 'tool'
       ? `mcpindex scan: ${c?.tools} tools, ${c?.irreversible} irreversible, ${c?.egressExternal} off-machine, ${c?.unpinned} unpinned`
-      : `mcpindex scan: ${c?.servers} MCP servers, ${c?.remoteServers} remote, ${c?.localServers} local, ${c?.serversWithSecrets} carrying a credential`;
+      : `mcpindex scan: ${c?.servers} MCP servers, ${c?.serversWithSecrets} holding a credential, ${c?.fetchAtLaunch} fetching code at launch, ${c?.internetReach} able to reach the internet`;
   const hasCard = !!c && (summary?.level === 'tool' ? c.tools > 0 : c.servers > 0);
 
   return (
@@ -574,20 +582,41 @@ export function ScanTool() {
               until the gate is installed - it is a state, not a finding.
             </p>
           )}
+          {/* Server level reads as blast radius, the same question the tool-level
+              view answers, using only what a config actually proves. Transport is
+              NOT one of these: it does not predict whether a contract changes. */}
           {summary.level !== 'tool' && (
-            <div
-              className={`grid grid-cols-2 ${
-                c.insecureRemotes > 0 ? 'sm:grid-cols-5' : 'sm:grid-cols-4'
-              } rule-t border-[var(--color-rule)] divide-y sm:divide-y-0`}
-            >
+            <div className="grid grid-cols-2 sm:grid-cols-4 rule-t border-[var(--color-rule)] divide-y sm:divide-y-0">
               <Stat n={c.servers} label="MCP servers connected" />
-              <Stat n={c.remoteServers} label="remote - can change on you" tone="accent" />
-              <Stat n={c.localServers} label="spawn a local process" />
-              <Stat n={c.serversWithSecrets} label="carry a credential" />
-              {c.insecureRemotes > 0 && (
-                <Stat n={c.insecureRemotes} label="reached over plaintext http" tone="accent" />
-              )}
+              <Stat n={c.serversWithSecrets} label="hold a credential" tone="accent" />
+              <Stat n={c.fetchAtLaunch} label="fetch code at launch" />
+              <Stat n={c.internetReach} label="can reach the internet" />
             </div>
+          )}
+
+          {/* Exceptions live here, not as more columns: the grid is the standing
+              picture, these are the things worth acting on today. */}
+          {summary.level !== 'tool' && (c.secretsInFile > 0 || c.insecureRemotes > 0 || c.broadFileAccess > 0) && (
+            <ul className="rule-t px-5 py-3 space-y-1.5 font-mono text-[11.5px] leading-[1.6] text-rose-700">
+              {c.secretsInFile > 0 && (
+                <li>
+                  <strong>{c.secretsInFile}</strong> server{c.secretsInFile === 1 ? ' keeps its' : 's keep their'}{' '}
+                  credential in this file, not in an environment variable - that file gets synced and backed up.
+                </li>
+              )}
+              {c.broadFileAccess > 0 && (
+                <li>
+                  <strong>{c.broadFileAccess}</strong> server{c.broadFileAccess === 1 ? ' was' : 's were'} handed a
+                  path that spans far more than one project.
+                </li>
+              )}
+              {c.insecureRemotes > 0 && (
+                <li>
+                  <strong>{c.insecureRemotes}</strong> server{c.insecureRemotes === 1 ? ' is' : 's are'} reached over
+                  plaintext http - the credential and every argument cross the network in the clear.
+                </li>
+              )}
+            </ul>
           )}
 
           {/* the bridge to the gate */}
@@ -600,8 +629,10 @@ export function ScanTool() {
                 </>
               ) : (
                 <>
-                  <strong>{c.remoteServers} remote server{c.remoteServers === 1 ? '' : 's'}</strong> can change
-                  behavior server-side after you connected them, with nothing in your repo to diff.
+                  <strong>A config cannot tell you whether these contracts stay put.</strong> A plain local path can
+                  point at a service that rebuilds itself daily, and a version number does not settle it either -
+                  most drift we observe leaves the declared version untouched. What the config does show is blast
+                  radius: {c.serversWithSecrets} hold a credential, {c.fetchAtLaunch} fetch their code at launch.
                 </>
               )}{' '}
               mcpindex pins each contract and HOLDs the call when it drifts.
@@ -688,29 +719,51 @@ export function ScanTool() {
                 <thead>
                   <tr className={LABEL}>
                     <th scope="col" className="px-5 py-2 font-normal">server</th>
-                    <th scope="col" className="px-3 py-2 font-normal">transport</th>
-                    <th scope="col" className="px-3 py-2 font-normal">detail</th>
+                    <th scope="col" className="px-3 py-2 font-normal">where it runs</th>
+                    <th scope="col" className="px-3 py-2 font-normal">what it runs</th>
                     <th scope="col" className="px-3 py-2 font-normal">credentials</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {summary.servers.map((s, i) => (
-                    <tr key={`${s.name}-${i}`} className="rule-t align-top">
-                      <td className="px-5 py-2.5 font-mono text-[12.5px] text-[var(--color-ink)]">{s.name}</td>
-                      <td className="px-3 py-2.5 text-[12.5px] text-[var(--color-cite)]">
-                        {s.transport === 'remote' ? 'remote (can drift)' : s.transport === 'local' ? 'local process' : 'unknown'}
-                      </td>
-                      <td className="px-3 py-2.5 font-mono text-[11.5px] text-[var(--color-mute)] break-all max-w-[280px]">
-                        {s.url ?? s.command ?? EMPTY}
-                      </td>
-                      <td className="px-3 py-2.5 text-[12px] text-[var(--color-cite)]">
-                        {s.secretKeys.length > 0 ? s.secretKeys.join(', ') : EMPTY}
-                        {s.insecureTransport ? (
-                          <span className="block text-[var(--color-accent-strong)]">over plaintext http</span>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
+                  {summary.servers.map((s, i) => {
+                    const notes = [
+                      s.fetchesAtLaunch ? 'fetches its code at launch' : '',
+                      s.pathScope === 'broad' ? 'broad file access' : '',
+                    ].filter(Boolean);
+                    return (
+                      <tr key={`${s.name}-${i}`} className="rule-t align-top">
+                        <td className="px-5 py-2.5 font-mono text-[12.5px] text-[var(--color-ink)]">
+                          {s.name}
+                          {s.gated && (
+                            <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-accent-strong)]">
+                              gated
+                            </span>
+                          )}
+                          {notes.length > 0 && (
+                            <span className="mt-1 block font-sans text-[11px] text-[var(--color-mute)]">
+                              {notes.join('; ')}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5 text-[12.5px] text-[var(--color-cite)]">{REACH[s.reach]}</td>
+                        <td className="px-3 py-2.5 font-mono text-[11.5px] text-[var(--color-mute)] break-all max-w-[280px]">
+                          {/* The real server, not the gate's own command line. */}
+                          {s.upstream ?? s.url ?? s.command ?? EMPTY}
+                        </td>
+                        <td className="px-3 py-2.5 text-[12px] text-[var(--color-cite)]">
+                          {s.secretKeys.length > 0 ? s.secretKeys.join(', ') : EMPTY}
+                          {s.secretsInFile.length > 0 ? (
+                            <span className="block text-rose-700">stored in this file</span>
+                          ) : s.secretKeys.length > 0 ? (
+                            <span className="block text-[var(--color-mute)]">via an environment variable</span>
+                          ) : null}
+                          {s.insecureTransport ? (
+                            <span className="block text-[var(--color-accent-strong)]">over plaintext http</span>
+                          ) : null}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}

@@ -24,7 +24,7 @@ function clampInt(raw: string | null): number {
   return Number.isFinite(n) && n >= 0 && n <= 9999 ? n : 0;
 }
 
-function Stat({ n, label, accent }: { n: number; label: string; accent?: boolean }) {
+function Stat({ n, label, accent, first }: { n: number; label: string; accent?: boolean; first?: boolean }) {
   return (
     <div
       style={{
@@ -32,7 +32,9 @@ function Stat({ n, label, accent }: { n: number; label: string; accent?: boolean
         flexDirection: 'column',
         flex: 1,
         padding: '28px 30px',
-        borderLeft: `2px solid ${RULE}`,
+        // No rule on the first cell: it would sit on top of the container's own
+        // border and print as a 4px line down the left edge only.
+        borderLeft: first ? 'none' : `2px solid ${RULE}`,
         background: accent ? '#fff7ed' : '#ffffff',
       }}
     >
@@ -60,13 +62,33 @@ export function GET(req: Request) {
   const serverLevel = searchParams.has('servers');
 
   const headline = serverLevel ? 'What my agent is connected to' : 'What my agent can actually do';
+  // Labels stay under ~13 characters. The cell is ~190px of text at this size, and
+  // a label that wraps drops its second line below the neighbouring cells' - the
+  // numbers share a baseline but the wrapped labels do not, and the row reads
+  // broken. Terse is also the register the tools card already set (TOOLS,
+  // OFF-MACHINE, UNPINNED).
+  //
+  // The accent marks the one number here that is honestly risk-ranked. It is NOT
+  // `remote`: transport does not predict whether a contract changes (a loopback
+  // server on a live checkout with auto-restart changes daily; a third-party SaaS
+  // endpoint may not change for months). Credentials do rank: a server holding one
+  // can act as you against a third party, wherever it happens to run.
   const stats: { n: number; label: string; accent?: boolean }[] = serverLevel
-    ? [
-        { n: clampInt(searchParams.get('servers')), label: 'MCP servers' },
-        { n: clampInt(searchParams.get('remote')), label: 'can change on me', accent: true },
-        { n: clampInt(searchParams.get('local')), label: 'local processes' },
-        { n: clampInt(searchParams.get('creds')), label: 'carry a credential' },
-      ]
+    ? searchParams.has('fetch')
+      ? // Blast-radius shape: what these servers can do. Matches the on-page report.
+        [
+          { n: clampInt(searchParams.get('servers')), label: 'MCP servers' },
+          { n: clampInt(searchParams.get('creds')), label: 'with secrets', accent: true },
+          { n: clampInt(searchParams.get('fetch')), label: 'fetch code' },
+          { n: clampInt(searchParams.get('net')), label: 'internet' },
+        ]
+      : // Inventory shape, kept alive for links minted before the rebuild.
+        [
+          { n: clampInt(searchParams.get('servers')), label: 'MCP servers' },
+          { n: clampInt(searchParams.get('remote')), label: 'remote' },
+          { n: clampInt(searchParams.get('local')), label: 'local' },
+          { n: clampInt(searchParams.get('creds')), label: 'with secrets', accent: true },
+        ]
     : [
         { n: clampInt(searchParams.get('tools')), label: 'tools' },
         { n: clampInt(searchParams.get('irrev')), label: 'can’t be undone' },
@@ -104,8 +126,8 @@ export function GET(req: Request) {
             {headline}
           </div>
           <div style={{ display: 'flex', border: `2px solid ${RULE}` }}>
-            {stats.map((s) => (
-              <Stat key={s.label} n={s.n} label={s.label} accent={s.accent} />
+            {stats.map((s, i) => (
+              <Stat key={s.label} n={s.n} label={s.label} accent={s.accent} first={i === 0} />
             ))}
           </div>
         </div>
