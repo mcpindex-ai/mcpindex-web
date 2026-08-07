@@ -14,7 +14,7 @@ import { provenanceLine } from '@/lib/provenance';
 import { z } from 'zod';
 
 // In-process /api/v1 dispatch (no self-fetch); see lib/v1Dispatch.ts.
-import { callV1 } from '@/lib/v1Dispatch';
+import { callV1, withTimeout } from '@/lib/v1Dispatch';
 import { inspectMcpBody } from '@/lib/mcpBodyGuard';
 import { armMcpWatchdog, contentLengthOf } from '@/lib/mcpWatchdog';
 
@@ -340,6 +340,42 @@ const handler = createMcpHandler(
 // request). Keep both: the guard stops the known amplifier, this stops an unknown one.
 export const maxDuration = 60;
 
+// mcp-handler's OWN response plumbing has no timeout or catch of its own. Its Web-standard
+// adapter (node_modules/mcp-handler/dist/index.js:723-834, createServerResponseAdapter)
+// fire-and-forgets the internal handler - `void fn(fakeServerResponse)`, never awaited, never
+// try/caught - and only builds a Response once that internal call gets around to calling
+// `res.writeHead(...)`. If it throws, or anything else stops it from ever calling writeHead,
+// the Response promise this whole route awaits simply never settles: nothing rejects it,
+// nothing bounds it. Before this, the ONLY backstop was the platform's own maxDuration above -
+// 37 requests over 3 weeks rode that gap silently to `Vercel Runtime Timeout Error` with no
+// error response ever sent to the caller and no diagnostic beyond "it hung to death."
+//
+// 55s, not 60s: armMcpWatchdog's own near-kill checkpoint fires at 50s (SLOW_MS/NEAR_KILL_MS
+// in lib/mcpWatchdog.ts), so this settles just after that warning has already logged, and
+// still leaves ~5s of margin under maxDuration for the forced response to actually reach the
+// caller rather than racing the platform kill itself.
+const HANDLER_TIMEOUT_MS = 55_000;
+
+function handlerTimeoutResponse(): Response {
+  return Response.json(
+    {
+      jsonrpc: '2.0',
+      id: null,
+      error: { code: -32000, message: 'mcpindex: request handling timed out' },
+    },
+    { status: 504 },
+  );
+}
+
+/** Forces a hung mcp-handler promise into an honest error response instead of a silent hang. */
+async function withHandlerTimeout(p: Promise<Response>, label: string): Promise<Response> {
+  try {
+    return await withTimeout(p, HANDLER_TIMEOUT_MS, label);
+  } catch {
+    return handlerTimeoutResponse();
+  }
+}
+
 // mcp-handler holds the (unauthenticated) connection open to maxDuration when the
 // POST body is EMPTY or not valid JSON — a valid-JSON-but-not-JSON-RPC body already
 // fast-fails with -32700, so only unparseable/empty input hangs. That is a cheap
@@ -383,7 +419,10 @@ async function postHandler(req: Request, ctx: unknown): Promise<Response> {
     bytes: seen.accept.bytes,
   });
   try {
-    return await (handler as (r: Request, c: unknown) => Promise<Response>)(forwarded, ctx);
+    return await withHandlerTimeout(
+      (handler as (r: Request, c: unknown) => Promise<Response>)(forwarded, ctx),
+      'mcp-handler:POST',
+    );
   } finally {
     disarm();
   }
@@ -436,7 +475,7 @@ const watched =
   async (req, ctx) => {
     const disarm = armMcpWatchdog({ phase: 'dispatch', httpMethod });
     try {
-      return await h(req, ctx);
+      return await withHandlerTimeout(h(req, ctx), `mcp-handler:${httpMethod}`);
     } finally {
       disarm();
     }

@@ -89,6 +89,10 @@ export async function callV1<T = unknown>(
  * PATHNAME only, never the full URL - the query string is where caller-supplied prose (a
  * `task` or `query` value) lives, and that must never reach a log line, same rule
  * mcpWatchdog.ts states for its own context type.
+ *
+ * Generic on purpose: also used directly by app/api/[transport]/route.ts to bound the
+ * mcp-handler library call itself (a second, unrelated caller - hence the log prefix names
+ * this function, not this file).
  */
 export function withTimeout<T>(p: Promise<T>, ms: number, label?: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout>;
@@ -96,7 +100,7 @@ export function withTimeout<T>(p: Promise<T>, ms: number, label?: string): Promi
     p,
     new Promise<never>((_, rej) => {
       timer = setTimeout(() => {
-        console.error(`[v1Dispatch] timeout path=${label ?? 'unknown'} ms=${ms}`);
+        console.error(`[withTimeout] timeout path=${label ?? 'unknown'} ms=${ms}`);
         rej(new Error('mcpindex API timeout'));
       }, ms);
     }),
