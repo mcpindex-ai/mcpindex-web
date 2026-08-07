@@ -7,6 +7,7 @@ import { VerdictReveal } from '@/components/VerdictReveal';
 import { CopyField } from '@/components/CopyField';
 import { ProvenanceBadge } from '@/components/ProvenanceBadge';
 import DriftGateDemo from '@/components/DriftGateDemo';
+import { FilmCards } from '@/components/FilmCards';
 import { InstallCtaButton } from '@/components/InstallCtaButton';
 import { INSTALL_SHELL_COMMAND } from '@/lib/install-command';
 import {
@@ -267,15 +268,26 @@ export default async function Home() {
             verdict. Breaking changes are HELD; benign added-optional proceeds silently.
           </p>
           <DriftGateDemo />
-          <p className="mt-10 font-mono text-[12px] text-[var(--color-mute)]">
-            Persona walkthrough &amp; embed:{' '}
-            <Link
-              href="/demo"
-              className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
-            >
-              Videos &amp; embed →
-            </Link>
-          </p>
+
+          {/* The films sit AFTER the interactive demo on purpose. The demo is the better
+              demonstration - the visitor drives it - and the install command is already in
+              the hero. These support the conversion path rather than interrupting it, and
+              they replace a text link that was the homepage's only route to the film pages. */}
+          <div className="mt-14 rule-t pt-10">
+            <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-5">
+              Or watch it explained
+            </div>
+            <FilmCards />
+            <p className="mt-8 font-mono text-[12px] text-[var(--color-mute)]">
+              Embed or share these:{' '}
+              <Link
+                href="/demo"
+                className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+              >
+                Videos &amp; embed →
+              </Link>
+            </p>
+          </div>
         </div>
       </section>
 

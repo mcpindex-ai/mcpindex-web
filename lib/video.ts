@@ -149,6 +149,12 @@ export function videoObject(
     url: page,
     isFamilyFriendly: true,
     inLanguage: 'en',
+    // Same reasoning as the figures: a film is a CreativeWork we own, and declaring the
+    // holder alongside the credit is what makes a citation checkable rather than polite.
+    // Not required for video rich results - included because it is true and cheap.
+    copyrightNotice: '\u00a9 mcpindex.ai',
+    copyrightHolder: { '@type': 'Organization', '@id': `${ORIGIN}/#org` },
+    creditText: 'mcpindex.ai',
     transcript: transcriptFor(film),
     publisher: {
       '@type': 'Organization',

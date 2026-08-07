@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
 import { jsonLdSafe } from '@/lib/jsonLd';
-import { DIAGRAMS, DIAGRAM_LICENSE, DIAGRAM_LICENSE_URL } from '@/lib/diagrams';
+import { COPYRIGHT_NOTICE, DIAGRAMS, DIAGRAM_LICENSE, DIAGRAM_LICENSE_URL } from '@/lib/diagrams';
 
 export const revalidate = 86400;
 
@@ -43,6 +43,14 @@ export default function DiagramsPage() {
       contentUrl: `https://mcpindex.ai/diagrams/${d.id}/svg`,
       encodingFormat: 'image/svg+xml',
       license: DIAGRAM_LICENSE_URL,
+      // Brought up to the same set as the per-figure ImageObject in components/Figure.tsx.
+      // These carried `license` alone, so the gallery advertised reuse terms without saying
+      // who to credit - the practical half of CC BY.
+      creditText: 'mcpindex.ai',
+      creator: { '@type': 'Organization', '@id': 'https://mcpindex.ai/#org' },
+      copyrightNotice: COPYRIGHT_NOTICE,
+      copyrightHolder: { '@type': 'Organization', '@id': 'https://mcpindex.ai/#org' },
+      acquireLicensePage: `https://mcpindex.ai/diagrams/${d.id}`,
     })),
   };
 

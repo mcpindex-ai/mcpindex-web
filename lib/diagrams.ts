@@ -592,6 +592,23 @@ export function diagramsFor(route: string): DiagramMeta[] {
 export const DIAGRAM_LICENSE = 'CC BY 4.0';
 export const DIAGRAM_LICENSE_URL = 'https://creativecommons.org/licenses/by/4.0/';
 
+/**
+ * The copyright notice for site-authored media (figures, films).
+ *
+ * Google's image-metadata rich result reads four fields together - `license`,
+ * `creditText`, `creator` and `copyrightNotice`. We shipped three; Search Console reported
+ * the fourth as a non-critical "missing field", which means the item is valid but not
+ * eligible for the licensable-image treatment.
+ *
+ * NO YEAR, deliberately. A hardcoded year is a claim that goes stale the moment the
+ * calendar turns and nobody re-reads this file - the same decaying-claim problem the films
+ * solve by stamping figures "as of" a date. schema.org types this as free Text and Google's
+ * own example is a bare agency name, so a year buys nothing and costs accuracy.
+ *
+ * CC BY 4.0 licenses the copyright; it does not waive it. Both fields belong together.
+ */
+export const COPYRIGHT_NOTICE = '\u00a9 mcpindex.ai';
+
 /** The copy-paste attribution a reuser needs. Easy beats correct-but-tedious. */
 export function attributionHtml(d: DiagramMeta): string {
   return `<a href="https://mcpindex.ai/diagrams/${d.id}">${d.title} - mcpindex.ai</a> (CC BY 4.0)`;

@@ -1,12 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { jsonLdSafe } from '@/lib/jsonLd';
-import {
-  getDiagram,
-  renderTwin,
-  DIAGRAM_LICENSE,
-  DIAGRAM_LICENSE_URL,
-} from '@/lib/diagrams';
+import { COPYRIGHT_NOTICE, DIAGRAM_LICENSE, DIAGRAM_LICENSE_URL, getDiagram, renderTwin } from '@/lib/diagrams';
 
 /**
  * The ONE way a diagram reaches a page.
@@ -64,6 +59,11 @@ export function Figure({
     acquireLicensePage: `https://mcpindex.ai${href}`,
     creditText: 'mcpindex.ai',
     creator: { '@type': 'Organization', '@id': 'https://mcpindex.ai/#org' },
+    // The fourth field of Google's image-metadata set. Without it the item is valid but
+    // not eligible for the licensable-image treatment - which is the whole reason the
+    // other three are here.
+    copyrightNotice: COPYRIGHT_NOTICE,
+    copyrightHolder: { '@type': 'Organization', '@id': 'https://mcpindex.ai/#org' },
   };
 
   return (

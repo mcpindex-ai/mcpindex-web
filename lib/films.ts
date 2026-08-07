@@ -27,6 +27,27 @@ const THUMBNAILS: Record<string, string> = {
   howto: '/promo/poster-demo.jpg',
 };
 
+/**
+ * Alt text, deliberately kept NEXT TO the poster paths so re-rendering a poster puts the
+ * description under the same edit. These are designed frames carrying real copy, so the alt
+ * describes what the frame SAYS - "video thumbnail" would tell a screen-reader user nothing
+ * that the surrounding link text does not already say.
+ */
+const POSTER_ALT: Record<string, string> = {
+  concept:
+    'Film poster reading "205 tools declared read-only", above a verdict card showing an ' +
+    'annotation flip of readOnlyHint from true to false, marked INCONCLUSIVE.',
+  howto:
+    'Film poster reading "The gate is two commands", above the two install commands: ' +
+    'uv tool install mcpindex-gate, then mcpindex-config-wire.',
+};
+
+export function posterAltFor(id: string): string {
+  const a = POSTER_ALT[id];
+  if (!a) throw new Error(`films: no poster alt for "${id}"`);
+  return a;
+}
+
 export const FILM_IDS = ['concept', 'howto'] as const;
 export type FilmId = (typeof FILM_IDS)[number];
 
