@@ -101,7 +101,7 @@ export default async function Home() {
         '@type': 'SoftwareSourceCode',
         name: 'mcpindex drift gate',
         description:
-          'An in-path trust gate that pins every MCP tool contract and HOLDs a call the moment the contract silently changes, and grades the blast radius of every call (read, write, delete, send; reversible or not) before your agent acts. Deterministic and advisory - a contract-diff and a blast-radius label, not a safety verdict.',
+          'An in-path trust gate that pins the contract of every tool you wire through it and HOLDs a call the moment that contract silently changes, and grades the blast radius of every call it sees (read, write, delete, send; reversible or not) before your agent acts. Deterministic and advisory - a contract-diff and a blast-radius label, not a safety verdict.',
         url: 'https://mcpindex.ai',
         codeRepository: 'https://github.com/mcpindex-ai/mcpindex-web',
         runtimePlatform: 'Node.js',
@@ -130,7 +130,7 @@ export default async function Home() {
             name: 'What happens when an MCP tool contract silently changes?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: `mcpindex pins every MCP tool contract on first sight and HOLDs the call the instant that contract drifts-before your agent acts. Zero credentials. One-click gate install in ${GATE_HOSTS_SHORT}.`,
+              text: `mcpindex pins the contract of every tool you wire through it on first sight and HOLDs the call the instant that contract drifts-before your agent acts. Zero credentials. One-click gate install in ${GATE_HOSTS_SHORT}.`,
             },
           },
           {
@@ -184,7 +184,7 @@ export default async function Home() {
             </span>
           </h1>
           <p className="hero-rise hero-rise-3 mt-6 text-[16px] sm:text-[17.5px] leading-[1.5] text-[var(--color-cite)]">
-            It <strong>pins every MCP tool contract</strong> on first sight and{' '}
+            It <strong>pins the contract of every tool you wire through it</strong> on first sight and{' '}
             <strong>HOLDs the call</strong> the instant that contract drifts-before your
             agent acts. Zero credentials. One-click gate install in {GATE_HOSTS_SHORT}.
           </p>

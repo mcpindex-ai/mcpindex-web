@@ -24,7 +24,6 @@ import {
   DIRECTORY_ARGS,
   CURL_INSTALL,
   INSPECT_INSTALL,
-  UV_INSTALL,
   UV_INSTALL_WIRED,
   PIP_INSTALL,
   DIRECTORY_NPX,
@@ -232,7 +231,9 @@ export type MethodRow = {
 
 export const METHOD_MATRIX: MethodRow[] = [
   { surface: 'Gate (in-path)', method: 'Install script', command: CURL_INSTALL },
-  { surface: 'Gate (in-path)', method: 'uv', command: UV_INSTALL },
+  // The WIRED one-liner, same as GATE_METHODS[0]. The bare install used to sit here, so
+  // one page rendered two different uv commands and the matrix taught the broken one.
+  { surface: 'Gate (in-path)', method: 'uv', command: UV_INSTALL_WIRED },
   { surface: 'Gate (in-path)', method: 'pip', command: PIP_INSTALL },
   { surface: 'Gate (in-path)', method: 'SDK (TypeScript)', command: `npm i ${PACKAGES.sdkTs}` },
   { surface: 'Directory (advisory)', method: 'npx', command: DIRECTORY_NPX },

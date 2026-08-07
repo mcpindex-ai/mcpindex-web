@@ -91,7 +91,7 @@ export default function DocsPage() {
           </p>
           <pre className="mt-3 overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[12px] leading-snug">
             <code>{`# auditable path - install the package, then run the wiring wizard
-uv tool install mcpindex-gate
+uv tool install mcpindex-gate && mcpindex-config-wire
 
 # convenience: the same install + host-config rewrite in one command.
 # inspect it before you run it - it only rewrites your MCP host config,
