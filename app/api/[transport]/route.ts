@@ -346,9 +346,9 @@ export const maxDuration = 60;
 // try/caught - and only builds a Response once that internal call gets around to calling
 // `res.writeHead(...)`. If it throws, or anything else stops it from ever calling writeHead,
 // the Response promise this whole route awaits simply never settles: nothing rejects it,
-// nothing bounds it. Before this, the ONLY backstop was the platform's own maxDuration above -
-// 37 requests over 3 weeks rode that gap silently to `Vercel Runtime Timeout Error` with no
-// error response ever sent to the caller and no diagnostic beyond "it hung to death."
+// nothing bounds it. Before this, nothing stood between that and the platform's own maxDuration
+// above - 37 requests over 3 weeks rode that gap silently to `Vercel Runtime Timeout Error` with
+// no error response ever sent to the caller and no diagnostic beyond "it hung to death."
 //
 // 55s, not 60s: armMcpWatchdog's own near-kill checkpoint fires at 50s (SLOW_MS/NEAR_KILL_MS
 // in lib/mcpWatchdog.ts), so this settles just after that warning has already logged, and
