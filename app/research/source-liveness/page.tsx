@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { Figure } from '@/components/Figure';
+import { CiteBibtex } from '@/components/CiteBibtex';
 import { renderDiagram } from '@/components/diagrams';
 import type { Metadata } from 'next';
+import { CITATION_SOURCE_LIVENESS } from '@/lib/citations';
 import { pageMetadata } from '@/lib/seo';
 import { SOURCE_LIVENESS_CENSUS as FIG } from '@/lib/sourceLiveness';
 
@@ -177,21 +179,13 @@ export default function SourceLivenessPage() {
       <h2 className="mt-12 t-h2 font-medium text-[var(--color-ink)]">Cite this</h2>
       <p className="mt-4 text-[15px] leading-[1.65] text-[var(--color-cite)]">
         The full dataset — aggregates, the per-server list, and the
-        OpenTimestamps proof — is archived with a DOI and a CC-BY-4.0 license:
+        OpenTimestamps proof — is archived with a DOI and a CC-BY-4.0 license.
+        Paste the BibTeX into your{' '}
+        <span className="font-mono text-[13px]">.bib</span> file:
       </p>
-      <p className="mt-3 text-[14px] leading-[1.6] text-[var(--color-cite)] font-mono break-words">
-        Bharti, G. (2026). <em>mcpindex Source Liveness — Baseline v1</em>. Zenodo.{' '}
-        <a
-          href="https://doi.org/10.5281/zenodo.21501868"
-          target="_blank"
-          rel="noreferrer"
-          className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
-        >
-          https://doi.org/10.5281/zenodo.21501868
-        </a>
-      </p>
-      <p className="mt-2 text-[13px] leading-[1.6] text-[var(--color-mute)]">
-        Cite the concept DOI{' '}
+      <CiteBibtex citation={CITATION_SOURCE_LIVENESS} className="mt-4" />
+      <p className="mt-3 text-[13px] leading-[1.6] text-[var(--color-mute)]">
+        Concept DOI (series):{' '}
         <a
           href="https://doi.org/10.5281/zenodo.21501867"
           target="_blank"
@@ -199,8 +193,17 @@ export default function SourceLivenessPage() {
           className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
         >
           10.5281/zenodo.21501867
-        </a>{' '}
-        to reference the series across editions.
+        </a>
+        . First-edition version DOI:{' '}
+        <a
+          href="https://doi.org/10.5281/zenodo.21501868"
+          target="_blank"
+          rel="noreferrer"
+          className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+        >
+          10.5281/zenodo.21501868
+        </a>
+        .
       </p>
 
       <p className="mt-10 text-[14px] leading-[1.6] text-[var(--color-mute)]">
