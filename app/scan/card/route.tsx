@@ -1,8 +1,16 @@
 import { ImageResponse } from 'next/og';
 
-// Shareable scan card. Carries AGGREGATE COUNTS ONLY (?tools&irrev&egress&unpinned),
-// never tool names or schemas, so it is safe to make public. Satori constraint:
-// every multi-child node sets display:flex; the mark is inline SVG (no glyph fonts).
+// Shareable scan card. Carries AGGREGATE COUNTS ONLY - never server names, tool
+// names, URLs or schemas - so it is safe to make public.
+//
+// Two shapes, because /scan produces two grades of report:
+//   ?tools&irrev&egress&unpinned    a tools/list dump  -> per-tool blast radius
+//   ?servers&remote&local&creds     an mcp.json        -> what you are connected to
+// The mode is chosen by the PRESENCE of `servers`, so links minted before the
+// server card existed keep rendering exactly as they did - they are served
+// immutable and may already be sitting in someone's timeline.
+//
+// Satori constraint: every multi-child node sets display:flex; the mark is inline SVG (no glyph fonts).
 // (This is a route handler, not the opengraph-image file convention, so `alt`/
 // `contentType` exports would be inert; ImageResponse sets the content type itself.)
 
@@ -49,10 +57,22 @@ function Stat({ n, label, accent }: { n: number; label: string; accent?: boolean
 
 export function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const tools = clampInt(searchParams.get('tools'));
-  const irrev = clampInt(searchParams.get('irrev'));
-  const egress = clampInt(searchParams.get('egress'));
-  const unpinned = clampInt(searchParams.get('unpinned'));
+  const serverLevel = searchParams.has('servers');
+
+  const headline = serverLevel ? 'What my agent is connected to' : 'What my agent can actually do';
+  const stats: { n: number; label: string; accent?: boolean }[] = serverLevel
+    ? [
+        { n: clampInt(searchParams.get('servers')), label: 'MCP servers' },
+        { n: clampInt(searchParams.get('remote')), label: 'can change on me', accent: true },
+        { n: clampInt(searchParams.get('local')), label: 'local processes' },
+        { n: clampInt(searchParams.get('creds')), label: 'carry a credential' },
+      ]
+    : [
+        { n: clampInt(searchParams.get('tools')), label: 'tools' },
+        { n: clampInt(searchParams.get('irrev')), label: 'can’t be undone' },
+        { n: clampInt(searchParams.get('egress')), label: 'off-machine' },
+        { n: clampInt(searchParams.get('unpinned')), label: 'unpinned', accent: true },
+      ];
 
   return new ImageResponse(
     (
@@ -81,13 +101,12 @@ export function GET(req: Request) {
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', fontSize: '34px', color: INK, marginBottom: '22px', maxWidth: '900px' }}>
-            What my agent can actually do
+            {headline}
           </div>
           <div style={{ display: 'flex', border: `2px solid ${RULE}` }}>
-            <Stat n={tools} label="tools" />
-            <Stat n={irrev} label="can’t be undone" />
-            <Stat n={egress} label="off-machine" />
-            <Stat n={unpinned} label="unpinned" accent />
+            {stats.map((s) => (
+              <Stat key={s.label} n={s.n} label={s.label} accent={s.accent} />
+            ))}
           </div>
         </div>
 

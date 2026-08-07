@@ -89,6 +89,13 @@ type Preflight =
   | { readonly state: 'ready'; readonly parsed: string }
   | { readonly state: 'problem'; readonly text: string; readonly offerClear?: boolean };
 
+/** Touch, in the only sense that matters here: no hardware keyboard, and an
+ * on-screen one that covers the page when an input takes focus. Read at call
+ * time, never at module load - this component server-renders. */
+function isCoarsePointer(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches === true;
+}
+
 function preflightOf(analysis: Analysis | null): Preflight {
   if (analysis === null) return { state: 'empty' };
   if (analysis.kind === 'summary') {
@@ -171,7 +178,10 @@ export function ScanTool() {
 
   function fail(message: string) {
     setNotice({ tone: 'error', text: message });
-    textRef.current?.focus();
+    // Focus is a help on a desktop (the keyboard paste is one keystroke away) and
+    // a hindrance on a phone, where it throws up the on-screen keyboard over the
+    // message the user is trying to read.
+    if (!isCoarsePointer()) textRef.current?.focus();
   }
 
   /** The commitment moment. Takes the value explicitly: callers that just set the
@@ -205,23 +215,36 @@ export function ScanTool() {
     reader.readAsText(file);
   }
 
-  // Read the clipboard on an explicit click. Three browsers, three behaviors:
-  // Chrome leaves readText() PENDING while its permission prompt is up (and
-  // forever if the prompt is dismissed), Safari needs the gesture, Firefox never
-  // exposes readText to page scripts at all. So: never block on the promise -
-  // after a beat, re-enable the button, say what's happening, and focus the box
-  // so the keyboard paste is one keystroke away in every one of those cases.
+  // Read the clipboard on an explicit press. Four behaviors to survive:
+  //
+  //   Chrome   leaves readText() PENDING while its permission prompt is up, and
+  //            pending forever if the prompt is dismissed.
+  //   Safari   (incl. iOS) resolves only after the user taps its own native
+  //            Paste callout, which can sit there for several seconds.
+  //   Firefox  never exposes readText to page scripts at all - it rejects.
+  //   iOS      has no ⌘V, and focusing an input raises the keyboard, which can
+  //            DISMISS the very Paste callout we are waiting on.
+  //
+  // So: never block on the promise, and on touch never steal focus or talk about
+  // keystrokes. The nudge waits longer there, because tapping through a native
+  // callout is slower than clicking Allow with a mouse.
   async function pasteFromClipboard() {
+    const touch = isCoarsePointer();
     setNotice(null);
     setReading(true);
-    const nudge = setTimeout(() => {
-      setReading(false);
-      setNotice({
-        tone: 'info',
-        text: 'waiting on your browser - click Allow on the clipboard prompt, or press ⌘V (Ctrl+V) in the box',
-      });
-      textRef.current?.focus();
-    }, 1200);
+    const nudge = setTimeout(
+      () => {
+        setReading(false);
+        setNotice({
+          tone: 'info',
+          text: touch
+            ? 'waiting on your browser - tap Paste when it asks, or touch and hold the box and tap Paste'
+            : 'waiting on your browser - click Allow on the clipboard prompt, or press ⌘V (Ctrl+V) in the box',
+        });
+        if (!touch) textRef.current?.focus();
+      },
+      touch ? 6000 : 1200,
+    );
 
     try {
       const clip = await navigator.clipboard.readText();
@@ -231,11 +254,18 @@ export function ScanTool() {
       }
       // A late "Allow" must not clobber whatever the user did while waiting.
       if (!textRef.current?.value.trim()) {
-        selectAfterFill.current = true;
+        // Selecting exists to stop a stray ⌘V stacking a second copy - a keyboard
+        // hazard that does not exist on touch, where select() only raises a
+        // selection callout over the text the user wants to read.
+        selectAfterFill.current = !touch;
         load(clip, 'your clipboard');
       }
     } catch {
-      fail('your browser blocked clipboard access - the box is focused, press ⌘V (Ctrl+V) to paste');
+      fail(
+        touch
+          ? 'your browser would not hand over the clipboard - touch and hold the box below, then tap Paste'
+          : 'your browser blocked clipboard access - the box is focused, press ⌘V (Ctrl+V) to paste',
+      );
     } finally {
       clearTimeout(nudge);
       setReading(false);
@@ -288,9 +318,17 @@ export function ScanTool() {
   const summary = shown.kind === 'summary' ? shown.data : null;
   const c = summary?.counts;
 
-  const cardPath = c
-    ? `/scan/card?tools=${c.tools}&irrev=${c.irreversible}&egress=${c.egressExternal}&unpinned=${c.unpinned}`
-    : '';
+  // Counts only - no server names, tool names or URLs ever reach the link.
+  const cardPath = !c
+    ? ''
+    : summary?.level === 'tool'
+      ? `/scan/card?tools=${c.tools}&irrev=${c.irreversible}&egress=${c.egressExternal}&unpinned=${c.unpinned}`
+      : `/scan/card?servers=${c.servers}&remote=${c.remoteServers}&local=${c.localServers}&creds=${c.serversWithSecrets}`;
+  const cardAlt =
+    summary?.level === 'tool'
+      ? `mcpindex scan: ${c?.tools} tools, ${c?.irreversible} irreversible, ${c?.egressExternal} off-machine, ${c?.unpinned} unpinned`
+      : `mcpindex scan: ${c?.servers} MCP servers, ${c?.remoteServers} remote, ${c?.localServers} local, ${c?.serversWithSecrets} carrying a credential`;
+  const hasCard = !!c && (summary?.level === 'tool' ? c.tools > 0 : c.servers > 0);
 
   return (
     <div
@@ -327,8 +365,13 @@ export function ScanTool() {
           <button type="button" onClick={() => fileRef.current?.click()} className={BTN}>
             choose a file
           </button>
+          {/* Swapped in CSS, not in JS: a coarse pointer has nothing to drag with,
+              but branching on it during render would break hydration. */}
           <span className="font-mono text-[11px] text-[var(--color-mute)]">
-            {dragOver ? 'drop it anywhere in this panel' : 'or drop your mcp.json anywhere in this panel'}
+            <span className="[@media(pointer:coarse)]:hidden">
+              {dragOver ? 'drop it anywhere in this panel' : 'or drop your mcp.json anywhere in this panel'}
+            </span>
+            <span className="hidden [@media(pointer:coarse)]:inline">or open it with “choose a file”</span>
           </span>
         </div>
         <input
@@ -469,7 +512,7 @@ export function ScanTool() {
             </>
           ) : (
             <>
-              <Status tone="mute">nothing to scan yet</Status> paste, drop, or choose your mcp.json above
+              <Status tone="mute">nothing to scan yet</Status> add your mcp.json above
             </>
           )}
         </p>
@@ -673,14 +716,14 @@ export function ScanTool() {
             )}
           </div>
 
-          {/* share card (tool-level, counts only) */}
-          {summary.level === 'tool' && c.tools > 0 && (
+          {/* share card - both grades of report, counts only */}
+          {hasCard && (
             <div className="rule-t px-5 py-4">
               <div className={`${LABEL} mb-3`}>share these numbers</div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={cardPath}
-                alt={`mcpindex scan: ${c.tools} tools, ${c.irreversible} irreversible, ${c.egressExternal} off-machine, ${c.unpinned} unpinned`}
+                alt={cardAlt}
                 className="w-full max-w-[520px] border border-[var(--color-rule)]"
                 width={1200}
                 height={630}
