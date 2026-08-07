@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { loadServers } from '@/lib/registry';
 import { rankByQuality } from '@/lib/quality';
+import { livenessLookup } from '@/lib/sourceLiveness';
 import { ALL_CATEGORIES, CATEGORY_LABELS } from '@/lib/categorize';
 import { listScreened, listFixtures } from '@/lib/verdicts';
 import { computeBadgeState } from '@/lib/badge';
@@ -45,9 +46,9 @@ export default async function BestCategory(
   if (category === 'filesystem') return <FilesystemEvidence />;
 
   const label = CATEGORY_LABELS[category] ?? category;
-  const all = await loadServers();
+  const [all, livenessOf] = await Promise.all([loadServers(), livenessLookup()]);
   const inCategory = all.filter((s) => s.category === category);
-  const ranked = rankByQuality(inCategory).slice(0, 20);
+  const ranked = rankByQuality(inCategory, livenessOf).slice(0, 20);
 
   // FAQ JSON-LD for answer-engine optimization
   const faqLd = {
@@ -79,7 +80,7 @@ export default async function BestCategory(
         name: 'How is the ranking calculated?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Five-dimension composite score: freshness (recency of update), completeness (metadata populated), installability (runnable package or remote URL present), documentation (env vars described, repo present), and semver stability.',
+          text: 'Five-dimension composite score: freshness (recency of update), completeness (metadata populated), installability (runnable package or remote URL present), documentation (env vars described, repo present), and semver stability. A listing whose source repository the liveness census has confirmed unreachable earns no repository-derived credit in completeness or documentation. Full method: https://mcpindex.ai/methodology',
         },
       },
     ],

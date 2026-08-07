@@ -17,6 +17,7 @@
 
 import type { NextRequest } from 'next/server';
 import { loadServers } from '@/lib/registry';
+import { livenessLookup } from '@/lib/sourceLiveness';
 import { rankServers, toRecommendations } from '@/lib/recommend';
 import { getScreenedVerdict } from '@/lib/verdicts';
 import { ADVISORY_FLOOR } from '@/lib/honest-limits';
@@ -41,8 +42,8 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: 'task too long' }, { status: 400 });
   }
 
-  const servers = await loadServers();
-  const ranked = rankServers(servers, task, 3);
+  const [servers, livenessOf] = await Promise.all([loadServers(), livenessLookup()]);
+  const ranked = rankServers(servers, task, livenessOf, 3);
   const recommendations = toRecommendations(ranked);
 
   // The verdict is for rank-1 - the server the agent would actually reach for.

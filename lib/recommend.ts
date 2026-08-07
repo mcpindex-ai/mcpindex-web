@@ -9,9 +9,18 @@
 import type { IndexedServer } from './types';
 import { search, type SearchHit } from './search';
 import { computeQuality } from './quality';
+// VALUE import, so this module is transitively `server-only`. Its unit tests run under
+// --conditions=react-server, which satisfies that guard.
+import { sourceLivenessField, type SourceLiveness } from './sourceLiveness';
 import { buildProvenance, RANKING_BASIS, type Provenance } from './provenance';
 
-export type RankedServer = { hit: SearchHit; quality: number; composite: number };
+export type RankedServer = {
+  hit: SearchHit;
+  quality: number;
+  composite: number;
+  /** Carried, not discarded: toRecommendations() republishes it. See below. */
+  liveness: SourceLiveness | null;
+};
 
 export type Recommendation = {
   rank: number;
@@ -22,25 +31,34 @@ export type Recommendation = {
   category: string;
   qualityScore: number;
   reasoning: string;
+  /** Present only when the source-liveness census has a corroborated entry. */
+  sourceLiveness?: SourceLiveness & { recommendation: string };
   installs: { npm?: string; pypi?: string; docker?: string; remote?: string };
   url: string;
 };
 
+/**
+ * `livenessOf` reaches the IN-PATH gate, not just the directory: /api/v1/preflight ranks
+ * with this function, so a listing whose source is corroborated-unreachable must not be
+ * floated to rank-1 on quality credit for a repository that is not there.
+ */
 export function rankServers(
   servers: IndexedServer[],
   task: string,
+  livenessOf: (s: IndexedServer) => SourceLiveness | null,
   limit = 3,
 ): RankedServer[] {
   const hits = search(servers, task, { limit: 10 });
   return hits
     .map((hit) => {
-      const quality = computeQuality(hit.server).score;
+      const liveness = livenessOf(hit.server);
+      const quality = computeQuality(hit.server, liveness).score;
       // Relevance-dominant: search score leads; QS*0.1 (0-10, ~1.5 term-fields)
       // only breaks ties between near-equal-relevance servers. QS is 0-100, so
       // the old 0.3*QS swamped the small search score and floated generic
       // high-QS servers to rank-1 (validated 2026-06-01, held-out intent set).
       const composite = hit.score + quality * 0.1;
-      return { hit, quality, composite };
+      return { hit, quality, composite, liveness };
     })
     .sort((a, b) => {
       if (b.composite !== a.composite) return b.composite - a.composite;
@@ -84,8 +102,15 @@ export function recommendationProvenance(): Provenance {
   });
 }
 
+/**
+ * The caveat has to travel with the number here more than anywhere else. This payload
+ * feeds /api/v1/recommend, the /api/v1/preflight in-path gate and the MCP
+ * recommend_mcp_for_task tool - an agent picking what to execute. Publishing a
+ * qualityScore that liveness silently reduced by 10, with nothing saying why, is the
+ * same defect as publishing an undocked score: the reader cannot see the correction.
+ */
 export function toRecommendations(ranked: RankedServer[]): Recommendation[] {
-  return ranked.map(({ hit, quality }, i) => ({
+  return ranked.map(({ hit, quality, liveness }, i) => ({
     rank: i + 1,
     slug: hit.server.slug,
     name: hit.server.name,
@@ -101,5 +126,6 @@ export function toRecommendations(ranked: RankedServer[]): Recommendation[] {
       remote: hit.server.remoteUrl,
     },
     url: `https://mcpindex.ai/server/${hit.server.slug}`,
+    ...sourceLivenessField(hit.server, liveness),
   }));
 }

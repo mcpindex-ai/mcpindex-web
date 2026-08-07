@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { loadServers } from '@/lib/registry';
 import { toListItem } from '@/lib/projection';
+import { livenessLookup } from '@/lib/sourceLiveness';
 
 export const revalidate = 3600;
 
@@ -15,10 +16,10 @@ export async function GET(req: NextRequest) {
   const rawLimit = parseInt(req.nextUrl.searchParams.get('limit') ?? '', 10);
   const limit = Number.isFinite(rawLimit) ? Math.min(250, Math.max(1, rawLimit)) : 100;
 
-  const all = await loadServers();
+  const [all, livenessOf] = await Promise.all([loadServers(), livenessLookup()]);
   const pool = category ? all.filter((s) => s.category === category) : all;
   const servers = pool
-    .map(toListItem)
+    .map((s) => toListItem(s, livenessOf(s)))
     // Quality desc; slug asc as a deterministic tie-break so the page is stable.
     .sort((a, b) => b.qualityScore - a.qualityScore || a.slug.localeCompare(b.slug))
     .slice(0, limit);

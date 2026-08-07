@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
 import { loadServers } from '@/lib/registry';
 import { rankByQuality } from '@/lib/quality';
+import { livenessLookup } from '@/lib/sourceLiveness';
 import { listScreened } from '@/lib/verdicts';
 import { CATEGORY_LABELS } from '@/lib/categorize';
 
@@ -44,8 +45,12 @@ function VerdictTag({ dec }: { dec?: string }) {
 }
 
 export default async function Leaderboard() {
-  const [servers, screened] = await Promise.all([loadServers(), listScreened()]);
-  const ranked = rankByQuality(servers).slice(0, 50);
+  const [servers, screened, livenessOf] = await Promise.all([
+    loadServers(),
+    listScreened(),
+    livenessLookup(),
+  ]);
+  const ranked = rankByQuality(servers, livenessOf).slice(0, 50);
   const verdictBySlug = new Map(
     screened.map((s) => [s.slug, s.verdict.directive.decision]),
   );

@@ -55,6 +55,7 @@ function makeServer(over: Partial<IndexedServer>): IndexedServer {
 test('repo-backed server → SoftwareSourceCode, no app-family type', () => {
   const ld = buildServerJsonLd(
     makeServer({ repositoryUrl: 'https://github.com/acme/x', npmPackage: 'x' }),
+    null,
   );
   assert.equal(ld['@type'], 'SoftwareSourceCode');
   assert.equal(ld.codeRepository, 'https://github.com/acme/x');
@@ -65,13 +66,14 @@ test('repo-backed server → SoftwareSourceCode, no app-family type', () => {
 test('remote-only server → WebAPI, no app-family type', () => {
   const ld = buildServerJsonLd(
     makeServer({ remoteUrl: 'https://api.example.com/mcp', hasRemote: true }),
+    null,
   );
   assert.equal(ld['@type'], 'WebAPI');
   assert.deepEqual(collectTypes(ld).filter((t) => APP_FAMILY.has(t)), []);
 });
 
 test('server with neither repo nor remote → WebPage', () => {
-  const ld = buildServerJsonLd(makeServer({}));
+  const ld = buildServerJsonLd(makeServer({}), null);
   assert.equal(ld['@type'], 'WebPage');
 });
 
@@ -79,6 +81,7 @@ test('unsafe repo scheme is dropped, falls through to next shape', () => {
   // javascript: URL must not become codeRepository nor a SoftwareSourceCode node.
   const ld = buildServerJsonLd(
     makeServer({ repositoryUrl: 'javascript:alert(1)', remoteUrl: 'https://api.example.com/mcp' }),
+    null,
   );
   assert.equal(ld['@type'], 'WebAPI');
   assert.ok(!JSON.stringify(ld).includes('javascript:'));
@@ -86,12 +89,12 @@ test('unsafe repo scheme is dropped, falls through to next shape', () => {
 
 test('runtimePlatform derived only from recorded packaging', () => {
   assert.equal(
-    buildServerJsonLd(makeServer({ repositoryUrl: 'https://github.com/a/b', pypiPackage: 'b' }))
+    buildServerJsonLd(makeServer({ repositoryUrl: 'https://github.com/a/b', pypiPackage: 'b' }), null)
       .runtimePlatform,
     'Python',
   );
   // No package recorded → property omitted entirely, never guessed.
-  const ld = buildServerJsonLd(makeServer({ repositoryUrl: 'https://github.com/a/b' }));
+  const ld = buildServerJsonLd(makeServer({ repositoryUrl: 'https://github.com/a/b' }), null);
   assert.equal('runtimePlatform' in ld, false);
 });
 
@@ -105,7 +108,7 @@ test('entire registry snapshot renders zero app-family types', async () => {
   let offenders = 0;
   let firstOffender = '';
   for (const s of servers) {
-    const ld = buildServerJsonLd(s);
+    const ld = buildServerJsonLd(s, null);
     seenShapes.add(String(ld['@type']));
     const bad = collectTypes(ld).filter((t) => APP_FAMILY.has(t));
     if (bad.length) {
@@ -121,4 +124,56 @@ test('entire registry snapshot renders zero app-family types', async () => {
   for (const shape of ['SoftwareSourceCode', 'WebAPI', 'WebPage']) {
     assert.ok(seenShapes.has(shape), `expected snapshot to exercise ${shape}; saw ${[...seenShapes]}`);
   }
+});
+
+// --- source liveness in the machine-readable block ---------------------------------
+// The visible banner and the meta description already carry this fact. This block is a
+// third surface and, per the comment in serverJsonLd.ts, the ONLY one an answer engine
+// reads — so the same fact has to survive here or the page tells machines something the
+// page tells humans is false.
+
+const DEAD: import('./sourceLiveness').SourceLiveness = {
+  state: 'unavailable',
+  url: 'https://github.com/acme/x',
+  last_verified_accessible: null,
+  confirmed_unavailable: '2026-07-23',
+  evidence: { http_status: 404, vantages: 2, methods: ['github-api', 'github-web'] },
+};
+
+test('unreachable repo is withdrawn from sameAs but retained as codeRepository', () => {
+  const s = makeServer({ repositoryUrl: 'https://github.com/acme/x', websiteUrl: 'https://acme.dev' });
+  const ld = buildServerJsonLd(s, DEAD);
+
+  // sameAs asserts identity equivalence; a 404 indicates nothing, so it goes.
+  assert.deepEqual(ld.sameAs, ['https://acme.dev']);
+  // codeRepository is what the registry DECLARES. We annotate, we do not edit.
+  assert.equal(ld.codeRepository, 'https://github.com/acme/x');
+  assert.equal(ld['@type'], 'SoftwareSourceCode');
+});
+
+test('reachable repo keeps its sameAs entry', () => {
+  const s = makeServer({ repositoryUrl: 'https://github.com/acme/x', websiteUrl: 'https://acme.dev' });
+  const ld = buildServerJsonLd(s, null);
+  assert.deepEqual(ld.sameAs, ['https://github.com/acme/x', 'https://acme.dev']);
+});
+
+test('creativeWorkStatus states the observation and keeps the hedge', () => {
+  const status = String(
+    buildServerJsonLd(makeServer({ repositoryUrl: 'https://github.com/acme/x' }), DEAD)
+      .creativeWorkStatus,
+  );
+  assert.match(status, /not a safety verdict/);
+  assert.match(status, /not publicly accessible \(HTTP 404, 2 independent vantages, confirmed 2026-07-23\)/);
+  assert.match(status, /may be private or relocated/);
+  // Never the inference. A 404 cannot distinguish deleted from deliberately private,
+  // and this string is a public statement about a third party's work.
+  for (const banned of [/\bdead\b/i, /\bgone\b/i, /\babandoned\b/i, /\bdeleted\b/i]) {
+    assert.doesNotMatch(status, banned);
+  }
+});
+
+test('unflagged listings carry no reachability claim at all', () => {
+  const status = String(buildServerJsonLd(makeServer({}), null).creativeWorkStatus);
+  // Absence of evidence must not render as "reachable" — there is simply nothing to say.
+  assert.doesNotMatch(status, /accessible|reachab/i);
 });
