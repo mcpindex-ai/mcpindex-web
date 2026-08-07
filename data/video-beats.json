@@ -1,0 +1,184 @@
+{
+  "concept": {
+    "id": "concept",
+    "title": "205",
+    "slug": "mcpindex-promo",
+    "duration": 112,
+    "words": 297,
+    "beats": [
+      {
+        "id": "A1",
+        "title": "THE HOOK",
+        "start": 0,
+        "end": 12,
+        "words": 31,
+        "vo": "Two hundred and five tools told your agent they were read only. Then that hint flipped to write, delete, or send. Same name in your config. Same key. No version bump.",
+        "captions": [
+          "205 tools declared read-only · as of 2026-08-05",
+          "Then the hint flipped: write · delete · send.",
+          "Same config. Same key. MCP tools can change with no version bump."
+        ]
+      },
+      {
+        "id": "A2",
+        "title": "WHAT A CONTRACT IS",
+        "start": 12,
+        "end": 21,
+        "words": 20,
+        "vo": "A contract is what a tool tells your agent it does. Its name, its parameters, what it promises to touch.",
+        "captions": [
+          "contract = what a tool tells your agent it does",
+          "23,617 tools drifted · 6,882 changed a contract field we surface",
+          "1,170 of 4,869 servers ever reachable · 3,892 safety-relevant, not confirmed vulnerabilities",
+          "as of 2026-08-05"
+        ]
+      },
+      {
+        "id": "A3",
+        "title": "WHY NOTHING YOU ALREADY HAVE CATCHES IT",
+        "start": 21,
+        "end": 42,
+        "words": 61,
+        "vo": "Access control answers who may call a tool, not whether it still does what it declared. And a server launched at latest re-resolves every time, so there is nothing pinned to begin with. Where there is, across the remote servers we crawl, nearly three quarters of the drifting tools we could check had only ever changed with the server's version unchanged.",
+        "captions": [
+          "Auth answers WHO may call.",
+          "Not WHETHER it still does what it declared.",
+          "/scan: \"4,982 of 6,882 drifting tools have only ever changed with their declared version unchanged, where version evidence exists\"",
+          "check your mcp.json: does it say @latest?",
+          "mcpindex.ai/ledger · as of 2026-08-05",
+          "pinning a package freezes the code, not a remote server's contract",
+          "mcpindex.ai/scan · as of 2026-08-05"
+        ]
+      },
+      {
+        "id": "A4",
+        "title": "PIN, DIFF, THREE OUTCOMES",
+        "start": 42,
+        "end": 64,
+        "words": 56,
+        "vo": "The gate pins each tool's contract on first sight, then diffs it on every call. An added optional parameter proceeds without interrupting you. A change that would surprise your agent stops the call on your machine. When only behaviour could settle the question, the gate refuses to guess. It returns inconclusive, and the call still stops.",
+        "captions": [
+          "Pin on first sight.",
+          "added-optional-param → proceeds · baseline re-pinned automatically",
+          "Review · Re-pin · Reject",
+          "mcpindex.ai/install"
+        ]
+      },
+      {
+        "id": "A5",
+        "title": "TWO LIMITS, STATED PLAINLY",
+        "start": 64,
+        "end": 85,
+        "words": 61,
+        "vo": "Two limits. If a tool was already lying when you pinned it, the gate pins the lie: your baseline is what you first saw. And a read only hint is self-declared, so behind some of those two hundred and five was a maintainer fixing a wrong label. The gate cannot tell which, so it stops the call instead of judging it.",
+        "captions": [
+          "The baseline is what you first saw.",
+          "readOnlyHint is self-declared. A maintainer fixing a wrong label flips the same bit.",
+          "three outcomes, not two: PROCEED · HOLD · INCONCLUSIVE",
+          "annotation flip → INCONCLUSIVE · fail-closed · the call still stops"
+        ]
+      },
+      {
+        "id": "A6",
+        "title": "WHAT IT IS, AND IS NOT",
+        "start": 85,
+        "end": 100,
+        "words": 41,
+        "vo": "It is a contract diff, not a safety verdict. It tells you what changed, never that the change is safe. What makes that worth having is where it sits: in the call path, so an advisory judgment still stops the call.",
+        "captions": [
+          "Contract-diff, not a safety verdict.",
+          "Advisory judgment. In-path HOLD.",
+          "Deterministic diff. No model in the default path.",
+          "Your host. Zero credential custody.",
+          "MIT licensed · readable Python, no compiled blob"
+        ]
+      },
+      {
+        "id": "A7",
+        "title": "CLOSE",
+        "start": 100,
+        "end": 112,
+        "words": 27,
+        "vo": "Free, no account, runs on your machine. Two commands to install it, one command to take it back out. Start at MCP index dot A I slash install.",
+        "captions": [
+          "uv tool install mcpindex-gate",
+          "mcpindex-config-wire",
+          "default build egresses nothing",
+          "free · no account · reversible",
+          "mcpindex.ai/install",
+          "whichever way you build, there is a version for you →"
+        ]
+      }
+    ]
+  },
+  "howto": {
+    "id": "howto",
+    "title": "Your Version",
+    "slug": "mcpindex-demo",
+    "duration": 79,
+    "words": 204,
+    "beats": [
+      {
+        "id": "B1",
+        "title": "INSTALL",
+        "start": 0,
+        "end": 28,
+        "words": 72,
+        "vo": "The gate is two commands. If you run MCP servers in Claude Desktop, Cursor, VS Code, or five other hosts, the wizard rewrites each host config to route your servers through it, and marks every entry it touches so one command unwires it. Restart, and the first tools list pins every tool you have. Then nothing happens. That silence is the gate working. The next thing you see is your first hold.",
+        "captions": [
+          "no pipe-to-shell",
+          "Claude Desktop · Claude Code · Cursor · VS Code · Windsurf · Cline · Gemini CLI · Zed",
+          "every wired entry marked · mcpindex-config-wire unwire restores it in place",
+          "this is the gate. the directory client is a different job and cannot stop a call.",
+          "each ships more than one way. check the job, not the registry."
+        ]
+      },
+      {
+        "id": "B2",
+        "title": "THE ZERO-INSTALL TRY",
+        "start": 28,
+        "end": 41,
+        "words": 34,
+        "vo": "Not ready to put anything in your call path? Your MCP dot json holds your tokens. Paste it at MCP index dot A I slash scan: it runs in your browser and never leaves it.",
+        "captions": [
+          "mcpindex.ai/scan",
+          "runs in your browser · the file never leaves it",
+          "MCP servers connected · remote - can change on you · spawn a local process · carry a credential"
+        ]
+      },
+      {
+        "id": "B3",
+        "title": "BUILDING YOUR OWN",
+        "start": 41,
+        "end": 59,
+        "words": 51,
+        "vo": "Building your own agent? One line wraps an MCP session: the same diff and the same hold, in your code, with a pin you point at wherever you keep it. Turn on result scanning and it also reads what comes back before your agent does. Check the licence before you ship.",
+        "captions": [
+          "wrap(session, { pin, serverId }): pin · diff · HOLD",
+          "bare wrap(session) pins in memory only - it dies with the process",
+          "result scan: opt-in · withholds under strict",
+          "@mcp-index/sdk · PolyForm Noncommercial",
+          "mcpindex-gate · @mcp-index/mastra · MIT",
+          "the model never sees the gate. your code does.",
+          "mcpindex.ai/docs"
+        ]
+      },
+      {
+        "id": "B4",
+        "title": "CHECK THE RECORD, THEN CLOSE",
+        "start": 59,
+        "end": 79,
+        "words": 47,
+        "vo": "Every contract-affecting change we surface is public. So is our census of how much of the registry's own source has gone dark, our own listings included. The dataset is deposited with a D O I and the measurement is a preprint. Start at MCP index dot A I slash install.",
+        "captions": [
+          "/ledger · public",
+          "1 in 7 referenced repositories not publicly accessible · census of 2026-07-20",
+          "6,882 of the 23,617 tools we saw drift · description-only change is stored, not surfaced",
+          "DOI 10.5281/zenodo.21449150 · arXiv:2608.00997",
+          "questions: hello@mcpindex.ai",
+          "mcpindex.ai/install"
+        ]
+      }
+    ]
+  }
+}

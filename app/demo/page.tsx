@@ -5,6 +5,16 @@ import { PromoVideos } from '@/components/PromoVideos';
 const VIDEO_URL = 'https://mcpindex.ai/promo/mcpindex-promo.mp4';
 const EMBED_URL = 'https://mcpindex.ai/embed.html';
 
+/**
+ * /demo stays as the SHARE-AND-EMBED page so existing links and the Twitter player card
+ * keep working. It is NOT the film's indexable home any more.
+ *
+ * Two co-equal <video> elements on one URL is the textbook "could not determine the
+ * prominent video" case, and it is why Search Console reported "No video indexed: 1".
+ * Structured data here would not have fixed that - one film per page did. The films now
+ * live at /watch/<slug>, which carry the VideoObject, the Clip key moments and the visible
+ * transcript, and this page points at them rather than competing with them.
+ */
 export const metadata: Metadata = {
   title: 'Videos & embed',
   description:
@@ -44,7 +54,22 @@ export default function DemoPage() {
         How to use it - and share it.
       </h1>
       <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)]">
-        Overview and persona films below. For the interactive drift gate, use the{' '}
+        Overview and persona films below. Each also has its own page with key moments and a{' '}
+        <strong className="text-[var(--color-ink)]">full transcript</strong>:{' '}
+        <Link
+          href="/watch/mcp-tool-contract-drift"
+          className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+        >
+          can a tool change after your agent trusts it?
+        </Link>{' '}
+        and{' '}
+        <Link
+          href="/watch/install-the-mcpindex-gate"
+          className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+        >
+          how to install the gate
+        </Link>
+        . For the interactive drift gate, use the{' '}
         <Link
           href="/#demo"
           className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"

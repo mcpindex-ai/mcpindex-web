@@ -1,4 +1,6 @@
 import type { MetadataRoute } from 'next';
+import { allFilms, thumbnailFor, FILM_UPLOAD_DATE } from '@/lib/films';
+import { sitemapVideo } from '@/lib/video';
 import { loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { ALL_CATEGORIES } from '@/lib/categorize';
 import { browseTotalPages } from '@/lib/serversBrowse';
@@ -70,6 +72,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { url: `${base}/terms`, priority: 0.3, changeFrequency: 'yearly' },
       { url: `${base}/accessibility`, priority: 0.3, changeFrequency: 'yearly' },
     ];
+    // The two film pages, WITH the video-sitemap extension. Next 16 emits the
+    // xmlns:video namespace itself when a route carries `videos`, so this needs no manual
+    // urlset surgery (verified against node_modules/next/dist/docs .../metadata/sitemap.md).
+    //
+    // Priority 0.8, same as /demo: these are the pages that answer a question, and /demo
+    // now canonicalises to them. This is the actual fix for "No video indexed: 1" -
+    // ONE prominent video per URL, declared to the crawler rather than inferred from a
+    // page carrying two co-equal players.
+    const filmRoutes: MetadataRoute.Sitemap = allFilms().map(({ id, film }) => {
+      const v = sitemapVideo(film, {
+        uploadDate: FILM_UPLOAD_DATE,
+        thumbnail: thumbnailFor(id),
+      });
+      return {
+        url: v.loc,
+        priority: 0.8,
+        changeFrequency: 'monthly' as const,
+        videos: [
+          {
+            title: v.title,
+            thumbnail_loc: v.thumbnail_loc,
+            description: v.description,
+            content_loc: v.content_loc,
+            duration: v.duration,
+            publication_date: v.publication_date,
+          },
+        ],
+      };
+    });
+
     // Individual figure permalinks sit deliberately LOW. lib/priority-guides.ts already makes
     // the point: every URL added to a crawl wave dilutes equity on the pages that convert. The
     // gallery hub is the crawlable entry point; the 17 leaves are for reuse and citation, not
@@ -112,6 +144,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
     baseEntries = [
       ...staticRoutes,
+      ...filmRoutes,
       ...diagramRoutes,
       ...categoryRoutes,
       ...compareRoutes,

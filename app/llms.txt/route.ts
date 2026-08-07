@@ -10,6 +10,9 @@ import { DIAGRAMS, renderTwin } from '@/lib/diagrams';
 // from cache (fresh, or stale while it refreshes behind the request), and only the background
 // revalidation pays the cold-start cost. Without SWR, every TTL expiry puts one unlucky fetcher on
 // the slow path, which is what timed out the agent-accessibility audit during the AEO window.
+import { allFilms } from '@/lib/films';
+import { searchCopy, transcriptFor } from '@/lib/video';
+
 export const revalidate = 3600;
 
 // The figures worth spending answer-engine budget on: the positional claim, the data-flow
@@ -100,6 +103,20 @@ ${TWIN_IDS.map((id) => {
     const d = DIAGRAMS.find((x) => x.id === id);
     if (!d) return '';
     return `### ${d.title}\n${d.claim}\n\n\u0060\u0060\u0060\n${renderTwin(d.twin, { servers: String(servers), categories: String(categories) })}\n\u0060\u0060\u0060`;
+  }).join('\n\n')}
+
+## Films (full transcripts - an answer engine cannot watch a video)
+
+Two films, one question each, one prominent video per page. The transcript is the citable
+asset; the mp4 is the ranking and engagement surface. Same reasoning as the diagrams above:
+if it can only be understood by watching or looking, it is invisible here, so it ships as text.
+
+Figures spoken in the films are stated **as of** a date shown on screen. They are permanent
+measurements, not live numbers - the live record is [mcpindex.ai/ledger](https://mcpindex.ai/ledger).
+
+${allFilms().map(({ id, film }) => {
+    const copy = searchCopy(id);
+    return `### ${copy.name}\n${copy.description}\n\n[${'mcpindex.ai' + copy.page}](https://mcpindex.ai${copy.page}) - ${Math.floor(film.duration / 60)}:${String(film.duration % 60).padStart(2, '0')}\n\n\u0060\u0060\u0060\n${transcriptFor(film)}\n\u0060\u0060\u0060`;
   }).join('\n\n')}
 
 ## Endpoints an agent can call
