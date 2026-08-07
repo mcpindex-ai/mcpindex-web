@@ -3,6 +3,18 @@
 // The /scan tool. Everything here runs in the browser: your config/tools are
 // parsed and graded client-side with the gate's own vendored classifier, and the
 // input is never sent anywhere. See lib/scan/*.
+//
+// The page reads in two beats, and the hairline between them is the whole point:
+//
+//   INPUT      get the config in (paste / file / drop / type)
+//   ---------- preflight: what we parsed, and the one button that acts on it
+//   REPORT     the product of a scan, always attributed - yours or the sample
+//
+// The analysis itself is instant and local, so the button is not there to start
+// a computation. It exists because a report that is ALWAYS on screen cannot
+// answer "did it run, and is this mine?" - the sample and your results looked
+// identical apart from one small label. Gating the report on an explicit act
+// makes its presence the answer.
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -46,10 +58,19 @@ const BTN =
   'font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-ink)] border border-[var(--color-rule)] px-3 py-1.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors';
 const CHIP =
   'font-mono text-[11px] text-[var(--color-cite)] border border-[var(--color-rule)] bg-white px-2 py-0.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] transition-colors';
-// Primary CTA: same filled-accent pattern as the header/install buttons, whose
-// resting+hover contrast pair is enforced by `npm run check:contrast`.
+// Primary action: same filled-accent pattern as the header/install buttons, whose
+// resting+hover contrast pair is enforced by `npm run check:contrast`. It sits on
+// the ink strip, so DISABLED cannot be a grey fill - white on --color-mute is
+// ~4.0:1. It empties out to an outline instead, with zinc-500 label (4.6:1 on ink).
+// The transparent resting border keeps that swap from shifting layout.
 const CTA =
-  'font-mono text-[12.5px] uppercase tracking-[0.14em] text-white bg-[var(--color-accent-strong)] px-5 py-2.5 hover:bg-[var(--color-accent-deep)] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:bg-[var(--color-accent-deep)] disabled:cursor-wait';
+  'font-mono text-[12.5px] uppercase tracking-[0.14em] text-white bg-[var(--color-accent-strong)] border border-transparent px-5 py-2.5 hover:bg-[var(--color-accent-deep)] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:bg-transparent disabled:border-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed';
+const LINKY =
+  'underline decoration-[var(--color-rule)] underline-offset-4 text-[var(--color-accent-strong)] hover:text-[var(--color-accent-deep)]';
+// On the ink strip the accent flips: plain --color-accent is the readable accent
+// on ink (5.56:1), where -strong would fail at 3.82:1. See globals.css.
+const LINKY_ON_INK =
+  'underline decoration-zinc-600 underline-offset-4 text-[var(--color-accent)] hover:text-white';
 
 function Stat({ n, label, tone }: { n: number; label: string; tone?: 'accent' | 'ink' }) {
   return (
@@ -60,26 +81,54 @@ function Stat({ n, label, tone }: { n: number; label: string; tone?: 'accent' | 
   );
 }
 
+/** What the preflight strip says about the current input, before any scan. It
+ * reports the PARSE (did we understand the file, and how much of it), never the
+ * analysis - the analysis is what the button is for. */
+type Preflight =
+  | { readonly state: 'empty' }
+  | { readonly state: 'ready'; readonly parsed: string }
+  | { readonly state: 'problem'; readonly text: string; readonly offerClear?: boolean };
+
+function preflightOf(analysis: Analysis | null): Preflight {
+  if (analysis === null) return { state: 'empty' };
+  if (analysis.kind === 'summary') {
+    const c = analysis.data.counts;
+    const n = analysis.data.level === 'tool' ? c.tools : c.servers;
+    const noun = analysis.data.level === 'tool' ? 'tool' : 'server';
+    return { state: 'ready', parsed: `${n} ${noun}${n === 1 ? '' : 's'} parsed` };
+  }
+  if (analysis.kind === 'unknown') {
+    return { state: 'problem', text: 'no MCP servers or tools in it - expecting an mcpServers block or a tools/list dump' };
+  }
+  if (analysis.reason === 'double-paste') {
+    return { state: 'problem', text: 'two configs in the box - a paste landed on top of another', offerClear: true };
+  }
+  return { state: 'problem', text: 'not JSON yet - paste the whole file, comments and trailing commas are fine' };
+}
+
 export function ScanTool() {
   const [text, setText] = useState('');
+  // The scanned input, kept alongside its result so the report can be attributed
+  // and so an edit after scanning is detectable. null = nothing scanned yet.
+  const [report, setReport] = useState<{ input: string; analysis: Analysis; sample: boolean } | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [copied, setCopied] = useState('');
-  // One message slot under the input. 'error' = something failed; 'info' = we're
-  // waiting on the user (a red alert would be a lie there).
+  // Transient message about GETTING the input (clipboard, file). Outranks the
+  // preflight read of the text itself, because it is the newer event.
   const [notice, setNotice] = useState<{ tone: 'error' | 'info'; text: string } | null>(null);
   const [reading, setReading] = useState(false);
   const [client, setClient] = useState(CLIENTS[0]);
   const [os, setOs] = useState<OS>('mac');
   const fileRef = useRef<HTMLInputElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
+  const reportRef = useRef<HTMLHeadingElement>(null);
   const selectAfterFill = useRef(false);
 
   // Leave clipboard-filled text SELECTED, after the value is actually committed
   // (selecting inside the click handler would run against the pre-render value).
-  // The nudge tells people to press ⌘V, so a read that lands after they've read
-  // it would otherwise paste a second copy INTO the first - two documents, invalid
-  // JSON, and exactly the dead end this button exists to remove. Selected means a
-  // stray ⌘V replaces instead of appends.
+  // A clipboard read that lands after the user has already pressed ⌘V would
+  // otherwise stack a second copy INTO the first - two documents, invalid JSON.
+  // Selected means a stray ⌘V replaces instead of appends.
   useEffect(() => {
     if (!selectAfterFill.current) return;
     selectAfterFill.current = false;
@@ -88,32 +137,64 @@ export function ScanTool() {
   }, [text]);
 
   // Derived, not stored. Deferred so re-parsing a large pasted dump on each keystroke
-  // never blocks typing (the result is a pure function of the text; empty -> sample).
+  // never blocks typing (the result is a pure function of the text).
   const deferredText = useDeferredValue(text);
-  const analysis = useMemo<Analysis>(
-    () => (deferredText.trim() ? analyze(deferredText) : SAMPLE_ANALYSIS),
+  const parsed = useMemo<Analysis | null>(
+    () => (deferredText.trim() ? analyze(deferredText) : null),
     [deferredText],
   );
+  const preflight = useMemo(() => preflightOf(parsed), [parsed]);
   const help = useMemo(() => pathHelp(client, os), [client, os]);
 
-  function run(next: string) {
+  const stale = report !== null && report.input !== text;
+  const scannable = preflight.state === 'ready' && (report === null || stale);
+
+  function edit(next: string) {
     setNotice(null);
     setText(next);
   }
 
-  function fail(text: string) {
-    setNotice({ tone: 'error', text });
+  function fail(message: string) {
+    setNotice({ tone: 'error', text: message });
     textRef.current?.focus();
+  }
+
+  /** The commitment moment. Takes the value explicitly: callers that just set the
+   * text (paste, file, drop, sample) would otherwise scan the pre-render state. */
+  function scan(value: string) {
+    const result = analyze(value);
+    if (result.kind !== 'summary') return; // the strip already says what is wrong
+    setNotice(null);
+    // Attribution is decided by what was scanned, not by which control started it:
+    // load the sample and edit one line and it becomes yours, with no state to
+    // go stale. Calling the shipped sample "your setup" would be the exact lie
+    // this redesign exists to remove.
+    setReport({
+      input: value,
+      analysis: result,
+      sample: value === SAMPLE_CONFIG_JSON || value === SAMPLE_TOOLS_JSON,
+    });
+    // Move focus to the report. On a long page the payload lands below the fold,
+    // and for keyboard/screen-reader users an unannounced swap is no event at all.
+    requestAnimationFrame(() => reportRef.current?.focus());
+  }
+
+  /** Input that arrived by an explicit act (button, file picker, drop, sample)
+   * carries its own commitment - scanning it immediately is what was asked for.
+   * Only text typed or pasted INTO the box waits for the scan button. */
+  function take(value: string) {
+    edit(value);
+    scan(value);
   }
 
   function onFile(file: File) {
     if (file.size > MAX_FILE_BYTES) {
-      setNotice({ tone: 'error', text: 'That file is too large to scan in your browser. An mcp.json is usually a few KB.' });
+      setNotice({ tone: 'error', text: 'that file is too large to scan in your browser - an mcp.json is usually a few KB' });
       return;
     }
     const reader = new FileReader();
-    reader.onload = () => run(String(reader.result ?? ''));
-    reader.onerror = () => fail("Couldn't read that file. Try opening it and pasting the text instead.");
+    reader.onload = () => take(String(reader.result ?? ''));
+    reader.onerror = () => fail("couldn't read that file - open it and paste the text instead");
     reader.readAsText(file);
   }
 
@@ -130,7 +211,7 @@ export function ScanTool() {
       setReading(false);
       setNotice({
         tone: 'info',
-        text: 'Waiting on your browser - click Allow on the clipboard prompt, or just press ⌘V (Ctrl+V) in the box below.',
+        text: 'waiting on your browser - click Allow on the clipboard prompt, or press ⌘V (Ctrl+V) in the box',
       });
       textRef.current?.focus();
     }, 1200);
@@ -138,16 +219,16 @@ export function ScanTool() {
     try {
       const clip = await navigator.clipboard.readText();
       if (!clip.trim()) {
-        fail('Your clipboard is empty. Copy your mcp.json first, then press the button again.');
+        fail('your clipboard is empty - copy your mcp.json first, then press the button again');
         return;
       }
       // A late "Allow" must not clobber whatever the user did while waiting.
       if (!textRef.current?.value.trim()) {
         selectAfterFill.current = true;
-        run(clip);
+        take(clip);
       }
     } catch {
-      fail('Your browser blocked clipboard access. The box below is focused - press ⌘V (Ctrl+V) to paste.');
+      fail('your browser blocked clipboard access - the box is focused, press ⌘V (Ctrl+V) to paste');
     } finally {
       clearTimeout(nudge);
       setReading(false);
@@ -194,8 +275,10 @@ export function ScanTool() {
     return idle;
   }
 
-  const summary = analysis.kind === 'summary' ? analysis.data : null;
-  const source = analysis.kind === 'summary' ? analysis.source : null;
+  // What is on screen below the rule: your scan, or the sample that ships with the page.
+  const shown = report?.analysis ?? SAMPLE_ANALYSIS;
+  const isSample = report === null || report.sample;
+  const summary = shown.kind === 'summary' ? shown.data : null;
   const c = summary?.counts;
 
   const cardPath = c
@@ -203,7 +286,22 @@ export function ScanTool() {
     : '';
 
   return (
-    <div className="rule-t rule-b rule-l rule-r bg-white elevate">
+    <div
+      className={`rule-t rule-b rule-l rule-r bg-white elevate transition-colors ${
+        dragOver ? 'bg-[var(--color-accent-soft)]' : ''
+      }`}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragOver(true);
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragOver(false);
+        const f = e.dataTransfer.files?.[0];
+        if (f) onFile(f);
+      }}
+    >
       {/* header */}
       <div className="rule-b px-5 py-2.5 flex items-center justify-between font-mono text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-mute)]">
         <span className="flex items-center gap-2 text-[var(--color-ink)]">
@@ -213,181 +311,206 @@ export function ScanTool() {
         <span className="hidden sm:inline">runs in your browser · nothing uploaded</span>
       </div>
 
-      {/* input */}
-      <div className="px-5 py-6">
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragOver(false);
-            const f = e.dataTransfer.files?.[0];
+      {/* ---------------------------------------------------------- beat 1: input */}
+      <div className="px-5 pt-5 pb-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={pasteFromClipboard} disabled={reading} className={BTN}>
+            {reading ? 'reading clipboard…' : 'paste from clipboard'}
+          </button>
+          <button type="button" onClick={() => fileRef.current?.click()} className={BTN}>
+            choose a file
+          </button>
+          <span className="font-mono text-[11px] text-[var(--color-mute)]">
+            {dragOver ? 'drop it anywhere in this panel' : 'or drop your mcp.json anywhere in this panel'}
+          </span>
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".json,application/json,text/plain"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
             if (f) onFile(f);
           }}
-          className={`border border-dashed px-4 py-4 text-center transition-colors ${
-            dragOver ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)]' : 'border-[var(--color-rule)]'
-          }`}
-        >
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <button type="button" onClick={pasteFromClipboard} disabled={reading} className={CTA}>
-              {reading ? 'reading clipboard…' : 'test my mcp.json'}
-            </button>
-            <button type="button" onClick={() => fileRef.current?.click()} className={BTN}>
-              choose a file
-            </button>
-          </div>
-          <p className="mt-3 text-[13px] text-[var(--color-cite)]">
-            …or drag your <code className="font-mono text-[12px]">mcp.json</code> here. It is read in your browser
-            and never uploaded.
-          </p>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".json,application/json,text/plain"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) onFile(f);
-            }}
-          />
-        </div>
+        />
 
-        <label htmlFor="scan-input" className={`block mt-5 mb-2 ${LABEL}`}>
-          …or paste anything from your MCP setup
+        <label htmlFor="scan-input" className={`block mt-4 mb-2 ${LABEL}`}>
+          your config
         </label>
         <textarea
           id="scan-input"
           ref={textRef}
           value={text}
-          onChange={(e) => run(e.target.value)}
+          onChange={(e) => edit(e.target.value)}
+          onKeyDown={(e) => {
+            // ⌘/Ctrl+Enter scans, the convention for "submit from a textarea".
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && scannable) {
+              e.preventDefault();
+              scan(text);
+            }
+          }}
           rows={5}
           spellCheck={false}
           placeholder={'{ "mcpServers": { … } }   a config, a fragment, or a tools/list dump'}
           className="w-full bg-white border border-[var(--color-rule)] px-3 py-2 font-mono text-[13px] leading-[1.5] text-[var(--color-ink)] placeholder-[var(--color-mute)] focus:border-[var(--color-accent)] focus-visible:outline-none resize-y"
         />
 
-        <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          <span className={`${LABEL} mr-1 self-center`}>try</span>
-          <button type="button" className={CHIP} onClick={() => run(SAMPLE_TOOLS_JSON)}>
-            sample tools
-          </button>
-          <button type="button" className={CHIP} onClick={() => run(SAMPLE_CONFIG_JSON)}>
-            sample config
-          </button>
-          {text.trim() && (
-            <button type="button" className={CHIP} onClick={() => run('')}>
-              clear
-            </button>
-          )}
-        </div>
-
-        {notice && (
-          <p
-            role={notice.tone === 'error' ? 'alert' : 'status'}
-            className={`mt-3 font-mono text-[11px] ${
-              notice.tone === 'error' ? 'text-rose-700' : 'text-[var(--color-accent-strong)]'
-            }`}
-          >
-            {notice.text}
-          </p>
-        )}
-
-        {/* Where's my file? */}
-        <details className="mt-5 rule-t pt-4">
-          <summary className={`${LABEL} cursor-pointer select-none hover:text-[var(--color-accent-strong)]`}>
-            Where&apos;s my file?
-          </summary>
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {CLIENTS.map((cl) => (
-              <button
-                key={cl}
-                type="button"
-                onClick={() => setClient(cl)}
-                className={`${CHIP} ${cl === client ? 'border-[var(--color-accent)] text-[var(--color-accent-strong)]' : ''}`}
-              >
-                {cl}
-              </button>
-            ))}
-          </div>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {(['mac', 'win', 'linux'] as OS[]).map((o) => (
-              <button
-                key={o}
-                type="button"
-                onClick={() => setOs(o)}
-                className={`${CHIP} ${o === os ? 'border-[var(--color-accent)] text-[var(--color-accent-strong)]' : ''}`}
-              >
-                {o}
-              </button>
-            ))}
-          </div>
-          {help && (
-            <div className="mt-3 border border-[var(--color-rule)] bg-[var(--color-accent-soft)]/40 px-3 py-2">
-              <div className="font-mono text-[12px] text-[var(--color-ink)] break-all">{help.path}</div>
-              <button
-                type="button"
-                onClick={() => copy(help.reveal, 'reveal')}
-                className="mt-2 font-mono text-[11px] text-[var(--color-cite)] hover:text-[var(--color-accent-strong)] underline decoration-[var(--color-rule)] underline-offset-4"
-              >
-                {copyLabel('reveal', 'copy reveal command')}
-              </button>
-              <p className="mt-1.5 font-mono text-[10px] text-[var(--color-mute)]">
-                paths vary by version; open the file and drag or paste it above
-              </p>
+        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
+          <details>
+            <summary className={`${LABEL} cursor-pointer select-none hover:text-[var(--color-accent-strong)]`}>
+              Where&apos;s my file?
+            </summary>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {CLIENTS.map((cl) => (
+                <button
+                  key={cl}
+                  type="button"
+                  onClick={() => setClient(cl)}
+                  className={`${CHIP} ${cl === client ? 'border-[var(--color-accent)] text-[var(--color-accent-strong)]' : ''}`}
+                >
+                  {cl}
+                </button>
+              ))}
             </div>
-          )}
-        </details>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {(['mac', 'win', 'linux'] as OS[]).map((o) => (
+                <button
+                  key={o}
+                  type="button"
+                  onClick={() => setOs(o)}
+                  className={`${CHIP} ${o === os ? 'border-[var(--color-accent)] text-[var(--color-accent-strong)]' : ''}`}
+                >
+                  {o}
+                </button>
+              ))}
+            </div>
+            {help && (
+              <div className="mt-3 border border-[var(--color-rule)] bg-[var(--color-accent-soft)]/40 px-3 py-2">
+                <div className="font-mono text-[12px] text-[var(--color-ink)] break-all">{help.path}</div>
+                <button
+                  type="button"
+                  onClick={() => copy(help.reveal, 'reveal')}
+                  className="mt-2 font-mono text-[11px] text-[var(--color-cite)] hover:text-[var(--color-accent-strong)] underline decoration-[var(--color-rule)] underline-offset-4"
+                >
+                  {copyLabel('reveal', 'copy reveal command')}
+                </button>
+                <p className="mt-1.5 font-mono text-[10px] text-[var(--color-mute)]">
+                  paths vary by version; open the file and drop or paste it above
+                </p>
+              </div>
+            )}
+          </details>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className={LABEL}>no config handy?</span>
+            <button type="button" className={CHIP} onClick={() => take(SAMPLE_CONFIG_JSON)}>
+              sample config
+            </button>
+            <button type="button" className={CHIP} onClick={() => take(SAMPLE_TOOLS_JSON)}>
+              sample tools
+            </button>
+            {text.trim() && (
+              <button type="button" className={CHIP} onClick={() => edit('')}>
+                clear
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* results (announced to assistive tech when they appear/change) */}
-      <div aria-live="polite">
-      {analysis.kind === 'invalid' && (
-        <div className="rule-t px-5 py-4 font-mono text-[12px] text-[var(--color-mute)]">
-          {analysis.reason === 'double-paste' ? (
+      {/* ------------------------------------------- the preflight strip + the act */}
+      <div className="rule-t px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 bg-[var(--color-ink)]">
+        <p role="status" className="font-mono text-[11.5px] leading-[1.6] text-zinc-400 min-w-[16rem] flex-1">
+          {notice ? (
+            <span className={notice.tone === 'error' ? 'text-rose-400' : 'text-[var(--color-accent)]'}>
+              {notice.text}
+            </span>
+          ) : stale ? (
             <>
-              The box holds more than one config - looks like a paste landed on top of another. Two documents
-              stacked aren&apos;t valid JSON, and we won&apos;t guess which one you meant.{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  run('');
-                  textRef.current?.focus();
-                }}
-                className="underline decoration-[var(--color-rule)] underline-offset-4 text-[var(--color-accent-strong)] hover:text-[var(--color-accent-deep)]"
-              >
-                Clear the box
-              </button>{' '}
-              and paste once.
+              <Status tone="accent">input changed</Status> the report below is from what you scanned before
+            </>
+          ) : preflight.state === 'ready' ? (
+            report ? (
+              <>
+                <Status tone="ink">scanned ✓</Status> {preflight.parsed} · nothing left this tab
+              </>
+            ) : (
+              <>
+                <Status tone="accent">ready</Status> {preflight.parsed} · read in this tab only
+              </>
+            )
+          ) : preflight.state === 'problem' ? (
+            <>
+              <Status tone="rose">can&apos;t read that</Status> {preflight.text}
+              {preflight.offerClear && (
+                <>
+                  {' · '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      edit('');
+                      textRef.current?.focus();
+                    }}
+                    className={LINKY_ON_INK}
+                  >
+                    clear and paste once
+                  </button>
+                </>
+              )}
             </>
           ) : (
             <>
-              That doesn&apos;t look like JSON yet. Paste your whole <code>mcp.json</code> (comments and trailing
-              commas are fine), or try a sample above.
+              <Status tone="mute">nothing to scan yet</Status> paste, drop, or choose your mcp.json above
             </>
           )}
-        </div>
-      )}
-      {analysis.kind === 'unknown' && (
-        <div className="rule-t px-5 py-4 font-mono text-[12px] text-[var(--color-mute)]">
-          Parsed the JSON, but found no MCP servers or tools in it. Expecting an{' '}
-          <code>mcpServers</code> / <code>servers</code> block, or a <code>tools/list</code> dump.
-        </div>
-      )}
+        </p>
+        {(!report || stale || preflight.state !== 'ready') && (
+          <button type="button" onClick={() => scan(text)} disabled={!scannable} className={CTA}>
+            {stale ? 'rescan' : 'scan my setup'}
+          </button>
+        )}
+      </div>
 
+      {/* ------------------------------------------------------- beat 2: the report */}
       {summary && c && (
         <div className="rule-t">
-          {source === 'sample' && (
-            <div className="px-5 pt-4 font-mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
-              sample data - drag your own config to scan it
-            </div>
-          )}
+          <div
+            className={`px-5 py-2.5 flex flex-wrap items-center justify-between gap-2 font-mono text-[10.5px] uppercase tracking-[0.16em] ${
+              isSample ? 'bg-[var(--color-accent-soft)] text-[var(--color-mute)]' : 'text-[var(--color-ink)]'
+            }`}
+          >
+            <h2 ref={reportRef} tabIndex={-1} className="font-mono font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]">
+              {isSample ? 'sample setup - not your config' : 'your setup'}
+            </h2>
+            <span className="normal-case tracking-normal text-[11px] text-[var(--color-mute)]">
+              {report === null ? (
+                preflight.state === 'ready' ? (
+                  'press scan to replace this with yours'
+                ) : (
+                  'a realistic toolset, so the page is never empty'
+                )
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReport(null);
+                    edit('');
+                    // Starting over means the box, not the heading focus left behind
+                    // by the scan that is being thrown away.
+                    textRef.current?.focus();
+                  }}
+                  className={LINKY}
+                >
+                  clear and start over
+                </button>
+              )}
+            </span>
+          </div>
 
           {/* headline numbers */}
           {summary.level === 'tool' ? (
-            <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 rule-t border-[var(--color-rule)] divide-y sm:divide-y-0">
+            <div className="grid grid-cols-2 sm:grid-cols-4 rule-t border-[var(--color-rule)] divide-y sm:divide-y-0">
               <Stat n={c.tools} label="tools your agent can call" />
               <Stat n={c.irreversible} label="can't be undone" />
               <Stat n={c.egressExternal} label="send data off-machine" />
@@ -402,7 +525,7 @@ export function ScanTool() {
           )}
           {summary.level !== 'tool' && (
             <div
-              className={`mt-3 grid grid-cols-2 ${
+              className={`grid grid-cols-2 ${
                 c.insecureRemotes > 0 ? 'sm:grid-cols-5' : 'sm:grid-cols-4'
               } rule-t border-[var(--color-rule)] divide-y sm:divide-y-0`}
             >
@@ -569,7 +692,21 @@ export function ScanTool() {
           )}
         </div>
       )}
-      </div>
     </div>
   );
+}
+
+/** The one word that carries the state, set apart from the sentence that explains
+ * it. Uppercase is reserved for this word alone - a whole uppercase line reads as
+ * shouting and stops being scannable. */
+function Status({ tone, children }: { tone: 'accent' | 'ink' | 'rose' | 'mute'; children: React.ReactNode }) {
+  const color =
+    tone === 'accent'
+      ? 'text-[var(--color-accent)]'
+      : tone === 'ink'
+        ? 'text-white'
+        : tone === 'rose'
+          ? 'text-rose-400'
+          : 'text-zinc-400';
+  return <span className={`uppercase tracking-[0.16em] ${color}`}>{children} ·</span>;
 }
