@@ -46,6 +46,10 @@ const BTN =
   'font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-ink)] border border-[var(--color-rule)] px-3 py-1.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors';
 const CHIP =
   'font-mono text-[11px] text-[var(--color-cite)] border border-[var(--color-rule)] bg-white px-2 py-0.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] transition-colors';
+// Primary CTA: same filled-accent pattern as the header/install buttons, whose
+// resting+hover contrast pair is enforced by `npm run check:contrast`.
+const CTA =
+  'font-mono text-[12.5px] uppercase tracking-[0.14em] text-white bg-[var(--color-accent-strong)] px-5 py-2.5 hover:bg-[var(--color-accent-deep)] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:bg-[var(--color-accent-deep)] disabled:cursor-wait';
 
 function Stat({ n, label, tone }: { n: number; label: string; tone?: 'accent' | 'ink' }) {
   return (
@@ -60,10 +64,14 @@ export function ScanTool() {
   const [text, setText] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const [copied, setCopied] = useState('');
-  const [fileError, setFileError] = useState('');
+  // One message slot under the input. 'error' = something failed; 'info' = we're
+  // waiting on the user (a red alert would be a lie there).
+  const [notice, setNotice] = useState<{ tone: 'error' | 'info'; text: string } | null>(null);
+  const [reading, setReading] = useState(false);
   const [client, setClient] = useState(CLIENTS[0]);
   const [os, setOs] = useState<OS>('mac');
   const fileRef = useRef<HTMLInputElement>(null);
+  const textRef = useRef<HTMLTextAreaElement>(null);
 
   // Derived, not stored. Deferred so re-parsing a large pasted dump on each keystroke
   // never blocks typing (the result is a pure function of the text; empty -> sample).
@@ -75,19 +83,61 @@ export function ScanTool() {
   const help = useMemo(() => pathHelp(client, os), [client, os]);
 
   function run(next: string) {
-    setFileError('');
+    setNotice(null);
     setText(next);
+  }
+
+  function fail(text: string) {
+    setNotice({ tone: 'error', text });
+    textRef.current?.focus();
   }
 
   function onFile(file: File) {
     if (file.size > MAX_FILE_BYTES) {
-      setFileError('That file is too large to scan in your browser. An mcp.json is usually a few KB.');
+      setNotice({ tone: 'error', text: 'That file is too large to scan in your browser. An mcp.json is usually a few KB.' });
       return;
     }
     const reader = new FileReader();
     reader.onload = () => run(String(reader.result ?? ''));
-    reader.onerror = () => setFileError("Couldn't read that file. Try opening it and pasting the text instead.");
+    reader.onerror = () => fail("Couldn't read that file. Try opening it and pasting the text instead.");
     reader.readAsText(file);
+  }
+
+  // Read the clipboard on an explicit click. Three browsers, three behaviors:
+  // Chrome leaves readText() PENDING while its permission prompt is up (and
+  // forever if the prompt is dismissed), Safari needs the gesture, Firefox never
+  // exposes readText to page scripts at all. So: never block on the promise -
+  // after a beat, re-enable the button, say what's happening, and focus the box
+  // so the keyboard paste is one keystroke away in every one of those cases.
+  async function pasteFromClipboard() {
+    setNotice(null);
+    setReading(true);
+    const nudge = setTimeout(() => {
+      setReading(false);
+      setNotice({
+        tone: 'info',
+        text: 'Waiting on your browser - click Allow on the clipboard prompt, or just press ⌘V (Ctrl+V) in the box below.',
+      });
+      textRef.current?.focus();
+    }, 1200);
+
+    try {
+      const clip = await navigator.clipboard.readText();
+      if (!clip.trim()) {
+        fail('Your clipboard is empty. Copy your mcp.json first, then press the button again.');
+        return;
+      }
+      // A late "Allow" must not clobber whatever the user did while waiting.
+      if (!textRef.current?.value.trim()) {
+        run(clip);
+        textRef.current?.focus();
+      }
+    } catch {
+      fail('Your browser blocked clipboard access. The box below is focused - press ⌘V (Ctrl+V) to paste.');
+    } finally {
+      clearTimeout(nudge);
+      setReading(false);
+    }
   }
 
   async function copy(value: string, tag: string) {
@@ -167,16 +217,17 @@ export function ScanTool() {
             dragOver ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)]' : 'border-[var(--color-rule)]'
           }`}
         >
-          <p className="text-[13px] text-[var(--color-cite)]">
-            Drag your <code className="font-mono text-[12px]">mcp.json</code> here, or{' '}
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
-            >
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <button type="button" onClick={pasteFromClipboard} disabled={reading} className={CTA}>
+              {reading ? 'reading clipboard…' : 'test my mcp.json'}
+            </button>
+            <button type="button" onClick={() => fileRef.current?.click()} className={BTN}>
               choose a file
             </button>
-            . It is read in your browser and never uploaded.
+          </div>
+          <p className="mt-3 text-[13px] text-[var(--color-cite)]">
+            …or drag your <code className="font-mono text-[12px]">mcp.json</code> here. It is read in your browser
+            and never uploaded.
           </p>
           <input
             ref={fileRef}
@@ -195,6 +246,7 @@ export function ScanTool() {
         </label>
         <textarea
           id="scan-input"
+          ref={textRef}
           value={text}
           onChange={(e) => run(e.target.value)}
           rows={5}
@@ -218,9 +270,14 @@ export function ScanTool() {
           )}
         </div>
 
-        {fileError && (
-          <p role="alert" className="mt-3 font-mono text-[11px] text-rose-700">
-            {fileError}
+        {notice && (
+          <p
+            role={notice.tone === 'error' ? 'alert' : 'status'}
+            className={`mt-3 font-mono text-[11px] ${
+              notice.tone === 'error' ? 'text-rose-700' : 'text-[var(--color-accent-strong)]'
+            }`}
+          >
+            {notice.text}
           </p>
         )}
 
