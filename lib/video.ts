@@ -150,7 +150,11 @@ export function transcriptFor(film: Film): string {
 
 export function videoObject(
   film: Film,
-  opts: { readonly uploadDate: string; readonly thumbnail: string },
+  opts: {
+    readonly uploadDate: string;
+    readonly thumbnail: string;
+    readonly sameAs?: readonly string[];
+  },
 ): Record<string, unknown> {
   const copy = SEARCH_COPY[film.id];
   if (!copy) throw new Error(`videoSchema: no search copy for film "${film.id}"`);
@@ -184,6 +188,10 @@ export function videoObject(
     copyrightHolder: { '@type': 'Organization', '@id': `${ORIGIN}/#org` },
     creditText: 'mcpindex.ai',
     transcript: transcriptFor(film),
+    // The same work on YouTube, when there is one. Declares the two URLs as one thing
+    // rather than two competitors - omitted entirely if absent, because an empty or
+    // speculative sameAs is worse than none.
+    ...(opts.sameAs && opts.sameAs.length > 0 ? { sameAs: opts.sameAs } : {}),
     publisher: {
       '@type': 'Organization',
       name: 'mcpindex',

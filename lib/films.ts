@@ -48,6 +48,31 @@ export function posterAltFor(id: string): string {
   return a;
 }
 
+/**
+ * The YouTube upload of each film, for `sameAs` in the VideoObject.
+ *
+ * WHY: a self-hosted mp4 rarely ranks in video search on its own. `sameAs` tells a search
+ * engine these two URLs are the SAME work rather than duplicates competing with each other,
+ * so the YouTube view count and engagement can inform how the /watch page is treated
+ * instead of splitting the signal.
+ *
+ * WHY NOT embedUrl: that stays our own /embed/<slug>. `sameAs` says "this also exists
+ * there"; embedUrl says "this is where the player lives", and we serve our own player with
+ * no third-party tracking on a product whose pitch is that it egresses nothing.
+ *
+ * VERIFIED BY TITLE, not by the order they were handed to me - the two IDs arrived in the
+ * opposite order to the film list, and wiring them by position would have pointed each
+ * film's structured data at the other film.
+ */
+const YOUTUBE: Record<string, string> = {
+  concept: 'https://www.youtube.com/watch?v=gSNz7rRiS3A',
+  howto: 'https://www.youtube.com/watch?v=swJoYMLOtt4',
+};
+
+export function youtubeFor(id: string): string | null {
+  return YOUTUBE[id] ?? null;
+}
+
 export const FILM_IDS = ['concept', 'howto'] as const;
 export type FilmId = (typeof FILM_IDS)[number];
 

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
 import { jsonLdSafe } from '@/lib/jsonLd';
-import { allFilms, getFilm, thumbnailFor, FILM_UPLOAD_DATE } from '@/lib/films';
+import { allFilms, getFilm, thumbnailFor, youtubeFor, FILM_UPLOAD_DATE } from '@/lib/films';
 import { pageFor, videoObject, searchCopy, writtenForm } from '@/lib/video';
 
 /**
@@ -83,9 +83,11 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
   if (!hit?.film) notFound();
   const { id, film } = hit;
   const copy = searchCopy(id);
+  const youtube = youtubeFor(id);
   const ld = videoObject(film, {
     uploadDate: FILM_UPLOAD_DATE,
     thumbnail: thumbnailFor(id),
+    ...(youtube ? { sameAs: [youtube] } : {}),
   });
   const other = allFilms().find((f) => f.id !== id);
 
@@ -198,6 +200,18 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
         >
           Embed &amp; share →
         </Link>
+        {/* The crawler learns about the YouTube twin from `sameAs`; a reader needs an
+            actual link. rel="noopener" on a new-tab external link. */}
+        {youtube && (
+          <a
+            href={youtube}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[var(--color-cite)] hover:text-[var(--color-accent-strong)] underline decoration-[var(--color-rule)] underline-offset-4"
+          >
+            Watch on YouTube →
+          </a>
+        )}
       </nav>
     </article>
   );
