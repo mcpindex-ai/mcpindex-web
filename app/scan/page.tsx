@@ -14,7 +14,7 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: 'Scan your MCP setup - blast radius in your browser',
   description:
-    'Paste your mcp.json and see what your agent can actually do: which tools can take irreversible actions, which send data off your machine, and how many contracts are unpinned and free to drift. Runs entirely in your browser. Nothing is uploaded.',
+    'Paste your mcp.json and see what the file proves: which servers hold a credential, which fetch their code fresh at every launch, and which can reach off your machine. Paste a tools/list dump for the per-tool read: irreversible calls, off-machine egress, and unpinned contracts. Runs entirely in your browser. Nothing is uploaded.',
   alternates: { canonical: 'https://mcpindex.ai/scan' },
 };
 
@@ -87,10 +87,17 @@ export default async function ScanPage() {
 
       <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">Scan</div>
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">See your agent&apos;s blast radius.</h1>
+      {/* Two inputs, two grades of answer - and the lede has to name which is which.
+          It previously promised the per-tool read (irreversible actions, off-machine
+          egress, unpinned contracts) to anyone pasting an mcp.json, which is exactly
+          the one thing a config cannot show: tool declarations live in the running
+          server, not in the file that starts it. */}
       <p className="mt-4 text-[16px] leading-[1.6] text-[var(--color-cite)]">
-        Paste your <code className="font-mono text-[15px]">mcp.json</code> and see what your agent can actually
-        do: which tools can take irreversible actions, which send data off your machine, and how many contracts
-        are <strong className="text-[var(--color-ink)]">unpinned</strong> and free to change under you.
+        Paste your <code className="font-mono text-[15px]">mcp.json</code> and see what the file proves: which
+        servers hold a credential, which fetch their code fresh at every launch, and which can reach off your
+        machine. Paste a <code className="font-mono text-[15px]">tools/list</code> dump and it goes per tool -
+        which calls can&apos;t be undone, which send data off your machine, and how many contracts are{' '}
+        <strong className="text-[var(--color-ink)]">unpinned</strong>, with nothing watching them for change.
       </p>
       {safety && (
         <p className="mt-3 text-[15px] leading-[1.6] text-[var(--color-cite)]">
