@@ -59,6 +59,49 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Merge gate for machine-published Bitcoin anchors. The VM publisher arms GitHub
+      # auto-merge when this job is green; a shell-side path check alone is not enough
+      # (token with Contents+PR write can arm any PR). Re-evaluate the full PR file list
+      # here so a later push onto verdict-anchors cannot ride non-allowlisted paths in.
+      - name: Anchor publish path allowlist
+        if: github.event_name == 'pull_request' && github.head_ref == 'verdict-anchors'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          python3 <<'PY'
+          import json, os, re, urllib.request
+
+          allow = re.compile(
+              r"^(data/verdict-anchors\.json|public/anchors/[0-9a-f]{64}\.ots)$"
+          )
+          url = (
+              f"https://api.github.com/repos/{os.environ['REPO']}/pulls/"
+              f"{os.environ['PR_NUMBER']}/files?per_page=100"
+          )
+          req = urllib.request.Request(
+              url,
+              headers={
+                  "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+                  "Accept": "application/vnd.github+json",
+                  "User-Agent": "mcpindex-web-ci",
+              },
+          )
+          with urllib.request.urlopen(req, timeout=30) as resp:
+              files = json.load(resp)
+          names = [f["filename"] for f in files]
+          if not names:
+              raise SystemExit("anchor allowlist: PR has no files")
+          bad = [n for n in names if not allow.match(n)]
+          if bad:
+              raise SystemExit(
+                  "anchor allowlist: non-allowlisted path(s) on verdict-anchors: "
+                  + ", ".join(bad)
+              )
+          print("anchor allowlist ok:", ", ".join(names))
+          PY
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
