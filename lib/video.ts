@@ -109,13 +109,41 @@ export function searchCopy(id: string): { name: string; description: string; pag
  * Beat headings carry the offset so a citation can point at a moment, matching the
  * `Clip` offsets exactly.
  */
+/**
+ * Spoken form -> written form, applied ONLY where the VO is DISPLAYED.
+ *
+ * The VO strings in the beat manifest are written for a text-to-speech voice, so they carry
+ * phonetic spellings: "MCP index dot A I slash install" makes ElevenLabs say the URL
+ * correctly (a bare "mcpindex" is read "mc-pindex"). Rendered as TEXT that is nonsense - and
+ * worse than nonsense for AEO, because an answer engine ingesting "MCP index dot A I slash
+ * install" gets a URL it cannot resolve, cite, or link.
+ *
+ * So the manifest keeps the spoken form - it is what generates the audio, and must not
+ * change - and every READING surface converts. NEVER apply this to text on its way to the
+ * synthesiser; that would undo the fix it exists beside.
+ */
+const SPOKEN_TO_WRITTEN: ReadonlyArray<readonly [RegExp, string]> = [
+  [/MCP index dot A I slash (\w+)/g, 'mcpindex.ai/$1'],
+  [/MCP index dot A I/g, 'mcpindex.ai'],
+  [/MCP dot json/g, 'mcp.json'],
+  [/\bD O I\b/g, 'DOI'],
+  // The films say "read only"; every other surface on the site hyphenates the adjective.
+  [/\bread only\b/g, 'read-only'],
+  // "the first tools list" is the MCP method, not a list of tools.
+  [/\bfirst tools list\b/g, 'first tools/list'],
+];
+
+export function writtenForm(vo: string): string {
+  return SPOKEN_TO_WRITTEN.reduce((s, [re, to]) => s.replace(re, to), vo);
+}
+
 export function transcriptFor(film: Film): string {
   const stamp = (n: number) =>
     `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
   return film.beats
     .map((b) => {
       const captions = b.captions.length ? `\nOn screen: ${b.captions.join(' · ')}` : '';
-      return `[${stamp(b.start)}] ${b.title}\n${b.vo}${captions}`;
+      return `[${stamp(b.start)}] ${b.title}\n${writtenForm(b.vo)}${captions}`;
     })
     .join('\n\n');
 }

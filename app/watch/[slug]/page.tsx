@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
 import { jsonLdSafe } from '@/lib/jsonLd';
 import { allFilms, getFilm, thumbnailFor, FILM_UPLOAD_DATE } from '@/lib/films';
-import { pageFor, videoObject, searchCopy } from '@/lib/video';
+import { pageFor, videoObject, searchCopy, writtenForm } from '@/lib/video';
 
 /**
  * ONE FILM PER PAGE. This is the fix for "No video indexed: 1" in Search Console.
@@ -166,7 +166,13 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
               <div className="font-mono text-[12px] uppercase tracking-[0.18em] text-[var(--color-mute)]">
                 {Math.floor(b.start / 60)}:{String(b.start % 60).padStart(2, '0')} · {b.title}
               </div>
-              <p className="mt-2 text-[15px] leading-[1.65] text-[var(--color-ink)]">{b.vo}</p>
+              {/* writtenForm, not the raw VO: the manifest stores the SPOKEN spelling
+                  ("MCP index dot A I slash install") because that is what makes the TTS say
+                  the URL correctly. Rendered as text it is a URL nobody can click and an
+                  answer engine cannot cite. */}
+              <p className="mt-2 text-[15px] leading-[1.65] text-[var(--color-ink)]">
+                {writtenForm(b.vo)}
+              </p>
               {b.captions.length > 0 && (
                 <p className="mt-1.5 font-mono text-[12.5px] leading-[1.5] text-[var(--color-mute)]">
                   On screen: {b.captions.join(' · ')}
