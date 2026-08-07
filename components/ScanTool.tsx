@@ -117,6 +117,8 @@ export function ScanTool() {
   // preflight read of the text itself, because it is the newer event.
   const [notice, setNotice] = useState<{ tone: 'error' | 'info'; text: string } | null>(null);
   const [reading, setReading] = useState(false);
+  // Where the current box contents came from, when it wasn't the keyboard.
+  const [loadedFrom, setLoadedFrom] = useState<string | null>(null);
   const [client, setClient] = useState(CLIENTS[0]);
   const [os, setOs] = useState<OS>('mac');
   const fileRef = useRef<HTMLInputElement>(null);
@@ -147,11 +149,24 @@ export function ScanTool() {
   const help = useMemo(() => pathHelp(client, os), [client, os]);
 
   const stale = report !== null && report.input !== text;
-  const scannable = preflight.state === 'ready' && (report === null || stale);
+  // One CTA triggers every evaluation, so it is live whenever the input can be
+  // scanned - including a re-scan of input already scanned. A control that is
+  // THE way to run the tool must never be missing when there is something to run.
+  const scannable = preflight.state === 'ready';
 
   function edit(next: string) {
     setNotice(null);
+    setLoadedFrom(null);
     setText(next);
+  }
+
+  /** Fill the box from somewhere other than the keyboard, and say where from -
+   * without an auto-scan, the filled box is the only proof the load worked, and
+   * on a 3 KB config that is easy to miss. */
+  function load(value: string, from: string) {
+    setNotice(null);
+    setText(value);
+    setLoadedFrom(from);
   }
 
   function fail(message: string) {
@@ -179,21 +194,13 @@ export function ScanTool() {
     requestAnimationFrame(() => reportRef.current?.focus());
   }
 
-  /** Input that arrived by an explicit act (button, file picker, drop, sample)
-   * carries its own commitment - scanning it immediately is what was asked for.
-   * Only text typed or pasted INTO the box waits for the scan button. */
-  function take(value: string) {
-    edit(value);
-    scan(value);
-  }
-
   function onFile(file: File) {
     if (file.size > MAX_FILE_BYTES) {
       setNotice({ tone: 'error', text: 'that file is too large to scan in your browser - an mcp.json is usually a few KB' });
       return;
     }
     const reader = new FileReader();
-    reader.onload = () => take(String(reader.result ?? ''));
+    reader.onload = () => load(String(reader.result ?? ''), file.name);
     reader.onerror = () => fail("couldn't read that file - open it and paste the text instead");
     reader.readAsText(file);
   }
@@ -225,7 +232,7 @@ export function ScanTool() {
       // A late "Allow" must not clobber whatever the user did while waiting.
       if (!textRef.current?.value.trim()) {
         selectAfterFill.current = true;
-        take(clip);
+        load(clip, 'your clipboard');
       }
     } catch {
       fail('your browser blocked clipboard access - the box is focused, press ⌘V (Ctrl+V) to paste');
@@ -404,10 +411,10 @@ export function ScanTool() {
 
           <div className="flex flex-wrap items-center gap-1.5">
             <span className={LABEL}>no config handy?</span>
-            <button type="button" className={CHIP} onClick={() => take(SAMPLE_CONFIG_JSON)}>
+            <button type="button" className={CHIP} onClick={() => load(SAMPLE_CONFIG_JSON, 'the sample config')}>
               sample config
             </button>
-            <button type="button" className={CHIP} onClick={() => take(SAMPLE_TOOLS_JSON)}>
+            <button type="button" className={CHIP} onClick={() => load(SAMPLE_TOOLS_JSON, 'the sample toolset')}>
               sample tools
             </button>
             {text.trim() && (
@@ -437,7 +444,8 @@ export function ScanTool() {
               </>
             ) : (
               <>
-                <Status tone="accent">ready</Status> {preflight.parsed} · read in this tab only
+                <Status tone="accent">ready</Status> {preflight.parsed}
+                {loadedFrom ? ` · loaded from ${loadedFrom}` : ''} · press scan
               </>
             )
           ) : preflight.state === 'problem' ? (
@@ -465,11 +473,11 @@ export function ScanTool() {
             </>
           )}
         </p>
-        {(!report || stale || preflight.state !== 'ready') && (
-          <button type="button" onClick={() => scan(text)} disabled={!scannable} className={CTA}>
-            {stale ? 'rescan' : 'scan my setup'}
-          </button>
-        )}
+        {/* The one control that evaluates anything, however the config arrived.
+            Always on screen so it is never a thing you have to rediscover. */}
+        <button type="button" onClick={() => scan(text)} disabled={!scannable} className={CTA}>
+          {stale ? 'rescan my setup' : report && !stale ? 'scan again' : 'scan my setup'}
+        </button>
       </div>
 
       {/* ------------------------------------------------------- beat 2: the report */}
