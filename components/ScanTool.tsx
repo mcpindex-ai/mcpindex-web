@@ -4,7 +4,7 @@
 // parsed and graded client-side with the gate's own vendored classifier, and the
 // input is never sent anywhere. See lib/scan/*.
 
-import { useDeferredValue, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Mark } from './Mark';
 import { analyze, type Analysis } from '@/lib/scan/analyze';
@@ -72,6 +72,20 @@ export function ScanTool() {
   const [os, setOs] = useState<OS>('mac');
   const fileRef = useRef<HTMLInputElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
+  const selectAfterFill = useRef(false);
+
+  // Leave clipboard-filled text SELECTED, after the value is actually committed
+  // (selecting inside the click handler would run against the pre-render value).
+  // The nudge tells people to press ⌘V, so a read that lands after they've read
+  // it would otherwise paste a second copy INTO the first - two documents, invalid
+  // JSON, and exactly the dead end this button exists to remove. Selected means a
+  // stray ⌘V replaces instead of appends.
+  useEffect(() => {
+    if (!selectAfterFill.current) return;
+    selectAfterFill.current = false;
+    textRef.current?.focus();
+    textRef.current?.select();
+  }, [text]);
 
   // Derived, not stored. Deferred so re-parsing a large pasted dump on each keystroke
   // never blocks typing (the result is a pure function of the text; empty -> sample).
@@ -129,8 +143,8 @@ export function ScanTool() {
       }
       // A late "Allow" must not clobber whatever the user did while waiting.
       if (!textRef.current?.value.trim()) {
+        selectAfterFill.current = true;
         run(clip);
-        textRef.current?.focus();
       }
     } catch {
       fail('Your browser blocked clipboard access. The box below is focused - press ⌘V (Ctrl+V) to paste.');
@@ -332,8 +346,28 @@ export function ScanTool() {
       <div aria-live="polite">
       {analysis.kind === 'invalid' && (
         <div className="rule-t px-5 py-4 font-mono text-[12px] text-[var(--color-mute)]">
-          That doesn&apos;t look like JSON yet. Paste your whole <code>mcp.json</code> (comments and trailing
-          commas are fine), or try a sample above.
+          {analysis.reason === 'double-paste' ? (
+            <>
+              The box holds more than one config - looks like a paste landed on top of another. Two documents
+              stacked aren&apos;t valid JSON, and we won&apos;t guess which one you meant.{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  run('');
+                  textRef.current?.focus();
+                }}
+                className="underline decoration-[var(--color-rule)] underline-offset-4 text-[var(--color-accent-strong)] hover:text-[var(--color-accent-deep)]"
+              >
+                Clear the box
+              </button>{' '}
+              and paste once.
+            </>
+          ) : (
+            <>
+              That doesn&apos;t look like JSON yet. Paste your whole <code>mcp.json</code> (comments and trailing
+              commas are fine), or try a sample above.
+            </>
+          )}
         </div>
       )}
       {analysis.kind === 'unknown' && (

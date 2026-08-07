@@ -338,6 +338,18 @@ export function tolerantParse(text: string): unknown {
   }
 }
 
+/** Does this text look like the same config pasted twice (⌘V on top of a box the
+ * paste button already filled)? Two valid documents concatenated are not valid
+ * JSON, and the generic "that doesn't look like JSON" is a dead end for it.
+ *
+ * We only ever DIAGNOSE this - never repair it. Salvaging one of the two copies
+ * would mean guessing which one the user meant and then printing a confident
+ * server count from a guess, which is the one thing a gate must not do. */
+export function looksLikeDoublePaste(text: string): boolean {
+  const roots = text.match(/"(mcpServers|servers|tools)"\s*:/g);
+  return (roots?.length ?? 0) > 1;
+}
+
 function isWs(c: string): boolean {
   return c === ' ' || c === '\t' || c === '\n' || c === '\r';
 }

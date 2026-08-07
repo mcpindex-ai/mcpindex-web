@@ -420,3 +420,30 @@ test('summarize counts header-credentialed and plaintext remotes', () => {
   assert.equal(s.counts.serversWithSecrets, 1);
   assert.equal(s.counts.insecureRemotes, 1);
 });
+
+test('analyze names the double-paste case instead of a generic "not JSON"', () => {
+  const one = JSON.stringify({ mcpServers: { fs: { command: 'npx', args: ['-y', 'server'] } } }, null, 2);
+
+  // Shape 1: a second document appended after the first.
+  const appended = analyze(`${one}\n${one}`);
+  assert.equal(appended.kind, 'invalid');
+  assert.equal(appended.kind === 'invalid' && appended.reason, 'double-paste');
+
+  // Shape 2: the paste landed INSIDE the first (caret before the closing brace).
+  // This is the shape a real report had, and it stays brace-balanced - so a
+  // balance-based salvage would have "succeeded" on a document that is nonsense.
+  const nested = one.replace(/\n\}\s*$/, `\n${one}\n}`);
+  const inner = analyze(nested);
+  assert.equal(inner.kind, 'invalid');
+  assert.equal(inner.kind === 'invalid' && inner.reason, 'double-paste');
+
+  // A single config still parses, and genuine garbage keeps the generic reason.
+  assert.equal(analyze(one).kind, 'summary');
+  const garbage = analyze('not json at all');
+  assert.equal(garbage.kind, 'invalid');
+  assert.equal(garbage.kind === 'invalid' && garbage.reason, undefined);
+
+  // One config whose VALUES mention the key name must not be misread as a double paste.
+  const decoy = JSON.stringify({ mcpServers: { x: { command: 'cat', args: ['"mcpServers":'] } } });
+  assert.equal(analyze(decoy).kind, 'summary');
+});
