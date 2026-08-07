@@ -158,8 +158,16 @@ export function videoObject(
 ): Record<string, unknown> {
   const copy = SEARCH_COPY[film.id];
   if (!copy) throw new Error(`videoSchema: no search copy for film "${film.id}"`);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(opts.uploadDate)) {
-    throw new Error(`videoSchema: uploadDate must be YYYY-MM-DD, got "${opts.uploadDate}"`);
+  // FULL ISO 8601 WITH A TIMEZONE, not a bare date. Google's Rich Results Test rejects
+  // "2026-08-07" with "Invalid datetime value" and "missing a timezone" - and this check
+  // used to REQUIRE that bare form, so the validator was enforcing exactly what the
+  // consumer rejects. A schema validator that guarantees the wrong shape is worse than no
+  // validator: it makes the defect look deliberate.
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})$/.test(opts.uploadDate)) {
+    throw new Error(
+      `videoSchema: uploadDate must be ISO 8601 with a timezone ` +
+        `(e.g. 2026-08-07T00:00:00-07:00), got "${opts.uploadDate}"`,
+    );
   }
 
   const page = `${ORIGIN}${copy.page}`;

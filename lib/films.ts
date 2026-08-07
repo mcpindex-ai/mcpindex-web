@@ -17,8 +17,14 @@ const MANIFEST = beats as unknown as Record<string, Film>;
  * UPLOAD DATE, not "today". Google treats a moving uploadDate as a signal the content
  * changed; these films are fixed artefacts, and their figures are stated "as of" a date
  * INSIDE the cut. Bump this only when a film is genuinely re-rendered with new content.
+ *
+ * FULL ISO 8601 WITH TIMEZONE. A bare "2026-08-07" is rejected by Google's Rich Results
+ * Test - "Invalid datetime value" plus "missing a timezone" - and `videoObject()` used to
+ * validate FOR the bare form, so the check guaranteed the shape the consumer refuses.
+ * -07:00 is Pacific, where the films were cut and published; midnight is honest at the
+ * day granularity we actually know.
  */
-export const FILM_UPLOAD_DATE = '2026-08-07';
+export const FILM_UPLOAD_DATE = '2026-08-07T00:00:00-07:00';
 
 /** Poster paths. These must match the FIRST FRAME closely or Google is entitled to
  * ignore the thumbnail as a mismatch. Regenerated from the v5 renders 2026-08-07. */
