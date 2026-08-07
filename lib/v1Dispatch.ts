@@ -65,7 +65,7 @@ export async function callV1<T = unknown>(
   const url = new URL(path, ROUTE_BASE);
   const call = routeV1(url);
   if (!call) throw new Error(`mcpindex API: unroutable path ${url.pathname}`);
-  const res = await withTimeout(call, timeoutMs);
+  const res = await withTimeout(call, timeoutMs, url.pathname);
   // Status only - never echo the body (avoids surfacing a verbose 5xx to callers).
   if (!res.ok) throw new Error(`mcpindex API ${res.status}`);
   return (await res.json()) as T;
@@ -82,13 +82,23 @@ export async function callV1<T = unknown>(
  * Exported so the timeout is directly testable with a controlled promise; racing against a
  * real handler is nondeterministic, because a warm-cache handler resolves before even a 0ms
  * timer fires (a fast success winning the race is correct, so such a test proves nothing).
+ *
+ * `label` closes the one blind spot armMcpWatchdog's dispatch-phase log can't see: WHICH
+ * underlying /api/v1 call was still in flight when a tool hung, not just which of the six MCP
+ * tools was invoked (compare_servers alone fans out 2-5 of these). callV1 passes the routed
+ * PATHNAME only, never the full URL - the query string is where caller-supplied prose (a
+ * `task` or `query` value) lives, and that must never reach a log line, same rule
+ * mcpWatchdog.ts states for its own context type.
  */
-export function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+export function withTimeout<T>(p: Promise<T>, ms: number, label?: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout>;
   return Promise.race([
     p,
     new Promise<never>((_, rej) => {
-      timer = setTimeout(() => rej(new Error('mcpindex API timeout')), ms);
+      timer = setTimeout(() => {
+        console.error(`[v1Dispatch] timeout path=${label ?? 'unknown'} ms=${ms}`);
+        rej(new Error('mcpindex API timeout'));
+      }, ms);
     }),
     // clearTimeout on settle so a fast success does not keep the event loop alive for `ms`.
   ]).finally(() => clearTimeout(timer));
