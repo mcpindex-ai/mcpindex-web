@@ -8,8 +8,10 @@ import { ledgerEnabled } from '@/lib/ledger';
 import { loadReportStats } from '@/lib/reportStatsServer';
 import { kindLabel } from '@/lib/kindLabels';
 import { jsonLdSafe } from '@/lib/jsonLd';
+import { CiteBibtex } from '@/components/CiteBibtex';
 import { DriftReportCta } from '@/components/DriftReportCta';
 import { ObfuscatedEmail } from '@/components/ObfuscatedEmail';
+import { CITATION_DRIFT_REPORT_EDITION_V1, CITATION_PAPER } from '@/lib/citations';
 import edition from '@/data/report-edition-v1.json';
 
 // The MCP Drift Report (build plan #11): the citable full-findings page. Aggregates only -
@@ -528,6 +530,22 @@ export default async function DriftReportPage() {
           />{' '}
           - early design partners get input on the roadmap.
         </p>
+      </section>
+
+      <section aria-labelledby="cite-heading" className="mt-12 rule-t pt-8">
+        <h2 id="cite-heading" className={SECTION_H}>
+          Cite this
+        </h2>
+        <p className="mt-4 text-[14.5px] leading-[1.6] text-[var(--color-cite)] max-w-2xl">
+          Edition v1 figures on this page are frozen. Cite the version DOI below so a
+          reader can check exactly these numbers. Paste into your{' '}
+          <span className="font-mono text-[13px]">.bib</span>:
+        </p>
+        <CiteBibtex citation={CITATION_DRIFT_REPORT_EDITION_V1} className="mt-4" />
+        <p className="mt-8 text-[14.5px] leading-[1.6] text-[var(--color-cite)] max-w-2xl">
+          Related paper (description-level drift; separate measurement surface):
+        </p>
+        <CiteBibtex citation={CITATION_PAPER} className="mt-3" />
       </section>
 
       <p className="mt-12 text-[14px] leading-[1.6] text-[var(--color-mute)]">
