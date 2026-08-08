@@ -13,8 +13,11 @@ export const metadata: Metadata = {
   // `alternates.canonical` — the homepage — and then ships two contradictory
   // instructions: the canonical says "index the homepage in place of this URL",
   // the robots tag says "index nothing here". Self-canonical leaves noindex as
-  // the only signal. This is the only route in the app that leaked the root
-  // canonical; every other page family already declares its own.
+  // the only signal. This is the only 200-status PAGE that leaked the root
+  // canonical (the other 40 either declare their own or route through
+  // lib/seo.ts `pageMetadata()`); app/not-found.tsx had the same defect on every
+  // 404 and is fixed there with `canonical: null`, which is the right answer
+  // when a component renders at many URLs rather than one.
   alternates: { canonical: 'https://mcpindex.ai/receipts' },
 };
 
