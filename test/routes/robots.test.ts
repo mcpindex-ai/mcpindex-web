@@ -75,7 +75,17 @@ test('robots: internally-linked API endpoints stay crawlable', () => {
   // "Indexed, though blocked by robots.txt" — Google keeps the URL precisely because it
   // cannot fetch it to read the header saying drop it. Broadening the Disallow to /api/
   // re-creates that, and did once already.
-  for (const rule of groups()) {
+  //
+  // Scoped to the groups that actually feed a SEARCH INDEX: `*` (Googlebot, Bingbot, and
+  // everything unnamed) plus the retrieval crawlers. The training groups deliberately lose
+  // /api/v1/ledger under spec P3, and that is not the same hazard — an indexless corpus
+  // crawler has no SERP to strand a url in. Google-Extended in particular is a training
+  // opt-out token, not a Search crawler; it cannot affect indexing either way.
+  const searchFacing = groups().filter(
+    (r) => r.userAgent === '*' || ['ChatGPT-User', 'OAI-SearchBot', 'PerplexityBot'].includes(r.userAgent as string),
+  );
+  assert.equal(searchFacing.length, 4, 'expected `*` plus 3 retrieval crawlers');
+  for (const rule of searchFacing) {
     for (const path of ['/api/v1/recommend', '/api/v1/ledger']) {
       assert.equal(allows(rule, path), true, `${rule.userAgent} is blocked from linked ${path}`);
     }
@@ -121,6 +131,43 @@ test('robots: the page surface is still fully open', () => {
       assert.equal(allows(rule, path), true, `${rule.userAgent} is blocked from ${path}`);
     }
   }
+});
+
+test('robots: training crawlers lose the two bulk-corpus surfaces, nothing else', () => {
+  // Posture-by-path (spec P3): the thesis is deliberately given to training crawlers, only
+  // wholesale extraction is withheld. So this asserts BOTH directions — a rule that closed
+  // /guides or /whitepaper to them would defeat the point as surely as one that left
+  // /llms-full.txt open.
+  const training = ['GPTBot', 'anthropic-ai', 'ClaudeBot', 'cohere-ai', 'Google-Extended'];
+  for (const rule of groups().filter((r) => training.includes(r.userAgent as string))) {
+    for (const path of ['/llms-full.txt', '/api/v1/ledger']) {
+      assert.equal(allows(rule, path), false, `${rule.userAgent} can still bulk-fetch ${path}`);
+    }
+    for (const path of ['/guides/how-to-trust-an-mcp-server', '/whitepaper', '/methodology', '/docs', '/llms.txt']) {
+      assert.equal(allows(rule, path), true, `${rule.userAgent} is blocked from thesis surface ${path}`);
+    }
+  }
+});
+
+test('robots: retrieval crawlers keep everything, including bulk', () => {
+  // These cite and send traffic, which is the AEO play. Withholding from them costs
+  // reach and protects nothing — they are not building a corpus.
+  const retrieval = ['ChatGPT-User', 'OAI-SearchBot', 'PerplexityBot'];
+  const seen = groups().filter((r) => retrieval.includes(r.userAgent as string));
+  assert.equal(seen.length, retrieval.length, 'a retrieval crawler group went missing');
+  for (const rule of seen) {
+    for (const path of ['/llms-full.txt', '/api/v1/ledger', '/guides/x']) {
+      assert.equal(allows(rule, path), true, `${rule.userAgent} is blocked from ${path}`);
+    }
+  }
+});
+
+test('robots: every named AI crawler is classified exactly once', () => {
+  // The failure mode this catches is a bot added to one list and forgotten in the other, or
+  // duplicated into both — where the last-wins group silently decides its posture.
+  const named = groups().map((r) => r.userAgent as string).filter((u) => u !== '*');
+  assert.equal(new Set(named).size, named.length, `duplicate user-agent group: ${named.join(', ')}`);
+  assert.equal(named.length, 8, 'expected 8 named AI crawlers across the two classes');
 });
 
 test('robots: still advertises the sitemap and canonical host', () => {

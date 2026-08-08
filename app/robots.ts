@@ -11,16 +11,23 @@ import type { MetadataRoute } from 'next';
 // GET_ANSWERS_4XX below, which are blocked because they answer a crawler's GET with an
 // error, not because we want them private. Keep it that way: if you are about to add a
 // Disallow, read the note above that constant first.
-const AI_CRAWLERS = [
-  'GPTBot',
-  'ChatGPT-User',
-  'OAI-SearchBot',
-  'ClaudeBot',
-  'anthropic-ai',
-  'PerplexityBot',
-  'cohere-ai',
-  'Google-Extended',
-];
+// Split by what the bot DOES with what it takes, because the two classes want opposite
+// answers on one question: may you bulk-download the corpus?
+//
+// RETRIEVAL bots fetch to answer a question a user asked right now, and cite. That sends
+// traffic and is the whole AEO play — they get everything.
+const RETRIEVAL_CRAWLERS = ['ChatGPT-User', 'OAI-SearchBot', 'PerplexityBot'];
+
+// TRAINING bots fetch to build a corpus. No attribution, no traffic, no citation. They keep
+// full access to the THESIS (see BULK_CORPUS below for what they lose, and why that is the
+// narrow exception rather than the rule): being in the weights as the answer to "how do I
+// trust an MCP server" is the category-definition play and is worth giving away.
+//
+// ClaudeBot is the judgment call in this list. Anthropic runs it as the general-purpose
+// crawler and documents it as a training crawler, with user-initiated retrieval split out
+// under separate agents — so it sits here. If that changes, move it up; the classification
+// is the only thing that needs editing, not the rules.
+const TRAINING_CRAWLERS = ['GPTBot', 'anthropic-ai', 'ClaudeBot', 'cohere-ai', 'Google-Extended'];
 
 // Blocking is the LAST resort here, and the block is deliberately three paths wide rather
 // than the whole API. Everything under /api/ already carries X-Robots-Tag: noindex from
@@ -67,11 +74,31 @@ const GET_ANSWERS_4XX = ['/api/v1/screen$', '/api/v1/drift$', '/api/waitlist$'];
 // Shared body because a user-agent group inherits nothing from the `*` group.
 const RULE = { allow: ['/'], disallow: GET_ANSWERS_4XX };
 
+// The two surfaces where the whole corpus leaves in one request: the 5.5 MB agent index
+// and the drift ledger. Everything a reader or a retrieval bot actually navigates to is a
+// page, and pages stay open to everyone — this closes bulk EXTRACTION, not reading.
+//
+// Withheld only from TRAINING_CRAWLERS, which extends the 2026-05-15 "asymmetric exposure"
+// decision (tasks/decisions.md) rather than departing from it: the actionable verdict is
+// replicable from public descriptions and stays free, while the longitudinal layer that
+// cannot be back-filled is not handed over wholesale. The per-server listings are also
+// mostly not ours to give — they mirror registry.modelcontextprotocol.io — so the thing
+// being protected here is the judgment layer bundled alongside them.
+//
+// Advisory, and worth being honest that it is: a crawler that ignores robots.txt takes the
+// corpus anyway. This sets posture and intent. Enforcement is rate limiting (spec P6).
+const BULK_CORPUS = ['/llms-full.txt', '/api/v1/ledger'];
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       { userAgent: '*', ...RULE },
-      ...AI_CRAWLERS.map((userAgent) => ({ userAgent, ...RULE })),
+      ...RETRIEVAL_CRAWLERS.map((userAgent) => ({ userAgent, ...RULE })),
+      ...TRAINING_CRAWLERS.map((userAgent) => ({
+        userAgent,
+        allow: RULE.allow,
+        disallow: [...RULE.disallow, ...BULK_CORPUS],
+      })),
     ],
     sitemap: 'https://mcpindex.ai/sitemap.xml',
     host: 'https://mcpindex.ai',

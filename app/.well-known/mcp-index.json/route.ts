@@ -186,6 +186,36 @@ export async function GET() {
 
     docs: 'https://mcpindex.ai/docs',
 
+    // Machine-readable form of /terms "Using the data". Three tiers because three different
+    // things are published here under three different terms, and conflating them would be a
+    // false claim in one direction and a giveaway in the other: the registry mirror is not
+    // ours to license, and the Zenodo deposits are already CC BY and must not be narrowed
+    // here. Only the judgment layer is restricted, and only against BULK reconstruction —
+    // querying, citing and linking stay explicitly permitted so an agent reading this never
+    // has to guess whether normal use is allowed.
+    license: {
+      terms: 'https://mcpindex.ai/terms',
+      registryMetadata: {
+        covers: 'server names, descriptions, versions, install details',
+        source: 'https://registry.modelcontextprotocol.io',
+        rights: 'upstream_public_data - mcpindex claims none and grants none',
+      },
+      researchDatasets: {
+        covers: 'published drift and screening datasets',
+        source: 'https://zenodo.org',
+        spdx: 'CC-BY-4.0',
+        rights: 'reuse with attribution, commercial permitted, not narrowed by these terms',
+      },
+      judgmentLayer: {
+        covers: 'screen verdicts, MCP Quality Score, drift ledger, source-liveness evidence',
+        holder: 'Bhartis LLC',
+        rights: 'noncommercial use with attribution',
+        permitted: ['query via documented API', 'cite', 'link'],
+        prohibited: ['bulk extraction to reconstruct or resell the dataset'],
+        commercialLicense: 'hello@mcpindex.ai',
+      },
+    },
+
     mcpServer: {
       package: 'mcp-server-mcpindex',
       version: mcpServerVersion,
