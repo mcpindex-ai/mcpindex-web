@@ -10,7 +10,10 @@ export type Transport = 'local' | 'remote' | 'unknown';
  * the browser at all - parsing is client-side). */
 export interface ScannedServer {
   readonly name: string;
-  readonly transport: Transport; // remote = can change server-side; local = spawns a process
+  // How the entry is declared: `url` (remote) vs a spawn `command` (local). A REACH fact only.
+  // It is NOT a stability signal - see the one-sided note on the blast-radius block below, and
+  // prefer `reach` for anything user-facing.
+  readonly transport: Transport;
   readonly url: string | null;
   readonly command: string | null; // command + args, joined; for local servers
   // Secret-looking KEY NAMES from `env` AND from `headers` (header-derived keys are
@@ -66,7 +69,7 @@ export interface ScannedTool {
 
 export interface ScanCounts {
   readonly servers: number;
-  readonly remoteServers: number; // can change server-side = the drift risk
+  readonly remoteServers: number; // declared by url, not by a spawn command. NOT a drift-risk proxy
   readonly localServers: number; // spawn a local process = code-exec surface
   readonly serversWithSecrets: number;
   readonly insecureRemotes: number; // plaintext http:// to a non-loopback host
