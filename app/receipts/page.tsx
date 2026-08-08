@@ -9,6 +9,13 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Gate Activity',
   robots: { index: false, follow: false },
+  // Without an explicit canonical this page inherits the root layout's
+  // `alternates.canonical` — the homepage — and then ships two contradictory
+  // instructions: the canonical says "index the homepage in place of this URL",
+  // the robots tag says "index nothing here". Self-canonical leaves noindex as
+  // the only signal. This is the only route in the app that leaked the root
+  // canonical; every other page family already declares its own.
+  alternates: { canonical: 'https://mcpindex.ai/receipts' },
 };
 
 const INSTALL_ID_RE = /^[0-9a-f]{32}$/;
