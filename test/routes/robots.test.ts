@@ -39,18 +39,21 @@ test('robots: every user-agent group blocks the JSON API', () => {
   }
 });
 
-test('robots: the badge endpoint is blocked too — it is not an exception', () => {
-  // The obvious instinct is to exempt this one, because READMEs embed it as an <img>. The
-  // 2026-08-08 Search Console export says otherwise: /api/v1/badge/* produced ALL 26 "Soft
-  // 404" URLs and 53 of the 66 "Excluded by noindex". Exempting it re-opens ~20k crawlable
-  // image URLs on a property that already has 11,687 pages stuck in "Discovered - currently
-  // not indexed". Browsers and GitHub's camo proxy ignore robots.txt, so nothing that
-  // renders a badge breaks. This test exists to stop that instinct being acted on again.
+test('robots: the badge endpoint stays crawlable so its noindex can be seen', () => {
+  // The instinct is to fold this into the /api/ block, since badge URLs dominate the error
+  // buckets. That reasoning is backwards and was acted on once already. vercel.json sends
+  // X-Robots-Tag: noindex on /api/(.*) as of 2026-07-28, and the 08-08 export shows a clean
+  // split on that date: every badge URL crawled 07-28 or later is in "Excluded by noindex"
+  // (53), every one still in "Soft 404"/"Crawled - not indexed" (45) was last crawled on or
+  // before it. Blocking the badge stops the recrawl that migrates those 45, freezing them in
+  // error buckets forever, and invites "Indexed, though blocked by robots.txt" on a URL
+  // third-party READMEs link by design. noindex needs a crawl to be read; Disallow prevents
+  // exactly that crawl. The two are not interchangeable.
   for (const rule of groups()) {
     assert.equal(
       allows(rule, '/api/v1/badge/io-github-example-server'),
-      false,
-      `${rule.userAgent} may crawl the badge endpoint (26 soft-404s came from this route)`,
+      true,
+      `${rule.userAgent} cannot reach the badge, so it can never see the noindex header`,
     );
   }
 });
