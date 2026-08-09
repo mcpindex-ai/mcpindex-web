@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { optimizedPosterSrc } from '@/lib/posters';
 
 type FilmId = 'concept' | 'persona';
 
@@ -57,7 +58,7 @@ export function PromoVideos({ variant = 'both', showDemoLink = false }: PromoVid
               controls
               playsInline
               preload="metadata"
-              poster={film.poster}
+              poster={optimizedPosterSrc(film.poster)}
             >
               <source src={film.src} type="video/mp4" />
               Your browser does not support the video tag.{' '}

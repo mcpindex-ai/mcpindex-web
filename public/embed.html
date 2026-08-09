@@ -33,7 +33,16 @@
   </head>
   <body>
     <div class="wrap">
-      <video controls playsinline preload="metadata" poster="/promo/poster.jpg">
+      <!-- Poster goes through the image optimizer: 16 KiB WebP instead of a 236 KiB JPEG.
+           This surface loads inside OTHER people's pages, so the weight is theirs to pay.
+           Static HTML cannot call optimizedPosterSrc(), so the URL is hardcoded - and
+           lib/posters.test.ts re-derives it from the real API and fails if the two drift. -->
+      <video
+        controls
+        playsinline
+        preload="metadata"
+        poster="/_next/image?url=%2Fpromo%2Fposter.jpg&amp;w=1080&amp;q=75"
+      >
         <source src="/promo/mcpindex-promo.mp4" type="video/mp4" />
         Your browser does not support the video tag.
       </video>
