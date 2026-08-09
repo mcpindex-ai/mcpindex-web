@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { allFilms, getFilm, thumbnailFor } from '@/lib/films';
+import { optimizedPosterSrc } from '@/lib/posters';
 import { pageFor, searchCopy } from '@/lib/video';
 
 /**
@@ -55,7 +56,7 @@ export default async function EmbedPage({ params }: { params: Promise<{ slug: st
         controls
         playsInline
         preload="metadata"
-        poster={thumbnailFor(id)}
+        poster={optimizedPosterSrc(thumbnailFor(id))}
       >
         <source src={`/promo/${film.slug}.mp4`} type="video/mp4" />
         <a href={`/promo/${film.slug}.mp4`}>Download the .mp4</a>

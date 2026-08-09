@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
 import { jsonLdSafe } from '@/lib/jsonLd';
 import { allFilms, getFilm, thumbnailFor, youtubeFor, FILM_UPLOAD_DATE } from '@/lib/films';
+import { optimizedPosterSrc } from '@/lib/posters';
 import { pageFor, videoObject, searchCopy, writtenForm } from '@/lib/video';
 
 /**
@@ -112,7 +113,7 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
           controls
           playsInline
           preload="metadata"
-          poster={thumbnailFor(id)}
+          poster={optimizedPosterSrc(thumbnailFor(id))}
         >
           <source src={`/promo/${film.slug}.mp4`} type="video/mp4" />
           Your browser does not support the video tag.{' '}
