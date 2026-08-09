@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { allFilms, thumbnailFor, posterAltFor } from '@/lib/films';
 import { pageFor, searchCopy } from '@/lib/video';
 
@@ -18,11 +19,11 @@ import { pageFor, searchCopy } from '@/lib/video';
  * homepage then linked to /watch ZERO times, so the two pages carrying the structured data
  * and the transcripts got no equity from the strongest page on the site.
  *
- * WHY POSTERS AND NOT CARD-SIZED DERIVATIVES. These are the same files the /watch and
- * /demo players use as their `poster`. A separate homepage-sized copy would be lighter and
- * would drift: re-cut the film, regenerate the posters, forget the derivatives, and the
- * homepage shows a frame from the old film. One source of truth, and `loading="lazy"` means
- * the weight is only paid by someone who scrolls this far.
+ * WHY POSTERS AND NOT CARD-SIZED DERIVATIVES. The SOURCE stays the same file the /watch and
+ * /demo players use as their `poster` - a hand-committed homepage-sized copy would drift
+ * (re-cut the film, regenerate the posters, forget the derivative, and the homepage shows a
+ * frame from the old film). `next/image` keeps that single source of truth and derives the
+ * card-sized copy from it per request, so there is nothing to forget.
  *
  * The card title is `searchCopy().name` - the SAME string as the /watch <h1>, its <title>
  * and the JSON-LD `name`. A card promising something the destination does not say is the
@@ -41,20 +42,32 @@ export function FilmCards() {
               {/* Explicit intrinsic size reserves the box before the bytes land, so a lazy
                   image cannot shift the section under a reader mid-scroll.
 
-                  Plain <img>, matching the two other usages in this repo (ScanTool,
-                  proseComponents) which disable the same rule. `next/image` is used NOWHERE
-                  here, and adopting it for two cards would put every poster through Vercel's
-                  billed image optimizer for a benefit the rule is aimed at elsewhere: these
-                  are below the fold, lazy, and dimensioned, so they cannot be the LCP element
-                  the rule exists to protect. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+                  WHY next/image AND NOT A PLAIN <img> (reversed 2026-08-09). These were plain
+                  <img> on the argument that below-the-fold + lazy + dimensioned means they can
+                  never be the LCP element, so the optimizer was cost without benefit. That is
+                  true of the ELEMENT and false of the METRIC: Lighthouse builds the LCP
+                  dependency graph from every request issued before the LCP paint, and Chrome's
+                  lazy threshold pulls both posters in well before it, so two 1920x1080 JPEGs
+                  displayed in a 634px-wide box sat on the simulated Slow-4G pipe ahead of the
+                  hero h1. Measured on identical local prod builds (Lighthouse 12, mobile,
+                  simulated): 459.6 KiB of image -> 16.3 KiB, LCP 3.6s -> 3.2s, perf 90 -> 93,
+                  and uses-responsive-images / modern-image-formats / uses-optimized-images
+                  from 408 / 344 / 136 KiB flagged to passing. The optimizer bill is two source
+                  images.
+
+                  `sizes` is computed, not guessed: --site-max-width 1180px, 2.5rem inline
+                  padding and gap-8 make each card 534px at full width, so the mobile branch
+                  resolves to ~640w and desktop tops out at 1080w. A lazy 100vw default would
+                  have re-fetched 1920w and undone the fix. This couples the string to
+                  globals.css - change --site-max-width and it silently over-fetches (costs
+                  bytes, never correctness). */}
+              <Image
                 src={thumbnailFor(id)}
                 alt={posterAltFor(id)}
                 width={1920}
                 height={1080}
+                sizes="(min-width: 1180px) 534px, (min-width: 640px) calc((100vw - 7rem) / 2), calc(100vw - 3rem)"
                 loading="lazy"
-                decoding="async"
                 className="w-full aspect-video object-cover"
               />
             </div>
