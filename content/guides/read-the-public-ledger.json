@@ -6,7 +6,7 @@
   "meta_description": "A walkthrough of the mcpindex drift ledger: open it, read a fingerprint-only event row, spot a safety-relevant contract change, and read the coverage dashboard. About 3 minutes.",
   "h1": "Read the public drift ledger and dashboard",
   "project": "mcpindex",
-  "updated": "2026-07-28",
+  "updated": "2026-08-11",
   "est_minutes": 3,
   "outcome": "You can read the public drift ledger and dashboard: what the crawler saw change, how to spot a safety-relevant diff, and what the coverage numbers do (and do not) mean.",
   "body": "The ledger is public proof of the problem the gate solves. mcpindex crawls the public MCP registry every day and records which tool contracts silently change between snapshots. No login, no per-user data, and no server pays to be listed. Here is how to read it.",
@@ -14,11 +14,11 @@
     {
       "id": "open-ledger",
       "heading": "Open the drift ledger",
-      "body": "Start with the headline. The top of the ledger is a running count of how many tools changed their declared contract, across how many total changes (a tool can change more than once), plus how many servers were affected.",
+      "body": "Start with the headline. The top of the ledger is a fraction of tools, not a product of tools times changes: N tools changed a contract field we publish, of M tools observed drifting. The remainder changed in ways we record but do not publish (mostly description-only edits). Servers affected and safety-relevant counts sit just below.",
       "deep_link": {
         "href": "/ledger",
         "label": "Open the drift ledger",
-        "look_for": "the big count ('N tools changed their contract'), then Servers affected and Safety-relevant contract changes just below it."
+        "look_for": "the big count ('N tools changed a contract field we publish'), then 'of M tools observed drifting', then Servers affected and Safety-relevant contract changes."
       }
     },
     {

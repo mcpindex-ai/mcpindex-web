@@ -6,7 +6,7 @@
   "meta_description": "Before you wire an MCP server to your agent: map what it could do, screen its description for hidden instructions, and read its directory trust panel. A hands-on walkthrough using mcpindex's in-browser tools.",
   "h1": "Vet an MCP server before you install it",
   "project": "mcpindex",
-  "updated": "2026-07-28",
+  "updated": "2026-08-11",
   "est_minutes": 3,
   "outcome": "A clear read on any MCP server before you wire it: what your agent could do with it, whether its description hides anything, and where it sits in the directory.",
   "body": "A directory listing tells you a server exists. It does not tell you what that server could do inside your agent, or whether its tool descriptions carry instructions you did not intend to run. These three checks take a couple of minutes and run before anything touches your machine.",
@@ -14,7 +14,7 @@
     {
       "id": "scan",
       "heading": "Map the blast radius of your config",
-      "body": "Paste your mcp.json (or a tools list) and see, per tool, the action type, side effect, reversibility, and whether it egresses off-machine. This runs entirely in your browser; your config is parsed locally and never uploaded.",
+      "body": "Paste your mcp.json (or a tools list) and read the blast radius: per tool, the action type, side effect, reversibility, and whether it sends data off-machine. The scan grades what the config could do, not how the host transports it. This runs entirely in your browser; your config is parsed locally and never uploaded.",
       "embed": "scan-tool"
     },
     {

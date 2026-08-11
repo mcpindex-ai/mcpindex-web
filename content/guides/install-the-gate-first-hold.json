@@ -6,14 +6,14 @@
   "meta_description": "A start-to-finish walkthrough: install the mcpindex gate, see which MCP hosts it wires, then watch it HOLD a silently changed tool contract before your agent acts. Roughly 4 minutes.",
   "h1": "Install the gate and watch your first HOLD",
   "project": "mcpindex",
-  "updated": "2026-07-28",
+  "updated": "2026-08-11",
   "est_minutes": 4,
   "outcome": "The gate installed and wired into your MCP hosts, and a live contract change held right in front of you, so you know exactly what a HOLD looks like before it matters.",
   "impatient": {
     "label": "Skip ahead and watch a contract change get held first",
     "target_id": "watch"
   },
-  "body": "The tool your agent trusted on Monday can change on Tuesday, with no version bump your client notices. The gate installs locally, pins each tool's declared contract on first sight, and HOLDs a call when that contract silently changes, before your agent acts. It is a contract-diff, not a safety verdict, and it holds no credentials. Here is the whole path, start to finish.",
+  "body": "The tool your agent trusted on Monday can change on Tuesday, with no version bump your client notices. The gate installs locally, pins the declared contract of each tool you wire it in front of on first sight, and HOLDs a call when that contract silently changes, before your agent acts. It is a contract-diff, not a safety verdict, and it holds no credentials. Here is the whole path, start to finish.",
   "steps": [
     {
       "id": "install",
