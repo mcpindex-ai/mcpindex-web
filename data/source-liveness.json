@@ -1,7 +1,7 @@
 {
  "gate": "state=unavailable AND corroborated=1 AND kind=repo",
- "generated_at": "2026-08-09T03:50:34Z",
- "server_count": 2011,
+ "generated_at": "2026-08-12T03:51:46Z",
+ "server_count": 2015,
  "servers": {
   "agency.lona/trading": {
    "confirmed_unavailable": "2026-07-23",
@@ -2033,6 +2033,20 @@
    "state": "unavailable",
    "url": "https://github.com/TunnelMind/tunnelmind-data-api"
   },
+  "ai.tunnelmind/sigil": {
+   "confirmed_unavailable": "2026-08-11",
+   "evidence": {
+    "http_status": 404,
+    "methods": [
+     "github-api-authenticated",
+     "github-web-unauthenticated"
+    ],
+    "vantages": 2
+   },
+   "last_verified_accessible": "2026-08-02",
+   "state": "unavailable",
+   "url": "https://github.com/TunnelMind/sigil-mcp"
+  },
   "ai.upgradeagent/upgrade-agent": {
    "confirmed_unavailable": "2026-07-23",
    "evidence": {
@@ -3923,6 +3937,20 @@
    "state": "unavailable",
    "url": "https://github.com/hapticpaper/hh"
   },
+  "com.hauntapi/haunt": {
+   "confirmed_unavailable": "2026-08-11",
+   "evidence": {
+    "http_status": 404,
+    "methods": [
+     "github-api-authenticated",
+     "github-web-unauthenticated"
+    ],
+    "vantages": 2
+   },
+   "last_verified_accessible": "2026-08-02",
+   "state": "unavailable",
+   "url": "https://github.com/Darko893/mcp-server"
+  },
   "com.healthai/radar": {
    "confirmed_unavailable": "2026-07-23",
    "evidence": {
@@ -4273,6 +4301,20 @@
    "state": "unavailable",
    "url": "https://github.com/kbcrumbs/mcp"
   },
+  "com.kiprio/kiprio-mcp": {
+   "confirmed_unavailable": "2026-08-11",
+   "evidence": {
+    "http_status": 404,
+    "methods": [
+     "github-api-authenticated",
+     "github-web-unauthenticated"
+    ],
+    "vantages": 2
+   },
+   "last_verified_accessible": "2026-08-02",
+   "state": "unavailable",
+   "url": "https://github.com/ForeverTools/kiprio-mcp"
+  },
   "com.knowalabs/knowa": {
    "confirmed_unavailable": "2026-07-23",
    "evidence": {
@@ -4342,6 +4384,20 @@
    "last_verified_accessible": null,
    "state": "unavailable",
    "url": "https://github.com/billmacuk/LiftMCP"
+  },
+  "com.lightbringer/connector": {
+   "confirmed_unavailable": "2026-08-11",
+   "evidence": {
+    "http_status": 404,
+    "methods": [
+     "github-api-authenticated",
+     "github-web-unauthenticated"
+    ],
+    "vantages": 2
+   },
+   "last_verified_accessible": "2026-08-02",
+   "state": "unavailable",
+   "url": "https://github.com/discjockeydom/lightbringer-mcp"
   },
   "com.lightres/booking": {
    "confirmed_unavailable": "2026-07-23",
@@ -7703,132 +7759,6 @@
    "state": "unavailable",
    "url": "https://github.com/api-search/apis-io-aws"
   },
-  "io.ausdata/abs-mcp": {
-   "confirmed_unavailable": "2026-07-23",
-   "evidence": {
-    "http_status": 404,
-    "methods": [
-     "github-api-authenticated",
-     "github-web-unauthenticated"
-    ],
-    "vantages": 2
-   },
-   "last_verified_accessible": null,
-   "state": "unavailable",
-   "url": "https://github.com/Bigred97/abs-mcp"
-  },
-  "io.ausdata/aemo-mcp": {
-   "confirmed_unavailable": "2026-07-23",
-   "evidence": {
-    "http_status": 404,
-    "methods": [
-     "github-api-authenticated",
-     "github-web-unauthenticated"
-    ],
-    "vantages": 2
-   },
-   "last_verified_accessible": null,
-   "state": "unavailable",
-   "url": "https://github.com/Bigred97/aemo-mcp"
-  },
-  "io.ausdata/aihw-mcp": {
-   "confirmed_unavailable": "2026-07-23",
-   "evidence": {
-    "http_status": 404,
-    "methods": [
-     "github-api-authenticated",
-     "github-web-unauthenticated"
-    ],
-    "vantages": 2
-   },
-   "last_verified_accessible": null,
-   "state": "unavailable",
-   "url": "https://github.com/Bigred97/aihw-mcp"
-  },
-  "io.ausdata/apra-mcp": {
-   "confirmed_unavailable": "2026-07-23",
-   "evidence": {
-    "http_status": 404,
-    "methods": [
-     "github-api-authenticated",
-     "github-web-unauthenticated"
-    ],
-    "vantages": 2
-   },
-   "last_verified_accessible": null,
-   "state": "unavailable",
-   "url": "https://github.com/Bigred97/apra-mcp"
-  },
-  "io.ausdata/asic-mcp": {
-   "confirmed_unavailable": "2026-07-23",
-   "evidence": {
-    "http_status": 404,
-    "methods": [
-     "github-api-authenticated",
-     "github-web-unauthenticated"
-    ],
-    "vantages": 2
-   },
-   "last_verified_accessible": null,
-   "state": "unavailable",
-   "url": "https://github.com/Bigred97/asic-mcp"
-  },
-  "io.ausdata/ato-mcp": {
-   "confirmed_unavailable": "2026-07-23",
-   "evidence": {
-    "http_status": 404,
-    "methods": [
-     "github-api-authenticated",
-     "github-web-unauthenticated"
-    ],
-    "vantages": 2
-   },
-   "last_verified_accessible": null,
-   "state": "unavailable",
-   "url": "https://github.com/Bigred97/ato-mcp"
-  },
-  "io.ausdata/au-weather-mcp": {
-   "confirmed_unavailable": "2026-07-23",
-   "evidence": {
-    "http_status": 404,
-    "methods": [
-     "github-api-authenticated",
-     "github-web-unauthenticated"
-    ],
-    "vantages": 2
-   },
-   "last_verified_accessible": null,
-   "state": "unavailable",
-   "url": "https://github.com/Bigred97/au-weather-mcp"
-  },
-  "io.ausdata/rba-mcp": {
-   "confirmed_unavailable": "2026-07-23",
-   "evidence": {
-    "http_status": 404,
-    "methods": [
-     "github-api-authenticated",
-     "github-web-unauthenticated"
-    ],
-    "vantages": 2
-   },
-   "last_verified_accessible": null,
-   "state": "unavailable",
-   "url": "https://github.com/Bigred97/rba-mcp"
-  },
-  "io.ausdata/wgea-mcp": {
-   "confirmed_unavailable": "2026-07-23",
-   "evidence": {
-    "http_status": 404,
-    "methods": [
-     "github-api-authenticated",
-     "github-web-unauthenticated"
-    ],
-    "vantages": 2
-   },
-   "last_verified_accessible": null,
-   "state": "unavailable",
-   "url": "https://github.com/Bigred97/wgea-mcp"
-  },
   "io.bitquery/mcp": {
    "confirmed_unavailable": "2026-07-23",
    "evidence": {
@@ -8529,6 +8459,34 @@
    "state": "unavailable",
    "url": "https://github.com/Ansvar-Systems/US_compliance_MCP"
   },
+  "io.github.Antmanbuilds/ari-mcp": {
+   "confirmed_unavailable": "2026-08-11",
+   "evidence": {
+    "http_status": 404,
+    "methods": [
+     "github-api-authenticated",
+     "github-web-unauthenticated"
+    ],
+    "vantages": 2
+   },
+   "last_verified_accessible": "2026-08-02",
+   "state": "unavailable",
+   "url": "https://github.com/Antmanbuilds/ARI"
+  },
+  "io.github.Antmanbuilds/ari-mcp-py": {
+   "confirmed_unavailable": "2026-08-11",
+   "evidence": {
+    "http_status": 404,
+    "methods": [
+     "github-api-authenticated",
+     "github-web-unauthenticated"
+    ],
+    "vantages": 2
+   },
+   "last_verified_accessible": "2026-08-02",
+   "state": "unavailable",
+   "url": "https://github.com/Antmanbuilds/ARI"
+  },
   "io.github.Apoth3osis-ai/agent-payment-mcp": {
    "confirmed_unavailable": "2026-07-23",
    "evidence": {
@@ -9201,6 +9159,20 @@
    "state": "unavailable",
    "url": "https://github.com/CoReason-AI/coreason-ecosystem"
   },
+  "io.github.Coalesce-Software-Inc/coalesce-transform": {
+   "confirmed_unavailable": "2026-08-11",
+   "evidence": {
+    "http_status": 404,
+    "methods": [
+     "github-api-authenticated",
+     "github-web-unauthenticated"
+    ],
+    "vantages": 2
+   },
+   "last_verified_accessible": "2026-08-02",
+   "state": "unavailable",
+   "url": "https://github.com/Coalesce-Software-Inc/coalesce-transform-mcp"
+  },
   "io.github.CodyWatters/riveter": {
    "confirmed_unavailable": "2026-07-23",
    "evidence": {
@@ -9592,6 +9564,20 @@
    "last_verified_accessible": null,
    "state": "unavailable",
    "url": "https://github.com/Dr-Deploy/drdeploy"
+  },
+  "io.github.Dw-Dwain/ace-context-mcp": {
+   "confirmed_unavailable": "2026-08-11",
+   "evidence": {
+    "http_status": 404,
+    "methods": [
+     "github-api-authenticated",
+     "github-web-unauthenticated"
+    ],
+    "vantages": 2
+   },
+   "last_verified_accessible": "2026-08-02",
+   "state": "unavailable",
+   "url": "https://github.com/Dw-Dwain/Ace-Context-MCP"
   },
   "io.github.ERROR403agent/deepblue-trading": {
    "confirmed_unavailable": "2026-07-23",
@@ -10502,6 +10488,20 @@
    "last_verified_accessible": null,
    "state": "unavailable",
    "url": "https://github.com/LuisEBautistaR/dropmind-markets"
+  },
+  "io.github.MCFLAMINGO/local-intel": {
+   "confirmed_unavailable": "2026-08-11",
+   "evidence": {
+    "http_status": 404,
+    "methods": [
+     "github-api-authenticated",
+     "github-web-unauthenticated"
+    ],
+    "vantages": 2
+   },
+   "last_verified_accessible": "2026-08-02",
+   "state": "unavailable",
+   "url": "https://github.com/MCFLAMINGO/gsb-swarm"
   },
   "io.github.MCFLAMINGO/wildwallet": {
    "confirmed_unavailable": "2026-07-23",
@@ -13275,20 +13275,6 @@
    "state": "unavailable",
    "url": "https://github.com/adamgusky/mint"
   },
-  "io.github.adanb13/cirdan": {
-   "confirmed_unavailable": "2026-07-23",
-   "evidence": {
-    "http_status": 404,
-    "methods": [
-     "github-api-authenticated",
-     "github-web-unauthenticated"
-    ],
-    "vantages": 2
-   },
-   "last_verified_accessible": null,
-   "state": "unavailable",
-   "url": "https://github.com/adanb13/cirdan"
-  },
   "io.github.addiinnocent/glashaus-mcp": {
    "confirmed_unavailable": "2026-07-23",
    "evidence": {
@@ -13960,20 +13946,6 @@
    "last_verified_accessible": null,
    "state": "unavailable",
    "url": "https://github.com/arsonx-dev/gatesolve"
-  },
-  "io.github.aruuhii2yo/maxion-mcp-gateway": {
-   "confirmed_unavailable": "2026-07-23",
-   "evidence": {
-    "http_status": 404,
-    "methods": [
-     "github-api-authenticated",
-     "github-web-unauthenticated"
-    ],
-    "vantages": 2
-   },
-   "last_verified_accessible": null,
-   "state": "unavailable",
-   "url": "https://github.com/aruuhii2yo/maxion-mcp-gateway"
   },
   "io.github.asklokesh/servicenow-mcp-server": {
    "confirmed_unavailable": "2026-07-23",
@@ -15501,6 +15473,20 @@
    "state": "unavailable",
    "url": "https://github.com/davidgringras/scrutica"
   },
+  "io.github.dcadolph/vamoose": {
+   "confirmed_unavailable": "2026-08-11",
+   "evidence": {
+    "http_status": 404,
+    "methods": [
+     "github-api-authenticated",
+     "github-web-unauthenticated"
+    ],
+    "vantages": 2
+   },
+   "last_verified_accessible": "2026-08-02",
+   "state": "unavailable",
+   "url": "https://github.com/dcadolph/vamoose"
+  },
   "io.github.deckbase/deckbase-mcp-server": {
    "confirmed_unavailable": "2026-07-23",
    "evidence": {
@@ -16201,6 +16187,20 @@
    "state": "unavailable",
    "url": "https://github.com/egorthinks/perception-mcp"
   },
+  "io.github.eidetic-works/nucleus": {
+   "confirmed_unavailable": "2026-08-11",
+   "evidence": {
+    "http_status": 404,
+    "methods": [
+     "github-api-authenticated",
+     "github-web-unauthenticated"
+    ],
+    "vantages": 2
+   },
+   "last_verified_accessible": "2026-08-02",
+   "state": "unavailable",
+   "url": "https://github.com/eidetic-works/nucleus-mcp"
+  },
   "io.github.eigi-ai/eigi": {
    "confirmed_unavailable": "2026-07-23",
    "evidence": {
@@ -16228,6 +16228,34 @@
    "last_verified_accessible": null,
    "state": "unavailable",
    "url": "https://github.com/elephia/elephia"
+  },
+  "io.github.elevasyncsolutions-jpg/cryptoboss-mcp": {
+   "confirmed_unavailable": "2026-08-11",
+   "evidence": {
+    "http_status": 404,
+    "methods": [
+     "github-api-authenticated",
+     "github-web-unauthenticated"
+    ],
+    "vantages": 2
+   },
+   "last_verified_accessible": "2026-08-02",
+   "state": "unavailable",
+   "url": "https://github.com/elevasyncsolutions-jpg/cryptodata-api"
+  },
+  "io.github.elevasyncsolutions-jpg/cryptodata-api": {
+   "confirmed_unavailable": "2026-08-11",
+   "evidence": {
+    "http_status": 404,
+    "methods": [
+     "github-api-authenticated",
+     "github-web-unauthenticated"
+    ],
+    "vantages": 2
+   },
+   "last_verified_accessible": "2026-08-02",
+   "state": "unavailable",
+   "url": "https://github.com/elevasyncsolutions-jpg/cryptodata-api"
   },
   "io.github.elliot-esimdog/mcp-esim": {
    "confirmed_unavailable": "2026-07-23",
@@ -16396,20 +16424,6 @@
    "last_verified_accessible": null,
    "state": "unavailable",
    "url": "https://github.com/fedepellegrini/agentpromocode"
-  },
-  "io.github.feelgreatfoodie/cachebash": {
-   "confirmed_unavailable": "2026-07-23",
-   "evidence": {
-    "http_status": 404,
-    "methods": [
-     "github-api-authenticated",
-     "github-web-unauthenticated"
-    ],
-    "vantages": 2
-   },
-   "last_verified_accessible": null,
-   "state": "unavailable",
-   "url": "https://github.com/rezzedai/cachebash"
   },
   "io.github.fegalvezg/skaut-mcp": {
    "confirmed_unavailable": "2026-07-23",
@@ -17559,6 +17573,20 @@
    "state": "unavailable",
    "url": "https://github.com/holco-apps/pennypilot"
   },
+  "io.github.holetron/hindsight-mempalace": {
+   "confirmed_unavailable": "2026-08-11",
+   "evidence": {
+    "http_status": 404,
+    "methods": [
+     "github-api-authenticated",
+     "github-web-unauthenticated"
+    ],
+    "vantages": 2
+   },
+   "last_verified_accessible": "2026-08-02",
+   "state": "unavailable",
+   "url": "https://github.com/holetron/hindsight-mempalace"
+  },
   "io.github.holiday-forever/holiday-forever-2": {
    "confirmed_unavailable": "2026-07-23",
    "evidence": {
@@ -17684,6 +17712,20 @@
    "last_verified_accessible": null,
    "state": "unavailable",
    "url": "https://github.com/hunterzai16z/SAAS-AGENTS"
+  },
+  "io.github.hwang-yh-cto/space-ocr": {
+   "confirmed_unavailable": "2026-08-11",
+   "evidence": {
+    "http_status": 404,
+    "methods": [
+     "github-api-authenticated",
+     "github-web-unauthenticated"
+    ],
+    "vantages": 2
+   },
+   "last_verified_accessible": "2026-08-02",
+   "state": "unavailable",
+   "url": "https://github.com/hwang-yh-cto/space-ocr-mcp"
   },
   "io.github.hyperdrift-io/nextrole": {
    "confirmed_unavailable": "2026-07-23",
@@ -18692,6 +18734,20 @@
    "last_verified_accessible": null,
    "state": "unavailable",
    "url": "https://github.com/jessedu29260-netizen/bakeryos-ios"
+  },
+  "io.github.jessemarshall/coalesce-transform": {
+   "confirmed_unavailable": "2026-08-11",
+   "evidence": {
+    "http_status": 404,
+    "methods": [
+     "github-api-authenticated",
+     "github-web-unauthenticated"
+    ],
+    "vantages": 2
+   },
+   "last_verified_accessible": "2026-08-02",
+   "state": "unavailable",
+   "url": "https://github.com/jessemarshall/coalesce-transform-mcp"
   },
   "io.github.jinhsueh/maacgo-mcp": {
    "confirmed_unavailable": "2026-07-23",
@@ -28158,5 +28214,5 @@
    "url": "https://github.com/ErikThiart/simcloud"
   }
  },
- "url_count": 1782
+ "url_count": 1784
 }
