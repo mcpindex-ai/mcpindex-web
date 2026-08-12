@@ -183,9 +183,9 @@ const TRIPWIRES = {
     }
     // The posture figure is GENERATED from these two sets, so a size change is not an error in
     // itself - it is a prompt to re-read the figure and its twin, which quote both counts.
-    return nS === 12 && nR === 10
+    return nS === 13 && nR === 11
       ? null
-      : `the surfaced taxonomy changed (${nS} surfaced, ${nR} safety-relevant; the posture figure and its text twin were written against 12 and 10). Re-read the figure, then update this tripwire.`;
+      : `the surfaced taxonomy changed (${nS} surfaced, ${nR} safety-relevant; the posture figure and its text twin were written against 13 and 11). Re-read the figure, then update this tripwire.`;
   },
 };
 

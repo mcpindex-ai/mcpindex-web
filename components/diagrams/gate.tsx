@@ -316,7 +316,7 @@ export function DTierLadder() {
 /* D-05 - Anatomy of a hold --------------------------------------------------- */
 
 const CALLOUTS: [number, number, string[]][] = [
-  [86, 50, ['A fixed taxonomy. One of twelve', 'surfaced kinds. Never free prose.']],
+  [86, 50, ['A fixed taxonomy. One of thirteen', 'surfaced kinds. Never free prose.']],
   [114, 105, ['Your baseline. What you saw first.']],
   [142, 151, ['What the server sends now.']],
   [184, 188, ['Why it held here. Monitor would', 'notify and let it through.']],
