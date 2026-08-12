@@ -37,7 +37,7 @@ on:
       - 'package-lock.json'
       - 'tsconfig.json'
       - '.github/workflows/web-ci.yml'
-      # These two DERIVED artifacts are runtime-trusted and must be gated, even though
+      # These three DERIVED artifacts are runtime-trusted and must be gated, even though
       # 'data/**' as a whole is deliberately excluded above. lib/registry.ts loadServers()
       # PREFERS data/server-index.json over the snapshot, and mcpindex-trust keys every verdict
       # by data/slugmap.json. lib/serverIndexArtifact.test.ts and lib/slugmapArtifact.test.ts
@@ -46,8 +46,21 @@ on:
       # production having executed ZERO validation of them. Naming them individually rather
       # than widening to 'data/**' keeps the ~12/day verdicts.json syncs from triggering a full
       # build plus a Chromium download, which is why the omission exists in the first place.
+      #
+      # data/source-liveness.json qualifies on exactly that test and was missed. lib/quality.ts
+      # takes `liveness` as a REQUIRED argument and withholds the two repository-derived credits
+      # from a flagged listing, so the file moves a RANKING that /leaderboard, /best and
+      # rankServers -> /api/v1/preflight all consume. lib/sourceLiveness.test.ts and
+      # lib/quality.test.ts bind it, and Vercel runs neither. The gap was not theoretical: #85
+      # merged 2026-08-12 on a `verify` computed against a base four commits stale (the ruleset
+      # sets strict:false, so GitHub never required an up-to-date branch), and because this file
+      # was unlisted here, nothing ran against the merged tree at all. The liveness publisher is
+      # human-gated by design, which makes it the one PR class that reliably sits long enough
+      # for its base to move. It publishes weekly plus a 48h re-check, so this costs about one
+      # run a week, not the ~12/day that keeps 'data/**' excluded.
       - 'data/server-index.json'
       - 'data/slugmap.json'
+      - 'data/source-liveness.json'
 
 permissions:
   contents: read
