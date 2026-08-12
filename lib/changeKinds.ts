@@ -22,6 +22,7 @@ export const SURFACE_CHANGE_KINDS: ReadonlySet<string> = new Set([
   'output-schema-changed',
   'output-schema-added',
   'annotation-flip-to-destructive',
+  'param-mirrored-to-header',
   'tool-removed',
   'deep-schema-undiffable',
 ]);
@@ -46,6 +47,11 @@ export const SAFETY_RELEVANT_CHANGE_KINDS: ReadonlySet<string> = new Set([
   'constraint-narrowed',
   'required-set-expanded',
   'annotation-flip-to-destructive',
+  // A parameter that newly mirrors its VALUE into an HTTP header, making it
+  // visible to every proxy, CDN and gateway on the path. The 2026-07-28 spec
+  // says servers SHOULD NOT do this with passwords, API keys, tokens or PII;
+  // nothing enforces it.
+  'param-mirrored-to-header',
   'output-schema-changed',
   'tool-removed',
   // A schema too deep to fully diff fails safe: it cannot be proven benign, so it joins the

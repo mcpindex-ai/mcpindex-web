@@ -96,6 +96,7 @@ export async function GET() {
         'enum-values-removed',
         'removed-param',
         'annotation-flip-to-destructive',
+        'param-mirrored-to-header',
         'output-schema-added',
         'output-schema-changed',
         'tool-added',
