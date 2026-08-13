@@ -71,9 +71,33 @@ export default function PrivacyPage() {
           makes a read-only query to <span className="inline-code">/api/v1/drift/any</span> to ask
           whether a tool&rsquo;s contract already drifted, so it can warn you on the first call;
           that query sends only a salted fingerprint. It <strong>never</strong> sends tool schemas,
-          arguments, descriptions, URLs, or server/tool names. (<span className="inline-code">detection</span>{' '}
-          enables the signal above; <span className="inline-code">contribute</span> is reserved for
-          a future richer tier and behaves identically today.) Unset the variable to stop.
+          arguments, descriptions, URLs, or server/tool names. There are three on settings, each
+          a superset of the one before: <span className="inline-code">lookup</span> is{' '}
+          <strong>read-only</strong> - it makes the{' '}
+          <span className="inline-code">/api/v1/drift/any</span> query above and reports{' '}
+          <strong>none of your own catches back</strong>;{' '}
+          <span className="inline-code">detection</span> adds the one-way signal;{' '}
+          <span className="inline-code">contribute</span> is reserved for a future richer tier
+          and behaves identically to <span className="inline-code">detection</span> today.
+        </p>
+        <p>
+          Where that setting lives, for the{' '}
+          <span className="inline-code">mcpindex-gate</span> clients: the proxy reads it from its
+          own environment, which your MCP host sets from the wired entry in your config file - so
+          unsetting the variable in a shell does not change what a wired server runs with. Turn it
+          off with{' '}
+          <span className="inline-code">mcpindex-config-wire --drift-telemetry off</span>, which
+          clears it from every wired entry.
+        </p>
+        <p>
+          From gate <strong>v0.13.0</strong>, your choice is also recorded locally in{' '}
+          <span className="inline-code">~/.mcpindex/consent.json</span> and re-applied whenever
+          the gate re-wires, so a routine re-wire stops silently clearing a setting you chose.
+          That file holds the <strong>mode only</strong> - no identifiers, no server or tool
+          names - and is <strong>never sent anywhere</strong>. It is stated plainly as what it is:
+          not a security boundary. Anything running as your user can edit it, exactly as it can
+          edit your host config. What it buys is that your setting survives an upgrade, and that
+          a wired entry disagreeing with it is reported to you rather than silently obeyed.
         </p>
         <p>
           Project config scanning (the{' '}
