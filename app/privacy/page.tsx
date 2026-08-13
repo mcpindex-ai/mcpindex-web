@@ -22,7 +22,7 @@ export default function PrivacyPage() {
         Privacy.
       </h1>
       <p className="mt-2 font-mono text-[11.5px] text-[var(--color-mute)]">
-        Last updated: 2026-07-20
+        Last updated: 2026-08-12
       </p>
 
       <div className="mt-10 space-y-6 text-[14.5px] leading-[1.65] text-[var(--color-cite)]">
@@ -74,6 +74,29 @@ export default function PrivacyPage() {
           arguments, descriptions, URLs, or server/tool names. (<span className="inline-code">detection</span>{' '}
           enables the signal above; <span className="inline-code">contribute</span> is reserved for
           a future richer tier and behaves identically today.) Unset the variable to stop.
+        </p>
+        <p>
+          Project config scanning (the{' '}
+          <span className="inline-code">mcpindex-config-wire</span> command):{' '}
+          <strong>on by default, and it sends nothing</strong>. To count the MCP servers you
+          actually run, the gate reads project-level config files - a repo&rsquo;s own{' '}
+          <span className="inline-code">.mcp.json</span>,{' '}
+          <span className="inline-code">.cursor/mcp.json</span>,{' '}
+          <span className="inline-code">.vscode/mcp.json</span>,{' '}
+          <span className="inline-code">.gemini/settings.json</span>,{' '}
+          <span className="inline-code">.zed/settings.json</span>. It finds those repos from
+          the project list Claude Code already keeps in{' '}
+          <span className="inline-code">~/.claude.json</span>. Stated plainly, because it is
+          the part worth knowing: <strong>this widens what the tool reads on your disk from
+          about ten fixed paths in your home directory to every repository you have opened in
+          Claude Code.</strong> It is a local, read-only scan. No file content, no path, and no
+          server name leaves your machine - there is no request associated with this feature at
+          all. Project configs are <strong>detected and counted, never wired</strong>: they are
+          version-controlled and shared, so wiring one would commit a change that breaks every
+          teammate who has not installed the gate. Turn it off with{' '}
+          <span className="inline-code">--no-project-scan</span> or{' '}
+          <span className="inline-code">MCPINDEX_PROJECT_SCAN=off</span>; with it off, the
+          reported server count is a floor and the tool says so.
         </p>
         <p>
           Call receipts (the <span className="inline-code">mcpindex-gate</span> client):{' '}
