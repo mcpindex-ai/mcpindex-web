@@ -72,23 +72,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Merge gate for machine-published Bitcoin anchors. The VM publisher arms GitHub
-      # auto-merge when this job is green; a shell-side path check alone is not enough
-      # (token with Contents+PR write can arm any PR). Re-evaluate the full PR file list
-      # here so a later push onto verdict-anchors cannot ride non-allowlisted paths in.
-      - name: Anchor publish path allowlist
-        if: github.event_name == 'pull_request' && github.head_ref == 'verdict-anchors'
+      # Merge gate for machine-published data. Two VM publishers arm GitHub auto-merge when
+      # this job is green; a shell-side path check alone is not enough (token with
+      # Contents+PR write can arm any PR). Re-evaluate the full PR file list here so a later
+      # push onto either publish branch cannot ride non-allowlisted paths in.
+      #
+      #   verdict-anchors -> data/verdict-anchors.json + public/anchors/<sha256>.ots
+      #   liveness-data   -> data/source-liveness.json
+      #
+      # Each regex is mirrored in its publisher's ALLOWLIST_RE (mcpindex-trust/scripts/
+      # publish_verdict_anchors.sh, publish_source_liveness.sh). Change both together.
+      - name: Machine-publish path allowlist
+        if: github.event_name == 'pull_request' && (github.head_ref == 'verdict-anchors' || github.head_ref == 'liveness-data')
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
+          HEAD_REF: ${{ github.head_ref }}
         run: |
           python3 <<'PY'
           import json, os, re, urllib.request
 
-          allow = re.compile(
-              r"^(data/verdict-anchors\.json|public/anchors/[0-9a-f]{64}\.ots)$"
-          )
+          ALLOW = {
+              "verdict-anchors": r"^(data/verdict-anchors\.json|public/anchors/[0-9a-f]{64}\.ots)$",
+              "liveness-data": r"^data/source-liveness\.json$",
+          }
+          head = os.environ["HEAD_REF"]
+          # An unknown head branch reaching this step means the `if:` above and this table
+          # have drifted apart. Fail rather than fall through to an empty allowlist.
+          if head not in ALLOW:
+              raise SystemExit(f"allowlist: no rule for head branch {head!r}")
+          allow = re.compile(ALLOW[head])
           url = (
               f"https://api.github.com/repos/{os.environ['REPO']}/pulls/"
               f"{os.environ['PR_NUMBER']}/files?per_page=100"
@@ -105,14 +119,13 @@ jobs:
               files = json.load(resp)
           names = [f["filename"] for f in files]
           if not names:
-              raise SystemExit("anchor allowlist: PR has no files")
+              raise SystemExit(f"allowlist: PR on {head} has no files")
           bad = [n for n in names if not allow.match(n)]
           if bad:
               raise SystemExit(
-                  "anchor allowlist: non-allowlisted path(s) on verdict-anchors: "
-                  + ", ".join(bad)
+                  f"allowlist: non-allowlisted path(s) on {head}: " + ", ".join(bad)
               )
-          print("anchor allowlist ok:", ", ".join(names))
+          print(f"allowlist ok ({head}):", ", ".join(names))
           PY
 
       - uses: actions/setup-node@v4
@@ -122,6 +135,16 @@ jobs:
 
       - name: Install
         run: npm ci
+
+      # Fails the PR that edits code a walkthrough guide documents without re-stamping the
+      # guide. mcpindex-docs-freshness was red on 194 of 268 runs because nothing made the
+      # two travel together; this is the forcing function that makes that probe a backstop
+      # instead of a permanently lit lamp. Reads the PR file list over the API rather than
+      # taking fetch-depth: 0 - this repo's history is 1.2GB.
+      - name: Guide freshness
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/check-guide-freshness.mjs
 
       - name: Lint
         run: npm run lint
