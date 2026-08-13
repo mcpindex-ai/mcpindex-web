@@ -1,0 +1,66 @@
+{
+  "body": "The io.github.nirholas/portfolio-mcp server provides an agent's trading state. Developers can set it up with standard MCP clients. This guide covers the steps to connect the server.",
+  "citation_ids": [
+    "mcpindex-snapshot:io-github-nirholas-portfolio-mcp"
+  ],
+  "config_rendered": true,
+  "est_minutes": 5,
+  "faq": [
+    {
+      "a": "The THREE_WS_BASE environment variable is used to override the base URL of the three.ws API that serves the portfolio and trades endpoints. This is only required when self-hosting or targeting a preview deployment.",
+      "q": "What is the purpose of the THREE_WS_BASE environment variable?"
+    },
+    {
+      "a": "The server uses the stdio transport protocol.",
+      "q": "What transport protocol is used by the server?"
+    },
+    {
+      "a": "The source code of the server is available on GitHub at https://github.com/nirholas/three.ws.",
+      "q": "Where can I find the source code of the server?"
+    }
+  ],
+  "h1": "Connecting io.github.nirholas/portfolio-mcp to Claude Code",
+  "internal_links": [],
+  "kind": "walkthrough",
+  "meta_description": "Setup three.ws Portfolio MCP",
+  "next": {
+    "href": "/server/io-github-nirholas-portfolio-mcp",
+    "label": "See this server's trust record"
+  },
+  "outcome": "You will have the io.github.nirholas/portfolio-mcp server working with Claude Code at the end of this guide.",
+  "project": "mcpindex",
+  "slug": "io-github-nirholas-portfolio-mcp-with-claude-code",
+  "steps": [
+    {
+      "body": "First, install the @three-ws/portfolio-mcp package using npm. This package is required to connect the server. You can install it by running the command npm install @three-ws/portfolio-mcp. Make sure you have Node.js and npm installed on your system.",
+      "heading": "Install Required Packages",
+      "id": "install-npm"
+    },
+    {
+      "body": "Paste this into your MCP client config, then restart the client.\n\n```json\n{\n  \"mcpServers\": {\n    \"portfolio-mcp\": {\n      \"command\": \"npx\",\n      \"args\": [\n        \"-y\",\n        \"@three-ws/portfolio-mcp\"\n      ],\n      \"env\": {\n        \"SOLANA_SECRET_KEY\": \"<your SOLANA_SECRET_KEY>\"\n      }\n    }\n  }\n}\n```",
+      "heading": "Add it to your MCP config",
+      "id": "add-to-config"
+    },
+    {
+      "body": "Set the required environment variables. The SOLANA_SECRET_KEY variable is required and should be a Base58-encoded Solana secret key. The THREE_WS_SESSION variable is optional and required for account-scoped reads. You can set these variables in your system settings or in a .env file. The THREE_WS_BASE, THREE_WS_TIMEOUT_MS, SOLANA_RPC_URL, MAX_SOL_PER_TX, and RECIPIENT_ALLOWLIST variables are also optional and can be set according to your needs.",
+      "heading": "Set Environment Variables",
+      "id": "set-env-vars"
+    },
+    {
+      "body": "Check if the server appears in the client and its tools are callable. You can do this by checking the client's UI or by using the client's API to call the server's tools. Confirm that the server is working as expected and that you can retrieve the agent's trading state.",
+      "heading": "Confirm the Server Connection",
+      "id": "confirm-connection"
+    },
+    {
+      "body": "If the server does not appear in the client, check the environment variables and make sure they are set correctly. Also, check the client's logs for any error messages. You can try reinstalling the package or restarting the client to resolve the issue.",
+      "heading": "Troubleshoot Connection Issues",
+      "id": "troubleshoot"
+    },
+    {
+      "body": "Set up the MCP client according to the standard procedure. This may involve creating a new project, installing dependencies, and configuring the client to connect to the server. Follow the client's documentation to complete the setup.",
+      "heading": "Client Setup",
+      "id": "client-setup"
+    }
+  ],
+  "title": "Connect Portfolio"
+}
