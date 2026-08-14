@@ -1,5 +1,9 @@
 import { getServerCount, getCategoryCount } from '@/lib/registry';
 import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
+// llms.txt is the agent-readable spec, so a hardcoded version here is the same
+// half-landed bump lib/verdictContract.ts exists to prevent - and the worst copy
+// to get wrong, because it is the one an integrator reads INSTEAD of the API.
+import { VERDICT_CONTRACT_VERSION } from '@/lib/verdictContract';
 import { gateInstallLine } from '@/lib/install/manifest';
 import { SOURCE_LIVENESS_CENSUS } from '@/lib/sourceLiveness';
 import { DIAGRAMS, renderTwin } from '@/lib/diagrams';
@@ -62,7 +66,7 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 
 ## Advisory directory screen (v1)
 
-- Verdict contract: 1.0.0 (states ALLOW / DENY / REVIEW / UNVERIFIED; severity INFO..CRITICAL). At v1 the public screen produces REVIEW or UNVERIFIED only - ALLOW and DENY are reserved in the contract, not emitted today.
+- Verdict contract: ${VERDICT_CONTRACT_VERSION} (states ALLOW / DENY / REVIEW / UNVERIFIED; severity INFO..CRITICAL). At v1 the public screen produces REVIEW or UNVERIFIED only - ALLOW and DENY are reserved in the contract, not emitted today.
 - Capability: check_tool_trust (exposed by the npm MCP server, see below). This is the directory client, not the in-path gate.
 - Framework bindings: @mcp-index/mastra wires check_tool_trust into Mastra as a beforeToolCall hook (warn or enforce; fail-closed, no credentials). A client of the advisory screen, not the in-path gate.
 - Pipeline (screen): today the screen is semantic-only - an LLM judge reads each tool description for hidden instructions. The deterministic conformance probe (drives the tool against its declared schema) is built but has NOT yet run on the public corpus, so no published screen verdict carries a conformance result; a clearing ALLOW (which the probe would earn) is not produced at v1. When the probe runs it is monitored, not enforced. Confidence is reported but not yet calibrated (calibrated=false).

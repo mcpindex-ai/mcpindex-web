@@ -11,6 +11,11 @@
 //   O3  drop pure action verbs (create/update/get/...) that only match tool-name
 //       nouns like "create-web-page". (Rank-side QS weighting lives in
 //       lib/recommend.ts.)
+//
+// v1.2 (2026-08-14):
+//   O4  a plural query token also matches its singular as a whole word, so
+//       "pdfs" reaches a server named "pdf". O2' prefix matching only ever ran
+//       singular->plural.
 
 import type { IndexedServer } from './types';
 
@@ -48,12 +53,33 @@ export function searchableName(name: string): string {
 
 const esc = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+// O4: strip one unambiguous English plural "s" so a plural QUERY token can still
+// reach a singular-named server. Deliberately narrow - "ss"/"us"/"is" endings
+// ("access", "status", "analysis") are not plurals, and the >=4 floor keeps
+// 3-char tokens like "aws"/"gcs"/"ops" whole, where a stem would be pure noise.
+function singular(term: string): string | null {
+  if (term.length < 4 || !term.endsWith('s')) return null;
+  if (/(?:ss|us|is)$/.test(term)) return null;
+  return term.slice(0, -1);
+}
+
 // O2': <=2-char tokens match as whole words (\bpr\b: "PR" not "preview").
 // Longer tokens match at a word START (\bdrive): "drive"/"drives"/"google-drive"
 // and "sheet"->"sheets", but NOT mid-word ("drive" in "pipedrive").
+//
+// O4: prefix matching is one-directional - `\bsheet` reaches "sheets", but
+// `\bpdfs` never reaches "pdf" - so a user typing the natural plural silently
+// missed the canonical servers (observed: ?q=pdfs returned pdfspark/pdfslim but
+// NOT io.pdfbroker/pdf or mcp-pdf). The singular alternative is matched as a
+// WHOLE WORD, not a prefix: folding "docs" down to a bare `\bdoc` prefix would
+// newly match "docker"/"document", buying recall with precision. `\b(?:docs|doc\b)`
+// reaches "docs", "docsend" and the standalone word "doc", and still never
+// matches "docker".
 function source(term: string): string {
   const e = esc(term);
-  return term.length <= 2 ? `\\b${e}\\b` : `\\b${e}`;
+  if (term.length <= 2) return `\\b${e}\\b`;
+  const stem = singular(term);
+  return stem === null ? `\\b${e}` : `\\b(?:${e}|${esc(stem)}\\b)`;
 }
 
 // A query token compiled once per request: `test` is non-global (reused across
