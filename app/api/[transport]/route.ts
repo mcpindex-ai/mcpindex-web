@@ -312,19 +312,22 @@ const handler = createMcpHandler(
       },
     );
   },
+  // mcp-handler 2.x takes ONE options object: the SDK's ServerOptions plus
+  // `serverInfo`, `verboseLogs` and `onEvent`. The 1.x third argument is gone,
+  // and with it two options that no longer exist:
+  //
+  //   basePath   - 2.x does no routing. "The returned handler serves every
+  //                request it receives - routing belongs to the host framework."
+  //                This file IS the route (app/api/[transport]/route.ts -> /api/mcp),
+  //                so the mount point already says what basePath used to.
+  //   disableSse - moot rather than dropped. It suppressed the standalone SSE GET
+  //                endpoint, and 2026-07-28 REMOVED that endpoint from the protocol
+  //                (see the Streamable HTTP binding: "Removal of the GET stream
+  //                endpoint"). A per-request SSE *response* is still legal and is
+  //                still bounded by `maxDuration` below.
   {
     serverInfo: { name: 'mcpindex', version: '1.0.0' },
     capabilities: { tools: {} },
-  },
-  {
-    basePath: '/api', // matches app/api/[transport]/route.ts -> /api/mcp
-    // NOTE: mcp-handler's config `maxDuration` is deliberately absent. It is read at exactly
-    // one site (mcp-handler/dist/index.js:554), inside the SSE branch, AFTER the
-    // `if (disableSse) return 404` early-return at :369 - so with disableSse below it is
-    // unreachable. It was set to 30 here and a comment justified the platform timeout as
-    // "above mcp-handler's own 30s hold". There is no such hold. Removed rather than left
-    // inert, so nobody tunes a ceiling that does not exist.
-    disableSse: true,
   },
 );
 
