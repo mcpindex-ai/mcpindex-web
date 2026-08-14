@@ -165,6 +165,26 @@ jobs:
       - name: Test
         run: npm test
 
+      # /trust and /methodology tell readers the verdict chain is auditable end to end.
+      # This is what keeps that sentence true: it reproduces each anchor's root from the
+      # corpus at its own corpus_commit, re-folds the hash chain, and checks every .ots
+      # proof stamps the chain_root it claims. Before this gate the claim rested on our
+      # say-so, because the canonicalization lived only in a private repo.
+      #
+      # --self-test first, because a verifier that cannot fail is worse than none: it
+      # pins the exact serialization, so a refactor cannot silently change every digest
+      # and orphan the proofs already timestamped on Bitcoin.
+      #
+      # --last 3 --fetch, not the full ledger: checkout is depth-1 (this repo's history
+      # is 1.2GB) so historical corpora are absent, and each one is a 25MB blob. A
+      # blobless depth-1 fetch of one commit costs ~1s, so three is ~8s and catches the
+      # regression that matters - the newest anchors no longer reproducing. Run the whole
+      # ledger locally with `python3 scripts/verify_anchors.py` on a full clone.
+      - name: Verify verdict anchors
+        run: |
+          python3 scripts/verify_anchors.py --self-test
+          python3 scripts/verify_anchors.py --last 3 --fetch
+
   # WCAG AA text-contrast audit over the real rendered pages. Separate job (needs a browser +
   # a running server) so a contrast regression can no longer ship unnoticed - scripts/check-contrast.mjs
   # was previously manual-only. A 404 (data-backed page without its runtime env) is skipped; a

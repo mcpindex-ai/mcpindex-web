@@ -51,7 +51,7 @@ export default function MethodologyPage() {
           <Dim
             label="History"
             kind="OTS"
-            body="OTS hash-chained history with cadence bound = confirmation latency (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized); sub-window precision asserted, not proven. The verdict stream for a tool is hash-chained and timestamped via OpenTimestamps; the chain is auditable end-to-end once a block confirms."
+            body="OTS hash-chained history with cadence bound = confirmation latency (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized); sub-window precision asserted, not proven. The verdict stream for a tool is hash-chained and timestamped via OpenTimestamps; the chain is auditable end-to-end once a block confirms, and `python3 scripts/verify_anchors.py` in the site repository reproduces every anchor from the published corpus (recipe: docs/verifying-anchors.md)."
           />
         </ul>
       </section>

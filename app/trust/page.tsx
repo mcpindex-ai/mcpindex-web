@@ -107,11 +107,30 @@ export default function TrustPage() {
               inspect them with the OpenTimestamps tooling.
             </p>
             <p className="mt-4">
-              We are deliberately not publishing a one-command verification script right now.
-              We shipped one, found it reported a clean pass on a checkout where it had in fact
-              checked nothing, and would rather say so than leave a green tick that means
-              nothing. A recipe that genuinely works end to end is being written; until it is
-              tested we will not point you at one.
+              The one-command check we previously withheld now exists:{' '}
+              <code className="font-mono text-[12px]">python3 scripts/verify_anchors.py</code>{' '}
+              from a clone of the site repository, no dependencies. It reproduces each
+              anchor&apos;s root from the corpus at that anchor&apos;s own commit, re-folds the
+              hash chain, and checks every proof stamps the{' '}
+              <code className="font-mono text-[12px]">chain_root</code> it claims. The recipe it
+              implements, including the one step nobody guesses, is written out in{' '}
+              <a
+                href="https://github.com/mcpindex-ai/mcpindex-web/blob/main/docs/verifying-anchors.md"
+                target="_blank"
+                rel="noreferrer"
+                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+              >
+                docs/verifying-anchors.md
+              </a>
+              .
+            </p>
+            <p className="mt-4">
+              The earlier version of that script reported a clean pass on a checkout where it
+              had in fact checked nothing, which is why we pulled it. This one refuses to
+              report success unless it actually reproduced a corpus, and ships a{' '}
+              <code className="font-mono text-[12px]">--self-test</code> so you can confirm it
+              detects tampering rather than rubber-stamping. Do not take the green tick on
+              trust; mutate a root and watch it go red.
             </p>
           </>
         )}
