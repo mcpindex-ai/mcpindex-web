@@ -3,3 +3,13 @@
 # wedge the sync (or, worse, leave conflict markers a direct push could ship). `union` is a git
 # BUILT-IN driver (no custom command), so this cannot introduce a code-exec merge driver.
 data/adjudications.jsonl merge=union
+
+# Opt these two out of eol normalization. Both are machine-written and machine-read, never
+# hand-edited, so there is no reason for git to rewrite their bytes on checkout. Today nothing
+# in-tree byte-compares them - lib/verdictAnchor.ts:82 deliberately does NOT recompute
+# chain_root, it only checks that the proof path matches, and chain_root is folded over
+# canonical JSON rather than raw file bytes. So this is a guard against a future or external
+# verifier that does hash the file as it sits on disk, which is the natural way to check an
+# OpenTimestamps proof in public/anchors/<sha256>.ots against the artifact it commits to.
+data/verdicts.json -text
+data/verdict-anchors.json -text
