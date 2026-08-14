@@ -60,7 +60,10 @@ export default function PrivacyPage() {
           Drift telemetry (the <span className="inline-code">@mcp-index/sdk</span> /{' '}
           <span className="inline-code">mcpindex-gate</span> clients): <strong>off by
           default</strong>. The SDK sends <strong>nothing</strong> unless you set{' '}
-          <span className="inline-code">MCPINDEX_DRIFT_TELEMETRY=detection</span>. When enabled,
+          <span className="inline-code">MCPINDEX_DRIFT_TELEMETRY</span> to one of the three on
+          settings below - and note that all three, <em>including</em>{' '}
+          <span className="inline-code">lookup</span>, send at least a salted fingerprint. When
+          set to <span className="inline-code">detection</span>,
           a tool-pin or a contract drift sends one one-way signal to{' '}
           <span className="inline-code">/api/v1/drift</span>: salted (HMAC) fingerprints of the
           server/tool id, the contract hashes, the change type, a safety flag, an
@@ -86,15 +89,25 @@ export default function PrivacyPage() {
           own environment, which your MCP host sets from the wired entry in your config file - so
           unsetting the variable in a shell does not change what a wired server runs with. Turn it
           off with{' '}
-          <span className="inline-code">mcpindex-config-wire --drift-telemetry off</span>, which
-          clears it from every wired entry.
+          <span className="inline-code">
+            mcpindex-config-wire wire --repin --drift-telemetry off
+          </span>
+          , which clears the setting from every wired entry. The{' '}
+          <span className="inline-code">--repin</span> is required: without it, wiring skips
+          servers it has already wired, so on an already-configured machine the command reports
+          success and changes nothing. We would rather document the flag than let you believe you
+          had opted out when you had not.
         </p>
         <p>
           From gate <strong>v0.13.0</strong>, your choice is also recorded locally in{' '}
           <span className="inline-code">~/.mcpindex/consent.json</span> and re-applied whenever
           the gate re-wires, so a routine re-wire stops silently clearing a setting you chose.
-          That file holds the <strong>mode only</strong> - no identifiers, no server or tool
-          names - and is <strong>never sent anywhere</strong>. It is stated plainly as what it is:
+          That file holds the mode, a label for how it was set, and when - plus, when the setting
+          was carried over from an existing wired config, a reference to the config it came from
+          (in <span className="inline-code">0.13.1</span> that reference is a file path on your
+          machine). No server or tool names, and it is <strong>never sent anywhere</strong>: it
+          is read only by the wiring command and by{' '}
+          <span className="inline-code">status</span>. It is stated plainly as what it is:
           not a security boundary. Anything running as your user can edit it, exactly as it can
           edit your host config. What it buys is that your setting survives an upgrade, and that
           a wired entry disagreeing with it is reported to you rather than silently obeyed.
