@@ -1,0 +1,66 @@
+{
+  "body": "The io.github.cyanheads/eurostat-mcp-server provides access to the Eurostat catalogue. Developers can use this server with MCP clients. To get started, follow the standard MCP client setup steps and configure the necessary environment variables.",
+  "citation_ids": [
+    "mcpindex-snapshot:io-github-cyanheads-eurostat-mcp-server"
+  ],
+  "config_rendered": true,
+  "est_minutes": 5,
+  "faq": [
+    {
+      "a": "The default value of EUROSTAT_TOC_CACHE_TTL_MS is 12 hours. This means that a fetched catalogue TOC stays usable for 12 hours before the next catalogue call refreshes it.",
+      "q": "What is the default value of EUROSTAT_TOC_CACHE_TTL_MS?"
+    },
+    {
+      "a": "The CANVAS_PROVIDER_TYPE environment variable is used to enable the dataframe canvas. Setting it to 'duckdb' allows the server to list the eurostat_dataframe_describe and eurostat_dataframe_query tools and enables additional features such as staging a match larger than the 5,000-row inline cap as a SQL table.",
+      "q": "What is the purpose of the CANVAS_PROVIDER_TYPE environment variable?"
+    },
+    {
+      "a": "The source code for the io.github.cyanheads/eurostat-mcp-server is available on GitHub at https://github.com/cyanheads/eurostat-mcp-server.",
+      "q": "Where can I find the source code for the io.github.cyanheads/eurostat-mcp-server?"
+    }
+  ],
+  "h1": "io.github.cyanheads/eurostat-mcp-server Setup",
+  "internal_links": [],
+  "kind": "walkthrough",
+  "meta_description": "Connect io.github.cyanheads/eurostat-mcp-server to Claude Code",
+  "next": {
+    "href": "/server/io-github-cyanheads-eurostat-mcp-server",
+    "label": "See this server's trust record"
+  },
+  "outcome": "At the end of this process, you will have the io.github.cyanheads/eurostat-mcp-server working with your MCP client.",
+  "project": "mcpindex",
+  "slug": "io-github-cyanheads-eurostat-mcp-server-with-claude-code",
+  "steps": [
+    {
+      "body": "First, install an MCP client that works with the io.github.cyanheads/eurostat-mcp-server. Ensure the client is compatible with the server's transport, which is streamable-http. Once installed, proceed to configure the environment variables required by the server.",
+      "heading": "Install MCP Client",
+      "id": "install-client"
+    },
+    {
+      "body": "Paste this into your MCP client config, then restart the client.\n\n```json\n{\n  \"mcpServers\": {\n    \"eurostat-mcp-server\": {\n      \"command\": \"npx\",\n      \"args\": [\n        \"-y\",\n        \"@cyanheads/eurostat-mcp-server\"\n      ]\n    }\n  }\n}\n```",
+      "heading": "Add it to your MCP config",
+      "id": "add-to-config"
+    },
+    {
+      "body": "To configure the server, set the required environment variables. For example, set the MCP_LOG_LEVEL to 'debug', 'info', or 'warn' to control the log level. You can also set EUROSTAT_BASE_URL, EUROSTAT_REQUEST_TIMEOUT_MS, EUROSTAT_TOC_CACHE_TTL_MS, EUROSTAT_BULK_TIMEOUT_MS, and EUROSTAT_BULK_MAX_BYTES to customize the behavior of the server. Additionally, you can set CANVAS_PROVIDER_TYPE to 'duckdb' to enable the dataframe canvas, and CANVAS_TEMP_PATH to specify the directory for DuckDB spill files.",
+      "heading": "Set Environment Variables",
+      "id": "set-env-vars"
+    },
+    {
+      "body": "After setting the environment variables, start the MCP client and check if the io.github.cyanheads/eurostat-mcp-server appears in the list of available servers. Confirm that the server's tools, such as eurostat_dataframe_describe and eurostat_dataframe_query, are callable from the client.",
+      "heading": "Confirm the Server Appears in the Client",
+      "id": "confirm-server"
+    },
+    {
+      "body": "If the server does not appear in the client, check the environment variables for any typos or incorrect settings. Ensure that the server is running and accessible from the client. If issues persist, review the client and server logs for any error messages that may indicate the cause of the problem.",
+      "heading": "Troubleshoot the Connection",
+      "id": "troubleshoot"
+    },
+    {
+      "body": "Once the server appears in the client, perform a final check to ensure that the tools and features are working as expected. Check the client's documentation for any specific setup or configuration requirements for the io.github.cyanheads/eurostat-mcp-server.",
+      "heading": "Final Check",
+      "id": "final-check"
+    }
+  ],
+  "title": "Setup Eurostat MCP Server"
+}

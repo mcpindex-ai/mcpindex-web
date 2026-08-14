@@ -1,0 +1,66 @@
+{
+  "body": "io.github.infino-ai/mcp-server is used for keyword, vector, hybrid, and SQL retrieval over data on object storage, for AI agents. Developers setting up an MCP client can use this server. The server supports various data sources and embedding providers.",
+  "citation_ids": [
+    "mcpindex-snapshot:io-github-infino-ai-mcp-server"
+  ],
+  "config_rendered": true,
+  "est_minutes": 5,
+  "faq": [
+    {
+      "a": "The INFINO_MCP_URI environment variable specifies the data to serve and can be a local path, an s3:// or az:// bucket URI, or a hosted https:// endpoint. It determines where the server retrieves its data from.",
+      "q": "What is the purpose of the INFINO_MCP_URI environment variable?"
+    },
+    {
+      "a": "The server uses the stdio transport protocol. This is a standard protocol for communication between processes.",
+      "q": "What transport protocol does the server use?"
+    },
+    {
+      "a": "The source code for the server is available at https://github.com/infino-ai/infino-mcp. This repository contains the latest version of the server's code and documentation.",
+      "q": "Where can I find the source code for the server?"
+    }
+  ],
+  "h1": "Connecting io.github.infino-ai/mcp-server to Claude Code",
+  "internal_links": [],
+  "kind": "walkthrough",
+  "meta_description": "Connect to io.github.infino-ai/mcp-server",
+  "next": {
+    "href": "/server/io-github-infino-ai-mcp-server",
+    "label": "See this server's trust record"
+  },
+  "outcome": "The reader will have the io.github.infino-ai/mcp-server connected to their MCP client at the end of this guide.",
+  "project": "mcpindex",
+  "slug": "io-github-infino-ai-mcp-server-with-claude-code",
+  "steps": [
+    {
+      "body": "To start, ensure Node.js is installed on your system. Install the @infino-ai/mcp-server package using npm by running the command npm install @infino-ai/mcp-server. This package is required to set up the server.",
+      "heading": "Install the Required npm Package",
+      "id": "install-npm"
+    },
+    {
+      "body": "Paste this into your MCP client config, then restart the client.\n\n```json\n{\n  \"mcpServers\": {\n    \"mcp-server\": {\n      \"command\": \"npx\",\n      \"args\": [\n        \"-y\",\n        \"@infino-ai/mcp-server\"\n      ]\n    }\n  }\n}\n```",
+      "heading": "Add it to your MCP config",
+      "id": "add-to-config"
+    },
+    {
+      "body": "Several environment variables can be set to configure the server. INFINO_MCP_URI specifies the data to serve and can be a local path, an s3:// or az:// bucket URI, or a hosted https:// endpoint. INFINO_API_KEY is required for hosted Infino Cloud endpoints. Other optional variables include INFINO_MCP_ENABLE_WRITES, INFINO_MCP_EMBED_PROVIDER, INFINO_MCP_EMBED_BASE_URL, INFINO_MCP_EMBED_API_KEY, and INFINO_MCP_EMBED_MODEL. Each of these variables serves a specific purpose in configuring the server's behavior and data sources.",
+      "heading": "Set Up Environment Variables",
+      "id": "set-env-vars"
+    },
+    {
+      "body": "To confirm that the server has appeared in the client and its tools are callable, check the client's interface for the server's presence. The client should display the server and allow you to interact with its tools. If the server does not appear, ensure that all environment variables are correctly set and the server is properly installed and running.",
+      "heading": "Confirm the Server Connection",
+      "id": "confirm-server"
+    },
+    {
+      "body": "If the server does not appear in the client, troubleshoot by checking the environment variables and the server's configuration. Ensure that all required variables are set and that the server is running correctly. Also, check the client's documentation for any specific requirements or troubleshooting tips.",
+      "heading": "Troubleshooting",
+      "id": "troubleshoot"
+    },
+    {
+      "body": "The setup procedure for the MCP client involves installing the client and configuring it to connect to the io.github.infino-ai/mcp-server. This typically involves setting up the client's interface and specifying the server's details. The exact steps may vary depending on the client being used.",
+      "heading": "MCP Client Setup",
+      "id": "client-setup"
+    }
+  ],
+  "title": "mcp-server Setup"
+}

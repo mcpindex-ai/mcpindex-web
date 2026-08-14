@@ -1,0 +1,66 @@
+{
+  "body": "The MCP server is used to connect to the 1ly.store APIs and Bags.fm. Developers can use this server to launch tokens and buy/sell APIs. To set up the server, you need to have Node.js and a code editor installed.",
+  "citation_ids": [
+    "mcpindex-snapshot:io-github-1lystore-mcp-server"
+  ],
+  "config_rendered": true,
+  "est_minutes": 5,
+  "faq": [
+    {
+      "a": "The ONELY_WALLET_SOLANA_KEY variable is used to specify the path to your Solana key file. This variable is required for paid API calls and token tools.",
+      "q": "What is the purpose of the ONELY_WALLET_SOLANA_KEY variable?"
+    },
+    {
+      "a": "The ONELY_API_KEY variable is used to authenticate your seller API calls. You can obtain this key by running the 1ly_create_store tool, and it will be auto-saved locally.",
+      "q": "How do I set up the ONELY_API_KEY variable?"
+    },
+    {
+      "a": "The MCP server uses the stdio transport protocol.",
+      "q": "What is the transport protocol used by the MCP server?"
+    }
+  ],
+  "h1": "Connect to MCP Server",
+  "internal_links": [],
+  "kind": "walkthrough",
+  "meta_description": "Connect to MCP server",
+  "next": {
+    "href": "/server/io-github-1lystore-mcp-server",
+    "label": "See this server's trust record"
+  },
+  "outcome": "You will have the MCP server connected to Claude Code at the end of this process.",
+  "project": "mcpindex",
+  "slug": "io-github-1lystore-mcp-server-with-claude-code",
+  "steps": [
+    {
+      "body": "To start, you need to have Node.js installed on your system. Then, you can install the required package by running the command 'npm install @1ly/mcp-server' in your terminal. This package is the MCP server that you will be using to connect to the 1ly.store APIs and Bags.fm.",
+      "heading": "Install Required Packages",
+      "id": "install-npm"
+    },
+    {
+      "body": "Paste this into your MCP client config, then restart the client.\n\n```json\n{\n  \"mcpServers\": {\n    \"mcp-server\": {\n      \"command\": \"npx\",\n      \"args\": [\n        \"-y\",\n        \"@1ly/mcp-server\"\n      ]\n    }\n  }\n}\n```",
+      "heading": "Add it to your MCP config",
+      "id": "add-to-config"
+    },
+    {
+      "body": "To configure the environment variables, you need to set the variables ONELY_WALLET_SOLANA_KEY, ONELY_WALLET_EVM_KEY, ONELY_API_KEY, ONELY_WALLET_PROVIDER, ONELY_NETWORK, ONELY_SOLANA_RPC_URL, ONELY_BUDGET_PER_CALL, and ONELY_BUDGET_DAILY. These variables are used to authenticate and authorize your API calls. The ONELY_WALLET_SOLANA_KEY and ONELY_WALLET_EVM_KEY variables are used to specify the path to your Solana and EVM key files. The ONELY_API_KEY variable is used to authenticate your seller API calls.",
+      "heading": "Configure Environment Variables",
+      "id": "configure-env-variables"
+    },
+    {
+      "body": "To confirm that the server is connected, check if the server appears in the client and its tools are callable. You can do this by checking the client's console logs or by using the client's UI to test the server's APIs. If the server does not appear, you can try restarting the server or checking the environment variables to ensure they are set correctly.",
+      "heading": "Confirm Server Connection",
+      "id": "confirm-server-connection"
+    },
+    {
+      "body": "If the server does not appear in the client, you can try troubleshooting the connection issues. Check if the server is running and if the environment variables are set correctly. You can also try checking the client's console logs to see if there are any error messages that can help you identify the issue.",
+      "heading": "Troubleshoot Connection Issues",
+      "id": "troubleshoot-connection"
+    },
+    {
+      "body": "Once the server is connected, you can test the APIs to ensure they are working correctly. You can use the client's UI to test the APIs or use a tool like curl to test the APIs from the command line.",
+      "heading": "Test APIs",
+      "id": "test-apis"
+    }
+  ],
+  "title": "MCP Server Setup"
+}

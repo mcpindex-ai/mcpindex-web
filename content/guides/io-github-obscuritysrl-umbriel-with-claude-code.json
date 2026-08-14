@@ -1,0 +1,66 @@
+{
+  "body": "io.github.ObscuritySRL/umbriel is a server that allows you to see and drive a whole Windows machine from Bun. It provides access to apps, input, screen, OCR, registry, and OS via MCP. To use it, you need to install the required clients and set up the environment variables. The server works with standard MCP clients.",
+  "citation_ids": [
+    "mcpindex-snapshot:io-github-obscuritysrl-umbriel"
+  ],
+  "config_rendered": true,
+  "est_minutes": 5,
+  "faq": [
+    {
+      "a": "The required environment variables for io.github.ObscuritySRL/umbriel include UMBRIEL_PROFILE, UMBRIEL_OS, UMBRIEL_ALLOW, and UMBRIEL_DENY. These variables allow you to configure the server and control access to its tools and features.",
+      "q": "What are the required environment variables for io.github.ObscuritySRL/umbriel?"
+    },
+    {
+      "a": "io.github.ObscuritySRL/umbriel uses the stdio transport protocol. This protocol allows the server to communicate with the client and provide access to its tools and features.",
+      "q": "What transport protocol does io.github.ObscuritySRL/umbriel use?"
+    },
+    {
+      "a": "The source code for io.github.ObscuritySRL/umbriel is located at https://github.com/ObscuritySRL/umbriel. You can access the repository to view the source code and learn more about the server's features and configuration.",
+      "q": "Where is the source code for io.github.ObscuritySRL/umbriel located?"
+    }
+  ],
+  "h1": "Connecting io.github.ObscuritySRL/umbriel to Claude Code",
+  "internal_links": [],
+  "kind": "walkthrough",
+  "meta_description": "Connect io.github.ObscuritySRL/umbriel to Claude Code",
+  "next": {
+    "href": "/server/io-github-obscuritysrl-umbriel",
+    "label": "See this server's trust record"
+  },
+  "outcome": "You will have io.github.ObscuritySRL/umbriel connected to Claude Code and accessible through the client tools.",
+  "project": "mcpindex",
+  "slug": "io-github-obscuritysrl-umbriel-with-claude-code",
+  "steps": [
+    {
+      "body": "To connect to io.github.ObscuritySRL/umbriel, you need to have an MCP client installed. The server works with standard MCP clients, so you can use any client that supports MCP. Once you have the client installed, you can proceed to set up the environment variables.",
+      "heading": "Install the MCP Client",
+      "id": "install-client"
+    },
+    {
+      "body": "Paste this into your MCP client config, then restart the client.\n\n```json\n{\n  \"mcpServers\": {\n    \"umbriel\": {\n      \"command\": \"npx\",\n      \"args\": [\n        \"-y\",\n        \"umbriel\"\n      ]\n    }\n  }\n}\n```",
+      "heading": "Add it to your MCP config",
+      "id": "add-to-config"
+    },
+    {
+      "body": "To configure io.github.ObscuritySRL/umbriel, you need to set up several environment variables. The UMBRIEL_PROFILE variable is optional, and you can set it to a specific profile if needed. The UMBRIEL_OS variable allows you to enable the 'os' and 'fs' tools by setting it to '1'. You can also set the UMBRIEL_ALLOW and UMBRIEL_DENY variables to control access to specific tools or categories.",
+      "heading": "Set Up Environment Variables",
+      "id": "set-env-vars"
+    },
+    {
+      "body": "After setting up the environment variables, you can check if the server has appeared in the client and if its tools are callable. Check the client's tools and features to confirm that io.github.ObscuritySRL/umbriel is connected and working as expected.",
+      "heading": "Confirm the Connection",
+      "id": "confirm-connection"
+    },
+    {
+      "body": "If the server does not appear in the client or its tools are not callable, you can try troubleshooting the connection. Check the environment variables and ensure that they are set up correctly. Also, check the client's configuration and ensure that it is set up to work with io.github.ObscuritySRL/umbriel.",
+      "heading": "Troubleshoot Connection Issues",
+      "id": "troubleshoot"
+    },
+    {
+      "body": "For advanced configuration, you can set up additional environment variables such as UMBRIEL_CURSOR, UMBRIEL_FS_ROOT, UMBRIEL_TRACE, and UMBRIEL_FFI_TRACE. These variables allow you to customize the behavior of io.github.ObscuritySRL/umbriel and provide additional features such as cursor control and tracing.",
+      "heading": "Advanced Configuration",
+      "id": "advanced-config"
+    }
+  ],
+  "title": "Connect Umbriel"
+}
