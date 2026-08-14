@@ -5,6 +5,9 @@ import { pageMetadata } from '@/lib/seo';
 import { ArchDiagram } from '@/components/ArchDiagram';
 import { Disclose } from '@/components/Disclose';
 import { PriorityGuides } from '@/components/PriorityGuides';
+// The rendered verdict example below is a copy of a number that must move with the
+// emitters; lib/verdictContract.ts is the single declaration it reads from.
+import { VERDICT_CONTRACT_VERSION } from '@/lib/verdictContract';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Documentation',
@@ -565,7 +568,7 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
         </p>
         <pre className="overflow-x-auto bg-[var(--color-ink)] text-zinc-100 px-4 py-3 font-mono text-[11.5px] leading-snug">
           <code>{`{
-  "verdict_contract_version": "1.1.0",
+  "verdict_contract_version": "${VERDICT_CONTRACT_VERSION}",
   "subject": { "server_id": "community/quickpay-mcp", "tool_name": null },
   "status": "PARTIAL",              // EVALUATED | PARTIAL | STALE | ERROR
   "directive": "REVIEW",            // REVIEW/UNVERIFIED today; ALLOW/DENY reserved

@@ -3,6 +3,9 @@ import { loadGuides } from '@/lib/guides-content';
 import type { Guide } from '@/lib/guides-content';
 import { CATEGORY_LABELS } from '@/lib/categorize';
 import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
+// Same single declaration the trust/screen/preflight emitters read; see the note in
+// lib/verdictContract.ts on why a second copy of this number is a bug, not a convenience.
+import { VERDICT_CONTRACT_VERSION } from '@/lib/verdictContract';
 import { gateInstallLine } from '@/lib/install/manifest';
 import type { IndexedServer } from '@/lib/types';
 import { createVersionedBodyCache } from '@/lib/llmsFullCache';
@@ -48,7 +51,7 @@ function buildBody(servers: IndexedServer[], guides: Guide[]): string {
     '## Advisory directory screen (v1)',
     '',
     'Each server page exposes a verdict surface. Contract states: ALLOW / DENY / REVIEW / UNVERIFIED. At v1 every published verdict is REVIEW or UNVERIFIED - ALLOW and DENY are reserved, not produced.',
-    'Verdict contract version: 1.0.0. Capability: check_tool_trust (via the npm MCP server - directory client, not the in-path gate).',
+    `Verdict contract version: ${VERDICT_CONTRACT_VERSION}. Capability: check_tool_trust (via the npm MCP server - directory client, not the in-path gate).`,
     'Framework bindings: @mcp-index/mastra wires check_tool_trust into Mastra as a beforeToolCall hook (warn or enforce; fail-closed, no credentials). A client of the advisory screen, not the in-path gate; npm i @mcp-index/mastra.',
     'Pipeline (screen): today the screen is semantic-only - an LLM judge reads each tool description for hidden instructions. The deterministic conformance probe (drives the tool against its declared schema) is built but has NOT yet run on the public corpus, so no published screen verdict carries a conformance result; a clearing ALLOW (which the probe would earn) is not produced at v1. When the probe runs it is monitored, not enforced. Confidence is reported but not yet calibrated (calibrated=false).',
     'History: hash-chained; OTS Bitcoin anchoring built and committed, not yet confirmed per verdict. Cadence bound = confirmation latency (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized). Sub-window precision asserted, not proven. In-process verify proves the proof carries a Bitcoin BlockHeaderAttestation; confirmation-depth check requires the relying party run their own Bitcoin node.',

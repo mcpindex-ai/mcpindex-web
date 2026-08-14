@@ -12,6 +12,7 @@ import { GET as llmsFull } from '../../app/llms-full.txt/route';
 import { gateInstallLine } from '../../lib/install/manifest';
 import { loadServers, loadSnapshotMeta } from '../../lib/registry';
 import { SOURCE_LIVENESS_CENSUS } from '../../lib/sourceLiveness';
+import { VERDICT_CONTRACT_VERSION } from '../../lib/verdictContract';
 
 async function bodyOf(res: Response): Promise<string> {
   return res.text();
@@ -138,3 +139,37 @@ test('/llms.txt: every source-liveness figure, including the derived ones, is pr
       assert.ok(!body.includes(stale), `llms.txt still contains superseded figure ${stale}`);
     }
   });
+
+// ---------------------------------------------------------------- verdict-contract drift
+//
+// lib/verdictContract.ts exists because the version "used to be a bare '1.0.0' literal
+// repeated across seven emitters" and a bump would half-land. /llms.txt was an EIGHTH copy
+// that never got converted: it still announced 1.0.0 while every live trust endpoint
+// emitted 1.1.0. That is the worst copy to leave stale - an integrator reads llms.txt
+// INSTEAD of calling the API, so the one surface written to be authoritative was the one
+// telling agents the wrong contract.
+
+test('/llms.txt states the CURRENT verdict-contract version', async () => {
+  const body = await bodyOf(await llms());
+  const stated = body.match(/Verdict contract:\s*([0-9]+\.[0-9]+\.[0-9]+)/);
+  assert.ok(stated, '/llms.txt no longer states a verdict contract version');
+  assert.equal(
+    stated[1],
+    VERDICT_CONTRACT_VERSION,
+    'llms.txt verdict-contract version drifted from lib/verdictContract.ts',
+  );
+});
+
+test('no published surface states a STALE verdict-contract version', async () => {
+  // Catches the general shape, not just the one line that was wrong: any semver printed
+  // next to the words "verdict contract" must be the live constant.
+  for (const [name, res] of [['llms.txt', await llms()], ['llms-full.txt', await llmsFull()]] as const) {
+    const body = await bodyOf(res);
+    for (const m of body.matchAll(/verdict[_ -]?contract[_ -]?version["':\s]*([0-9]+\.[0-9]+\.[0-9]+)/gi)) {
+      assert.equal(m[1], VERDICT_CONTRACT_VERSION, `${name} carries stale verdict contract ${m[1]}`);
+    }
+    for (const m of body.matchAll(/Verdict contract:\s*([0-9]+\.[0-9]+\.[0-9]+)/g)) {
+      assert.equal(m[1], VERDICT_CONTRACT_VERSION, `${name} carries stale verdict contract ${m[1]}`);
+    }
+  }
+});
