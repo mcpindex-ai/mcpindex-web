@@ -24,6 +24,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import {
+  CONNECT_GUIDE_SUFFIX,
   GRADED_FIELDS,
   gradeConnectGuideIdentity,
   isConnectGuideSlug,
@@ -33,13 +34,34 @@ import {
 const IS_PULL_REQUEST = process.env.GITHUB_EVENT_NAME === 'pull_request';
 
 const GUIDES_DIR = 'content/guides';
+const SLUGMAP = 'data/slugmap.json';
 
-function git(...args: string[]): string | null {
+/**
+ * `ok` distinguishes "the command failed" from "the command printed nothing" - collapsing the two
+ * is how a gate reports a pass over an empty change set it never actually computed. A failed
+ * `git diff` (no merge base under a shallow clone, say) must reach the null-change-set path, not
+ * coerce to zero touched files.
+ */
+function git(...args: string[]): { ok: boolean; out: string } {
   try {
-    return execFileSync('git', args, { encoding: 'utf8' }).trim();
+    return { ok: true, out: execFileSync('git', args, { encoding: 'utf8' }).trim() };
   } catch {
-    return null;
+    return { ok: false, out: '' };
   }
+}
+
+/** slug -> registry id, inverted from the snapshot the site already ships. Absent file or a slug
+ *  newer than the snapshot yields null, and the grader falls back to guessing from the slug. */
+function loadRegistryIds(): Map<string, string> {
+  const out = new Map<string, string>();
+  if (!existsSync(SLUGMAP)) return out;
+  try {
+    const parsed = JSON.parse(readFileSync(SLUGMAP, 'utf8')) as { servers?: Record<string, string> };
+    for (const [id, slug] of Object.entries(parsed.servers ?? {})) out.set(slug, id);
+  } catch {
+    // A malformed slugmap is another gate's problem; grading falls back to the slug.
+  }
+  return out;
 }
 
 /**
@@ -84,17 +106,21 @@ async function changedPaths(): Promise<{ files: string[]; source: string } | nul
       // A guide deleted in this PR has nothing left to grade and no file to read.
       files.push(...rows.filter((r) => r.status !== 'removed').map((r) => r.filename));
       if (rows.length < 100) break;
-      // Ten full pages means the PR has more files than this loop can see. Silently grading the
+      // Ten full pages means there may be more files than this loop can see. Silently grading the
       // first 1000 would print "ok" over guides nobody looked at, which is the one thing this
-      // gate must never do.
-      if (page === 10) throw new Error('PR exceeds 1000 files; change-set listing is truncated');
+      // gate must never do. (Exactly 1000 is indistinguishable from 1000+ without another call,
+      // so this errs closed on the boundary.)
+      if (page === 10) throw new Error('PR has 1000+ files; change-set listing may be truncated');
     }
     return { files, source: `PR #${number}` };
   }
 
   const base = process.env.GUIDE_SEO_BASE || 'origin/main';
-  if (!git('rev-parse', '--verify', '--quiet', `${base}^{commit}`)) return null;
-  const files = (git('diff', '--name-only', '--diff-filter=d', `${base}...HEAD`) || '')
+  // `--` keeps a base beginning with '-' from being read as a git option.
+  if (!git('rev-parse', '--verify', '--quiet', `${base}^{commit}`, '--').ok) return null;
+  const diff = git('diff', '--name-only', '--diff-filter=d', `${base}...HEAD`, '--');
+  if (!diff.ok) return null; // e.g. no merge base under a shallow clone: unknown, not empty
+  const files = diff.out
     .split('\n')
     .map((s) => s.trim())
     .filter(Boolean);
@@ -138,10 +164,14 @@ interface Problem {
   rel: string;
   reason: 'ungradeable' | 'identity' | 'owner';
   owner: string | null;
+  ownerIsGuess: boolean;
+  ownerMentions: number;
+  ownerRequired: number;
   tokens: string[];
   failures: { field: string; value: string }[];
 }
 
+const registryIds = loadRegistryIds();
 const problems: Problem[] = [];
 
 for (const rel of touched) {
@@ -153,36 +183,47 @@ for (const rel of touched) {
   } catch {
     continue; // a malformed guide is the loader's problem, not this gate's
   }
-  // Shape, not just syntax: a file containing `null` or `[]` parses cleanly and then throws a
-  // raw stack trace out of the grader - the "mystery CI failure on an unrelated PR" this file
-  // is built to avoid. lib/guides-content.ts:coerceGuide opens with the same guard.
+  // Shape, not just syntax. A file containing `null` parses cleanly and then throws a raw stack
+  // trace out of the grader - the "mystery CI failure on an unrelated PR" this file is built to
+  // avoid. (`[]` never threw; property access on an array is just undefined. It is skipped here
+  // for the same reason the renderer drops it: it is not a guide.) lib/guides-content.ts
+  // coerceGuide guards the null case the same way; the Array test is ours.
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) continue;
   const guide = parsed as Record<string, unknown>;
 
-  // The renderer resolves identity as the in-file `slug` first, falling back to the filename
-  // (lib/guides-content.ts coerceGuide). Grade what the site will publish, not what it is called
-  // on disk, so the two can never disagree.
-  const slug = typeof guide.slug === 'string' && guide.slug ? guide.slug : path.basename(rel, '.json');
+  // The renderer resolves identity as the in-file `slug` first, falling back to the filename, and
+  // drops the guide entirely if that slug fails SLUG_RE (lib/guides-content.ts coerceGuide).
+  // Grade exactly what the site will publish, so the gate and the renderer cannot disagree in
+  // either direction - including not failing a PR over a page that would never ship.
+  const inFile = typeof guide.slug === 'string' ? guide.slug : '';
+  const slug = inFile || path.basename(rel, '.json');
+  if (!/^[a-z0-9][a-z0-9-]{0,99}$/.test(slug)) continue; // SLUG_RE, lib/guides-content.ts:83
   if (!isConnectGuideSlug(slug)) continue; // topical guide: carries no server identity by design
 
-  const grade = gradeConnectGuideIdentity(slug, guide);
+  // slugmap is keyed by SERVER slug; a guide slug is that plus the connect suffix. Looking up
+  // the guide slug silently misses every time and quietly demotes the rule to the slug guess -
+  // which is exactly the positional heuristic this was written to stop relying on.
+  const serverSlug = slug.slice(0, -CONNECT_GUIDE_SUFFIX.length);
+  const grade = gradeConnectGuideIdentity(slug, guide, registryIds.get(serverSlug) ?? null);
+  const common = {
+    slug,
+    rel,
+    owner: grade.owner,
+    ownerIsGuess: grade.ownerIsGuess,
+    ownerMentions: grade.ownerMentions,
+    ownerRequired: grade.ownerRequired,
+    tokens: grade.tokens,
+  };
   if (!grade.gradeable) {
-    problems.push({ slug, rel, reason: 'ungradeable', owner: null, tokens: [], failures: [] });
+    problems.push({ ...common, reason: 'ungradeable', failures: [] });
     continue;
   }
   if (grade.failures.length) {
-    problems.push({
-      slug,
-      rel,
-      reason: 'identity',
-      owner: grade.owner,
-      tokens: grade.tokens,
-      failures: grade.failures,
-    });
+    problems.push({ ...common, reason: 'identity', failures: grade.failures });
     continue;
   }
   if (grade.ownerMissing) {
-    problems.push({ slug, rel, reason: 'owner', owner: grade.owner, tokens: grade.tokens, failures: [] });
+    problems.push({ ...common, reason: 'owner', failures: [] });
   }
 }
 
@@ -200,12 +241,20 @@ if (problems.length) {
       continue;
     }
     if (p.reason === 'owner') {
+      const shared = p.tokens.filter((t) => t !== p.owner);
       console.error(`  ${p.slug}`);
       console.error(
-        `    every graded field names something, but none names the publisher "${p.owner}".\n` +
-          `    Other servers share "${p.tokens.filter((t) => t !== p.owner).join('", "')}";\n` +
-          `    the publisher is what tells the reader which one this is.\n` +
-          `    Name it once in any of ${GRADED_FIELDS.join(', ')}.`,
+        `    names the publisher "${p.owner}" in ${p.ownerMentions} of ${p.ownerRequired} required field(s).`,
+      );
+      if (shared.length) {
+        console.error(
+          `    Other servers share "${shared.join('", "')}", so that alone does not say which\n` +
+            `    server this page is about.`,
+        );
+      }
+      console.error(
+        `    Name "${p.owner}" in at least ${p.ownerRequired} of ${GRADED_FIELDS.join(', ')}` +
+          `${p.ownerIsGuess ? ' (publisher inferred from the slug; not in the registry snapshot)' : ''}.`,
       );
       console.error(`    -> ${p.rel}`);
       continue;

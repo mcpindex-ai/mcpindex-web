@@ -15,28 +15,50 @@
 // review and is indistinguishable from its siblings until you read the four fields that decide
 // what it ranks for and what a reader sees in a result list. A guide that never names its subject
 // competes with every other MCP guide for the same non-query and tells the one reader who does
-// arrive nothing about which of 10,000 servers they are about to install.
+// arrive nothing about which of 21,000 servers they are about to install.
 //
 // These files are artifacts: generated elsewhere, merged here by hand. Nothing in scripts/
 // looked at them. Five landed, one was generic, no gate objected - and the generator will emit
 // more. This module is the rule; scripts/check-guide-seo.mts is the gate that applies it to the
 // guides a PR actually touches.
 //
+// WHY THE PUBLISHER, AND WHY IT COMES FROM THE REGISTRY
+// Two rounds of review killed two weaker versions of this rule, and both failures are worth
+// keeping written down because both looked right:
+//
+//   1. "each field must name SOMETHING from the slug" passes a page reading "Connect to the
+//      portfolio MCP server" for io-github-nirholas/portfolio-mcp - metadata about no particular
+//      server, i.e. the original defect, surviving because `portfolio` is an ordinary English
+//      word. The 1lystore page was caught at all only because `1lystore` is meaningless in
+//      English. That is luck, not a rule.
+//
+//   2. "the publisher is the first distinctive token of the slug" is false for a FIFTH of the
+//      registry. Ids are reverse-DNS, and only io.github.* puts the publisher third. Measured
+//      against data/slugmap.json: of 21,290 ids, 4,219 resolve to the namespace prefix instead
+//      of the publisher - `com` (2,765), `app` (370), `dev` (291), `org`, `net`, `live`, `xyz`.
+//      A guide for com.getsentry/mcp would have satisfied the rule with the bare word "com".
+//
+// So the publisher is read from the registry id, where it is stated rather than guessed:
+// `io.github.1lystore/mcp-server` -> `1lystore`, `com.getsentry/mcp` -> `getsentry`. The gate
+// resolves slug -> id through data/slugmap.json and passes the result in; this module stays pure.
+//
 // WHAT IT ENFORCES, AND THE BOUND ON THAT CLAIM
-// A graded guide must name its own server in the fields where every well-formed sibling already
-// does. That is *identity present*, not *copy is good* - this cannot tell you the prose is worth
-// reading, and it is not trying to. It is the difference between a page about something and a
-// page about nothing, which is the failure that actually shipped.
+// A graded guide must name its publisher in at least two of the three fields, and every graded
+// field must name something identifying. That is *identity present*, not *copy is good* - this
+// cannot tell you the prose is worth reading, and it is not trying to. It is the difference
+// between a page about something and a page about nothing, which is the failure that shipped.
 
 /** Marks the generated per-server connect-guide family. Topical guides (how-to-trust-an-mcp-server,
  *  mcp-scanner-vs-gateway, ...) carry no server identity in their slug and are never graded. */
 export const CONNECT_GUIDE_SUFFIX = '-with-claude-code';
 
 /**
- * Slug segments that carry no identity. Every connect-guide slug is `io-github-<org>-<name>`, so
- * without this the vendor prefix alone would satisfy the check for every server on the registry.
+ * Slug segments that carry no identity: the vendor prefix, plus the reverse-DNS namespace
+ * prefixes that head two thirds of the non-github registry. Without the latter, `com` alone
+ * would satisfy the check for 2,765 servers.
  */
 const STOPWORDS = new Set([
+  // vendor / product noise
   'io',
   'github',
   'mcp',
@@ -54,6 +76,20 @@ const STOPWORDS = new Set([
   'for',
   'and',
   'your',
+  // reverse-DNS namespace prefixes
+  'com',
+  'app',
+  'dev',
+  'org',
+  'net',
+  'live',
+  'xyz',
+  'tech',
+  'cloud',
+  'sh',
+  'ai',
+  'co',
+  'me',
 ]);
 
 /**
@@ -64,13 +100,6 @@ const STOPWORDS = new Set([
  */
 const MIN_TOKEN_LENGTH = 3;
 
-/**
- * Used only when a slug yields no token at full length. A server legitimately named `x-ai` or
- * `d2` is not the author's mistake to fix - the slug comes from the registry id - so grading it
- * weakly beats hard-blocking a PR on advice nobody can act on.
- */
-const FALLBACK_TOKEN_LENGTH = 2;
-
 /** Present-and-non-empty is required; a missing optional field is a different defect, not this one. */
 const REQUIRED_FIELDS = ['h1', 'meta_description'] as const;
 const OPTIONAL_FIELDS = ['outcome'] as const;
@@ -78,41 +107,49 @@ const OPTIONAL_FIELDS = ['outcome'] as const;
 export const GRADED_FIELDS = [...REQUIRED_FIELDS, ...OPTIONAL_FIELDS] as const;
 export type GradedField = (typeof GRADED_FIELDS)[number];
 
+/**
+ * How many graded fields must name the publisher.
+ *
+ * Two, not three, and not one. One lets `meta_description` - the search-result snippet, the whole
+ * point of the exercise - stay pure boilerplate. Three fails a merged page: nirholas's
+ * `meta_description` is "Setup three.ws Portfolio MCP", which names the product rather than the
+ * org and is perfectly good copy. Measured over the five merged guides: 3/3, 3/3, 3/3, 3/3, 2/3.
+ */
+const OWNER_MENTIONS_REQUIRED = 2;
+
 export function isConnectGuideSlug(slug: string): boolean {
   return slug.endsWith(CONNECT_GUIDE_SUFFIX) && slug.length > CONNECT_GUIDE_SUFFIX.length;
 }
 
 /**
- * The identity tokens a connect guide must mention at least one of, derived from its own slug.
+ * The publisher, read from a reverse-DNS registry id: `io.github.1lystore/mcp-server` -> `1lystore`,
+ * `com.getsentry/mcp` -> `getsentry`, `io.github.me-qr/mcp-server` -> `me-qr`.
  *
- * Self-referential on purpose: the slug already carries the server identity, so the rule needs no
- * registry lookup, no network and no second source that can disagree with the file being graded.
+ * The last namespace label is the most specific one - the org or subdomain - in every id shape the
+ * registry uses. Returned verbatim, including hyphens, and NOT filtered through STOPWORDS: a
+ * publisher legitimately called `github` (io.github.github/github-mcp-server is a real id, and the
+ * only one in 21,290 that a stopword-filtered rule cannot grade at all) must stay gradeable.
  */
-export function distinctiveTokens(slug: string): string[] {
-  const base = isConnectGuideSlug(slug) ? slug.slice(0, -CONNECT_GUIDE_SUFFIX.length) : slug;
-  const atLength = (min: number) => {
-    const out = new Set<string>();
-    for (const token of base.toLowerCase().split(/[^a-z0-9]+/)) {
-      if (token.length < min || STOPWORDS.has(token)) continue;
-      out.add(token);
-    }
-    return [...out];
-  };
-  const strict = atLength(MIN_TOKEN_LENGTH);
-  return strict.length ? strict : atLength(FALLBACK_TOKEN_LENGTH);
+export function ownerFromRegistryId(registryId: string): string | null {
+  const namespace = registryId.split('/')[0];
+  if (!namespace) return null;
+  const label = namespace.split('.').filter(Boolean).at(-1);
+  return label ? label.toLowerCase() : null;
 }
 
 /**
- * The publisher's token - the one a generic page cannot accidentally satisfy.
- *
- * Connect-guide slugs are `io-github-<org>-<name>`, so after the vendor stopwords the FIRST
- * surviving token is the org's. That distinction is load-bearing: `<name>` is routinely an
- * English word (portfolio, weather, memory, search, calendar), and "Connect to the portfolio
- * MCP server" satisfies a name-token check while identifying nothing among the many servers
- * that share it. The org segment is the part that says *whose*.
+ * Identity tokens from the slug itself. Used for the weaker per-field check, and as the fallback
+ * publisher when a slug is not in the registry snapshot (a guide can be generated for a server
+ * newer than the last snapshot). Order follows the slug, so [0] is the leftmost surviving label.
  */
-export function ownerToken(slug: string): string | null {
-  return distinctiveTokens(slug)[0] ?? null;
+export function distinctiveTokens(slug: string): string[] {
+  const base = isConnectGuideSlug(slug) ? slug.slice(0, -CONNECT_GUIDE_SUFFIX.length) : slug;
+  const out = new Set<string>();
+  for (const token of base.toLowerCase().split(/[^a-z0-9]+/)) {
+    if (token.length < MIN_TOKEN_LENGTH || STOPWORDS.has(token)) continue;
+    out.add(token);
+  }
+  return [...out];
 }
 
 /**
@@ -127,6 +164,21 @@ export function mentionsToken(text: string, token: string): boolean {
   return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, 'i').test(text);
 }
 
+/**
+ * Whether `text` names a multi-label publisher such as `infino-ai` or `me-qr`, tolerating the
+ * separator the prose happens to use ("infino-ai", "infino ai", "infino.ai").
+ *
+ * This is why a two-label publisher is not split into tokens: `me-qr` as the two tokens `me` and
+ * `qr` would be satisfied by the phrase "for me", which is prose, not a name.
+ */
+export function mentionsOwner(text: string, owner: string): boolean {
+  const labels = owner.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  if (labels.length === 0) return false;
+  if (labels.length === 1) return mentionsToken(text, labels[0]);
+  const escaped = labels.map((l) => l.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  return new RegExp(`(^|[^a-z0-9])${escaped.join('[^a-z0-9]{0,2}')}([^a-z0-9]|$)`, 'i').test(text);
+}
+
 export interface IdentityFailure {
   field: GradedField;
   /** '' when the field is absent or blank, which is itself a failure for a required field. */
@@ -134,35 +186,25 @@ export interface IdentityFailure {
 }
 
 export interface IdentityGrade {
-  /** False when the slug yields no token to grade against. The caller must fail loudly: a check
-   *  that cannot check must never report a pass. */
+  /** False when neither the registry nor the slug yields anything to grade against. The caller
+   *  must fail loudly: a check that cannot check must never report a pass. */
   gradeable: boolean;
   tokens: string[];
   owner: string | null;
+  /** True when the owner was guessed from the slug because the registry had no entry. */
+  ownerIsGuess: boolean;
   failures: IdentityFailure[];
-  /** True when NO graded field names the publisher, even though each field named something.
-   *  This is the generic-placeholder case that a per-field check alone lets through. */
+  ownerMentions: number;
+  ownerRequired: number;
+  /** True when the publisher is named in fewer fields than required. */
   ownerMissing: boolean;
 }
 
 /**
  * Grade one connect guide's metadata for its own server's identity.
  *
- * Two rules, and the second is the one with teeth:
- *
- *   per field   - each graded field must name SOMETHING from the slug.
- *   collective  - across the three, the PUBLISHER must be named at least once.
- *
- * The per-field rule alone is not enough, and the corpus proves it: with only that rule, a page
- * reading "Connect to the portfolio MCP server" in all three fields passes for
- * io-github-nirholas-portfolio-mcp while never once saying whose server it is. That is the same
- * shape of defect as the 1lystore page - metadata about no particular server - and it survived
- * only because `portfolio` is an ordinary English word. The 1lystore page was caught at all
- * because its org segment happened to be meaningless in English, which is luck, not a rule.
- *
- * The collective form is deliberate: it is satisfied by naming the publisher ONCE, so a merged
- * page like nirholas's `meta_description: "Setup three.ws Portfolio MCP"` - which names the
- * product rather than the org - still passes on the strength of its h1.
+ * `registryId` is the authoritative source of the publisher; pass null when the slug is absent
+ * from the registry snapshot and the leftmost slug label will be used instead, flagged as a guess.
  *
  * `title` is deliberately NOT graded. io-github-infino-ai-mcp-server shipped `"mcp-server Setup"`,
  * which is weak but merged, and grading it would fail a PR for a page the author did not write.
@@ -171,15 +213,32 @@ export interface IdentityGrade {
 export function gradeConnectGuideIdentity(
   slug: string,
   guide: Readonly<Record<string, unknown>>,
+  registryId: string | null = null,
 ): IdentityGrade {
   const tokens = distinctiveTokens(slug);
-  const owner = tokens[0] ?? null;
-  if (tokens.length === 0 || owner === null) {
-    return { gradeable: false, tokens, owner: null, failures: [], ownerMissing: false };
+  const fromRegistry = registryId ? ownerFromRegistryId(registryId) : null;
+  const owner = fromRegistry ?? tokens[0] ?? null;
+  const ownerIsGuess = fromRegistry === null;
+
+  if (owner === null) {
+    return {
+      gradeable: false,
+      tokens,
+      owner: null,
+      ownerIsGuess,
+      failures: [],
+      ownerMentions: 0,
+      ownerRequired: 0,
+      ownerMissing: false,
+    };
   }
 
+  // The publisher always counts as identifying, even when STOPWORDS would have dropped it.
+  const identifying = tokens.includes(owner) ? tokens : [owner, ...tokens];
+
   const failures: IdentityFailure[] = [];
-  let ownerNamed = false;
+  let ownerMentions = 0;
+  let present = 0;
   for (const field of GRADED_FIELDS) {
     const raw = guide[field];
     const value = typeof raw === 'string' ? raw.trim() : '';
@@ -187,8 +246,24 @@ export function gradeConnectGuideIdentity(
       if ((REQUIRED_FIELDS as readonly string[]).includes(field)) failures.push({ field, value: '' });
       continue;
     }
-    if (mentionsToken(value, owner)) ownerNamed = true;
-    if (!tokens.some((token) => mentionsToken(value, token))) failures.push({ field, value });
+    present += 1;
+    if (mentionsOwner(value, owner)) ownerMentions += 1;
+    const named = identifying.some((token) =>
+      token === owner ? mentionsOwner(value, token) : mentionsToken(value, token),
+    );
+    if (!named) failures.push({ field, value });
   }
-  return { gradeable: true, tokens, owner, failures, ownerMissing: !ownerNamed };
+
+  // A guide carrying only the two required fields cannot mention the owner three times.
+  const ownerRequired = Math.min(OWNER_MENTIONS_REQUIRED, present);
+  return {
+    gradeable: true,
+    tokens,
+    owner,
+    ownerIsGuess,
+    failures,
+    ownerMentions,
+    ownerRequired,
+    ownerMissing: ownerMentions < ownerRequired,
+  };
 }

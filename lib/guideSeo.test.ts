@@ -4,8 +4,9 @@ import {
   distinctiveTokens,
   gradeConnectGuideIdentity,
   isConnectGuideSlug,
+  mentionsOwner,
   mentionsToken,
-  ownerToken,
+  ownerFromRegistryId,
 } from './guideSeo';
 
 // The rule these cases pin down: a generated connect guide must name its own server in the
@@ -16,6 +17,7 @@ import {
 const GOOD_SIBLINGS = [
   {
     slug: 'io-github-cyanheads-eurostat-mcp-server-with-claude-code',
+    registryId: 'io.github.cyanheads/eurostat-mcp-server',
     h1: 'io.github.cyanheads/eurostat-mcp-server Setup',
     meta_description: 'Connect io.github.cyanheads/eurostat-mcp-server to Claude Code',
     outcome:
@@ -23,6 +25,7 @@ const GOOD_SIBLINGS = [
   },
   {
     slug: 'io-github-infino-ai-mcp-server-with-claude-code',
+    registryId: 'io.github.infino-ai/mcp-server',
     h1: 'Connecting io.github.infino-ai/mcp-server to Claude Code',
     meta_description: 'Connect to io.github.infino-ai/mcp-server',
     outcome:
@@ -30,6 +33,7 @@ const GOOD_SIBLINGS = [
   },
   {
     slug: 'io-github-nirholas-portfolio-mcp-with-claude-code',
+    registryId: 'io.github.nirholas/portfolio-mcp',
     h1: 'Connecting io.github.nirholas/portfolio-mcp to Claude Code',
     meta_description: 'Setup three.ws Portfolio MCP',
     outcome:
@@ -37,6 +41,7 @@ const GOOD_SIBLINGS = [
   },
   {
     slug: 'io-github-obscuritysrl-umbriel-with-claude-code',
+    registryId: 'io.github.ObscuritySRL/umbriel',
     h1: 'Connecting io.github.ObscuritySRL/umbriel to Claude Code',
     meta_description: 'Connect io.github.ObscuritySRL/umbriel to Claude Code',
     outcome:
@@ -46,19 +51,23 @@ const GOOD_SIBLINGS = [
 
 for (const sibling of GOOD_SIBLINGS) {
   test(`merged guide passes: ${sibling.slug}`, () => {
-    const grade = gradeConnectGuideIdentity(sibling.slug, sibling);
+    const grade = gradeConnectGuideIdentity(sibling.slug, sibling, sibling.registryId);
     assert.equal(grade.gradeable, true);
     assert.deepEqual(grade.failures, [], `unexpected failures: ${JSON.stringify(grade.failures)}`);
   });
 }
 
 test('the shipped 1lystore page fails on every graded field', () => {
-  const grade = gradeConnectGuideIdentity('io-github-1lystore-mcp-server-with-claude-code', {
-    h1: 'Connect to MCP Server',
-    title: 'MCP Server Setup',
-    meta_description: 'Connect to MCP server',
-    outcome: 'You will have the MCP server connected to Claude Code at the end of this process.',
-  });
+  const grade = gradeConnectGuideIdentity(
+    'io-github-1lystore-mcp-server-with-claude-code',
+    {
+      h1: 'Connect to MCP Server',
+      title: 'MCP Server Setup',
+      meta_description: 'Connect to MCP server',
+      outcome: 'You will have the MCP server connected to Claude Code at the end of this process.',
+    },
+    'io.github.1lystore/mcp-server',
+  );
   assert.equal(grade.gradeable, true);
   assert.deepEqual(grade.tokens, ['1lystore']);
   assert.deepEqual(
@@ -68,16 +77,101 @@ test('the shipped 1lystore page fails on every graded field', () => {
 });
 
 test('the corrected 1lystore page passes', () => {
-  const grade = gradeConnectGuideIdentity('io-github-1lystore-mcp-server-with-claude-code', {
-    h1: 'Connecting io.github.1lystore/mcp-server to Claude Code',
-    meta_description: 'Connect io.github.1lystore/mcp-server to Claude Code',
-    outcome:
-      'You will have io.github.1lystore/mcp-server connected to Claude Code, with the 1ly.store buy/sell and token-launch tools callable from the client.',
-  });
+  const grade = gradeConnectGuideIdentity(
+    'io-github-1lystore-mcp-server-with-claude-code',
+    {
+      h1: 'Connecting io.github.1lystore/mcp-server to Claude Code',
+      meta_description: 'Connect io.github.1lystore/mcp-server to Claude Code',
+      outcome:
+        'You will have io.github.1lystore/mcp-server connected to Claude Code, with the 1ly.store buy/sell and token-launch tools callable from the client.',
+    },
+    'io.github.1lystore/mcp-server',
+  );
   assert.deepEqual(grade.failures, []);
 });
 
 // --- the generic-word hole -----------------------------------------------------------------
+
+test('the publisher comes from the registry id, not from slug position', () => {
+  // Reverse-DNS: only io.github.* puts the publisher third. Measured over data/slugmap.json,
+  // 4,219 of 21,290 ids would resolve to the namespace prefix under a positional guess.
+  assert.equal(ownerFromRegistryId('io.github.1lystore/mcp-server'), '1lystore');
+  assert.equal(ownerFromRegistryId('com.getsentry/mcp'), 'getsentry');
+  assert.equal(ownerFromRegistryId('io.github.me-qr/mcp-server'), 'me-qr');
+  assert.equal(ownerFromRegistryId('io.github.github/github-mcp-server'), 'github');
+});
+
+test('a com.* guide must name the publisher, not the namespace prefix', () => {
+  // Under the positional rule this passed on the bare word "com" - the 1lystore defect, for
+  // 2,765 servers. `com` is now a stopword AND the publisher is read from the id.
+  const generic = gradeConnectGuideIdentity(
+    'com-getsentry-mcp-with-claude-code',
+    {
+      h1: 'Connect to the MCP server',
+      meta_description: 'Connect to the MCP server at example.com',
+      outcome: 'You will have the MCP server connected.',
+    },
+    'com.getsentry/mcp',
+  );
+  assert.equal(generic.owner, 'getsentry');
+  assert.equal(generic.ownerMissing, true);
+
+  const named = gradeConnectGuideIdentity(
+    'com-getsentry-mcp-with-claude-code',
+    {
+      h1: 'Connecting com.getsentry/mcp to Claude Code',
+      meta_description: 'Connect com.getsentry/mcp to Claude Code',
+      outcome: 'You will have getsentry connected.',
+    },
+    'com.getsentry/mcp',
+  );
+  assert.deepEqual(named.failures, []);
+  assert.equal(named.ownerMissing, false);
+});
+
+test('a publisher literally named "github" stays gradeable', () => {
+  // io.github.github/github-mcp-server is a real id and the only one of 21,290 that a
+  // stopword-filtered rule cannot grade at all. It must not hard-block a PR.
+  const grade = gradeConnectGuideIdentity(
+    'io-github-github-github-mcp-server-with-claude-code',
+    {
+      h1: 'Connecting io.github.github/github-mcp-server to Claude Code',
+      meta_description: 'Connect io.github.github/github-mcp-server to Claude Code',
+      outcome: 'You will have io.github.github/github-mcp-server connected.',
+    },
+    'io.github.github/github-mcp-server',
+  );
+  assert.equal(grade.gradeable, true);
+  assert.equal(grade.owner, 'github');
+  assert.deepEqual(grade.failures, []);
+  assert.equal(grade.ownerMissing, false);
+});
+
+test('a two-label publisher is matched as a phrase, so prose cannot satisfy it', () => {
+  // `me-qr` split into tokens would be satisfied by "for me", which is prose, not a name.
+  assert.equal(mentionsOwner('The MCP server will be connected for me.', 'me-qr'), false);
+  assert.ok(mentionsOwner('io.github.me-qr/mcp-server', 'me-qr'));
+  assert.ok(mentionsOwner('Connect me qr today', 'me-qr'));
+  assert.ok(mentionsOwner('io.github.infino-ai/mcp-server', 'infino-ai'));
+  assert.equal(mentionsOwner('an AI-powered server', 'infino-ai'), false);
+});
+
+test('meta_description alone cannot be boilerplate (owner needed in 2 of 3)', () => {
+  // One mention was too weak: it left the search-result snippet free to say nothing.
+  const grade = gradeConnectGuideIdentity(
+    'io-github-cyanheads-eurostat-mcp-server-with-claude-code',
+    {
+      h1: 'Connecting io.github.cyanheads/eurostat-mcp-server to Claude Code',
+      meta_description: 'Connect to the eurostat MCP server',
+      outcome: 'You will have the eurostat MCP server connected.',
+    },
+    'io.github.cyanheads/eurostat-mcp-server',
+  );
+  assert.deepEqual(grade.failures, [], 'each field names the product, so the per-field rule holds');
+  assert.equal(grade.ownerMentions, 1);
+  assert.equal(grade.ownerRequired, 2);
+  assert.equal(grade.ownerMissing, true);
+});
 
 test('a page that names only the generic half of the slug fails', () => {
   // The defect this closes: with a per-field-any-token rule, this passes for
@@ -94,23 +188,24 @@ test('a page that names only the generic half of the slug fails', () => {
   assert.equal(grade.ownerMissing, true, 'but none of them names the publisher');
 });
 
-test('naming the publisher once is enough (merged sibling relies on this)', () => {
+test('2-of-3 is what the weakest merged guide actually clears', () => {
   // nirholas's real meta_description is "Setup three.ws Portfolio MCP" - it names the product,
-  // not the org. The collective rule must not fail that page on the strength of its h1.
-  const grade = gradeConnectGuideIdentity('io-github-nirholas-portfolio-mcp-with-claude-code', {
-    h1: 'Connecting io.github.nirholas/portfolio-mcp to Claude Code',
-    meta_description: 'Setup three.ws Portfolio MCP',
-    outcome: 'You will have the portfolio server working with Claude Code.',
-  });
+  // not the org - so this page sits exactly on the threshold at 2/3. Requiring 3 would fail
+  // perfectly good merged copy; requiring 1 would let the snippet say nothing. This test is the
+  // reason the constant is 2, so it must use the REAL field values.
+  const grade = gradeConnectGuideIdentity(
+    'io-github-nirholas-portfolio-mcp-with-claude-code',
+    {
+      h1: 'Connecting io.github.nirholas/portfolio-mcp to Claude Code',
+      meta_description: 'Setup three.ws Portfolio MCP',
+      outcome:
+        'You will have the io.github.nirholas/portfolio-mcp server working with Claude Code at the end of this guide.',
+    },
+    'io.github.nirholas/portfolio-mcp',
+  );
   assert.deepEqual(grade.failures, []);
+  assert.equal(grade.ownerMentions, 2);
   assert.equal(grade.ownerMissing, false);
-});
-
-test('ownerToken is the org segment, not the product segment', () => {
-  assert.equal(ownerToken('io-github-nirholas-portfolio-mcp-with-claude-code'), 'nirholas');
-  assert.equal(ownerToken('io-github-cyanheads-eurostat-mcp-server-with-claude-code'), 'cyanheads');
-  assert.equal(ownerToken('io-github-1lystore-mcp-server-with-claude-code'), '1lystore');
-  assert.equal(ownerToken('io-github-mcp-server-with-claude-code'), null);
 });
 
 // --- the traps ---------------------------------------------------------------------------
@@ -129,15 +224,32 @@ test('a two-char slug segment is not an identity ("AI" is prose, not a name)', (
   assert.equal(grade.failures.length, 3);
 });
 
-test('a slug with no full-length token falls back rather than hard-blocking the PR', () => {
-  // The slug comes from the registry id, so a legitimately short-named server is not the
-  // merging author's mistake to fix. Grade it weakly; do not make the PR unmergeable.
-  assert.deepEqual(distinctiveTokens('io-github-x-ai-with-claude-code'), ['ai']);
-  const grade = gradeConnectGuideIdentity('io-github-x-ai-with-claude-code', {
-    h1: 'Connecting x-ai to Claude Code',
-    meta_description: 'Connect x-ai to Claude Code',
-  });
+test('a short-named publisher is rescued by the registry, not hard-blocked', () => {
+  // The slug alone yields nothing here: `x` is under the length floor and `ai` is a stopword.
+  // A positional rule would call this ungradeable and make the PR unmergeable over a registry
+  // id the merging author cannot change. The id states the publisher outright.
+  assert.deepEqual(distinctiveTokens('io-github-x-ai-with-claude-code'), []);
+  const grade = gradeConnectGuideIdentity(
+    'io-github-x-ai-with-claude-code',
+    {
+      h1: 'Connecting io.github.x-ai/mcp-server to Claude Code',
+      meta_description: 'Connect io.github.x-ai/mcp-server to Claude Code',
+    },
+    'io.github.x-ai/mcp-server',
+  );
   assert.equal(grade.gradeable, true);
+  assert.equal(grade.owner, 'x-ai');
+  assert.deepEqual(grade.failures, []);
+  assert.equal(grade.ownerMissing, false);
+});
+
+test('with no registry entry the publisher is guessed and flagged as a guess', () => {
+  const grade = gradeConnectGuideIdentity('io-github-newpublisher-thing-with-claude-code', {
+    h1: 'Connecting io.github.newpublisher/thing to Claude Code',
+    meta_description: 'Connect io.github.newpublisher/thing to Claude Code',
+  });
+  assert.equal(grade.owner, 'newpublisher');
+  assert.equal(grade.ownerIsGuess, true);
   assert.deepEqual(grade.failures, []);
 });
 
