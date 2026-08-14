@@ -50,17 +50,32 @@ function git(...args: string[]): { ok: boolean; out: string } {
   }
 }
 
-/** slug -> registry id, inverted from the snapshot the site already ships. Absent file or a slug
- *  newer than the snapshot yields null, and the grader falls back to guessing from the slug. */
+/**
+ * slug -> registry id, inverted from the snapshot the site already ships.
+ *
+ * A HARD input, deliberately. An earlier revision of this gate looked the slug up under the wrong
+ * key, missed every time, and silently fell back to guessing the publisher from slug position -
+ * the very heuristic the registry lookup exists to replace. Every guide still passed, so nothing
+ * anywhere said the authoritative path had never once run. Best-effort loading reproduces that
+ * failure on a missing, truncated or renamed file, so this throws instead: a gate that cannot
+ * read its own reference data has not graded anything.
+ *
+ * Duplicate slug keys are rejected rather than last-write-wins, so appending a line to the
+ * snapshot cannot re-point a real guide at a friendlier publisher.
+ */
 function loadRegistryIds(): Map<string, string> {
+  if (!existsSync(SLUGMAP)) throw new Error(`${SLUGMAP} is missing`);
+  const parsed = JSON.parse(readFileSync(SLUGMAP, 'utf8')) as { servers?: Record<string, string> };
+  const servers = parsed.servers;
+  if (!servers || typeof servers !== 'object') throw new Error(`${SLUGMAP} has no "servers" map`);
   const out = new Map<string, string>();
-  if (!existsSync(SLUGMAP)) return out;
-  try {
-    const parsed = JSON.parse(readFileSync(SLUGMAP, 'utf8')) as { servers?: Record<string, string> };
-    for (const [id, slug] of Object.entries(parsed.servers ?? {})) out.set(slug, id);
-  } catch {
-    // A malformed slugmap is another gate's problem; grading falls back to the slug.
+  for (const [id, slug] of Object.entries(servers)) {
+    if (out.has(slug)) throw new Error(`${SLUGMAP} maps slug "${slug}" to two registry ids`);
+    out.set(slug, id);
   }
+  // The registry has been >20k for the life of this file; a couple of hundred means truncation,
+  // and truncation here is indistinguishable from "this publisher is unknown".
+  if (out.size < 10_000) throw new Error(`${SLUGMAP} holds only ${out.size} servers; expected >10000`);
   return out;
 }
 
@@ -171,8 +186,21 @@ interface Problem {
   failures: { field: string; value: string }[];
 }
 
-const registryIds = loadRegistryIds();
+let registryIds: Map<string, string>;
+try {
+  registryIds = loadRegistryIds();
+} catch (err) {
+  console.error(`GUIDE SEO: cannot read the registry snapshot - ${(err as Error).message}`);
+  console.error(
+    'The publisher is resolved from that file, so nothing could be graded against it. Fix the\n' +
+      'file rather than letting this fall back to guessing: guessing is what this gate replaced.',
+  );
+  process.exit(1);
+}
+
 const problems: Problem[] = [];
+let graded = 0;
+let guessed = 0;
 
 for (const rel of touched) {
   if (!existsSync(rel)) continue; // renamed away under us; nothing to grade
@@ -205,6 +233,8 @@ for (const rel of touched) {
   // which is exactly the positional heuristic this was written to stop relying on.
   const serverSlug = slug.slice(0, -CONNECT_GUIDE_SUFFIX.length);
   const grade = gradeConnectGuideIdentity(slug, guide, registryIds.get(serverSlug) ?? null);
+  graded += 1;
+  if (grade.ownerIsGuess) guessed += 1;
   const common = {
     slug,
     rel,
@@ -277,4 +307,12 @@ if (problems.length) {
 const scope = change
   ? `${touched.length} touched guide file(s) in ${change.source}`
   : 'no base to compare';
-console.log(`guide seo ok: ${scope}`);
+// Report how identity was resolved, not just that nothing failed. A silently dead registry
+// lookup once produced a green run over guides whose publisher had never been checked; a count
+// of 0 resolved against >0 graded is visible here instead of invisible.
+const resolution =
+  graded === 0
+    ? `${registryIds.size} registry entries`
+    : `${graded} graded, ${graded - guessed}/${graded} publisher(s) resolved from ${registryIds.size} registry entries` +
+      (guessed ? `, ${guessed} inferred from slug` : '');
+console.log(`guide seo ok: ${scope}; ${resolution}`);

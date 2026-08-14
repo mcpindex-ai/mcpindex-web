@@ -96,7 +96,7 @@ test('the publisher comes from the registry id, not from slug position', () => {
   // Reverse-DNS: only io.github.* puts the publisher third. Measured over data/slugmap.json,
   // 4,219 of 21,290 ids would resolve to the namespace prefix under a positional guess.
   assert.equal(ownerFromRegistryId('io.github.1lystore/mcp-server'), '1lystore');
-  assert.equal(ownerFromRegistryId('com.getsentry/mcp'), 'getsentry');
+  assert.equal(ownerFromRegistryId('com.1stdibs/1stDibs'), '1stdibs');
   assert.equal(ownerFromRegistryId('io.github.me-qr/mcp-server'), 'me-qr');
   assert.equal(ownerFromRegistryId('io.github.github/github-mcp-server'), 'github');
 });
@@ -105,25 +105,25 @@ test('a com.* guide must name the publisher, not the namespace prefix', () => {
   // Under the positional rule this passed on the bare word "com" - the 1lystore defect, for
   // 2,765 servers. `com` is now a stopword AND the publisher is read from the id.
   const generic = gradeConnectGuideIdentity(
-    'com-getsentry-mcp-with-claude-code',
+    'com-1stdibs-1stdibs-with-claude-code',
     {
       h1: 'Connect to the MCP server',
       meta_description: 'Connect to the MCP server at example.com',
       outcome: 'You will have the MCP server connected.',
     },
-    'com.getsentry/mcp',
+    'com.1stdibs/1stDibs',
   );
-  assert.equal(generic.owner, 'getsentry');
+  assert.equal(generic.owner, '1stdibs');
   assert.equal(generic.ownerMissing, true);
 
   const named = gradeConnectGuideIdentity(
-    'com-getsentry-mcp-with-claude-code',
+    'com-1stdibs-1stdibs-with-claude-code',
     {
-      h1: 'Connecting com.getsentry/mcp to Claude Code',
-      meta_description: 'Connect com.getsentry/mcp to Claude Code',
-      outcome: 'You will have getsentry connected.',
+      h1: 'Connecting com.1stdibs/1stDibs to Claude Code',
+      meta_description: 'Connect com.1stdibs/1stDibs to Claude Code',
+      outcome: 'You will have 1stdibs connected.',
     },
-    'com.getsentry/mcp',
+    'com.1stdibs/1stDibs',
   );
   assert.deepEqual(named.failures, []);
   assert.equal(named.ownerMissing, false);
@@ -147,13 +147,75 @@ test('a publisher literally named "github" stays gradeable', () => {
   assert.equal(grade.ownerMissing, false);
 });
 
-test('a two-label publisher is matched as a phrase, so prose cannot satisfy it', () => {
-  // `me-qr` split into tokens would be satisfied by "for me", which is prose, not a name.
+test('infrastructure labels are never the publisher', () => {
+  // "last namespace label" picks the platform, not the org - and for 83 real ids that label is
+  // `mcp`, the very word the boilerplate contains, so the rule inverts and passes a generic page.
+  assert.equal(ownerFromRegistryId('ai.alpic.mcp/alpic-mcp'), 'alpic');
+  assert.equal(ownerFromRegistryId('com.nvidia.ngc.nsight.copilot.api/cuda-docs'), 'copilot');
+  assert.equal(ownerFromRegistryId('br.com.escoladeradio.www/public'), 'escoladeradio');
+  assert.equal(ownerFromRegistryId('io.sslip.195.82.231.168/agent-data-api'), 'sslip');
+  assert.equal(ownerFromRegistryId('live.alpic.staging.mcp-server-6283dc54/mcp-server'), 'alpic');
+});
+
+test('a publisher of "mcp" cannot let the round-1 boilerplate through', () => {
+  // ai.alpic.mcp/alpic-mcp with the 1lystore text verbatim. If the owner resolved to `mcp`,
+  // every one of these fields would "name the publisher" and the page would pass.
+  const grade = gradeConnectGuideIdentity(
+    'ai-alpic-mcp-alpic-mcp-with-claude-code',
+    {
+      h1: 'Connect to MCP Server',
+      meta_description: 'Connect to MCP server',
+      outcome: 'You will have the MCP server connected to Claude Code at the end of this process.',
+    },
+    'ai.alpic.mcp/alpic-mcp',
+  );
+  assert.equal(grade.owner, 'alpic');
+  assert.equal(grade.failures.length, 3);
+});
+
+test('an unresolvable publisher disables that clause instead of blocking the PR', () => {
+  // 15 ids of 21,290 resolve to nothing (ai.1325/mcp, bot.402/...). The per-field rule still
+  // applies; there is simply no publisher to demand.
+  assert.equal(ownerFromRegistryId('ai.1325/mcp'), null);
+  const grade = gradeConnectGuideIdentity(
+    'ai-1325-mcp-with-claude-code',
+    { h1: 'Connecting the 1325 server', meta_description: 'Connect 1325 to Claude Code' },
+    'ai.1325/mcp',
+  );
+  assert.equal(grade.gradeable, true);
+  assert.equal(grade.ownerRequired, 0);
+  assert.equal(grade.ownerMissing, false);
+});
+
+test('a two-label publisher: phrase OR a substantial label, and prose still cannot satisfy it', () => {
+  // pipeworx-io is 1,312 servers, the registry's largest publisher, and honest copy says
+  // "Pipeworx". 2,597 ids (12.2%) carry a corporate suffix that prose drops.
+  assert.ok(mentionsOwner('Pipeworx tools for Claude Code', 'pipeworx-io'));
+  assert.ok(mentionsOwner('io.github.pipeworx-io/19hz', 'pipeworx-io'));
+  assert.ok(mentionsOwner("Wyre's technology stack", 'wyre-technology'));
+  // ...but me-qr has no label that qualifies alone, so only the phrase satisfies it.
   assert.equal(mentionsOwner('The MCP server will be connected for me.', 'me-qr'), false);
+  assert.equal(mentionsOwner('generated for me: QR codes are returned', 'me-qr'), false);
   assert.ok(mentionsOwner('io.github.me-qr/mcp-server', 'me-qr'));
   assert.ok(mentionsOwner('Connect me qr today', 'me-qr'));
   assert.ok(mentionsOwner('io.github.infino-ai/mcp-server', 'infino-ai'));
   assert.equal(mentionsOwner('an AI-powered server', 'infino-ai'), false);
+});
+
+test('a guide without `outcome` needs the publisher once, not in every field', () => {
+  // `outcome` is optional; requiring 2 of 2 would be stricter than the three-field case and
+  // would fail nirholas's real merged copy.
+  const grade = gradeConnectGuideIdentity(
+    'io-github-nirholas-portfolio-mcp-with-claude-code',
+    {
+      h1: 'Connecting io.github.nirholas/portfolio-mcp to Claude Code',
+      meta_description: 'Setup three.ws Portfolio MCP',
+    },
+    'io.github.nirholas/portfolio-mcp',
+  );
+  assert.equal(grade.ownerMentions, 1);
+  assert.equal(grade.ownerRequired, 1);
+  assert.equal(grade.ownerMissing, false);
 });
 
 test('meta_description alone cannot be boilerplate (owner needed in 2 of 3)', () => {
