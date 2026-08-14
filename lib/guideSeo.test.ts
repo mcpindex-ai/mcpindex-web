@@ -1,7 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  META_MAX,
+  TITLE_MAX,
   distinctiveTokens,
+  gradeGuideMetadata,
   gradeConnectGuideIdentity,
   isConnectGuideSlug,
   mentionsOwner,
@@ -412,4 +415,72 @@ test('only the generated connect-guide family is in scope', () => {
   assert.equal(isConnectGuideSlug('why-your-mcp-scan-has-no-green-checkmarks'), false);
   // Degenerate: the suffix alone is not a server guide.
   assert.equal(isConnectGuideSlug('-with-claude-code'), false);
+});
+
+// --- mechanical metadata rules ------------------------------------------------------------
+//
+// These apply to EVERY guide, including the topical ones the identity rule deliberately skips.
+// The cases below are drawn from the 24 guides published on 2026-08-14, where 16 carried an
+// over-length description, 2 an over-length title, and evaluate-before-install ended its
+// snippet mid-clause on a trailing space.
+
+const CLEAN_GUIDE = {
+  title: 'How to vet MCP servers before you install them',
+  meta_description: 'What to check in the tool contract, permissions and trust signals.',
+  h1: 'How to vet an MCP server before install',
+};
+
+test('a clean guide has no metadata failures', () => {
+  assert.deepEqual(gradeGuideMetadata(CLEAN_GUIDE), []);
+});
+
+test('a blank required field fails', () => {
+  const got = gradeGuideMetadata({ ...CLEAN_GUIDE, h1: '   ' });
+  assert.equal(got.length, 1);
+  assert.equal(got[0].field, 'h1');
+  assert.equal(got[0].reason, 'blank');
+});
+
+test('an over-length description fails with its measured length', () => {
+  const got = gradeGuideMetadata({ ...CLEAN_GUIDE, meta_description: 'x'.repeat(META_MAX + 1) });
+  assert.equal(got.length, 1);
+  assert.equal(got[0].reason, 'too_long');
+  assert.equal(got[0].limit, META_MAX);
+  assert.equal(got[0].length, META_MAX + 1);
+});
+
+test('an over-length title fails at its own smaller cap', () => {
+  assert.deepEqual(gradeGuideMetadata({ ...CLEAN_GUIDE, title: 'x'.repeat(TITLE_MAX + 1) })[0], {
+    field: 'title',
+    reason: 'too_long',
+    value: 'x'.repeat(TITLE_MAX + 1),
+    limit: TITLE_MAX,
+    length: TITLE_MAX + 1,
+  });
+});
+
+test('the live evaluate-before-install defect is caught', () => {
+  // Real value shipped on 2026-08-13: clipped mid-clause, with a trailing space.
+  const got = gradeGuideMetadata({
+    ...CLEAN_GUIDE,
+    meta_description:
+      'How to vet MCP servers before install: what to check in the tool contract, ' +
+      'permissions, and trust signals - so you screen once instead of hoping the listing is ',
+  });
+  assert.equal(got.length, 1);
+  assert.equal(got[0].reason, 'clipped');
+});
+
+test('a description ending on a dangling word is clipped even without trailing space', () => {
+  const got = gradeGuideMetadata({ ...CLEAN_GUIDE, meta_description: 'Screen a server before it' });
+  assert.equal(got[0].reason, 'clipped');
+});
+
+test('a sentence legitimately ending in punctuation is not clipped', () => {
+  // "...is." strips to "is", so punctuation must be tested before the dangling-word rule bites.
+  assert.deepEqual(gradeGuideMetadata({ ...CLEAN_GUIDE, meta_description: 'Check what it is.' }), []);
+});
+
+test('h1 has no length cap because it is not a rendered search field', () => {
+  assert.deepEqual(gradeGuideMetadata({ ...CLEAN_GUIDE, h1: 'y'.repeat(200) }), []);
 });

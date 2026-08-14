@@ -26,7 +26,11 @@ import path from 'node:path';
 import {
   CONNECT_GUIDE_SUFFIX,
   GRADED_FIELDS,
+  META_MAX,
+  TITLE_MAX,
+  type MetadataFailure,
   gradeConnectGuideIdentity,
+  gradeGuideMetadata,
   isConnectGuideSlug,
 } from '../lib/guideSeo';
 
@@ -198,8 +202,16 @@ try {
   process.exit(1);
 }
 
+interface MetaProblem {
+  slug: string;
+  rel: string;
+  failures: MetadataFailure[];
+}
+
 const problems: Problem[] = [];
+const metaProblems: MetaProblem[] = [];
 let graded = 0;
+let metaGraded = 0;
 let guessed = 0;
 
 for (const rel of touched) {
@@ -226,6 +238,15 @@ for (const rel of touched) {
   const inFile = typeof guide.slug === 'string' ? guide.slug : '';
   const slug = inFile || path.basename(rel, '.json');
   if (!/^[a-z0-9][a-z0-9-]{0,99}$/.test(slug)) continue; // SLUG_RE, lib/guides-content.ts:83
+
+  // Mechanical metadata rules run for EVERY edited guide. The identity rule below is only
+  // meaningful for the connect family, but a blank, clipped or over-length SERP field is a
+  // defect on any page - and topical guides are precisely what an automated retargeting loop
+  // edits, so they cannot be the class nothing grades.
+  const metaFailures = gradeGuideMetadata(guide);
+  metaGraded += 1;
+  if (metaFailures.length) metaProblems.push({ slug, rel, failures: metaFailures });
+
   if (!isConnectGuideSlug(slug)) continue; // topical guide: carries no server identity by design
 
   // slugmap is keyed by SERVER slug; a guide slug is that plus the connect suffix. Looking up
@@ -304,6 +325,38 @@ if (problems.length) {
   process.exit(1);
 }
 
+if (metaProblems.length) {
+  console.error('GUIDE SEO: an edited guide has metadata a search result cannot use.\n');
+  for (const p of metaProblems) {
+    console.error(`  ${p.slug}`);
+    for (const f of p.failures) {
+      if (f.reason === 'blank') {
+        console.error(`    ${f.field}: (missing or blank)`);
+      } else if (f.reason === 'too_long') {
+        console.error(
+          `    ${f.field}: ${f.length} chars, over the ${f.limit} a result renders - ` +
+            `everything past that is invisible to the reader.`,
+        );
+        console.error(`      ${JSON.stringify(f.value)}`);
+      } else {
+        console.error(
+          `    ${f.field}: ends mid-clause or on trailing whitespace - the tell of a naive ` +
+            `character-count trim.`,
+        );
+        console.error(`      ...${JSON.stringify(f.value.slice(-60))}`);
+      }
+    }
+    console.error(`    -> ${p.rel}`);
+  }
+  console.error(
+    `\nOnly guides THIS change touches are graded, so this is your edit's metadata, not a\n` +
+      `backlog. Titles cap at ${TITLE_MAX} and descriptions at ${META_MAX} because that is what\n` +
+      `Google renders; a description clipped mid-word is what an automated rewrite does when\n` +
+      `nothing checks it.`,
+  );
+  process.exit(1);
+}
+
 const scope = change
   ? `${touched.length} touched guide file(s) in ${change.source}`
   : 'no base to compare';
@@ -315,4 +368,7 @@ const resolution =
     ? `${registryIds.size} registry entries`
     : `${graded} graded, ${graded - guessed}/${graded} publisher(s) resolved from ${registryIds.size} registry entries` +
       (guessed ? `, ${guessed} inferred from slug` : '');
-console.log(`guide seo ok: ${scope}; ${resolution}`);
+console.log(
+  `guide seo ok: ${scope}; ${resolution}; ${metaGraded} metadata-graded ` +
+    `(title<=${TITLE_MAX}, meta<=${META_MAX}, no blank or clipped field)`,
+);

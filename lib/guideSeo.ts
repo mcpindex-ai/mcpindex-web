@@ -127,6 +127,94 @@ export function isConnectGuideSlug(slug: string): boolean {
   return slug.endsWith(CONNECT_GUIDE_SUFFIX) && slug.length > CONNECT_GUIDE_SUFFIX.length;
 }
 
+// ---------------------------------------------------------------------------
+// Mechanical metadata rules - every guide, not only the connect family.
+//
+// WHY THIS EXISTS, SEPARATELY FROM THE IDENTITY RULE ABOVE
+// The identity rule asks "does this page name its server", which is meaningless for a topical
+// guide that has no server. But topical guides are exactly what an automated retargeting loop
+// edits, and the failure mode there is not anonymity - it is a field that got clipped, blanked or
+// run past the length a search result will show. Those are mechanically checkable, so they are
+// checked, and nothing here needs an opinion about whether the prose is any good.
+//
+// Measured over the 24 published guides on 2026-08-14: 16 carry a meta_description longer than
+// Google renders, 2 carry an over-length title, and evaluate-before-install - the site's
+// highest-value page - ends its snippet on "...hoping the listing is " with a trailing space,
+// cut mid-clause. That last one arrived in a hand-edit, which is the argument for a gate: the
+// same class of damage an auto-rewriter would do is already arriving without one.
+//
+// SCOPE MATCHES THE SIBLING GATE: only guides a change touches are graded, so a pre-existing
+// over-length page is not somebody else's PR failure. Edit a guide and you own its metadata.
+
+/** Google renders roughly this much of a title before truncating it. */
+export const TITLE_MAX = 70;
+/** ...and roughly this much of a description. */
+export const META_MAX = 160;
+
+/**
+ * Words a description must not END on. A snippet clipped by a naive character-count trim stops
+ * on whatever word happened to sit at the boundary, and the tell is a dangling function word:
+ * "hoping the listing is". Punctuation is stripped before the test, so a legitimate sentence
+ * ending "...is." is unaffected.
+ */
+const DANGLING_TAIL = new Set([
+  'is', 'are', 'was', 'be', 'the', 'a', 'an', 'of', 'to', 'and', 'or', 'for',
+  'with', 'in', 'on', 'at', 'that', 'so', 'from', 'by', 'as', 'into', 'your',
+  'you', 'it', 'its', 'this', 'these', 'than', 'then', 'but', 'if', 'when',
+]);
+
+export type MetadataReason = 'blank' | 'too_long' | 'clipped';
+
+export interface MetadataFailure {
+  field: string;
+  reason: MetadataReason;
+  value: string;
+  /** Present for 'too_long': the cap the value exceeded, and what it measured. */
+  limit?: number;
+  length?: number;
+}
+
+/**
+ * Grade the three fields a search result is built from. Returns [] when the guide is clean.
+ *
+ * `h1` has no length cap: it is on-page copy, not a SERP-rendered field, and capping it would
+ * fail pages for a constraint that does not apply to them.
+ */
+export function gradeGuideMetadata(guide: Readonly<Record<string, unknown>>): MetadataFailure[] {
+  const failures: MetadataFailure[] = [];
+  const read = (field: string): string => {
+    const raw = guide[field];
+    return typeof raw === 'string' ? raw : '';
+  };
+
+  for (const field of ['title', 'meta_description', 'h1']) {
+    const value = read(field);
+    if (value.trim() === '') {
+      failures.push({ field, reason: 'blank', value });
+      continue;
+    }
+    if (value !== value.trimEnd()) {
+      failures.push({ field, reason: 'clipped', value });
+      continue;
+    }
+    const cap = field === 'title' ? TITLE_MAX : field === 'meta_description' ? META_MAX : 0;
+    if (cap > 0 && value.length > cap) {
+      failures.push({ field, reason: 'too_long', value, limit: cap, length: value.length });
+      continue;
+    }
+    // A description that ends on sentence-terminating punctuation is finished, whatever its last
+    // word happens to be: "Check what it is." strips to "is" and would otherwise read as clipped.
+    // A trim mid-sentence never leaves a terminator behind, which is what makes this separable.
+    if (field === 'meta_description' && !/[.!?]["')\]]?$/.test(value.trim())) {
+      const lastWord = value.trim().split(/\s+/).pop() ?? '';
+      if (DANGLING_TAIL.has(lastWord.replace(/[^a-z0-9]/gi, '').toLowerCase())) {
+        failures.push({ field, reason: 'clipped', value });
+      }
+    }
+  }
+  return failures;
+}
+
 /**
  * Namespace labels that are infrastructure, never a publisher. Deployment and platform labels sit
  * in the same position an org would, so "last label" alone picks them: `ai.alpic.mcp` -> `mcp`
