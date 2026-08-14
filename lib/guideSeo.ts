@@ -19,7 +19,7 @@
 //
 // These files are artifacts: generated elsewhere, merged here by hand. Nothing in scripts/
 // looked at them. Five landed, one was generic, no gate objected - and the generator will emit
-// more. This module is the rule; scripts/check-guide-seo.ts is the gate that applies it to the
+// more. This module is the rule; scripts/check-guide-seo.mts is the gate that applies it to the
 // guides a PR actually touches.
 //
 // WHAT IT ENFORCES, AND THE BOUND ON THAT CLAIM
@@ -57,12 +57,19 @@ const STOPWORDS = new Set([
 ]);
 
 /**
- * Two characters is not an identity. `infino-ai` yields `ai`, which appears inside "available",
- * "main" and "explain" - a bare substring test would have passed the 1lystore page on prose that
- * never mentions it. Three is the shortest length that has never produced an accidental match
- * across the corpus.
+ * Two characters is not an identity. `infino-ai` yields `ai`, and "an AI-powered MCP server" is
+ * prose any generator will emit for any server - it would satisfy the check while naming nothing.
+ * (Note the matcher below is boundary-anchored, so the risk is a standalone "AI" in the copy, NOT
+ * the letters inside "available" or "explain"; those never matched.)
  */
 const MIN_TOKEN_LENGTH = 3;
+
+/**
+ * Used only when a slug yields no token at full length. A server legitimately named `x-ai` or
+ * `d2` is not the author's mistake to fix - the slug comes from the registry id - so grading it
+ * weakly beats hard-blocking a PR on advice nobody can act on.
+ */
+const FALLBACK_TOKEN_LENGTH = 2;
 
 /** Present-and-non-empty is required; a missing optional field is a different defect, not this one. */
 const REQUIRED_FIELDS = ['h1', 'meta_description'] as const;
@@ -83,13 +90,29 @@ export function isConnectGuideSlug(slug: string): boolean {
  */
 export function distinctiveTokens(slug: string): string[] {
   const base = isConnectGuideSlug(slug) ? slug.slice(0, -CONNECT_GUIDE_SUFFIX.length) : slug;
-  const out = new Set<string>();
-  for (const token of base.toLowerCase().split(/[^a-z0-9]+/)) {
-    if (token.length < MIN_TOKEN_LENGTH) continue;
-    if (STOPWORDS.has(token)) continue;
-    out.add(token);
-  }
-  return [...out];
+  const atLength = (min: number) => {
+    const out = new Set<string>();
+    for (const token of base.toLowerCase().split(/[^a-z0-9]+/)) {
+      if (token.length < min || STOPWORDS.has(token)) continue;
+      out.add(token);
+    }
+    return [...out];
+  };
+  const strict = atLength(MIN_TOKEN_LENGTH);
+  return strict.length ? strict : atLength(FALLBACK_TOKEN_LENGTH);
+}
+
+/**
+ * The publisher's token - the one a generic page cannot accidentally satisfy.
+ *
+ * Connect-guide slugs are `io-github-<org>-<name>`, so after the vendor stopwords the FIRST
+ * surviving token is the org's. That distinction is load-bearing: `<name>` is routinely an
+ * English word (portfolio, weather, memory, search, calendar), and "Connect to the portfolio
+ * MCP server" satisfies a name-token check while identifying nothing among the many servers
+ * that share it. The org segment is the part that says *whose*.
+ */
+export function ownerToken(slug: string): string | null {
+  return distinctiveTokens(slug)[0] ?? null;
 }
 
 /**
@@ -115,11 +138,31 @@ export interface IdentityGrade {
    *  that cannot check must never report a pass. */
   gradeable: boolean;
   tokens: string[];
+  owner: string | null;
   failures: IdentityFailure[];
+  /** True when NO graded field names the publisher, even though each field named something.
+   *  This is the generic-placeholder case that a per-field check alone lets through. */
+  ownerMissing: boolean;
 }
 
 /**
  * Grade one connect guide's metadata for its own server's identity.
+ *
+ * Two rules, and the second is the one with teeth:
+ *
+ *   per field   - each graded field must name SOMETHING from the slug.
+ *   collective  - across the three, the PUBLISHER must be named at least once.
+ *
+ * The per-field rule alone is not enough, and the corpus proves it: with only that rule, a page
+ * reading "Connect to the portfolio MCP server" in all three fields passes for
+ * io-github-nirholas-portfolio-mcp while never once saying whose server it is. That is the same
+ * shape of defect as the 1lystore page - metadata about no particular server - and it survived
+ * only because `portfolio` is an ordinary English word. The 1lystore page was caught at all
+ * because its org segment happened to be meaningless in English, which is luck, not a rule.
+ *
+ * The collective form is deliberate: it is satisfied by naming the publisher ONCE, so a merged
+ * page like nirholas's `meta_description: "Setup three.ws Portfolio MCP"` - which names the
+ * product rather than the org - still passes on the strength of its h1.
  *
  * `title` is deliberately NOT graded. io-github-infino-ai-mcp-server shipped `"mcp-server Setup"`,
  * which is weak but merged, and grading it would fail a PR for a page the author did not write.
@@ -130,9 +173,13 @@ export function gradeConnectGuideIdentity(
   guide: Readonly<Record<string, unknown>>,
 ): IdentityGrade {
   const tokens = distinctiveTokens(slug);
-  if (tokens.length === 0) return { gradeable: false, tokens, failures: [] };
+  const owner = tokens[0] ?? null;
+  if (tokens.length === 0 || owner === null) {
+    return { gradeable: false, tokens, owner: null, failures: [], ownerMissing: false };
+  }
 
   const failures: IdentityFailure[] = [];
+  let ownerNamed = false;
   for (const field of GRADED_FIELDS) {
     const raw = guide[field];
     const value = typeof raw === 'string' ? raw.trim() : '';
@@ -140,7 +187,8 @@ export function gradeConnectGuideIdentity(
       if ((REQUIRED_FIELDS as readonly string[]).includes(field)) failures.push({ field, value: '' });
       continue;
     }
+    if (mentionsToken(value, owner)) ownerNamed = true;
     if (!tokens.some((token) => mentionsToken(value, token))) failures.push({ field, value });
   }
-  return { gradeable: true, tokens, failures };
+  return { gradeable: true, tokens, owner, failures, ownerMissing: !ownerNamed };
 }

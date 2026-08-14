@@ -5,6 +5,7 @@ import {
   gradeConnectGuideIdentity,
   isConnectGuideSlug,
   mentionsToken,
+  ownerToken,
 } from './guideSeo';
 
 // The rule these cases pin down: a generated connect guide must name its own server in the
@@ -76,17 +77,68 @@ test('the corrected 1lystore page passes', () => {
   assert.deepEqual(grade.failures, []);
 });
 
+// --- the generic-word hole -----------------------------------------------------------------
+
+test('a page that names only the generic half of the slug fails', () => {
+  // The defect this closes: with a per-field-any-token rule, this passes for
+  // io-github-nirholas-portfolio-mcp while never saying whose server it is - metadata about no
+  // particular server, which is exactly the 1lystore defect. That page was caught only because
+  // "1lystore" happens to be meaningless in English. Luck is not a rule.
+  const grade = gradeConnectGuideIdentity('io-github-nirholas-portfolio-mcp-with-claude-code', {
+    h1: 'Connect to the portfolio MCP server',
+    meta_description: 'Connect to the portfolio MCP server',
+    outcome: 'You will have the portfolio MCP server connected.',
+  });
+  assert.deepEqual(grade.failures, [], 'each field does name something from the slug');
+  assert.equal(grade.owner, 'nirholas');
+  assert.equal(grade.ownerMissing, true, 'but none of them names the publisher');
+});
+
+test('naming the publisher once is enough (merged sibling relies on this)', () => {
+  // nirholas's real meta_description is "Setup three.ws Portfolio MCP" - it names the product,
+  // not the org. The collective rule must not fail that page on the strength of its h1.
+  const grade = gradeConnectGuideIdentity('io-github-nirholas-portfolio-mcp-with-claude-code', {
+    h1: 'Connecting io.github.nirholas/portfolio-mcp to Claude Code',
+    meta_description: 'Setup three.ws Portfolio MCP',
+    outcome: 'You will have the portfolio server working with Claude Code.',
+  });
+  assert.deepEqual(grade.failures, []);
+  assert.equal(grade.ownerMissing, false);
+});
+
+test('ownerToken is the org segment, not the product segment', () => {
+  assert.equal(ownerToken('io-github-nirholas-portfolio-mcp-with-claude-code'), 'nirholas');
+  assert.equal(ownerToken('io-github-cyanheads-eurostat-mcp-server-with-claude-code'), 'cyanheads');
+  assert.equal(ownerToken('io-github-1lystore-mcp-server-with-claude-code'), '1lystore');
+  assert.equal(ownerToken('io-github-mcp-server-with-claude-code'), null);
+});
+
 // --- the traps ---------------------------------------------------------------------------
 
-test('a two-char slug segment is not an identity (the "ai" substring trap)', () => {
-  // infino-ai yields only `infino`; `ai` would otherwise match "available", "main", "explain".
+test('a two-char slug segment is not an identity ("AI" is prose, not a name)', () => {
+  // infino-ai yields only `infino`. The matcher is boundary-anchored, so the risk `ai` poses is
+  // NOT the letters inside "available"/"explain" - it is a standalone "AI" in ordinary copy,
+  // which any generator emits for any server. This asserts at MIN=3 by construction.
   assert.deepEqual(distinctiveTokens('io-github-infino-ai-mcp-server-with-claude-code'), ['infino']);
   const grade = gradeConnectGuideIdentity('io-github-infino-ai-mcp-server-with-claude-code', {
-    h1: 'Connect to the available MCP server',
-    meta_description: 'Explain the main setup',
-    outcome: 'It will be available in your client.',
+    h1: 'Connect to an AI-powered MCP server',
+    meta_description: 'An AI server for your client',
+    outcome: 'You will have an AI MCP server connected.',
   });
+  // Would be 0 failures if `ai` were a token; the copy names nothing else from the slug.
   assert.equal(grade.failures.length, 3);
+});
+
+test('a slug with no full-length token falls back rather than hard-blocking the PR', () => {
+  // The slug comes from the registry id, so a legitimately short-named server is not the
+  // merging author's mistake to fix. Grade it weakly; do not make the PR unmergeable.
+  assert.deepEqual(distinctiveTokens('io-github-x-ai-with-claude-code'), ['ai']);
+  const grade = gradeConnectGuideIdentity('io-github-x-ai-with-claude-code', {
+    h1: 'Connecting x-ai to Claude Code',
+    meta_description: 'Connect x-ai to Claude Code',
+  });
+  assert.equal(grade.gradeable, true);
+  assert.deepEqual(grade.failures, []);
 });
 
 test('token match reads through punctuation but not through word interiors', () => {
@@ -99,6 +151,15 @@ test('token match reads through punctuation but not through word interiors', () 
 
 test('matching is case-insensitive (slug is lowercase, prose is not)', () => {
   assert.ok(mentionsToken('io.github.ObscuritySRL/umbriel', 'obscuritysrl'));
+});
+
+test('the boundary class stays case-insensitive too, not just the token', () => {
+  // Subtle: under /i, [^a-z0-9] must NOT match an uppercase letter, or every token would match
+  // inside SHOUTED prose. Rewriting the class to \W or adding the u flag would break this while
+  // every other test stayed green.
+  assert.equal(mentionsToken('MAINFRAME migration', 'main'), false);
+  assert.equal(mentionsToken('REMAINDER', 'main'), false);
+  assert.equal(mentionsToken('UMBRIELX', 'umbriel'), false);
 });
 
 test('a slug with no gradeable token reports ungradeable, never a silent pass', () => {
