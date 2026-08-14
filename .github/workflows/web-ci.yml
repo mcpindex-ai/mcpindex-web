@@ -146,6 +146,16 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/check-guide-freshness.mjs
 
+      # Fails the PR that adds or edits a generated per-server connect guide whose SEO metadata
+      # never names the server it is about. PR #92 merged five of them and one named its server
+      # in none of h1/meta_description/outcome, while its body was correct and specific - which
+      # is what made it survive review looking identical to its four good siblings. Scoped to
+      # the guides the PR touches, same as the freshness gate above.
+      - name: Guide SEO identity
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npx tsx scripts/check-guide-seo.mts
+
       - name: Lint
         run: npm run lint
 
