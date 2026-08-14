@@ -24,7 +24,10 @@ The claim worth checking is the whole chain:
 
 > the digest that Bitcoin timestamped is the digest of *this* corpus of verdicts.
 
-That requires five legs, and all five are reproducible from this repository alone.
+That requires the legs below. Legs 1 through 5a are reproducible from this repository
+alone, with no dependencies and no network. Leg 5b — confirming those Bitcoin blocks
+against the chain itself — is the one step that needs something we cannot ship you, and
+it is described honestly further down rather than glossed.
 
 | # | Leg | Where it comes from |
 |---|-----|---------------------|
@@ -32,7 +35,8 @@ That requires five legs, and all five are reproducible from this repository alon
 | 2 | `root` | `compute_root({slug: sha256(canonical_bytes(record))})` |
 | 3 | `chain_root` | `sha256(canonical_bytes([prev_chain_root, root]))` |
 | 4 | proof digest | `sha256(("sha256:" + chain_root_hex).encode())` |
-| 5 | Bitcoin | `ots verify` on `public/anchors/<chain_root_hex>.ots` |
+| 5a | attested blocks | Bitcoin block heights parsed out of the `.ots`, matched against the ledger |
+| 5b | Bitcoin | `ots verify` — **needs a local Bitcoin node** |
 
 Each anchor record in `data/verdict-anchors.json` carries the `corpus_commit` that
 leg 1 needs, and every one of them resolves in this public repository.
@@ -100,7 +104,7 @@ python3 scripts/verify_anchors.py --fetch
 # just the newest three
 python3 scripts/verify_anchors.py --last 3 --fetch
 
-# also verify against Bitcoin (needs `pip install opentimestamps-client`)
+# also run `ots verify` (needs the client AND a local Bitcoin node — see below)
 python3 scripts/verify_anchors.py --ots
 
 # prove the verifier actually detects tampering rather than rubber-stamping
@@ -128,6 +132,30 @@ python3 scripts/verify_anchors.py --last 2      # -> chain_root does not fold
 
 An earlier draft of this script read the committed file instead of your working tree,
 and that test passed when it should have failed. It now reads the working tree.
+
+## The last leg needs a Bitcoin node, and that is worth being blunt about
+
+`ots verify` from `opentimestamps-client` reads bitcoind's cookie file. It does **not**
+fall back to a block explorer. Without a local node it prints:
+
+```
+Could not connect to Bitcoin node: Cookie file unusable ... and rpcpassword not specified
+```
+
+That is a missing capability, not a bad proof. `--ots` reports it as `bitcoin=nonode`
+and does not fail the run, because calling a healthy chain broken would be worse than
+saying "I could not check this."
+
+So the honest position: **most readers cannot run leg 5b**, and we are not going to
+pretend otherwise. What every reader *can* do, with no dependencies at all, is leg 5a —
+it runs by default and parses the Bitcoin block heights directly out of the proof, then
+checks they are exactly the heights `data/verdict-anchors.json` claims. That catches a
+ledger that lies about which block attests it.
+
+To close the final step yourself, take a height from the output and look the block up on
+any explorer, then compare its merkle root against `bitcoin.attested_merkle_roots` in the
+ledger. Note the ledger stores those **byte-reversed** relative to explorer display order;
+`attested_merkle_roots_display` holds the other endianness. Or run a node and use `--ots`.
 
 ## In CI
 

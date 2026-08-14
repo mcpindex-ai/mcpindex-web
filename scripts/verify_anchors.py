@@ -16,7 +16,12 @@ THE FIVE LEGS, all reproducible from this repository alone:
   3. chain_root sha256(canonical_bytes([prev_chain_root, root]))
   4. ots digest sha256(("sha256:" + chain_root_hex).encode()), which is the digest
                 embedded in public/anchors/<chain_root_hex>.ots
-  5. bitcoin    `ots verify` that proof   (--ots; needs the opentimestamps client)
+  5a. blocks    the Bitcoin block heights the proof is attested into, parsed straight
+                out of the .ots and matched against the ledger's claim. No client, no
+                network, always on.
+  5b. bitcoin   `ots verify` that proof   (--ots). NEEDS A LOCAL BITCOIN NODE - the
+                client reads bitcoind's cookie file and does not fall back to a block
+                explorer - so without one this reports `nonode`, not a failure.
 
 Leg 4 is the one nobody guesses. The stamped digest is NOT the raw 32 bytes of
 chain_root and NOT the hash of the bare hex - it is the hash of the ASCII string
@@ -31,7 +36,7 @@ USAGE
     python3 scripts/verify_anchors.py                 # every anchor resolvable locally
     python3 scripts/verify_anchors.py --fetch         # pull missing corpora on demand
     python3 scripts/verify_anchors.py --last 3        # newest 3 only
-    python3 scripts/verify_anchors.py --ots           # also verify against Bitcoin
+    python3 scripts/verify_anchors.py --ots           # also ots verify (needs bitcoind)
     python3 scripts/verify_anchors.py --self-test     # prove the verifier can fail
 
 Exits non-zero on any mismatch, and on a run that verified no corpus at all - a
@@ -59,6 +64,8 @@ MAX_CANON_DEPTH = 64
 # one-byte version, then the file-hash op, then the digest.
 OTS_MAGIC = b"\x00OpenTimestamps\x00\x00Proof\x00\xbf\x89\xe2\xe8\x84\xe8\x92\x94"
 OTS_OP_SHA256 = 0x08
+# Tag that marks a BitcoinBlockHeaderAttestation inside a proof.
+OTS_BITCOIN_TAG = bytes.fromhex("0588960d73d71901")
 
 ANCHORS = "data/verdict-anchors.json"
 CORPUS = "data/verdicts.json"
@@ -142,6 +149,44 @@ def ots_stamped_digest(proof: bytes) -> str:
     if proof[p] != OTS_OP_SHA256:
         raise ValueError(f"unexpected file-hash op 0x{proof[p]:02x}, expected sha256")
     return proof[p + 1:p + 33].hex()
+
+
+def _varuint(buf: bytes, i: int) -> tuple[int, int]:
+    value = shift = 0
+    while True:
+        b = buf[i]
+        i += 1
+        value |= (b & 0x7F) << shift
+        if not b & 0x80:
+            return value, i
+        shift += 7
+
+
+def ots_block_heights(proof: bytes) -> list[int]:
+    """Bitcoin block heights this proof is attested into. No client, no network.
+
+    `ots verify` needs a local Bitcoin node - it reads bitcoind's cookie file and will
+    not fall back to a block explorer - so almost no third-party reader can run it. That
+    would leave the last leg uncheckable in practice, which is the situation this whole
+    script exists to end. So the heights are parsed straight out of the proof and matched
+    against what the ledger claims: enough to catch a ledger that lies about which block
+    attests it, with no dependency at all.
+
+    What this does NOT do is confirm those blocks exist on the real chain with those
+    merkle roots. That step needs a node or a block explorer, and is the reader's - see
+    docs/verifying-anchors.md.
+    """
+    out: list[int] = []
+    i = 0
+    while True:
+        i = proof.find(OTS_BITCOIN_TAG, i)
+        if i < 0:
+            return sorted(out)
+        i += len(OTS_BITCOIN_TAG)
+        _, after_len = _varuint(proof, i)  # payload length, then the height itself
+        height, _ = _varuint(proof, after_len)
+        out.append(height)
+        i = after_len
 
 
 # ------------------------------------------------------------------------------- git
@@ -243,15 +288,32 @@ def verify(repo: Repo, last: int | None, do_ots: bool) -> int:
                     root_state = "FAIL"
                     failures.append(f"seq {seq}: root != corpus_root({commit[:8]}:{CORPUS})")
 
-        # leg 5 - Bitcoin, only on request.
+        # leg 5a - the proof is attested into exactly the blocks the ledger claims.
+        # Always on: no client, no node, no network.
+        claimed = sorted((entry.get("bitcoin") or {}).get("block_heights") or [])
+        blocks = "n/a"
+        if proof is not None and claimed:
+            found = ots_block_heights(proof)
+            if found == claimed:
+                blocks = "ok"
+            else:
+                blocks = "FAIL"
+                failures.append(
+                    f"seq {seq}: proof attests blocks {found}, ledger claims {claimed}")
+
+        # leg 5b - the blocks are real. Needs a Bitcoin node, so it is opt-in, and an
+        # absent node is reported as such rather than as a verification failure.
         btc = ""
         if do_ots and proof is not None:
-            btc = "  bitcoin=" + _ots_verify(proof, want_chain)
+            state = _ots_verify(proof, want_chain)
+            btc = "  bitcoin=" + state
+            if state == "FAIL":
+                failures.append(f"seq {seq}: ots verify rejected {want_path}")
 
         if reported:
             print(
                 f"  seq {seq:>3}  corpus={root_state:<4} chain={'ok' if chain_ok else 'FAIL':<4} "
-                f"proof={'ok' if ots_ok else 'FAIL':<4}{btc}"
+                f"proof={'ok' if ots_ok else 'FAIL':<4} blocks={blocks:<4}{btc}"
             )
         prev = want_chain
 
@@ -283,12 +345,20 @@ def _ots_verify(proof: bytes, chain_root_value: str) -> str:
         target = Path(d, "digest")
         target.write_bytes(chain_root_value.encode())
         Path(d, "digest.ots").write_bytes(proof)
-        r = subprocess.run(["ots", "verify", str(target) + ".ots"],
-                           capture_output=True, text=True)
-        if r.returncode != 0:
-            out = (r.stderr or r.stdout).strip().splitlines()
-            return "FAIL" if out else "unavailable"
-        return "ok"
+        try:
+            r = subprocess.run(["ots", "verify", str(target) + ".ots"],
+                               capture_output=True, text=True)
+        except FileNotFoundError:
+            return "noclient"
+        blob = (r.stderr or "") + (r.stdout or "")
+        if r.returncode == 0:
+            return "ok"
+        # `ots verify` reads bitcoind's cookie file and does NOT fall back to a block
+        # explorer. No node is a missing capability, not a bad proof - saying FAIL here
+        # would report a healthy chain as broken.
+        if "Could not connect to Bitcoin node" in blob or "rpcpassword" in blob:
+            return "nonode"
+        return "FAIL"
 
 
 def self_test() -> int:
@@ -339,6 +409,13 @@ def self_test() -> int:
     checks.append((
         "chain_root binds to prev",
         chain_root(None, r1) != chain_root(r2, r1),
+    ))
+
+    # Block heights must actually parse out of a real proof, and a proof with no
+    # Bitcoin attestation must report none rather than inventing one.
+    checks.append((
+        "no bitcoin attestation -> no heights",
+        ots_block_heights(b"\x00no attestation here") == [],
     ))
 
     # A truncated or foreign proof must raise rather than quietly return something.
