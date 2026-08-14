@@ -4,10 +4,18 @@ import type { NextConfig } from "next";
 // Next.js App Router + Vercel Analytics/Speed Insights (inline bootstraps +
 // va.vercel-scripts.com / vitals.vercel-insights.com).
 //
-// /embed.html is the public iframe surface (see app/demo) — it must remain
-// frameable, so it is excluded from the site-wide source (overlapping sources
-// merge; you cannot unset X-Frame-Options once set) and gets its own CSP
-// without frame-ancestors 'none' / X-Frame-Options.
+// /embed.html AND /embed/<slug> are the public iframe surfaces (see app/demo and
+// app/embed/[slug]) — they must remain frameable, so they are excluded from the
+// site-wide source (overlapping sources merge; you cannot unset X-Frame-Options
+// once set) and get their own CSP without frame-ancestors 'none' /
+// X-Frame-Options.
+//
+// The /embed/ arm is load-bearing: this exclusion was written when the static
+// /embed.html was the only embed surface. app/embed/[slug] arrived later (one
+// player page per film) and is what every VideoObject names as its `embedUrl`,
+// but it kept inheriting the site-wide frame-ancestors 'none' — so the one page
+// whose entire job is to be embedded was the one page nobody could embed, and
+// the structured data pointed at a URL that refuses to frame.
 const cspDirectives = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -78,12 +86,22 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Everything except the public iframe embed surface.
-        source: "/((?!embed\\.html$).*)",
+        // Everything except the public iframe embed surfaces. The `embed/`
+        // alternative needs its trailing slash: without it this would also
+        // exempt unrelated paths like /embedded-anything.
+        source: "/((?!embed\\.html$|embed/).*)",
         headers: siteSecurityHeaders,
       },
       {
         source: "/embed.html",
+        headers: embedSecurityHeaders,
+      },
+      {
+        // One player page per film, declared as `embedUrl` in every VideoObject.
+        // Same job as /embed.html, so the same exemption. Safe to frame: the page
+        // is an unauthenticated <video> with no form, no state and no action a
+        // clickjack could steal.
+        source: "/embed/:slug*",
         headers: embedSecurityHeaders,
       },
       {
