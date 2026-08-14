@@ -10,6 +10,16 @@ export const revalidate = 3600;
 // pull a single fixed URL with a bare GET. Bounded on purpose — a quality-ranked
 // sampler, not a 50k dump. `total` is the active-corpus size so a caller can see
 // this is a page, not the whole registry.
+//
+// `totalBySource` EXISTS TO RECONCILE TWO PUBLISHED NUMBERS. `total` counts the whole
+// active corpus (registry + editorially admitted); /api/registry-count deliberately counts
+// registry rows ONLY, because it publishes its figure next to the explicit claim
+// `source: registry.modelcontextprotocol.io` (see `registry.getServerCount`). Both are
+// correct and they differ by the admitted set — but the difference was only discoverable by
+// reading our source, so the two endpoints read as an unexplained disagreement (21,311 vs
+// 21,304) to anyone checking. For a product whose whole pitch is checkable numbers, that is
+// the defect: not the gap, but a `total` that never said what it totalled. The breakdown is
+// ADDITIVE — `total` keeps its meaning and value, so no existing consumer moves.
 export async function GET(req: NextRequest) {
   const category = req.nextUrl.searchParams.get('category')?.trim() || undefined;
   // Garbage/NaN limit falls back to the default; never dumps the corpus, never 500s.
@@ -27,6 +37,14 @@ export async function GET(req: NextRequest) {
   return Response.json(
     {
       total: pool.length,
+      // Counted off the SAME `pool` as `total`, so the parts can never fail to sum to the
+      // whole — deriving `registry` here but reading `admitted` from anywhere else would
+      // reintroduce exactly the two-sources-of-truth bug this field exists to close. Honours
+      // `?category=` for the same reason.
+      totalBySource: {
+        registry: pool.filter((s) => s.source === 'registry').length,
+        admitted: pool.filter((s) => s.source === 'admitted').length,
+      },
       returned: servers.length,
       // Snapshot/cache-fill time (bounded by revalidate=3600), not per-request time — it signals
       // how fresh this page is, which is the freshness a browse consumer actually wants.
