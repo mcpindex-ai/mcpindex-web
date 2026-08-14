@@ -47,11 +47,7 @@ const NEAR_KILL_MS = 50_000; // route maxDuration is 60s
  */
 export type McpWatchdogContext = {
   /** Which window is being timed. Says WHERE it stalled, which is the point. */
-  // `dispatch-modern` is the 2026-07-28 leg (lib/mcpModern.ts), which bypasses the SDK
-  // entirely. Named separately rather than folded into `dispatch` because the whole point
-  // of this watchdog is telling an operator WHERE a hang was when the log is all they have,
-  // and "which protocol leg" is the first question for a request that reached neither.
-  phase: 'body-read' | 'dispatch' | 'dispatch-modern';
+  phase: 'body-read' | 'dispatch';
   /** POST | GET | DELETE. */
   httpMethod: string;
   /** body-read only: the header, which is all we know before the body arrives. -1 if absent. */

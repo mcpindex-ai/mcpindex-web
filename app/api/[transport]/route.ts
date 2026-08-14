@@ -17,7 +17,6 @@ import { z } from 'zod';
 import { callV1, withTimeout } from '@/lib/v1Dispatch';
 import { inspectMcpBody } from '@/lib/mcpBodyGuard';
 import { armMcpWatchdog, contentLengthOf } from '@/lib/mcpWatchdog';
-import { handleModern, isModernRequest, type ModernTool } from '@/lib/mcpModern';
 
 
 // Shared single source of truth for tool name/title/description (also used by the
@@ -190,141 +189,128 @@ function formatCompare(rows: any[]): string {
 // zed generator exists. formatInstall also labels any fallback honestly as defense.
 const CLIENTS = ['claude-desktop', 'claude-code', 'cursor', 'gemini-cli', 'cline'] as const;
 
-// ONE definition per tool, TWO protocol front-ends.
-//
-// The legacy leg below registers `shape` with mcp-handler + the SDK, exactly as before.
-// The 2026-07-28 leg (lib/mcpModern.ts) publishes a JSON Schema DERIVED from that same
-// `shape` and dispatches `run` itself, because neither SDK can speak that revision - both
-// cap at 2025-11-25. Deriving rather than hand-writing the second schema is deliberate: a
-// maintained-by-hand duplicate is the divergence class that let the TS and Python drift
-// classifiers disagree about the same server for weeks.
-//
-// `run` keeps each handler's exact previous body, so the legacy wire is unchanged.
-type ToolDef = {
-  name: string;
-  // `Record<string, z.ZodType>`, not `z.ZodRawShape`: in zod 4 that alias resolves to a
-  // Readonly<> map of the CORE `$ZodType`, while the SDK's overload wants the classic
-  // `ZodType`. The runtime value is the same object either way - only the two declaration
-  // files disagree - so the shape is described structurally here and narrowed at the one
-  // call site below.
-  shape: Record<string, z.ZodType>;
-  run: (args: any) => Promise<any>;
-};
-
-const TOOL_DEFS: ToolDef[] = [
-  {
-    name: 'recommend_mcp_for_task',
-    shape: {
-      task: z.string().describe('Natural-language description of the task, e.g. "read PDFs and write to S3".'),
-    },
-    run: async ({ task }: { task: string }) => {
-      try {
-        return text(formatRecommend(await api(`/api/v1/recommend?task=${encodeURIComponent(task)}`)));
-      } catch (e) {
-        return errText('recommend_mcp_for_task', e);
-      }
-    },
-  },
-  {
-    name: 'search_mcp_servers',
-    shape: {
-      query: z.string().describe('Search query.'),
-      category: z.string().optional().describe('Optional category filter (e.g. database, browser, github).'),
-      limit: z.number().int().min(1).max(50).optional().describe('Max results (default 10, max 50).'),
-    },
-    run: async ({ query, category, limit }: { query: string; category?: string; limit?: number }) => {
-      try {
-        const params = new URLSearchParams({ q: query, limit: String(Math.min(50, limit ?? 10)) });
-        if (category) params.set('category', category);
-        return text(formatSearch(await api(`/api/v1/search?${params.toString()}`)));
-      } catch (e) {
-        return errText('search_mcp_servers', e);
-      }
-    },
-  },
-  {
-    name: 'get_install_command',
-    shape: {
-      server_slug: z.string().describe('Slug of the server (from search or recommend results).'),
-      client: z.enum(CLIENTS).describe('Target client.'),
-    },
-    run: async ({ server_slug, client }: { server_slug: string; client: (typeof CLIENTS)[number] }) => {
-      try {
-        return text(
-          formatInstall(await api(`/api/v1/server/${encodeURIComponent(safeSeg(server_slug, 'server_slug'))}`), client),
-        );
-      } catch (e) {
-        return errText('get_install_command', e);
-      }
-    },
-  },
-  {
-    name: 'compare_servers',
-    shape: {
-      slugs: z.array(z.string()).min(2).max(5).describe('Server slugs to compare.'),
-    },
-    run: async ({ slugs }: { slugs: string[] }) => {
-      try {
-        const rows = await Promise.all(
-          slugs.map((s) => api(`/api/v1/server/${encodeURIComponent(safeSeg(s, 'slug'))}`)),
-        );
-        return text(formatCompare(rows));
-      } catch (e) {
-        return errText('compare_servers', e);
-      }
-    },
-  },
-  {
-    name: 'check_tool_trust',
-    shape: {
-      server_id: z
-        .string()
-        .describe(
-          'Registry slug from search_mcp_servers / recommend results, e.g. "io-github-microsoft-playwright-mcp" (NOT a short name like "github").',
-        ),
-      tool_name: z.string().describe('Tool name as exposed by the server (e.g. "create_pull_request").'),
-    },
-    run: async ({ server_id, tool_name }: { server_id: string; tool_name: string }) => {
-      try {
-        const v = await api(
-          `/api/v1/trust/tool/${encodeURIComponent(safeSeg(server_id, 'server_id'))}/${encodeURIComponent(safeSeg(tool_name, 'tool_name'))}`,
-        );
-        return text(JSON.stringify(v, null, 2));
-      } catch (e) {
-        return errText('check_tool_trust', e);
-      }
-    },
-  },
-  {
-    name: 'assess_server',
-    shape: {
-      server_id: z.string().describe('Server slug to assess.'),
-    },
-    run: async ({ server_id }: { server_id: string }) => {
-      try {
-        const v = await api(`/api/v1/trust/server/${encodeURIComponent(safeSeg(server_id, 'server_id'))}`);
-        return text(JSON.stringify(v, null, 2));
-      } catch (e) {
-        return errText('assess_server', e);
-      }
-    },
-  },
-];
-
-// The modern leg's view of the same six tools. `z.toJSONSchema` is zod 4 native - no new
-// dependency, and no second copy of any schema to drift.
-const MODERN_TOOLS: ModernTool[] = TOOL_DEFS.map((t) => ({
-  name: t.name,
-  ...tmeta(t.name),
-  jsonSchema: z.toJSONSchema(z.object(t.shape)),
-  handler: (args: Record<string, unknown>) => t.run(args),
-}));
-
 const handler = createMcpHandler(
   (server) => {
-    for (const t of TOOL_DEFS) {
-      server.registerTool(t.name, { ...tmeta(t.name), inputSchema: t.shape }, t.run);
-    }
+    server.registerTool(
+      'recommend_mcp_for_task',
+      {
+        ...tmeta('recommend_mcp_for_task'),
+        inputSchema: {
+          task: z.string().describe('Natural-language description of the task, e.g. "read PDFs and write to S3".'),
+        },
+      },
+      async ({ task }) => {
+        try {
+          return text(formatRecommend(await api(`/api/v1/recommend?task=${encodeURIComponent(task)}`)));
+        } catch (e) {
+          return errText('recommend_mcp_for_task', e);
+        }
+      },
+    );
+
+    server.registerTool(
+      'search_mcp_servers',
+      {
+        ...tmeta('search_mcp_servers'),
+        inputSchema: {
+          query: z.string().describe('Search query.'),
+          category: z.string().optional().describe('Optional category filter (e.g. database, browser, github).'),
+          limit: z.number().int().min(1).max(50).optional().describe('Max results (default 10, max 50).'),
+        },
+      },
+      async ({ query, category, limit }) => {
+        try {
+          const params = new URLSearchParams({ q: query, limit: String(Math.min(50, limit ?? 10)) });
+          if (category) params.set('category', category);
+          return text(formatSearch(await api(`/api/v1/search?${params.toString()}`)));
+        } catch (e) {
+          return errText('search_mcp_servers', e);
+        }
+      },
+    );
+
+    server.registerTool(
+      'get_install_command',
+      {
+        ...tmeta('get_install_command'),
+        inputSchema: {
+          server_slug: z.string().describe('Slug of the server (from search or recommend results).'),
+          client: z.enum(CLIENTS).describe('Target client.'),
+        },
+      },
+      async ({ server_slug, client }) => {
+        try {
+          return text(
+            formatInstall(await api(`/api/v1/server/${encodeURIComponent(safeSeg(server_slug, 'server_slug'))}`), client),
+          );
+        } catch (e) {
+          return errText('get_install_command', e);
+        }
+      },
+    );
+
+    server.registerTool(
+      'compare_servers',
+      {
+        ...tmeta('compare_servers'),
+        inputSchema: {
+          slugs: z.array(z.string()).min(2).max(5).describe('Server slugs to compare.'),
+        },
+      },
+      async ({ slugs }) => {
+        try {
+          const rows = await Promise.all(
+            slugs.map((s) => api(`/api/v1/server/${encodeURIComponent(safeSeg(s, 'slug'))}`)),
+          );
+          return text(formatCompare(rows));
+        } catch (e) {
+          return errText('compare_servers', e);
+        }
+      },
+    );
+
+    server.registerTool(
+      'check_tool_trust',
+      {
+        ...tmeta('check_tool_trust'),
+        inputSchema: {
+          server_id: z
+            .string()
+            .describe(
+              'Registry slug from search_mcp_servers / recommend results, e.g. "io-github-microsoft-playwright-mcp" (NOT a short name like "github").',
+            ),
+          tool_name: z.string().describe('Tool name as exposed by the server (e.g. "create_pull_request").'),
+        },
+      },
+      async ({ server_id, tool_name }) => {
+        try {
+          const v = await api(
+            `/api/v1/trust/tool/${encodeURIComponent(safeSeg(server_id, 'server_id'))}/${encodeURIComponent(safeSeg(tool_name, 'tool_name'))}`,
+          );
+          return text(JSON.stringify(v, null, 2));
+        } catch (e) {
+          return errText('check_tool_trust', e);
+        }
+      },
+    );
+
+    server.registerTool(
+      'assess_server',
+      {
+        ...tmeta('assess_server'),
+        inputSchema: {
+          server_id: z.string().describe('Server slug to assess.'),
+        },
+      },
+      async ({ server_id }) => {
+        try {
+          const v = await api(`/api/v1/trust/server/${encodeURIComponent(safeSeg(server_id, 'server_id'))}`);
+          return text(JSON.stringify(v, null, 2));
+        } catch (e) {
+          return errText('assess_server', e);
+        }
+      },
+    );
   },
   // mcp-handler 2.x takes ONE options object: the SDK's ServerOptions plus
   // `serverInfo`, `verboseLogs` and `onEvent`. The 1.x third argument is gone,
@@ -422,34 +408,6 @@ async function postHandler(req: Request, ctx: unknown): Promise<Response> {
   // that file for the full chain.
   const seen = inspectMcpBody(raw);
   if ('reject' in seen) return seen.reject;
-
-  // THE 2026-07-28 LEG, in front of the SDK because neither SDK can speak it (both cap at
-  // 2025-11-25). Placed AFTER inspectMcpBody deliberately: the modern leg inherits the same
-  // unauthenticated resource-exhaustion bound the legacy leg has, rather than opening a
-  // second unguarded door to the same tools. `isModernRequest` is narrow by construction -
-  // it cannot capture legacy SDK traffic, which sends a 2025-11-25 version header on every
-  // request after initialize (see lib/mcpModern.ts for why that nearly broke every client).
-  let parsed: unknown = undefined;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    // Not JSON: leave it to the SDK leg, which owns the legacy error shape for this case.
-    parsed = undefined;
-  }
-  if (parsed !== undefined && isModernRequest(parsed, req.headers)) {
-    const modernDone = armMcpWatchdog({
-      phase: 'dispatch-modern',
-      httpMethod: req.method,
-      rpcMethod: seen.accept.method,
-      tool: seen.accept.tool,
-      bytes: seen.accept.bytes,
-    });
-    try {
-      return Response.json(await handleModern(parsed, req.headers, MODERN_TOOLS));
-    } finally {
-      modernDone();
-    }
-  }
 
   // Body is a stream consumed once; rebuild an equivalent request for the handler.
   const forwarded = new Request(req.url, { method: req.method, headers: req.headers, body: raw });
