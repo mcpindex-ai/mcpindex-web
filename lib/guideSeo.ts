@@ -174,7 +174,11 @@ export function ownerFromRegistryId(registryId: string): string | null {
   const labels = registryId.split('/')[0].split('.').filter(Boolean);
   if (labels.length === 0) return null;
   if (labels.length >= 3 && labels[0] === 'io' && labels[1] === 'github') {
-    return labels[2].toLowerCase();
+    const publisher = labels[2].toLowerCase();
+    // A purely numeric publisher (io.github.214140846, io.github.335 - 2 real ids) is a name no
+    // human writes into prose. Demanding it would block honest copy for an impossible reason, so
+    // treat it as unresolved: the publisher clause switches off and the per-field rule still runs.
+    return /^\d+$/.test(publisher) ? null : publisher;
   }
   const candidates = labels.length > 1 ? labels.slice(1) : labels;
   for (let i = candidates.length - 1; i >= 0; i--) {

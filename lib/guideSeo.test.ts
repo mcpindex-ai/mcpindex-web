@@ -173,6 +173,39 @@ test('a publisher of "mcp" cannot let the round-1 boilerplate through', () => {
   assert.equal(grade.failures.length, 3);
 });
 
+test('a numeric publisher does not demand a number in the prose', () => {
+  // io.github.214140846 and io.github.335 are real. Requiring "214140846" in two of three
+  // fields would block copy no human would ever write, so the publisher clause switches off
+  // and the per-field rule carries the page on its own.
+  assert.equal(ownerFromRegistryId('io.github.214140846/skillhub-mcp'), null);
+  assert.equal(ownerFromRegistryId('io.github.335/scouter-mcp'), null);
+  const grade = gradeConnectGuideIdentity(
+    'io-github-214140846-skillhub-mcp-with-claude-code',
+    {
+      h1: 'Connecting skillhub-mcp to Claude Code',
+      meta_description: 'Connect skillhub-mcp to Claude Code',
+      outcome: 'You will have skillhub-mcp connected.',
+    },
+    'io.github.214140846/skillhub-mcp',
+  );
+  assert.equal(grade.gradeable, true);
+  assert.equal(grade.owner, null);
+  assert.equal(grade.ownerRequired, 0);
+  assert.deepEqual(grade.failures, [], 'the per-field rule still applies and "skillhub" satisfies it');
+
+  // ...and it must still catch a page that names nothing at all.
+  const generic = gradeConnectGuideIdentity(
+    'io-github-214140846-skillhub-mcp-with-claude-code',
+    {
+      h1: 'Connect to MCP Server',
+      meta_description: 'Connect to MCP server',
+      outcome: 'You will have the MCP server connected.',
+    },
+    'io.github.214140846/skillhub-mcp',
+  );
+  assert.equal(generic.failures.length, 3);
+});
+
 test('an unresolvable publisher disables that clause instead of blocking the PR', () => {
   // 15 ids of 21,290 resolve to nothing (ai.1325/mcp, bot.402/...). The per-field rule still
   // applies; there is simply no publisher to demand.
