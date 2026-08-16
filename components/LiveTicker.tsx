@@ -20,7 +20,16 @@ export async function LiveTicker() {
             Snapshot <span className="text-[var(--color-cite)]">{timeAgo(snap.fetchedAt)}</span>
           </span>
           <span>
-            Tracking <span className="text-[var(--color-cite)] tabular-nums">{servers.length.toLocaleString()}</span>
+            {/* The count links /stats with "MCP servers" inside the anchor: the hub's target
+                query is "how many MCP servers", and this is the only homepage spot where the
+                number and the term co-occur. */}
+            <Link href="/stats" className="hover:text-[var(--color-accent-strong)]">
+              Tracking{' '}
+              <span className="text-[var(--color-cite)] tabular-nums">
+                {servers.length.toLocaleString()}
+              </span>{' '}
+              MCP servers
+            </Link>
           </span>
           <span>
             7-day delta <span className="text-[var(--color-accent-strong)] tabular-nums">+{fresh}</span>

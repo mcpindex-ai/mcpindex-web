@@ -151,9 +151,9 @@ export default async function StatusPage() {
       </section>
 
       <p className="mt-10 font-mono text-[12px] text-[var(--color-mute)]">
-        More numbers at{' '}
+        More numbers:{' '}
         <Link href="/stats" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
-          /stats
+          how many MCP servers there are
         </Link>
         {' · '}
         <Link href="/trust" className="text-[var(--color-cite)] underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
