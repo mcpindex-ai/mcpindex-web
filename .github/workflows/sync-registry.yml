@@ -2,13 +2,18 @@ name: Sync MCP registry snapshot
 
 on:
   schedule:
-    # Every 4h (00/04/08/12/16/20 UTC). The upstream has multi-hour SLOW stretches
-    # where a full fetch can't finish; a single daily run that lands in one of those
-    # windows fails and the directory goes stale for a day. Sampling 6 windows/day
-    # means a good window is caught even when several are bad — fail-fast + retry-often
-    # is the reliability lever for a flaky upstream, not one heroic long run. A
-    # successful run is a no-op if the snapshot is unchanged ("No registry changes").
-    - cron: '0 */4 * * *'
+    # Twice daily (10:15/22:15 UTC). Was every 4h; each sync commit triggers a full
+    # Vercel build of a ~15k-page site, and in Aug 2026 automated builds burned the
+    # whole on-demand budget (84h build CPU + 3.29M ISR writes) by mid-cycle. Two
+    # windows/day is the cost/freshness trade chosen 2026-08-16.
+    # The flaky-upstream reasoning that argued for 6 windows/day still holds in
+    # miniature: a bad window just means waiting for the next one, and the
+    # mcpindex-snapshot-freshness probe still pages past ~36h (= 3 missed windows).
+    # These times sit AFTER the verdicts pushback on mini32 (01:45/13:45 US-Pacific,
+    # = 08:45/20:45 UTC in PDT, 09:45/21:45 UTC in PST): the pushback commit skips
+    # its own Vercel build (vercel.json ignoreCommand), and THIS sync's build ships
+    # it. Keep the ordering if either schedule moves.
+    - cron: '15 10,22 * * *'
   workflow_dispatch: {}  # allow manual triggers from the Actions UI
 
 concurrency:
