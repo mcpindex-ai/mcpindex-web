@@ -29,6 +29,7 @@ import { buildServerJsonLd, isEndpointShaped, isSafeHref } from '@/lib/serverJso
 import { isGoneSlug, resolveServerRedirect } from '@/lib/serverRemovals';
 import { buildServerMetaDescription } from '@/lib/serverMetaDescription';
 import type { IndexedServer } from '@/lib/types';
+import { displayVersion, recordDetails, recordOpening } from '@/lib/serverRecord';
 
 // Trust verdict shape (public projection of the v1.0.0 verdict contract).
 // Full back-history is not surfaced on this public page; the current verdict is what
@@ -313,7 +314,7 @@ export default async function ServerPage(
             <div className="mt-3 font-mono text-[12px] text-[var(--color-mute)] flex flex-wrap items-center gap-x-3 gap-y-1">
               <span>{server.name}</span>
               <span aria-hidden="true" className="inline-block w-px h-3 bg-[var(--color-rule)]" />
-              <span>v{server.version}</span>
+              <span>v{displayVersion(server.version)}</span>
               <span aria-hidden="true" className="inline-block w-px h-3 bg-[var(--color-rule)]" />
               <Link
                 href={`/best/${server.category}`}
@@ -368,6 +369,24 @@ export default async function ServerPage(
 
             <p className="mt-6 text-[17px] leading-[1.55] text-[var(--color-cite)]">
               {server.description}
+            </p>
+
+            {/* Registry-record facts as prose. Every value resolves per server at
+                build time (dates, version, distribution, env surface), which is what
+                keeps 20k sibling pages from being shingle-identical - the template
+                sentence is shared, the tokens that matter are not. The sentences
+                themselves live in lib/serverRecord with tests, because claim wording
+                on 20k public pages must not overreach the data (the snapshot holds
+                the CURRENT VERSION's record dates, not the server's lifetime). */}
+            <p className="mt-6 text-[14px] leading-[1.6] text-[var(--color-cite)]">
+              {recordOpening(server)} {recordDetails(server)} Removals and
+              unreachable sources are measured across every server this index
+              tracks, contract drift across the servers that answer in consecutive
+              snapshots;{' '}
+              <Link href="/stats" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
+                the index&apos;s current counts
+              </Link>{' '}
+              put this record in context.
             </p>
 
             {/* Directory → gate: ~90% of Analytics landings are /server/* exits. */}
@@ -454,9 +473,11 @@ export default async function ServerPage(
                   Environment variables
                 </div>
                 <div className="rule-t">
-                  {server.envVars.map((v) => (
+                  {/* envVars flatMaps per-package declarations, so the same name
+                      can legally repeat - the name alone is not a key. */}
+                  {server.envVars.map((v, i) => (
                     <div
-                      key={v.name}
+                      key={`${v.name}-${i}`}
                       className="rule-b row-3up-wide py-4 px-2"
                     >
                       <code className="font-mono text-[13px] text-[var(--color-ink)]">{v.name}</code>
@@ -563,7 +584,7 @@ export default async function ServerPage(
             <div>
               <div className={RAIL_LABEL}>Details</div>
               <dl className="rule-t font-mono text-[12px]">
-                <RailRow k="version" v={`v${server.version}`} />
+                <RailRow k="version" v={`v${displayVersion(server.version)}`} />
                 <RailRow
                   k="category"
                   v={CATEGORY_LABELS[server.category] ?? server.category}
