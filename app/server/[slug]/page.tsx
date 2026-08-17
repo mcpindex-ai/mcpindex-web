@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { getCollidingBase, getServer, legacySlugRedirects, loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { computeQuality, rankByQuality } from '@/lib/quality';
 import { buildInstalls } from '@/lib/installs';
+import { escapeHtml } from '@/lib/escapeHtml';
 import { getSourceLiveness, livenessLookup, livenessSentence } from '@/lib/sourceLiveness';
 import { anchorClaim } from '@/lib/verdictAnchor';
 import { CATEGORY_LABELS } from '@/lib/categorize';
@@ -213,6 +214,14 @@ export default async function ServerPage(
   const verdictState = await loadVerdictForServer(server.slug);
   // Crawl-date framing for the post-verdict CTA; memoized snapshot, no extra fetch.
   const snapshotDay = (await loadSnapshotMeta()).fetchedAt?.slice(0, 10) ?? '';
+  // Titles land verbatim inside the owner's markdown/HTML, so neutralize what
+  // would break each syntax - losslessly where the syntax allows it. Markdown:
+  // backslash-escape the link-text brackets (CommonMark), drop raw angle
+  // brackets (HTML-passthrough renderers would eat them as tags). HTML: entity
+  // escaping is lossless, so the shared escaper does all of it.
+  const citeTitle = server.title.replace(/\s+/g, ' ').trim();
+  const citeTitleMd = citeTitle.replace(/[[\]]/g, '\\$&').replace(/[<>]/g, '');
+  const citeTitleHtml = escapeHtml(citeTitle);
   // Alternatives are the page's only server->server links, so they are also the
   // internal-link graph. Registry-order slice(0,3) pointed every page in a category
   // at the same 3 arbitrary servers; the corpus's best pages earned no links and the
@@ -394,9 +403,30 @@ export default async function ServerPage(
 
             <ContractDrift serverId={server.name} />
 
-            {/* Embed badge - puts the live verdict next to "Connect" wherever
-                this server is listed. Reflects the current screen and links back. */}
+            {/* Cite + embed. The cite line leads: a text link on the owner's own
+                site or docs is the one surface that both reassures their users and
+                is crawlable (README badges render nofollow on GitHub/Docker Hub). */}
             {verdictState.kind === 'verdict' && (
+              <>
+              <section className="mt-14">
+                <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
+                  Cite this record
+                </div>
+                <p className="text-[13px] leading-[1.55] text-[var(--color-cite)] mb-3">
+                  People vet a server before wiring it in. One line on your project
+                  site or docs answers that with an independent record: screening
+                  verdict, registry provenance, contract drift history. It stays
+                  current as new screens and drift events land.
+                </p>
+                <CopyField
+                  label="Markdown"
+                  value={`[Independent trust record for ${citeTitleMd}](https://mcpindex.ai/server/${server.slug}) - screening verdict, registry provenance, and contract drift monitoring.`}
+                />
+                <CopyField
+                  label="HTML"
+                  value={`<a href="https://mcpindex.ai/server/${server.slug}">Independent trust record for ${citeTitleHtml}</a> - screening verdict, registry provenance, and contract drift monitoring.`}
+                />
+              </section>
               <section className="mt-14">
                 <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
                   Embed this badge
@@ -414,6 +444,7 @@ export default async function ServerPage(
                   value={`<a href="https://mcpindex.ai/server/${server.slug}"><img src="https://mcpindex.ai/api/v1/badge/${server.slug}" alt="mcpindex verdict" height="20" /></a>`}
                 />
               </section>
+              </>
             )}
 
             {/* Env vars */}
