@@ -7,7 +7,7 @@
 //
 // Output: <pkgRoot>/mcp-server-mcpindex-<version>.mcpb (a gitignored build artifact).
 // Publish to Smithery (after `npx -y @smithery/cli auth login`):
-//   npx -y @smithery/cli mcp publish ./mcp-server-mcpindex-<version>.mcpb -n mcpindex-ai/mcp-server-mcpindex
+//   npx -y @smithery/cli mcp publish ./mcp-server-mcpindex-<version>.mcpb -n gautamgb/mcpindex
 //
 // The manifest.json committed alongside is the source of truth for the bundle
 // metadata (tools, entry point, user_config); only `version` is overwritten here.
@@ -54,7 +54,7 @@ try {
 
   console.log(`\nbundle: wrote ${out}`);
   console.log(
-    `bundle: publish -> npx -y @smithery/cli mcp publish ${out} -n mcpindex-ai/mcp-server-mcpindex`,
+    `bundle: publish -> npx -y @smithery/cli mcp publish ${out} -n gautamgb/mcpindex`,
   );
 } finally {
   await rm(tmp, { recursive: true, force: true });
