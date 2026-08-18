@@ -60,7 +60,7 @@ export default async function StatsPage() {
   // One source for the visible section AND the FAQ so the two can never disagree on the
   // same page (the exact failure mode the census-figure incident in lib/sourceLiveness.ts
   // documents).
-  const MCP2_PANEL = { endpoints: 200, asOf: '2026-08-16', since: '2026-08-13' } as const;
+  const MCP2_PANEL = { endpoints: 200, asOf: '2026-08-18', since: '2026-08-13' } as const;
 
   // Every drift figure renders from the frozen edition artifact rather than being typed
   // into copy - hand-copied stats contradicted their own DOI for four days once (see the
