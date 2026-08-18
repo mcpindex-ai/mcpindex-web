@@ -550,6 +550,18 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
           something like &ldquo;find me an MCP server that can read PDFs and write to
           S3&rdquo; and watch it call <Mono>recommend_mcp_for_task</Mono> automatically.
         </p>
+        <p>
+          No install at all: point any MCP client that supports remote servers at{' '}
+          <Mono>https://mcpindex.ai/api/mcp</Mono> (Streamable HTTP, no credentials) -
+          same six tools. The endpoint speaks the 2026-07-28 protocol revision (the one
+          called MCP 2.0: <Mono>server/discover</Mono>, per-request <Mono>_meta</Mono>{' '}
+          envelope) and every legacy <Mono>initialize</Mono> revision back to 2024-10-07,
+          era selected per connection - so 2026-era clients and today&rsquo;s clients both
+          connect unchanged. The npm package does the same from 0.4.0. You can verify the
+          claim yourself with one curl:{' '}
+          <Ext href="/guides/what-is-mcp-2-0">the MCP 2.0 guide</Ext> has the exact probe
+          and what a legacy server answers instead.
+        </p>
       </Section>
 
       {/* §05-06 - Tier-3 API depth; collapsed for scanability */}
