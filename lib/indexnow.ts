@@ -37,6 +37,10 @@ export const INDEXNOW_PRIORITY_URLS: readonly string[] = [
   `${INDEXNOW_SITE}/guides/is-it-safe-to-let-an-ai-agent-call-an-mcp-tool`,
   `${INDEXNOW_SITE}/guides/how-to-trust-an-mcp-server`,
   `${INDEXNOW_SITE}/guides/audit-your-mcp-json-what-your-agent-can-do`,
+  // The two era/adoption pages: /stats carries the census panel and the MCP-2.0
+  // FAQ; the guide is the head-term page with the probe command.
+  `${INDEXNOW_SITE}/stats`,
+  `${INDEXNOW_SITE}/guides/what-is-mcp-2-0`,
 ];
 
 export type IndexNowPayload = {

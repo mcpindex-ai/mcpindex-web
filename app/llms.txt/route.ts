@@ -125,7 +125,7 @@ ${allFilms().map(({ id, film }) => {
 
 ## Endpoints an agent can call
 
-- POST /api/mcp                                                  Remote MCP server (Streamable HTTP) - connect any MCP client without installing; exposes the 6 tools below as MCP.
+- POST /api/mcp                                                  Remote MCP server (Streamable HTTP) - connect any MCP client without installing; exposes the 6 tools below as MCP. Speaks the 2026-07-28 revision (MCP 2.0: server/discover + per-request _meta envelope) AND every legacy initialize revision back to 2024-10-07, era selected per connection. Probe command: mcpindex.ai/guides/what-is-mcp-2-0.
 - GET /api/v1/search?q=<query>                                   Keyword + semantic search across servers.
 - GET /api/v1/recommend?task=<text>                              Natural language task -> top 3 servers with reasoning.
 - GET /api/v1/preflight?task=<text>                              Pre-flight: top servers + the rank-1 server's advisory verdict in one call.
@@ -166,6 +166,7 @@ This is the advisory directory client - not the in-path gate (\`mcpindex-gate\` 
 - [Screen](https://mcpindex.ai/screen): Paste a tool description; the live LLM judge returns an advisory REVIEW/UNVERIFIED verdict.
 - [Servers](https://mcpindex.ai/servers): A-Z browse hub over all ${servers} per-server detail pages (JSON-LD typed, verdict surfaced when available); individual pages live at /server/<slug>.
 - [Guides](https://mcpindex.ai/guides): Practical guides: trust/security reviews, comparisons, integration how-tos; individual guides at /guides/<slug>.
+- [What is MCP 2.0?](https://mcpindex.ai/guides/what-is-mcp-2-0): The 2026-07-28 revision explained - what changed on the wire, the one-curl probe to check any server's protocol era, dual-era migration notes, measured-adoption stance.
 - [Best by category](https://mcpindex.ai/best): Curated picks per category, at /best/<category>.
 - [Leaderboard](https://mcpindex.ai/leaderboard): Top 50 by MCP Quality Score.
 - [Drift ledger](https://mcpindex.ai/ledger): Public drift ledger: contract changes the crawler observed across public MCP servers.

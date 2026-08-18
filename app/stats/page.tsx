@@ -346,8 +346,16 @@ export default async function StatsPage() {
           with the denominator attached.
         </p>
         <p className="mt-4 text-[15px] leading-[1.6] text-[var(--color-cite)]">
-          mcpindex&apos;s own endpoint speaks 2026-07-28: <code>mcpindex.ai/api/mcp</code>{' '}
-          answers <code>server/discover</code> with per-request metadata.
+          Both mcpindex surfaces speak 2026-07-28: <code>mcpindex.ai/api/mcp</code> answers{' '}
+          <code>server/discover</code> with per-request metadata, and the{' '}
+          <code>mcp-server-mcpindex</code> npm package serves both eras from 0.4.0. What the
+          revision changed, and the one-curl probe to check any server (ours included):{' '}
+          <Link
+            href="/guides/what-is-mcp-2-0"
+            className="underline decoration-[var(--color-rule)] underline-offset-2 hover:decoration-current"
+          >
+            What is MCP 2.0?
+          </Link>
         </p>
       </section>
 

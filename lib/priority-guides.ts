@@ -28,6 +28,13 @@ export const PRIORITY_GUIDES = [
     href: '/guides/screen-mcp-server-before-install',
     label: 'Screen an MCP server before install',
   },
+  // "mcp 2.0" is a head term with obvious migration-season demand and zero
+  // coverage anywhere on the site except the /stats panel. Dilution cost of a
+  // 6th entry accepted for the same reason as the 5th.
+  {
+    href: '/guides/what-is-mcp-2-0',
+    label: 'What is MCP 2.0? (the 2026-07-28 revision)',
+  },
 ] as const;
 
 export const GUIDES_HUB = { href: '/guides', label: 'All guides' } as const;

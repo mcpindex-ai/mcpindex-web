@@ -26,6 +26,9 @@ const CORNERSTONE_GUIDES = new Set([
   'is-it-safe-to-let-an-ai-agent-call-an-mcp-tool',
   'how-to-trust-an-mcp-server',
   'audit-your-mcp-json-what-your-agent-can-do',
+  // Head-term page for "mcp 2.0" / "2026-07-28" queries; the only page beyond
+  // /stats that covers protocol eras, and the one carrying the probe command.
+  'what-is-mcp-2-0',
 ]);
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
