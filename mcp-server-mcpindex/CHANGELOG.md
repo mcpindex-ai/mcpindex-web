@@ -4,6 +4,18 @@ All notable changes to `mcp-server-mcpindex` are recorded here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-08-17
+
+### Changed
+
+- **The server now speaks the 2026-07-28 protocol revision alongside the legacy handshake.** Migrated from `@modelcontextprotocol/sdk` 1.x (which caps at 2025-11-25) to `@modelcontextprotocol/server` 2.0's `serveStdio` with `legacy: 'serve'`: a modern client gets `server/discover` and per-request `_meta` envelope handling, while every existing client (Claude Desktop, Cursor, Cline, Gemini CLI) keeps the `initialize` flow it already speaks, on the same negotiated versions as before. mcpindex publishes measurements of 2026-07-28 adoption; its own distributed server could not answer a modern client until now.
+- **Tool `title`s reach the wire.** `tools-meta.json` always carried per-tool titles, but the old registration mapped only `description`, so titles were dropped. The hosted remote endpoint already sent them; the stdio server now matches.
+- **Tool arguments are validated against the declared JSON Schema before the handler runs** (the library's `fromJsonSchema` Ajv validator). Previously arguments passed through unchecked, including sloppiness 1.x tolerated (`limit: "10"` as a string, `compare_servers` beyond `maxItems: 5`). Schema-invalid arguments now come back as an `isError` tool result.
+- **Calling a tool name this server does not expose is now a JSON-RPC `-32602` error** ("Tool X not found", the library's spec-preferred shape), where 1.x returned an `isError` tool result with `Error calling X: Unknown tool: X`. Anything keying on that text or shape should read the error object instead.
+- **`capabilities.tools.listChanged` is explicitly `false`.** The library defaults it to true for `registerTool` servers; this server never emits `notifications/tools/list_changed`, and an index that measures declared-vs-observed gaps should not ship one.
+- **Node `>=20` required** (was `>=18`, EOL since April 2025) - `@modelcontextprotocol/server` 2.0's floor. The Docker image was already on node 22.
+- **The module is importable without side effects.** Connecting to stdio now happens only when run as the CLI; importing gets the trust re-exports and a `buildServer()` factory. This is what made protocol-level tests possible: `test/protocol.test.mjs` now covers both eras (initialize negotiation and counter-offer, `server/discover`, modern `tools/list` and `tools/call`, schema rejection).
+
 ## [0.3.13] - 2026-07-29
 
 ### Changed

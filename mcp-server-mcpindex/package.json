@@ -1,6 +1,6 @@
 {
   "name": "mcp-server-mcpindex",
-  "version": "0.3.13",
+  "version": "0.4.0",
   "mcpName": "io.github.gautamgb/mcp-server-mcpindex",
   "description": "The MCP server index that vets servers, not just lists them. Search by task, then get an advisory screen on a server before your agent calls its tools: whether each tool does what it claims, backed by conformance monitoring and a public drift ledger. Advisory (REVIEW / UNVERIFIED), monitored not enforced, not a safety verdict. Drop-in for Claude Desktop, Claude Code, Cursor, Gemini CLI, Cline.",
   "keywords": [
@@ -35,7 +35,7 @@
     "mcp-server-mcpindex": "src/index.mjs"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "files": [
     "src/",
@@ -53,6 +53,6 @@
     "release": "node scripts/release.mjs"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0"
+    "@modelcontextprotocol/server": "^2.0.0"
   }
 }
