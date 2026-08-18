@@ -62,6 +62,17 @@ on:
       - 'data/slugmap.json'
       - 'data/source-liveness.json'
 
+# Supersede, don't stack. 232 of this workflow's 239 runs 2026-08-01..17 ran to completion
+# because nothing ever canceled them, and each run pays for `contrast` (full ~15k-page build
+# + Chromium download) - so a burst of pushes to main paid for every intermediate build. The
+# org exhausted its 2,000 included Actions minutes mid-cycle in August. Only the newest run
+# per branch matters for CI signal: cancel the older one. head_ref first for the same reason
+# as mcpindex-trust's ci.yml - it is the bare branch name on pull_request, while ref_name is
+# `<n>/merge` there; on push (main only here) ref_name is the branch.
+concurrency:
+  group: web-ci-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
