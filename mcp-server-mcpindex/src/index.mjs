@@ -1,14 +1,20 @@
 #!/usr/bin/env node
 // mcp-server-mcpindex - an MCP server for finding MCP servers.
 // Backend: api.mcpindex.ai (versioned, free tier - no key needed for v0).
+//
+// Serves BOTH protocol eras from one tool registry: the 2026-07-28 revision
+// (server/discover + per-request _meta envelope, no initialize) and the
+// 2025-11-25-and-earlier initialize handshake. serveStdio owns the era
+// decision per connection; `legacy: 'serve'` keeps every existing client
+// (Claude Desktop, Cursor, Cline, Gemini CLI) on the handshake they already
+// speak. Migrated from @modelcontextprotocol/sdk 1.x, which caps at
+// 2025-11-25 and cannot answer a modern-only client.
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+import { McpServer, fromJsonSchema } from '@modelcontextprotocol/server';
+import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import { createRequire } from 'node:module';
+import { realpathSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 export { checkToolTrust, assessServer, VERDICT_CONTRACT_VERSION, V1_HONEST_LIMITS } from './trust.mjs';
 import { notifyUpdateIfAvailable } from './update-check.mjs';
 
@@ -19,24 +25,15 @@ const API_BASE = process.env.MCPINDEX_API_BASE || 'https://mcpindex.ai';
 // Single source of truth for the running version - read from package.json so the
 // User-Agent and the update-check can never drift from what npm actually shipped.
 const PKG_VERSION = createRequire(import.meta.url)('../package.json').version;
-// Single source of truth for tool name/description, shared with the hosted
+// Single source of truth for tool name/title/description, shared with the hosted
 // remote endpoint (mcpindex-web/app/api/[transport]/route.ts) so copy can't drift.
 const TOOL_META = createRequire(import.meta.url)('./tools-meta.json');
 const TOOL_DESC = Object.fromEntries(TOOL_META.map((m) => [m.name, m.description]));
-
-const server = new Server(
-  { name: 'mcp-server-mcpindex', version: PKG_VERSION },
-  // Tools only. We do NOT advertise `logging`: the update notice goes to stderr (which
-  // every host surfaces), not via `notifications/message` (rendered inconsistently - Cursor
-  // logs it as a bare ` undefined`). stderr is the universal, clean channel.
-  { capabilities: { tools: {} } },
-);
+const TOOL_TITLE = Object.fromEntries(TOOL_META.map((m) => [m.name, m.title]));
 
 const TOOLS = [
   {
     name: 'recommend_mcp_for_task',
-    description:
-      TOOL_DESC.recommend_mcp_for_task,
     inputSchema: {
       type: 'object',
       properties: {
@@ -51,8 +48,6 @@ const TOOLS = [
   },
   {
     name: 'search_mcp_servers',
-    description:
-      TOOL_DESC.search_mcp_servers,
     inputSchema: {
       type: 'object',
       properties: {
@@ -73,8 +68,6 @@ const TOOLS = [
   },
   {
     name: 'get_install_command',
-    description:
-      TOOL_DESC.get_install_command,
     inputSchema: {
       type: 'object',
       properties: {
@@ -98,8 +91,6 @@ const TOOLS = [
   },
   {
     name: 'compare_servers',
-    description:
-      TOOL_DESC.compare_servers,
     inputSchema: {
       type: 'object',
       properties: {
@@ -116,8 +107,6 @@ const TOOLS = [
   },
   {
     name: 'check_tool_trust',
-    description:
-      TOOL_DESC.check_tool_trust,
     inputSchema: {
       type: 'object',
       properties: {
@@ -136,8 +125,6 @@ const TOOLS = [
   },
   {
     name: 'assess_server',
-    description:
-      TOOL_DESC.assess_server,
     inputSchema: {
       type: 'object',
       properties: {
@@ -151,8 +138,6 @@ const TOOLS = [
   },
 ];
 
-server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
-
 async function api(path) {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { 'User-Agent': `mcp-server-mcpindex/${PKG_VERSION}` },
@@ -163,77 +148,100 @@ async function api(path) {
   return res.json();
 }
 
-server.setRequestHandler(CallToolRequestSchema, async (req) => {
-  const { name, arguments: args } = req.params;
-  try {
-    let result;
-    switch (name) {
-      case 'recommend_mcp_for_task': {
-        const data = await api(
-          `/api/v1/recommend?task=${encodeURIComponent(args.task)}`,
-        );
-        result = formatRecommend(data);
-        break;
-      }
-      case 'search_mcp_servers': {
-        const params = new URLSearchParams({
-          q: args.query,
-          limit: String(Math.min(50, args.limit ?? 10)),
-        });
-        if (args.category) params.set('category', args.category);
-        const data = await api(`/api/v1/search?${params.toString()}`);
-        result = formatSearch(data);
-        break;
-      }
-      case 'get_install_command': {
-        const data = await api(`/api/v1/server/${encodeURIComponent(args.server_slug)}`);
-        result = formatInstall(data, args.client);
-        break;
-      }
-      case 'compare_servers': {
-        const rows = await Promise.all(
-          args.slugs.map((s) => api(`/api/v1/server/${encodeURIComponent(s)}`)),
-        );
-        result = formatCompare(rows);
-        break;
-      }
-      case 'check_tool_trust': {
-        const { checkToolTrust } = await import('./trust.mjs');
-        const verdict = await checkToolTrust({
-          serverId: args.server_id,
-          toolName: args.tool_name,
-          apiBase: API_BASE,
-          userAgent: `mcp-server-mcpindex/${PKG_VERSION}`,
-        });
-        result = JSON.stringify(verdict, null, 2);
-        break;
-      }
-      case 'assess_server': {
-        const { assessServer } = await import('./trust.mjs');
-        const verdict = await assessServer({
-          serverId: args.server_id,
-          apiBase: API_BASE,
-          userAgent: `mcp-server-mcpindex/${PKG_VERSION}`,
-        });
-        result = JSON.stringify(verdict, null, 2);
-        break;
-      }
-      default:
-        throw new Error(`Unknown tool: ${name}`);
+async function runTool(name, args) {
+  switch (name) {
+    case 'recommend_mcp_for_task': {
+      const data = await api(
+        `/api/v1/recommend?task=${encodeURIComponent(args.task)}`,
+      );
+      return formatRecommend(data);
     }
-    return { content: [{ type: 'text', text: result }] };
-  } catch (err) {
-    return {
-      isError: true,
-      content: [
-        {
-          type: 'text',
-          text: `Error calling ${name}: ${err instanceof Error ? err.message : err}`,
-        },
-      ],
-    };
+    case 'search_mcp_servers': {
+      const params = new URLSearchParams({
+        q: args.query,
+        limit: String(Math.min(50, args.limit ?? 10)),
+      });
+      if (args.category) params.set('category', args.category);
+      const data = await api(`/api/v1/search?${params.toString()}`);
+      return formatSearch(data);
+    }
+    case 'get_install_command': {
+      const data = await api(`/api/v1/server/${encodeURIComponent(args.server_slug)}`);
+      return formatInstall(data, args.client);
+    }
+    case 'compare_servers': {
+      const rows = await Promise.all(
+        args.slugs.map((s) => api(`/api/v1/server/${encodeURIComponent(s)}`)),
+      );
+      return formatCompare(rows);
+    }
+    case 'check_tool_trust': {
+      const { checkToolTrust } = await import('./trust.mjs');
+      const verdict = await checkToolTrust({
+        serverId: args.server_id,
+        toolName: args.tool_name,
+        apiBase: API_BASE,
+        userAgent: `mcp-server-mcpindex/${PKG_VERSION}`,
+      });
+      return JSON.stringify(verdict, null, 2);
+    }
+    case 'assess_server': {
+      const { assessServer } = await import('./trust.mjs');
+      const verdict = await assessServer({
+        serverId: args.server_id,
+        apiBase: API_BASE,
+        userAgent: `mcp-server-mcpindex/${PKG_VERSION}`,
+      });
+      return JSON.stringify(verdict, null, 2);
+    }
+    default:
+      throw new Error(`Unknown tool: ${name}`);
   }
-});
+}
+
+// One factory serves both eras. serveStdio may invoke it more than once on a
+// connection (probe instance discarded on era fallback), so it must stay
+// side-effect free.
+export function buildServer() {
+  const server = new McpServer(
+    { name: 'mcp-server-mcpindex', version: PKG_VERSION },
+    // Tools only. We do NOT advertise `logging`: the update notice goes to stderr (which
+    // every host surfaces), not via `notifications/message` (rendered inconsistently - Cursor
+    // logs it as a bare ` undefined`). stderr is the universal, clean channel.
+    // listChanged EXPLICITLY false: registerTool defaults it to true, and this
+    // server never emits notifications/tools/list_changed. Advertising it would
+    // be exactly the declared-vs-observed gap mcpindex measures in other
+    // people's servers.
+    { capabilities: { tools: { listChanged: false } } },
+  );
+  for (const tool of TOOLS) {
+    server.registerTool(
+      tool.name,
+      {
+        title: TOOL_TITLE[tool.name],
+        description: TOOL_DESC[tool.name],
+        inputSchema: fromJsonSchema(tool.inputSchema),
+      },
+      async (args) => {
+        try {
+          const result = await runTool(tool.name, args);
+          return { content: [{ type: 'text', text: result }] };
+        } catch (err) {
+          return {
+            isError: true,
+            content: [
+              {
+                type: 'text',
+                text: `Error calling ${tool.name}: ${err instanceof Error ? err.message : err}`,
+              },
+            ],
+          };
+        }
+      },
+    );
+  }
+  return server;
+}
 
 function formatRecommend(data) {
   const lines = [`Top ${data.recommendations.length} for: "${data.task}"`, ''];
@@ -309,11 +317,28 @@ function formatCompare(rows) {
   return [fmt(header), fmt(widths.map((w) => '-'.repeat(w))), ...data.map(fmt)].join('\n');
 }
 
-const transport = new StdioServerTransport();
-await server.connect(transport);
-console.error('[mcp-server-mcpindex] connected via stdio');
+// Connect only when executed as the CLI (bin/npx/node src/index.mjs), not when
+// imported - imports get buildServer() and the trust re-exports with no side
+// effects, which is what makes the protocol tests possible. realpathSync resolves
+// the bin symlink npm installs.
+const isMain = (() => {
+  if (!process.argv[1]) return false;
+  try {
+    return pathToFileURL(realpathSync(process.argv[1])).href === import.meta.url;
+  } catch {
+    return false;
+  }
+})();
 
-// Fire-and-forget: tell the user if a newer version exists (stderr only - the channel
-// every host renders cleanly). Dropped onto the event loop AFTER connect so it can never
-// delay or crash startup; all errors are swallowed inside.
-notifyUpdateIfAvailable({ currentVersion: PKG_VERSION }).catch(() => {});
+if (isMain) {
+  serveStdio(buildServer, {
+    legacy: 'serve',
+    onerror: (err) => console.error(`[mcp-server-mcpindex] ${err.message}`),
+  });
+  console.error('[mcp-server-mcpindex] serving on stdio');
+
+  // Fire-and-forget: tell the user if a newer version exists (stderr only - the channel
+  // every host renders cleanly). Dropped onto the event loop AFTER connect so it can never
+  // delay or crash startup; all errors are swallowed inside.
+  notifyUpdateIfAvailable({ currentVersion: PKG_VERSION }).catch(() => {});
+}

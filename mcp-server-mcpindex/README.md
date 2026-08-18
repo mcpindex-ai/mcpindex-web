@@ -23,6 +23,8 @@ npm install -g mcp-server-mcpindex
 
 This is the **directory / advisory** client (recommend, search, trust). It does **not** install the in-path drift gate — that is `curl -fsSL https://mcpindex.ai/install.sh | sh`.
 
+Requires Node 20+. Speaks both protocol eras on stdio: the 2026-07-28 revision (`server/discover`, per-request `_meta` envelope) and the `initialize` handshake every current client uses (2025-11-25 down to 2024-10-07), selected per connection.
+
 ### Or connect remotely (no install)
 
 Prefer not to install anything? mcpindex is also a **hosted remote MCP server**. Point any client that supports remote MCP (Claude connectors, Cursor, etc.) at:
