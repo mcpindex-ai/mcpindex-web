@@ -115,3 +115,86 @@ test('a query of only stopwords returns nothing rather than everything', () => {
   const corpus = [server({ name: 'org.acme/thing', title: 'Thing' })];
   assert.deepEqual(names(search(corpus, 'the mcp server for it')), []);
 });
+
+// ---------------------------------------------------------------- v1.3: canonical-first
+
+test('O5: the verified vendor namespace outranks a text-identical wrapper', () => {
+  const corpus = [
+    server({
+      name: 'io.github.someone/pare-github',
+      title: 'pare-github',
+      description: 'github github github token-optimized github tools',
+    }),
+    server({
+      name: 'io.github.github/github-mcp-server',
+      title: 'GitHub MCP Server',
+      description: 'Official GitHub MCP server',
+    }),
+  ];
+  assert.equal(names(search(corpus, 'github'))[0], 'io.github.github/github-mcp-server');
+});
+
+test('O5: a hyphenated org label matches the joined query tokens', () => {
+  const corpus = [
+    server({ name: 'io.github.other/browser-use-clone', title: 'browser use clone' }),
+    server({ name: 'com.browser-use/browser-use', title: 'Browser Use' }),
+  ];
+  assert.equal(names(search(corpus, 'browser use'))[0], 'com.browser-use/browser-use');
+});
+
+test('O6: exact product name beats a prefix lookalike, but never beats O5', () => {
+  const corpus = [
+    server({ name: 'com.clauxel.context7docs/context7docs-mcp', title: 'context7docs-mcp' }),
+    server({ name: 'io.github.upstash/context7', title: 'Context7' }),
+  ];
+  assert.equal(names(search(corpus, 'context7'))[0], 'io.github.upstash/context7');
+
+  // A squatter whose PRODUCT is named exactly like the query still loses to the
+  // namespace the registry verified.
+  const squat = [
+    server({ name: 'io.github.squatter/github', title: 'github' }),
+    server({ name: 'io.github.github/github-mcp-server', title: 'GitHub MCP Server' }),
+  ];
+  assert.equal(names(search(squat, 'github'))[0], 'io.github.github/github-mcp-server');
+});
+
+test('O7: the reference implementation outranks generic-name lookalikes', () => {
+  const corpus = [
+    server({
+      name: 'io.github.bytedance/mcp-server-filesystem',
+      title: 'mcp-server-filesystem',
+      description: 'filesystem access filesystem tools',
+    }),
+    server({
+      name: 'io.github.modelcontextprotocol/server-filesystem',
+      title: 'Filesystem',
+      description: 'Reference filesystem server',
+    }),
+  ];
+  assert.equal(
+    names(search(corpus, 'filesystem'))[0],
+    'io.github.modelcontextprotocol/server-filesystem',
+  );
+});
+
+test('O8: a >=100-server publisher pays the penalty; equals-scored small publisher wins', () => {
+  const farm = Array.from({ length: 100 }, (_, i) =>
+    server({ name: `io.github.megafarm/thing-${i}`, title: `thing-${i}` }),
+  );
+  const corpus = [
+    ...farm,
+    server({ name: 'io.github.megafarm/widget', title: 'Widget' }),
+    server({ name: 'io.github.indie/widget', title: 'Widget' }),
+  ];
+  assert.equal(names(search(corpus, 'widget'))[0], 'io.github.indie/widget');
+});
+
+test('O8: the vendor namespace is exempt from the mass-publisher penalty', () => {
+  const farm = Array.from({ length: 100 }, (_, i) =>
+    server({ name: `io.github.acme/tool-${i}`, title: `tool-${i}` }),
+  );
+  const corpus = [...farm, server({ name: 'io.github.acme/acme-mcp', title: 'Acme' })];
+  const hits = search(corpus, 'acme');
+  assert.equal(hits[0].server.name, 'io.github.acme/acme-mcp');
+  assert.ok(hits[0].score > 10, `vendor boost missing: score ${hits[0].score}`);
+});
