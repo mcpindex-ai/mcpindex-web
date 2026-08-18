@@ -104,9 +104,40 @@ jobs:
         # re-check. See the script header.
         run: node scripts/check-data-bindings.mjs
 
+      # The /stats era panel's dated reading. Counted from the census's Supabase
+      # table at sync time, so the panel refreshes with the same twice-daily build
+      # that ships everything else - no hand-stamped constant to go stale (the
+      # panel was hand-updated three times in its first five days). FAIL-SOFT by
+      # design: a Supabase blip must not take down the registry sync, and the
+      # page then keeps the last committed reading, which is still an honest
+      # dated one. The artifact carries ONLY what the page already publishes
+      # (endpoint count + timestamp): the per-era breakdown stays out of the
+      # repo so nobody computes an adoption rate against a denominator the
+      # census itself says is not yet defensible.
+      - name: Export era-census panel reading
+        env:
+          SB_URL: ${{ secrets.MCPINDEX_SUPABASE_URL }}
+          SB_KEY: ${{ secrets.MCPINDEX_SUPABASE_SERVICE_KEY }}
+        run: |
+          if [ -z "$SB_URL" ] || [ -z "$SB_KEY" ]; then
+            echo "::warning::Supabase secrets unset; era-census.json keeps its last reading."
+          else
+            COUNT=$(curl -sf -m 30 -H "apikey: $SB_KEY" -H "Authorization: Bearer $SB_KEY" \
+              -H "Prefer: count=exact" -H "Range: 0-0" \
+              "$SB_URL/rest/v1/server_capability?select=origin" \
+              -o /dev/null -D - | tr -d '\r' | awk -F/ 'tolower($0) ~ /^content-range:/ {print $2}')
+            if echo "$COUNT" | grep -qE '^[0-9]+$' && [ "$COUNT" -gt 0 ]; then
+              printf '{\n  "endpoints": %s,\n  "as_of": "%s",\n  "source": "server_capability row count at registry-sync time"\n}\n' \
+                "$COUNT" "$(date -u +%Y-%m-%d)" > data/era-census.json
+              echo "era census: $COUNT endpoints as of $(date -u +%Y-%m-%d)"
+            else
+              echo "::warning::era-census count query failed or returned '$COUNT'; keeping last reading."
+            fi
+          fi
+
       - name: Stage snapshot + removals + slug map + server index
         run: |
-          git add data/snapshot.json data/server-removals.json data/slugmap.json data/server-index.json
+          git add data/snapshot.json data/server-removals.json data/slugmap.json data/server-index.json data/era-census.json
           git status --short
 
       - name: Commit and push if changed
