@@ -7,6 +7,7 @@ import { browseTotalPages } from '@/lib/serversBrowse';
 import { eligibleTopics } from '@/lib/topics';
 import { loadGuides } from '@/lib/guides-content';
 import { DIAGRAMS } from '@/lib/diagrams';
+import { UNREGISTERED } from '@/lib/unregistered';
 
 export const revalidate = 86400;
 
@@ -179,5 +180,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ]
     : [];
 
-  return [...baseEntries, ...guideRoutes];
+  // Head-name pages for widely requested servers with no vendor registry entry.
+  // Static import, so listed outside the snapshot-version cache; 0.7 sits below
+  // the cornerstone guides and above per-server pages - each answers a head
+  // query ("is there an official X MCP server") no competing page answers.
+  const unregisteredRoutes: MetadataRoute.Sitemap = [
+    { url: `${base}/unregistered`, priority: 0.6, changeFrequency: 'weekly' },
+    ...UNREGISTERED.map((e) => ({
+      url: `${base}/unregistered/${e.slug}`,
+      priority: 0.7,
+      changeFrequency: 'weekly' as const,
+    })),
+  ];
+
+  return [...baseEntries, ...guideRoutes, ...unregisteredRoutes];
 }
