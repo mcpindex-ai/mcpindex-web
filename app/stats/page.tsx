@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import eraCensus from '@/data/era-census.json';
 import { Figure } from '@/components/Figure';
 import { renderDiagram } from '@/components/diagrams';
 import type { Metadata } from 'next';
@@ -56,11 +57,22 @@ export default async function StatsPage() {
     .filter(Boolean)
     .sort()[0];
 
-  // Deliberately hardcoded dated reading - the era-census panel exports no artifact yet.
-  // One source for the visible section AND the FAQ so the two can never disagree on the
-  // same page (the exact failure mode the census-figure incident in lib/sourceLiveness.ts
-  // documents).
-  const MCP2_PANEL = { endpoints: 200, asOf: '2026-08-18', since: '2026-08-13' } as const;
+  // The dated reading comes from data/era-census.json, exported by the
+  // sync-registry workflow at each twice-daily sync (Supabase row count at
+  // sync time), so the panel refreshes with the same build that ships the
+  // snapshot - no hand-stamped constant to go stale (this was hand-updated
+  // three times in its first five days). The artifact deliberately carries
+  // only endpoint count + timestamp: the per-era breakdown stays out of the
+  // repo so nobody computes an adoption rate against a denominator the census
+  // itself says is not yet defensible. `since` is a fixed historical fact
+  // (census start), not a reading. One MCP2_PANEL source for the visible
+  // section AND the FAQ so the two can never disagree on the same page (the
+  // census-figure incident in lib/sourceLiveness.ts).
+  const MCP2_PANEL = {
+    endpoints: eraCensus.endpoints,
+    asOf: eraCensus.as_of,
+    since: '2026-08-13',
+  } as const;
 
   // Every drift figure renders from the frozen edition artifact rather than being typed
   // into copy - hand-copied stats contradicted their own DOI for four days once (see the
