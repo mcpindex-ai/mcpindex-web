@@ -27,6 +27,17 @@ const GeistMono = localFont({
   variable: '--font-geist-mono',
   weight: '100 900',
   display: 'optional',
+  // No preload: preload + display:optional makes Chrome hold first render
+  // while the file is in flight, so this 71KB woff2 sat on the first-paint
+  // critical path of every page even though mono only sets small labels.
+  // Measured on the live site 2026-08-17 (Lighthouse 13, slow-4G simulation):
+  // homepage scored 93 with LCP 2.8s / Speed Index 3.6s; the same run with
+  // the mono request blocked scored 98 with LCP 2.4s / Speed Index 1.0s, and
+  // with both fonts blocked scored 100 (LCP 1.4s). Sans keeps its preload -
+  // it is the hero face. Cold visits render mono in the fallback stack below
+  // (which slow connections already got under display:optional); warm visits
+  // hit the HTTP cache and paint real GeistMono as before.
+  preload: false,
   adjustFontFallback: false,
   fallback: [
     'ui-monospace',
