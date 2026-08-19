@@ -273,8 +273,11 @@ export default async function DriftReportPage() {
           snapshots where the change first appeared. The silent share - the share of incidents
           that landed with the declared version unchanged - is{' '}
           <strong className="text-[var(--color-ink)]">{agg.silent_share_pct}%</strong>. Basis:{' '}
-          <em>deduped safety incidents, first-occurrence delta</em>. That basis matters: the
-          /ledger lede counts per-tool version behavior over every observed transition, a
+          <em>deduped safety incidents, first-occurrence delta</em>. That basis matters: the{' '}
+          <Link href="/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
+            /ledger
+          </Link>{' '}
+          lede counts per-tool version behavior over every observed transition, a
           different (also labeled) basis, so the two numbers are reconcilable rather than
           interchangeable.
         </p>

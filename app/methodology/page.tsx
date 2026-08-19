@@ -120,7 +120,9 @@ export default function MethodologyPage() {
           this contract drifting? If it has, you are warned on the first call - a contract-diff
           advisory that rides alongside the verdict and never moves PROCEED or HOLD. Every drift the
           crawler catches is public in the{' '}
-          <Link href="/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">drift ledger</Link>.
+          <Link href="/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">drift ledger</Link>{' '}
+          and analyzed, deduped and citable, in{' '}
+          <Link href="/drift-report" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">The MCP Drift Report</Link>.
         </p>
         <ul className="space-y-3 text-[14.5px] leading-[1.6] text-[var(--color-cite)] mt-5">
           <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Crawler-corroborated, not crowd-sourced.</strong> The public corroboration count floors at the crawler (one first-party source); forgeable install reports are excluded from the public number. The warning is real today because the crawler sees the drift, not because other installs reported it.</li>
