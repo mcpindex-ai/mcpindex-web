@@ -8,6 +8,8 @@ import { eligibleTopics } from '@/lib/topics';
 import { loadGuides } from '@/lib/guides-content';
 import { DIAGRAMS } from '@/lib/diagrams';
 import { UNREGISTERED } from '@/lib/unregistered';
+import { driftReportEnabled } from '@/lib/reportStats';
+import { ledgerEnabled } from '@/lib/ledger';
 
 export const revalidate = 86400;
 
@@ -66,6 +68,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { url: `${base}/brand`, priority: 0.3, changeFrequency: 'monthly' },
       { url: `${base}/diagrams`, priority: 0.7, changeFrequency: 'monthly' },
       { url: `${base}/ledger`, priority: 0.7, changeFrequency: 'hourly' },
+      // The citable category page for MCP drift (frozen edition + live counters).
+      // Guarded: the route 404s while the drift-report/ledger flags are off, and a
+      // sitemap must never declare a URL that 404s.
+      ...(driftReportEnabled() && ledgerEnabled()
+        ? [{ url: `${base}/drift-report`, priority: 0.8, changeFrequency: 'daily' as const }]
+        : []),
       { url: `${base}/dashboard`, priority: 0.5, changeFrequency: 'hourly' },
       { url: `${base}/research/source-liveness`, priority: 0.8, changeFrequency: 'weekly' },
       { url: `${base}/screen`, priority: 0.8, changeFrequency: 'monthly' },

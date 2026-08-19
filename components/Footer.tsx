@@ -66,6 +66,7 @@ export function Footer() {
             <Link href="/methodology" className={LINK}>Methodology</Link>
             <Link href="/status" className={LINK}>Status</Link>
             <Link href="/stats" className={LINK}>How many MCP servers?</Link>
+            <Link href="/drift-report" className={LINK}>The MCP Drift Report</Link>
             <Link href="/ledger" className={LINK}>Drift ledger</Link>
             <Link href="/dashboard" className={LINK}>Drift dashboard</Link>
           </div>

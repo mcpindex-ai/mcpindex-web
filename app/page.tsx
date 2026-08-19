@@ -470,6 +470,13 @@ export default async function Home() {
               >
                 live drift ledger
               </Link>
+              , analyzed in{' '}
+              <Link
+                href="/drift-report"
+                className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+              >
+                The MCP Drift Report
+              </Link>
               .
             </p>
             {reveals.length > 0 && (

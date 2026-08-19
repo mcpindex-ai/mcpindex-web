@@ -92,7 +92,12 @@ export default async function LedgerPage() {
           every day and records which tool contracts silently change. This is that record - the same
           corroborated drift the gate asks the network about when you pin a tool, so it
           can warn you on the first call. A contract-diff, not a safety verdict, and not
-          prevention; the gate is what HOLDs the call.
+          prevention; the gate is what HOLDs the call. The deduped, citable analysis of this
+          corpus is{' '}
+          <Link href="/drift-report" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
+            The MCP Drift Report
+          </Link>
+          .
         </p>
       </header>
 
