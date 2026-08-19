@@ -10,13 +10,13 @@ const svg = (r: { status: number; headers: Headers; text: string }) => {
   assert.match(r.text, /^<svg[\s>]/);
 };
 
-test('badge: screened slug renders the SCREENED badge (not the gray fail-closed one)', async () => {
+test('badge: screened slug renders the clean drift-monitored badge (not the gray fail-closed one)', async () => {
   const slug = await screenedSlug();
   const r = await callRoute(GET, `/api/v1/badge/${slug}`, { params: { slug } });
   svg(r);
-  // Bite on a regression that flips a real screened server to the fail-closed gray badge:
-  // the gray badge says "not screened"; the screened one must not.
-  assert.match(r.text, /screened/i);
+  // Bite on a regression that flips a real screened server to the fail-closed gray badge.
+  // The clean state's public label is "drift-monitored" (BADGE_STYLE in lib/badge.ts).
+  assert.match(r.text, /drift-monitored/i);
   assert.doesNotMatch(r.text, /not[\s-]*screened/i);
 });
 
