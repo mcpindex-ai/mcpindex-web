@@ -18,9 +18,13 @@ type Style = { right: string; color: string };
 
 // Right-hand label + fill per state. Colors are deliberately NOT emerald/green:
 // green is reserved for a future real ALLOW (post-conformance graduation).
-// "screened" is informational teal - "passed the poison screen" - not "safe".
+// The clean state's public label is "drift-monitored", not "screened": a
+// verdict-shaped word in a foreign README reads as an endorsement the first
+// time a badged server misbehaves, while "drift-monitored" claims only what
+// the crawler provably does for every indexed server. The screen still gates
+// the state (a screen FAIL demotes it); the label just stops leading with it.
 export const BADGE_STYLE: Record<BadgeState, Style> = {
-  screened: { right: 'screened', color: '#0e7490' }, // cyan-700 (informational)
+  screened: { right: 'drift-monitored', color: '#0e7490' }, // cyan-700 (informational)
   flagged: { right: 'flagged', color: '#b91c1c' }, // red-700
   review: { right: 'review', color: '#b45309' }, // amber-700
   stale: { right: 're-check due', color: '#a16207' }, // amber-700 (dim)
