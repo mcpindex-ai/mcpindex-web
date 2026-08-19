@@ -1,0 +1,129 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "mcpindex.ai public API",
+    "version": "1.0.0",
+    "description": "Public read API for mcpindex.ai, the drift-monitored MCP server index with an advisory trust screen. Verdicts are advisory (REVIEW when screened, else UNVERIFIED fail-closed; ALLOW/DENY reserved, not produced) - a contract screen, not a safety guarantee. No authentication required. A hosted remote MCP endpoint with the same capabilities is at https://mcpindex.ai/api/mcp (Streamable HTTP).",
+    "contact": {
+      "name": "mcpindex",
+      "url": "https://mcpindex.ai"
+    }
+  },
+  "servers": [{ "url": "https://mcpindex.ai" }],
+  "paths": {
+    "/api/v1/search": {
+      "get": {
+        "operationId": "searchServers",
+        "summary": "Keyword + semantic search across indexed MCP servers",
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "Search query." },
+          { "name": "slug", "in": "query", "schema": { "type": "string" }, "description": "Exact server slug lookup." },
+          { "name": "category", "in": "query", "schema": { "type": "string" }, "description": "Filter by category." },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" }, "description": "Maximum results." }
+        ],
+        "responses": { "200": { "description": "Matching servers, quality-ranked.", "content": { "application/json": { "schema": { "type": "object" } } } } }
+      }
+    },
+    "/api/v1/servers": {
+      "get": {
+        "operationId": "listServers",
+        "summary": "Quality-ranked public list of indexed MCP servers",
+        "parameters": [
+          { "name": "category", "in": "query", "schema": { "type": "string" }, "description": "Filter by category." },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 250 }, "description": "Number of servers to return." }
+        ],
+        "responses": { "200": { "description": "Envelope with total, returned, generatedAt, and servers[].", "content": { "application/json": { "schema": { "type": "object", "properties": { "total": { "type": "integer" }, "returned": { "type": "integer" }, "generatedAt": { "type": "string" }, "servers": { "type": "array", "items": { "type": "object" } } } } } } } }
+      }
+    },
+    "/api/v1/server/{slug}": {
+      "get": {
+        "operationId": "getServer",
+        "summary": "Detail record for one indexed server",
+        "parameters": [ { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Server detail.", "content": { "application/json": { "schema": { "type": "object" } } } }, "404": { "description": "Unknown slug." } }
+      }
+    },
+    "/api/v1/recommend": {
+      "get": {
+        "operationId": "recommendServers",
+        "summary": "Natural-language task to top servers with reasoning",
+        "parameters": [ { "name": "task", "in": "query", "required": true, "schema": { "type": "string" }, "description": "What the agent is trying to do, in plain language." } ],
+        "responses": { "200": { "description": "Top recommended servers with reasoning.", "content": { "application/json": { "schema": { "type": "object" } } } } }
+      }
+    },
+    "/api/v1/preflight": {
+      "get": {
+        "operationId": "preflight",
+        "summary": "Pre-flight: top servers plus the rank-1 server's advisory verdict in one call",
+        "parameters": [ { "name": "task", "in": "query", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Recommendations plus advisory verdict for the top result.", "content": { "application/json": { "schema": { "type": "object" } } } } }
+      }
+    },
+    "/api/v1/trust/server/{server_id}": {
+      "get": {
+        "operationId": "trustServer",
+        "summary": "Server-level advisory screen verdict",
+        "description": "v1 verdicts: REVIEW when screened, else UNVERIFIED (fail-closed). ALLOW/DENY reserved, not produced.",
+        "parameters": [ { "name": "server_id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Advisory verdict.", "content": { "application/json": { "schema": { "type": "object" } } } } }
+      }
+    },
+    "/api/v1/trust/tool/{server_id}/{tool_name}": {
+      "get": {
+        "operationId": "trustTool",
+        "summary": "Per-tool advisory screen verdict",
+        "parameters": [
+          { "name": "server_id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "tool_name", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Advisory verdict for the tool.", "content": { "application/json": { "schema": { "type": "object" } } } } }
+      }
+    },
+    "/api/v1/ledger": {
+      "get": {
+        "operationId": "driftLedger",
+        "summary": "Public drift ledger: contract changes the crawler observed",
+        "description": "Fingerprint-only contract diffs - a contract-diff record, not a safety verdict.",
+        "responses": { "200": { "description": "Ledger entries.", "content": { "application/json": { "schema": { "type": "object" } } } } }
+      }
+    },
+    "/api/v1/diff": {
+      "get": {
+        "operationId": "registryDiff",
+        "summary": "What changed in the registry since a date",
+        "parameters": [ { "name": "since", "in": "query", "required": true, "schema": { "type": "string", "format": "date" }, "description": "YYYY-MM-DD." } ],
+        "responses": { "200": { "description": "Registry changes since the date.", "content": { "application/json": { "schema": { "type": "object" } } } } }
+      }
+    },
+    "/api/v1/drift/any": {
+      "get": {
+        "operationId": "driftAny",
+        "summary": "Fleet drift query: has this tool contract drifted (crawler-corroborated)?",
+        "parameters": [ { "name": "fp", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Tool contract fingerprint." } ],
+        "responses": { "200": { "description": "Returns drifted, sources, safety_relevant.", "content": { "application/json": { "schema": { "type": "object", "properties": { "drifted": { "type": "boolean" }, "sources": { "type": "array", "items": { "type": "string" } }, "safety_relevant": { "type": "boolean" } } } } } } }
+      },
+      "post": {
+        "operationId": "driftAnyBatch",
+        "summary": "Batch fleet drift query for multiple fingerprints",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "fps": { "type": "array", "items": { "type": "string" } } }, "required": ["fps"] } } } },
+        "responses": { "200": { "description": "Per-fingerprint drift results.", "content": { "application/json": { "schema": { "type": "object" } } } } }
+      }
+    },
+    "/api/v1/screen": {
+      "post": {
+        "operationId": "screenTool",
+        "summary": "Submit a tool description for an advisory screen",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "description": { "type": "string", "description": "The tool description to screen." }, "contribute": { "type": "boolean", "description": "Whether the submission may be added to the corpus." } }, "required": ["description"] } } } },
+        "responses": { "200": { "description": "Advisory screen result.", "content": { "application/json": { "schema": { "type": "object" } } } } }
+      }
+    },
+    "/api/v1/badge/{slug}": {
+      "get": {
+        "operationId": "serverBadge",
+        "summary": "SVG status badge for an indexed server",
+        "parameters": [ { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "SVG badge.", "content": { "image/svg+xml": {} } } }
+      }
+    }
+  }
+}

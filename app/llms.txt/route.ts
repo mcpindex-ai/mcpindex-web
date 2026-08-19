@@ -136,6 +136,7 @@ ${allFilms().map(({ id, film }) => {
 - GET /api/v1/trust/server/<server_id>                           Server-level advisory screen verdict (same honesty as per-tool).
 - GET /api/registry-count                                        Live server + category count.
 - GET /llms-full.txt                                             Full per-server index in one document.
+- GET /openapi.json                                              OpenAPI 3.1 description of the public REST endpoints above.
 - GET /.well-known/mcp-index.json                                Machine-readable site + gate + advisory-screen capability descriptor.
 
 ## MCP server (drop-in directory client)
