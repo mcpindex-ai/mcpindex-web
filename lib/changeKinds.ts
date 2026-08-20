@@ -7,7 +7,10 @@
 // SOURCE OF TRUTH: this is the SURFACED subset - it mirrors `SURFACE_KINDS` in
 // mcpindex-trust/scripts/drift_corpus_drain.py exactly (13 kinds). It is NOT the same list as the
 // FULL detector taxonomy published in app/.well-known/mcp-index.json (that superset includes
-// tool-added, which is deliberately not surfaced here). Keep in sync with the trust SURFACE_KINDS -
+// tool-added, which is deliberately not surfaced here). That superset claim held only by convention
+// until 2026-08-20, and had lapsed: the published list was missing added-optional-param and
+// deep-schema-undiffable. test/routes/well_known_taxonomy.test.ts now pins the containment.
+// Keep in sync with the trust SURFACE_KINDS -
 // a kind the drain surfaces but this set omits is silently dropped from the public display
 // (fail-quiet, never fail-render). The test below pins the full member list to catch a 1-for-1 swap.
 
