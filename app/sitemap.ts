@@ -32,6 +32,10 @@ const CORNERSTONE_GUIDES = new Set([
   // Head-term page for "mcp 2.0" / "2026-07-28" queries; the only page beyond
   // /stats that covers protocol eras, and the one carrying the probe command.
   'what-is-mcp-2-0',
+  // Head pages for the tracked "how many change" / "how do I monitor drift" queries;
+  // scorecard in tasks/growth/aeo-claude-baseline-2026-08-19/ (root repo).
+  'how-many-mcp-servers-change-their-tools-after-publishing',
+  'how-to-monitor-mcp-servers-for-tool-description-drift',
 ]);
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

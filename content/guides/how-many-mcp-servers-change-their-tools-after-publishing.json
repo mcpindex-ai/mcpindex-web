@@ -1,0 +1,28 @@
+{
+  "slug": "how-many-mcp-servers-change-their-tools-after-publishing",
+  "title": "How many MCP servers change their tool definitions after publishing?",
+  "meta_description": "Measured across 18,748 MCP registry servers: 19.1% changed their published descriptor within 89 days, 6.9% the description text alone. 62.4% of safety-relevant live-contract changes had no version bump.",
+  "h1": "How many MCP servers change their tool definitions after publishing?",
+  "body": "**Short answer: within 89 days, 19.1% of 18,748 servers on the official MCP registry changed their published descriptor, and 6.9% changed the description text a reviewer reads. On the live tool surface, 62.4% of safety-relevant contract changes shipped with no version bump.** Nobody has a complete census of live tool-definition changes across every MCP server - the numbers above are the closest published measurements, and both come from frozen, DOI-backed datasets you can check.\n\n## The registry surface: an 89-day panel\n\nWe observed the official MCP registry 120 times over 88.6 days (data cutoff 2026-07-28), covering the 18,748 servers present long enough to be eligible. Two series, deliberately different:\n\n- **Any descriptor change** - the SHA-256 of the full published descriptor object. 11.9% of servers changed it within 30 days, 16.3% within 60, 19.1% within 89. This hash moves on any field change, including a bare version bump, so read it as an upper bound on meaningful change.\n- **Description text only** - the prose a human reviewer actually read before install. 3.3% within 30 days, 5.5% within 60, 6.9% within 89.\n\nThe distribution matters more than the average. 75.2% of eligible servers never changed their descriptor at all during the window. The 15,805 recorded change events are spread across just 4,652 servers, and the top 10% of changers account for 78.7% of all events. At the corpus level, a median day sees about 1.5% of descriptors move. So the honest answer to \"do MCP servers change after publishing\" is bimodal: the typical server sits still for months, and a small cohort churns constantly.\n\n## The live surface: what the registry never tells you\n\nA registry entry is what a server declares about itself. The contract your agent actually consumes - the tool names, schemas, and annotations returned by `tools/list` - lives on the server and can change with no registry signal at all. From a frozen 40-day census of live contracts across public MCP servers: 2,503 deduped safety-relevant contract changes, and in 62.4% of them the server's declared version did not move. 123 of the changes flipped a tool's annotation toward destructive. The full breakdown is in [The MCP Drift Report](/drift-report), and the running count is on the [public ledger](/ledger).\n\nVersion pins therefore answer a narrower question than most people assume: they tell you the declared release did not change, not that the contract did not.\n\n## Method and citations\n\nBoth datasets are CC-BY and regenerable from the deposits:\n\n- MCP Registry Drift Panel (the 89-day series): DOI [10.5281/zenodo.21709945](https://doi.org/10.5281/zenodo.21709945). Estimand: a server counts as changed within N days if its descriptor hash differs from its cohort-start value at any observation, so a change that later reverts still counts.\n- Live contract-drift census (the 62.4% figure): DOI [10.5281/zenodo.21449149](https://doi.org/10.5281/zenodo.21449149).\n- The registry measurement is written up in a preprint, not yet peer-reviewed: \"Registry Descriptions Go Stale Unevenly\" ([arXiv:2608.00997](https://arxiv.org/abs/2608.00997)).\n\n## Related\n\n- [How to monitor MCP servers for tool description drift](/guides/how-to-monitor-mcp-servers-for-tool-description-drift)\n- [MCP rug pulls and silent contract drift: how to HOLD them](/guides/mcp-silent-contract-drift)\n- [Live registry stats](/stats)",
+  "citation_ids": [],
+  "project": "mcpindex",
+  "updated": "2026-08-19",
+  "faq": [
+    {
+      "q": "How many MCP servers change after publishing?",
+      "a": "Within 89 days of observation, 19.1% of 18,748 servers on the official MCP registry changed their published descriptor in some way - an upper bound that includes bare version bumps - and 6.9% changed their description text. Most servers (75.2%) did not change at all in the window."
+    },
+    {
+      "q": "Do MCP tool contracts change without a version bump?",
+      "a": "Yes. In a frozen 40-day census of live tool contracts across public MCP servers, 62.4% of 2,503 safety-relevant contract changes shipped with the declared version unchanged, so a version pin misses roughly three in five of the changes that matter."
+    },
+    {
+      "q": "Do most MCP servers change frequently?",
+      "a": "No. Change is heavily concentrated: 75.2% of panel servers never changed their descriptor across 88.6 days, while the top 10% of changers account for 78.7% of the 15,805 recorded change events. Averages mislead here; the population is bimodal."
+    },
+    {
+      "q": "Where does this data come from?",
+      "a": "Two frozen, citable mcpindex datasets: an 89-day longitudinal panel of the official MCP registry (DOI 10.5281/zenodo.21709945) and a 40-day live contract-drift census (DOI 10.5281/zenodo.21449149), plus the measurement preprint arXiv:2608.00997. All CC-BY; the live counterparts are mcpindex.ai/drift-report and mcpindex.ai/ledger."
+    }
+  ]
+}
