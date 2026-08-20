@@ -88,8 +88,21 @@ export async function GET() {
     drift_gate: {
       what: 'in-path trust gate for agent tool calls; pins each tool contract (TOFU) and HOLDs a call before the agent acts when the contract silently changes',
       method: 'deterministic contract-diff over a ChangeKind taxonomy + injection/exfil marker scan (input schema, output schema, description)',
+      // Every ChangeKind the deterministic differ can EMIT for a tool contract, which is a
+      // strict superset of the surfaced subset in lib/changeKinds.ts (that one drops the
+      // notify-only kinds from the public drift display). Two members are here because the
+      // gate's behaviour is otherwise understated: `deep-schema-undiffable` sits in the
+      // gate's own _GUARD_DANGEROUS_KINDS and BLOCKS under guard, so omitting it published
+      // a taxonomy that hid a HOLD cause; `added-optional-param` is notify-only, but its
+      // stated sibling `tool-added` was already listed, and dropping one of the pair made
+      // the list look curated by severity when it is not.
+      // Deliberately absent: description-only and description-numeric. Description text is
+      // covered by the marker-scan clause in `method` above, not by the contract differ,
+      // and listing them here would claim the differ gates prose. The routes test pins the
+      // superset against lib/changeKinds.ts so this cannot silently drift again.
       change_kinds: [
         'added-required-param',
+        'added-optional-param',
         'required-set-expanded',
         'constraint-narrowed',
         'type-changed',
@@ -99,6 +112,7 @@ export async function GET() {
         'param-mirrored-to-header',
         'output-schema-added',
         'output-schema-changed',
+        'deep-schema-undiffable',
         'tool-added',
         'tool-removed',
       ],
