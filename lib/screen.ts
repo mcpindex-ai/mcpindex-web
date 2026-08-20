@@ -56,20 +56,31 @@ export type ScreenResult =
   | { state: 'clean'; reason: string }
   | { state: 'unavailable'; why: string };
 
-// Invisible + bidi-control characters an attacker uses to hide an instruction
-// inside an otherwise-benign-looking description: zero-width spaces/joiners, the
-// word joiner, soft hyphen, BOM/ZWNBSP, and the LRO/RLO/LRI… bidi overrides.
-const INVISIBLE_CHARS = /[­᠎​-‏‪-‮⁠-⁤⁦-⁩﻿]/g;
+// Invisible instruction-hiding characters an attacker uses to slip a directive past
+// the judge inside an otherwise-benign description. \p{Cf} (Unicode format) is the
+// whole class in one predicate: zero-width spaces/joiners, word joiner, soft hyphen,
+// BOM/ZWNBSP, the bidi overrides AND the Unicode tag block U+E0000-E007F - the
+// "ASCII smuggling" alphabet that encodes visible-looking instructions as invisible
+// tag characters. Variation selectors are combining marks (Mn), not Cf, so they
+// get their own class; they hide bytes a model still reads. (Mirrors lib/llmsCatalog
+// exportLine, which had this same blind spot fixed 2026-08-19.)
+const FORMAT_CHARS = /\p{Cf}/gu;
+const VARIATION_SELECTORS = /[\ufe00-\ufe0f\u180b-\u180d\u{e0100}-\u{e01ef}]/gu;
 
 // The single canonical form of a description: NFKC (fold compatibility / fullwidth
-// forms) → strip invisible + bidi-control characters → collapse whitespace runs →
+// forms) → strip format + variation-selector characters → collapse whitespace runs →
 // trim. This is what the judge screens AND what a future content-address would
 // hash, so the model and any cache see the SAME bytes, and an instruction hidden
 // behind invisible characters cannot slip past the screen. NOTE: this folds
 // invisible-character and compatibility-form evasion, NOT script-confusable
 // homoglyphs (a Cyrillic 'а' for a Latin 'a') - that needs a confusables map.
 export function canonicalize(s: string): string {
-  return s.normalize('NFKC').replace(INVISIBLE_CHARS, '').replace(/\s+/g, ' ').trim();
+  return s
+    .normalize('NFKC')
+    .replace(FORMAT_CHARS, '')
+    .replace(VARIATION_SELECTORS, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 // True iff the judge's `quote` actually appears in the (already-canonical) screened
