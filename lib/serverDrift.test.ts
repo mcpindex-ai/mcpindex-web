@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { aggregateServerDrift } from './serverDrift';
-import type { LedgerEvent } from './ledger';
+import type { ContextEvent, LedgerEvent } from './ledger';
 
 const FP_A = 'a'.repeat(32);
 const FP_B = 'b'.repeat(32);
@@ -71,4 +71,46 @@ test('aggregateServerDrift version counts: reduced classes counted; not-recorded
   assert.equal(out.versionSameCount, 2);
   assert.equal(out.versionChangedCount, 1);
   assert.equal(out.versionUndeclaredCount, 1);
+});
+
+// ---- server-scoped context events ----
+
+function cev(over: Partial<ContextEvent>): ContextEvent {
+  return {
+    server_fp: FP_A,
+    sources: 1,
+    safety_relevant: true,
+    last_seen: '2026-08-19T05:00:00Z',
+    change_kinds: ['instructions-changed'],
+    ...over,
+  };
+}
+
+test('context events aggregate apart from tool events and never inflate `changes`', () => {
+  const events: LedgerEvent[] = [ev({ change_kinds: ['type-changed'] })];
+  const ctx: ContextEvent[] = [
+    cev({}),
+    cev({ change_kinds: ['prompt-args-changed'], last_seen: '2026-08-19T07:00:00Z' }),
+    cev({ server_fp: FP_B }), // other server -> excluded
+  ];
+  const out = aggregateServerDrift(events, FP_A, '2026-08-19T08:00:00Z', ctx);
+  assert.equal(out.changes, 1); // tool count untouched by context rows
+  assert.equal(out.contextChanges, 2);
+  assert.deepEqual(out.contextKinds, ['instructions-changed', 'prompt-args-changed']);
+  assert.equal(out.contextLastSeen, '2026-08-19T07:00:00Z');
+  // Context safety stays out of the tool badge (the context block carries its own framing).
+  assert.equal(out.safetyRelevant, false);
+});
+
+test('context defaults: absent array (old blob / old caller) means zero, not undefined', () => {
+  const out = aggregateServerDrift([ev({})], FP_A, '2026-08-19T08:00:00Z');
+  assert.equal(out.contextChanges, 0);
+  assert.deepEqual(out.contextKinds, []);
+  assert.equal(out.contextLastSeen, null);
+});
+
+test('context-only drift: changes 0 with contextChanges > 0 (the zero-state must branch on both)', () => {
+  const out = aggregateServerDrift([], FP_A, '2026-08-19T08:00:00Z', [cev({})]);
+  assert.equal(out.changes, 0);
+  assert.equal(out.contextChanges, 1);
 });

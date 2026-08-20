@@ -298,6 +298,88 @@ export default async function LedgerPage() {
         )}
       </section>
 
+      {/* Server-scoped context-surface drift, out-of-band from the tool events above: this is
+          text a server supplies for clients to inject into agent context on connect
+          (instructions / prompt metadata). No tool fingerprint exists for these by design.
+          Rendered only when the drain has published any - an older blob simply has none. */}
+      {ledger.context_events.length > 0 && (
+        <section className="mt-12">
+          <h2 className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
+            Context surface changes
+          </h2>
+          <p className="mt-4 text-[14px] leading-[1.55] text-[var(--color-mute)]">
+            Server-scoped changes to injected context - instructions or prompt metadata a client
+            auto-injects into an agent&apos;s context on connect. These sit outside every tool
+            contract hash, so this observation is their only drift signal. The published kinds
+            are the safety-relevant subset of the context taxonomy.
+          </p>
+          <div className="mt-6 site-table-wrap rule-t rule-b rule-l rule-r">
+            <table className="w-full border-collapse text-left text-[13px]">
+              <caption className="sr-only">
+                Context-surface changes the crawler observed, by server fingerprint, with last-seen
+                time and what changed.
+              </caption>
+              <thead className="bg-[#fafaf9]">
+                <tr>
+                  <th scope="col" className="rule-b rule-r px-3 py-2 align-top font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-mute)]">
+                    Server fingerprint
+                  </th>
+                  <th scope="col" className="rule-b rule-r px-3 py-2 align-top font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-mute)]">
+                    Last seen
+                  </th>
+                  <th scope="col" className="rule-b rule-r px-3 py-2 align-top font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-mute)]">
+                    What changed
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Same DOM-size cap AND the same defensive sort as the tool table: the drain
+                    sorts last_seen desc, but the blob is not trusted to - the truncation copy
+                    below promises "most recently-observed", so enforce it here. */}
+                {[...ledger.context_events]
+                  .sort((a, b) => (b.last_seen ?? '').localeCompare(a.last_seen ?? ''))
+                  .slice(0, MAX_ROWS)
+                  .map((e, i) => (
+                  // Index tiebreaker: the drain groups one row per server, but the blob is not
+                  // trusted to - two rows for one server in one hour must not collide on key.
+                  <tr key={`${e.server_fp}:${e.last_seen}:${i}`}>
+                    <td className="rule-b rule-r px-3 py-2 align-top font-mono text-[13px] text-[var(--color-cite)] tabular-nums">
+                      {truncateFp(e.server_fp)}
+                    </td>
+                    <td className="rule-b rule-r px-3 py-2 align-top font-mono text-[13px] text-[var(--color-cite)] tabular-nums">
+                      {fmtUtc(e.last_seen)}
+                    </td>
+                    <td className="rule-b rule-r px-3 py-2 align-top text-[13px] text-[var(--color-cite)]">
+                      <div className="flex flex-wrap gap-1">
+                        {e.change_kinds.map((k) => (
+                          <span
+                            key={k}
+                            className="inline-block font-mono text-[10.5px] tracking-[0.04em] px-2 py-0.5 border border-[var(--color-mute)] text-[var(--color-cite)]"
+                          >
+                            {k}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {ledger.context_events.length > MAX_ROWS && (
+            <p className="mt-4 text-[13px] leading-[1.55] text-[var(--color-mute)]">
+              Showing the {MAX_ROWS} most recently-observed of{' '}
+              {ledger.context_events.length.toLocaleString()} context-surface changes; the full
+              list is in{' '}
+              <Link href="/api/v1/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
+                /api/v1/ledger
+              </Link>
+              .
+            </p>
+          )}
+        </section>
+      )}
+
       {/* The loop that produces every row above. This is the POPULATED path; the figure also
           renders in the empty-ledger fallback, where it is the only thing explaining what the
           page would show. Placing it in the fallback ALONE was the defect: production always

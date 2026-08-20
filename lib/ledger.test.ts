@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { coerceEvent, coerceStat, ledgerEnabled, parseLedgerBlob } from './ledger';
+import { coerceContextEvent, coerceEvent, coerceStat, ledgerEnabled, parseLedgerBlob } from './ledger';
 
 const FP = '0b4796d16feb3912c0db0824c39e9b70';
 const SCHEMA = 'mcpindex.drift.ledger/2';
@@ -48,6 +48,15 @@ test('coerceEvent allowlist-validates change_kinds; [] for an old blob or hostil
   );
   assert.deepEqual(coerceEvent({ ...base, change_kinds: '["removed-param"]' })?.change_kinds, ['removed-param']);
   assert.deepEqual(coerceEvent({ ...base, change_kinds: '<script>' })?.change_kinds, []);
+});
+
+test('coerceEvent drops context-surface kinds from tool events (cross-plane misattribution)', () => {
+  const base = { tool_fp: FP, last_seen: '2026-01-01' };
+  assert.deepEqual(
+    coerceEvent({ ...base, change_kinds: ['instructions-changed', 'type-changed'] })?.change_kinds,
+    ['type-changed'],
+  );
+  assert.deepEqual(coerceEvent({ ...base, change_kinds: ['prompt-args-changed'] })?.change_kinds, []);
 });
 
 test('coerceEvent blanks a bad server_fp', () => {
@@ -201,4 +210,66 @@ test('cross-plane contract (spec 2.4b): a REAL flag-on build_ledger blob survive
   // Chip-variant coverage: every renderable state present in one fixture.
   const renderable = ledger.events.filter((e) => e.version_delta && e.version_delta !== 'not-recorded');
   assert.equal(renderable.length, 4, 'three chip variants + one suppressed (not-recorded)');
+});
+
+// ---- server-scoped context events (the drain's out-of-band emit leg) ----
+
+const CTX = { server_fp: FP, sources: 1, safety_relevant: true, last_seen: '2026-08-19T05:00:00Z', change_kinds: ['instructions-changed'] };
+
+test('coerceContextEvent: valid row survives; identity and kinds are load-bearing', () => {
+  const e = coerceContextEvent(CTX);
+  assert.ok(e);
+  assert.deepEqual(e?.change_kinds, ['instructions-changed']);
+  assert.equal(e?.server_fp, FP);
+  assert.equal(e?.last_seen, '2026-08-19T05:00:00Z');
+  // Unattributable or kind-less rows are unrenderable and must drop (stricter than
+  // coerceEvent's server_fp blanking).
+  assert.equal(coerceContextEvent({ ...CTX, server_fp: 'not-hex' }), null);
+  assert.equal(coerceContextEvent({ ...CTX, server_fp: undefined }), null);
+  assert.equal(coerceContextEvent({ ...CTX, change_kinds: [] }), null);
+  assert.equal(coerceContextEvent({ ...CTX, change_kinds: ['bogus'] }), null);
+  // A tool kind here is a taxonomy breach upstream; it is filtered, and a row left with no
+  // context kind drops entirely.
+  assert.equal(coerceContextEvent({ ...CTX, change_kinds: ['type-changed'] }), null);
+  assert.deepEqual(
+    coerceContextEvent({ ...CTX, change_kinds: ['type-changed', 'prompt-args-changed'] })?.change_kinds,
+    ['prompt-args-changed'],
+  );
+  // Same TS_RE gate as coerceEvent: exact-shape timestamps pass, anything else blanks.
+  assert.equal(coerceContextEvent({ ...CTX, last_seen: '2026-08-19 05:00' })?.last_seen, '');
+  assert.equal(coerceContextEvent({ ...CTX, last_seen: 42 })?.last_seen, '');
+});
+
+test('parseLedgerBlob: context_events is [] when absent (old blob) and coerced when present', () => {
+  const old = parseLedgerBlob({ schema: SCHEMA, stat: {}, events: [] });
+  assert.deepEqual(old?.context_events, []);
+  const out = parseLedgerBlob({
+    schema: SCHEMA,
+    stat: {},
+    events: [],
+    context_events: [CTX, { ...CTX, server_fp: 'bad' }, 'junk', null],
+  });
+  assert.equal(out?.context_events.length, 1);
+  assert.equal(out?.context_events[0]?.server_fp, FP);
+});
+
+test('parseLedgerBlob: an unknown top-level key is ignored, never fatal (the additive-array contract)', () => {
+  // The drain relies on this semantic to ship new top-level arrays without a coordinated
+  // deploy: a reader that predates the key must keep serving everything it understands.
+  const out = parseLedgerBlob({
+    schema: SCHEMA,
+    stat: { tools_observed_drifting: 1 },
+    events: [{ tool_fp: FP, last_seen: '2026-08-19T05:00:00Z' }],
+    some_future_array: [{ anything: true }],
+  });
+  assert.ok(out);
+  assert.equal(out?.events.length, 1);
+  assert.equal(out?.stat.tools_observed_drifting, 1);
+});
+
+test('coerceStat context_surfaces_drifting: present only when valid; absence is not zero', () => {
+  assert.equal(coerceStat({}).context_surfaces_drifting, undefined);
+  assert.equal(coerceStat({ context_surfaces_drifting: 3 }).context_surfaces_drifting, 3);
+  assert.equal(coerceStat({ context_surfaces_drifting: -1 }).context_surfaces_drifting, undefined);
+  assert.equal(coerceStat({ context_surfaces_drifting: 'x' }).context_surfaces_drifting, undefined);
 });

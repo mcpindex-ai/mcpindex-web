@@ -33,13 +33,12 @@ export const SURFACE_CHANGE_KINDS: ReadonlySet<string> = new Set([
 //   1. The in-path GATE does not detect these - it pins tool contracts. POSTURE_ROWS
 //      (figure D-07) is generated from SURFACE_CHANGE_KINDS and states observed gate
 //      behaviour per kind; folding sweep-only kinds in would fabricate gate claims.
-//   2. This acceptance path is FORWARD-COMPAT, not live: today the drain never emits
-//      server-scoped rows at all (crawl_changes_to_rows is tool-keyed and drops the
-//      "(server)" sentinel; session audit 2026-08-19), so nothing with these kinds can
-//      reach the blob yet. It goes live when the drain's emit leg lands - tracked with
-//      PUBLISHED_CONTEXT_KINDS (the corroboration-filter half, already on a trust
-//      branch) in the Phase 2 spec follow-ups. The SURFACE mirror pinned in
-//      changeKinds.test.ts stays exact either way.
+//   2. These kinds arrive OUT-OF-BAND: the drain's emit leg (built 2026-08-19, sibling
+//      change to this one) publishes them in the blob's additive `context_events` array,
+//      keyed by server_fp only - never as tool events, and coerceEvent drops them from any
+//      tool row as a cross-plane misattribution. Rows appear once a drain deploy has two
+//      surface-bearing baselines to diff. The SURFACE mirror pinned in changeKinds.test.ts
+//      stays exact either way.
 // Only the safety-relevant members appear here: the cosmetic context kinds
 // (instructions-removed, instructions-numeric, prompt-added, prompt-removed,
 // prompt-description-changed) are stored corpus-side and never surfaced - the

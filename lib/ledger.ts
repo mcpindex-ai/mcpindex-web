@@ -11,7 +11,11 @@
 // safe to import from anywhere and is unit-testable in plain node. The token-holding IO lives in
 // `ledgerServer.ts` (import 'server-only').
 
-import { coerceChangeKinds } from './changeKinds';
+import {
+  CONTEXT_SURFACE_CHANGE_KINDS,
+  SURFACE_CHANGE_KINDS,
+  coerceChangeKinds,
+} from './changeKinds';
 
 export const LEDGER_SCHEMA = 'mcpindex.drift.ledger/2';
 
@@ -48,6 +52,20 @@ export interface LedgerEvent {
 const REMOVAL_SCOPES = new Set(['single', 'toolset-replaced']);
 const VERSION_DELTAS = new Set(['same', 'changed', 'undeclared', 'not-recorded']);
 
+// Server-scoped context-surface drift (instructions / prompts-list metadata the server injects
+// into agent context). Carried OUT-OF-BAND from `events` in the blob's ADDITIVE `context_events`
+// array because these are not tools: counting one into the tool rows would render a phantom
+// "drifting tool" on the named server page. There is deliberately no fingerprint field - the
+// drain's internal context fp never publishes; server_fp is the whole public identity, so a row
+// without a valid one is dropped (unattributable = unrenderable).
+export interface ContextEvent {
+  readonly server_fp: string;
+  readonly sources: number; // 1 = the crawl
+  readonly safety_relevant: boolean;
+  readonly last_seen: string;
+  readonly change_kinds: readonly string[]; // subset of CONTEXT_SURFACE_CHANGE_KINDS, non-empty
+}
+
 export interface LedgerStat {
   readonly tools_observed_drifting: number; // the numerator (N)
   readonly total_contract_drifts_observed: number; // the honest denominator (M) - N of M, never "all"
@@ -57,6 +75,9 @@ export interface LedgerStat {
   // version-changed or undeclared transition). Present only when the drain emits the gated
   // evidence fields; undefined otherwise (absence of the stat is not zero).
   readonly silent_same_version?: number;
+  // Server-scoped context surfaces with published drift (the context_events count). ADDITIVE;
+  // absent on a blob that predates the emit leg (absence is not zero).
+  readonly context_surfaces_drifting?: number;
 }
 
 export interface Ledger {
@@ -65,6 +86,8 @@ export interface Ledger {
   readonly framing: string;
   readonly stat: LedgerStat;
   readonly events: readonly LedgerEvent[];
+  // ADDITIVE on schema /2: [] for a blob that predates the drain's context emit leg.
+  readonly context_events: readonly ContextEvent[];
 }
 
 const FP_RE = /^[0-9a-f]{32}$/;
@@ -100,9 +123,38 @@ export function coerceEvent(x: unknown): LedgerEvent | null {
     sources: Number.isFinite(sources) && sources >= 1 ? Math.floor(sources) : 1, // honest floor
     safety_relevant: e.safety_relevant === true,
     last_seen,
-    change_kinds: coerceChangeKinds(e.change_kinds), // allowlist-validated; [] for an old blob
+    // Tool kinds only: coerceChangeKinds also accepts the context-surface kinds (they share
+    // the coercion allowlist), but a tool row labeled 'instructions-changed' would be a
+    // cross-plane misattribution - the drain never emits that, so a blob that carries it is
+    // malformed and the kind is dropped. [] for an old blob.
+    change_kinds: coerceChangeKinds(e.change_kinds).filter((k) => SURFACE_CHANGE_KINDS.has(k)),
     ...(scope ? { removal_scope: scope } : {}),
     ...(vdelta ? { version_delta: vdelta } : {}),
+  };
+}
+
+export function coerceContextEvent(x: unknown): ContextEvent | null {
+  if (!x || typeof x !== 'object') return null;
+  const e = x as Record<string, unknown>;
+  // Stricter than the tool-event blanking of server_fp: a context event carries no other
+  // identity, so an invalid server_fp makes the whole row unrenderable - drop it.
+  const server_fp = typeof e.server_fp === 'string' ? e.server_fp : '';
+  if (!FP_RE.test(server_fp)) return null;
+  // Context kinds only. A row whose kinds all fail the allowlist says nothing displayable
+  // (and a tool kind here would mean a taxonomy breach upstream) - drop rather than render
+  // an empty "something changed" chip row.
+  const change_kinds = coerceChangeKinds(e.change_kinds).filter((k) =>
+    CONTEXT_SURFACE_CHANGE_KINDS.has(k),
+  );
+  if (change_kinds.length === 0) return null;
+  const sources = Number(e.sources);
+  const last_seen = typeof e.last_seen === 'string' && TS_RE.test(e.last_seen) ? e.last_seen : '';
+  return {
+    server_fp,
+    sources: Number.isFinite(sources) && sources >= 1 ? Math.floor(sources) : 1,
+    safety_relevant: e.safety_relevant === true,
+    last_seen,
+    change_kinds,
   };
 }
 
@@ -114,6 +166,8 @@ export function coerceStat(x: unknown): LedgerStat {
   };
   const silent = s.silent_same_version;
   const silentN = Number(silent);
+  const ctx = s.context_surfaces_drifting;
+  const ctxN = Number(ctx);
   return {
     tools_observed_drifting: n(s.tools_observed_drifting),
     total_contract_drifts_observed: n(s.total_contract_drifts_observed),
@@ -121,6 +175,9 @@ export function coerceStat(x: unknown): LedgerStat {
     safety_relevant: n(s.safety_relevant),
     ...(silent !== undefined && Number.isFinite(silentN) && silentN >= 0
       ? { silent_same_version: Math.floor(silentN) }
+      : {}),
+    ...(ctx !== undefined && Number.isFinite(ctxN) && ctxN >= 0
+      ? { context_surfaces_drifting: Math.floor(ctxN) }
       : {}),
   };
 }
@@ -146,11 +203,21 @@ export function parseLedgerBlob(raw: unknown): Ledger | null {
   const events = Array.isArray(blob.events)
     ? blob.events.map(coerceEvent).filter((e): e is LedgerEvent => e !== null)
     : [];
+  const context_events = Array.isArray(blob.context_events)
+    ? blob.context_events
+        // Honest worst case is one row per drifting server; a blob claiming far more is
+        // malformed or hostile, and /api/v1/ledger serializes whatever survives parsing,
+        // so cap before coercion rather than let a giant array through per request.
+        .slice(0, 25_000)
+        .map(coerceContextEvent)
+        .filter((e): e is ContextEvent => e !== null)
+    : [];
   return {
     schema: LEDGER_SCHEMA,
     generated_at: clampStr(blob.generated_at, 32), // ISO timestamp; bounded
     framing: clampStr(blob.framing, 280), // one honest sentence; bounded
     stat: coerceStat(blob.stat),
     events,
+    context_events,
   };
 }

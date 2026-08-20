@@ -41,5 +41,10 @@ export async function loadServerDrift(serverId: string): Promise<ServerDrift | n
   if (!ledgerEnabled()) return null;
   const ledger = await cachedLedger();
   if (!ledger) return null;
-  return aggregateServerDrift(ledger.events, serverFp(serverId), ledger.generated_at);
+  return aggregateServerDrift(
+    ledger.events,
+    serverFp(serverId),
+    ledger.generated_at,
+    ledger.context_events,
+  );
 }

@@ -4,23 +4,25 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { kindLabel } from '@/lib/kindLabels';
 import { fmtUtc, fmtDay } from '@/lib/dates';
+import type { ServerDrift as LibServerDrift } from '@/lib/serverDrift';
 
 // Server-level contract-drift section, fetched at RUNTIME from /api/v1/server-drift (the build can't
 // reach Upstash; this is always current). Server-level only - individual tools stay anonymized.
 // Renders nothing while loading or when drift is unavailable (flag off / ledger down) - never a
 // false "clean". Neutral contract-diff framing, mirrors /ledger.
 
-interface ServerDrift {
-  changes: number;
-  lastSeen: string | null;
-  kinds: string[];
-  safetyRelevant: boolean;
-  ledgerGeneratedAt: string;
-  toolsetReplaced?: boolean;
-  versionSameCount?: number;
-  versionChangedCount?: number;
-  versionUndeclaredCount?: number;
-}
+// Derived from the lib type (type-only import - nothing server-side enters the client
+// bundle) instead of a hand-mirrored copy that can skew. Fields added to the API after v1
+// are Partial: a payload from an older deploy renders the older view unchanged.
+type LaterKeys =
+  | 'toolsetReplaced'
+  | 'versionSameCount'
+  | 'versionChangedCount'
+  | 'versionUndeclaredCount'
+  | 'contextChanges'
+  | 'contextKinds'
+  | 'contextLastSeen';
+type ServerDrift = Omit<LibServerDrift, LaterKeys> & Partial<Pick<LibServerDrift, LaterKeys>>;
 
 export function ContractDrift({ serverId }: { serverId: string }) {
   const [drift, setDrift] = useState<ServerDrift | null>(null);
@@ -47,6 +49,14 @@ export function ContractDrift({ serverId }: { serverId: string }) {
   if (!show || !drift) return null;
   const generated = fmtDay(drift.ledgerGeneratedAt);
   const lastSeen = fmtUtc(drift.lastSeen);
+  const ctxChanges = drift.contextChanges ?? 0;
+  const ctxKinds = drift.contextKinds ?? [];
+  const ctxLastSeen = fmtUtc(drift.contextLastSeen ?? null);
+  // Three render states: both planes quiet -> the affirmative clean sentence; tool changes ->
+  // the tool block; context-only -> neither (the context block below is the whole story). A
+  // server whose injected context drifted must never read as clean.
+  const bothQuiet = drift.changes === 0 && ctxChanges === 0;
+  const showToolBlock = drift.changes > 0;
 
   return (
     <section className="mt-14">
@@ -57,13 +67,14 @@ export function ContractDrift({ serverId }: { serverId: string }) {
         </Link>
       </div>
       <div className="rule-t rule-b rule-l rule-r p-5 bg-white">
-        {drift.changes === 0 ? (
+        {bothQuiet && (
           <p className="text-[14px] leading-[1.6] text-[var(--color-cite)]">
             No contract changes observed for this server in the current crawl window
             {generated ? ` (as of ${generated})` : ''}. This reflects the public-registry crawl only,
             not a guarantee of stability.
           </p>
-        ) : (
+        )}
+        {showToolBlock && (
           <>
             <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
               <span className="font-mono text-[14px] uppercase tracking-[0.18em] px-2.5 py-1 bg-[var(--color-accent-soft)] text-[var(--color-cite)] border border-[var(--color-rule)] tabular-nums">
@@ -121,6 +132,39 @@ export function ContractDrift({ serverId }: { serverId: string }) {
               </div>
             )}
           </>
+        )}
+        {ctxChanges > 0 && (
+          <div className={drift.changes > 0 ? 'mt-5 pt-4 border-t border-[var(--color-rule)]' : ''}>
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <span className="font-mono text-[14px] uppercase tracking-[0.18em] px-2.5 py-1 bg-[var(--color-accent-soft)] text-[var(--color-cite)] border border-[var(--color-rule)] tabular-nums">
+                injected context changed
+              </span>
+              {ctxLastSeen && (
+                <span className="font-mono text-[11px] text-[var(--color-mute)]">most recent {ctxLastSeen}</span>
+              )}
+            </div>
+            {ctxKinds.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-baseline gap-2">
+                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
+                  what changed
+                </span>
+                {ctxKinds.map((k) => (
+                  <span
+                    key={k}
+                    title={k}
+                    className="text-[11px] px-2 py-0.5 border border-[var(--color-rule)] text-[var(--color-cite)]"
+                  >
+                    {kindLabel(k)}
+                  </span>
+                ))}
+              </div>
+            )}
+            <p className="mt-3 text-[13px] leading-[1.55] text-[var(--color-cite)]">
+              Server-scoped, not a tool: this is text the server supplies for clients to inject
+              into an agent&rsquo;s context on connect (instructions or prompt metadata). It sits
+              outside every tool contract hash, so this observation is its only drift signal.
+            </p>
+          </div>
         )}
         <p className="mt-4 font-mono text-[10.5px] leading-[1.55] text-[var(--color-mute)]">
           Observed by mcpindex&rsquo;s crawler between daily registry snapshots - a contract diff, not
