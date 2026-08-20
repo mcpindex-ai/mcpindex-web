@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import {
   coerceChangeKinds,
   SURFACE_CHANGE_KINDS,
+  CONTEXT_SURFACE_CHANGE_KINDS,
   SAFETY_RELEVANT_CHANGE_KINDS,
   BENIGN_AUTOACCEPT_CHANGE_KINDS,
   BEHAVIORAL_MANDATED_CHANGE_KINDS,
@@ -75,6 +76,41 @@ test('the allowlist matches the trust SURFACE_KINDS taxonomy member-for-member',
   assert.ok(!SURFACE_CHANGE_KINDS.has('tool-added')); // not drift of an existing dependency
 });
 
+// Server-scoped context-surface kinds are a SEPARATE set, accepted FORWARD-COMPAT (the
+// drain's emit leg for "(server)" rows is unbuilt as of 2026-08-19), and they must never
+// join the gate-behaviour surface that POSTURE_ROWS is generated from (the gate does not
+// detect them).
+test('the context-surface set is exactly the safety-relevant server-scoped kinds', () => {
+  assert.deepEqual([...CONTEXT_SURFACE_CHANGE_KINDS].sort(), [
+    'instructions-added',
+    'instructions-changed',
+    'prompt-args-changed',
+  ]);
+  // Cosmetic context kinds are stored corpus-side, never surfaced - so the public
+  // allowlist must keep dropping them (the description-only precedent).
+  for (const k of [
+    'instructions-removed',
+    'instructions-numeric',
+    'prompt-added',
+    'prompt-removed',
+    'prompt-description-changed',
+  ]) {
+    assert.ok(!CONTEXT_SURFACE_CHANGE_KINDS.has(k), `${k} must not be surfaced`);
+    assert.deepEqual(coerceChangeKinds([k]), [], `${k} must be dropped by the coercion gate`);
+  }
+  // The two accepted sets stay disjoint: a member of both would re-enter POSTURE_ROWS.
+  for (const k of CONTEXT_SURFACE_CHANGE_KINDS) {
+    assert.ok(!SURFACE_CHANGE_KINDS.has(k), `${k} must not join the gate-behaviour surface`);
+  }
+});
+
+test('coercion accepts context-surface kinds from the untrusted blob', () => {
+  assert.deepEqual(
+    coerceChangeKinds(['instructions-changed', 'prompt-args-changed', 'instructions-changed']),
+    ['instructions-changed', 'prompt-args-changed'],
+  );
+});
+
 // The safety bit is MIRRORED from mcpindex-trust/corpus_eval/tooling/cse/schema_diff.py
 // (`_SAFETY_RELEVANT`). Pinning the membership here is what makes the mirror safe: an upstream
 // taxonomy edit that is not reflected in this repo fails the suite instead of silently
@@ -86,8 +122,11 @@ test('the mirrored safety set matches the upstream frozenset, member for member'
     'constraint-narrowed',
     'deep-schema-undiffable',
     'enum-values-removed',
+    'instructions-added',
+    'instructions-changed',
     'output-schema-changed',
     'param-mirrored-to-header',
+    'prompt-args-changed',
     'removed-param',
     'required-set-expanded',
     'tool-removed',
@@ -108,7 +147,10 @@ test('a schema too deep to diff fails SAFE, never silently benign', () => {
 
 test('every safety-relevant kind is one the public surface can actually show', () => {
   for (const k of SAFETY_RELEVANT_CHANGE_KINDS) {
-    assert.ok(SURFACE_CHANGE_KINDS.has(k), `${k} carries the safety bit but is not surfaced`);
+    assert.ok(
+      SURFACE_CHANGE_KINDS.has(k) || CONTEXT_SURFACE_CHANGE_KINDS.has(k),
+      `${k} carries the safety bit but is not surfaced`,
+    );
   }
 });
 

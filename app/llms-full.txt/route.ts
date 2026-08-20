@@ -9,6 +9,7 @@ import { VERDICT_CONTRACT_VERSION } from '@/lib/verdictContract';
 import { gateInstallLine } from '@/lib/install/manifest';
 import type { IndexedServer } from '@/lib/types';
 import { createVersionedBodyCache } from '@/lib/llmsFullCache';
+import { CATALOG_PREAMBLE, exportLine, renderCatalogRow, toCatalogRow } from '@/lib/llmsCatalog';
 
 // This body is ~4MB and a cold render also pays a full loadServers() snapshot parse, so an hourly
 // TTL plus a long stale-while-revalidate keeps the origin render off the request path entirely and
@@ -30,6 +31,7 @@ function buildBody(servers: IndexedServer[], guides: Guide[]): string {
     '',
     `Total servers: ${servers.length}. Categories: ${byCategory.size}.`,
     'Format: one server per block, grouped by category.',
+    CATALOG_PREAMBLE,
     '',
     '## Drift Gate (in-path; tier-0 live, tiers 1-3 held off by default)',
     '',
@@ -86,26 +88,14 @@ function buildBody(servers: IndexedServer[], guides: Guide[]): string {
   }
 
   for (const [cat, list] of [...byCategory.entries()].sort()) {
-    parts.push(`\n## ${CATEGORY_LABELS[cat] ?? cat} (${list.length})\n`);
-    for (const s of list) {
-      const installs: string[] = [];
-      if (s.npmPackage) installs.push(`npm:${s.npmPackage}`);
-      if (s.pypiPackage) installs.push(`pypi:${s.pypiPackage}`);
-      if (s.dockerImage) installs.push(`docker:${s.dockerImage}`);
-      if (s.remoteUrl) installs.push(`remote:${s.remoteUrl}`);
-      parts.push(
-        `- ${s.title} (${s.name}@${s.version})`,
-        `  ${s.description}`,
-        `  installs: ${installs.join(' | ') || 'manual'}`,
-        // An LLM reading this catalog must not infer registry listing for a server that has
-        // none. Emitted only for admitted entries, so the 18k registry lines are unchanged.
-        ...(s.source === 'admitted'
-          ? ['  provenance: NOT listed in the official MCP registry; indexed by mcpindex']
-          : []),
-        `  detail: https://mcpindex.ai/server/${s.slug}`,
-        '',
-      );
-    }
+    // Category keys come from the categorizer, but the fallback branch echoes the raw key -
+    // and it lands at a line start, so it goes through the same single-line boundary.
+    parts.push(`\n## ${CATEGORY_LABELS[cat] ?? exportLine(cat, 64)} (${list.length})\n`);
+    // Third-party text (title, description, install ids) is emitted ONLY through the
+    // CatalogRow boundary in lib/llmsCatalog.ts: typed field allowlist, one line per value,
+    // controls/bidi stripped, length-capped. Captured server instructions and prompt text
+    // never enter CatalogRow - excluded by construction, not by remembering to filter.
+    for (const s of list) parts.push(...renderCatalogRow(toCatalogRow(s)));
   }
   return parts.join('\n');
 }

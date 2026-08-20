@@ -12,7 +12,7 @@
 // to import anywhere and unit-testable in plain node (style-match lib/ledger.ts). The
 // token-holding IO lives in `reportStatsServer.ts` (import 'server-only').
 
-import { SURFACE_CHANGE_KINDS } from './changeKinds';
+import { SURFACE_CHANGE_KINDS, CONTEXT_SURFACE_CHANGE_KINDS } from './changeKinds';
 
 export const REPORT_STATS_SCHEMA = 'mcpindex.drift.report-stats/1';
 
@@ -117,11 +117,12 @@ function rec(v: unknown): Record<string, unknown> {
   return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
 }
 
-/** Kind counts keyed by the surfaced ChangeKind taxonomy; unknown keys dropped (allowlist). */
+/** Kind counts keyed by the accepted ChangeKind taxonomy (surfaced + context-surface);
+ * unknown keys dropped (allowlist). */
 function kindCounts(v: unknown): Record<string, number> {
   const out: Record<string, number> = {};
   for (const [k, c] of Object.entries(rec(v))) {
-    if (SURFACE_CHANGE_KINDS.has(k)) out[k] = num(c);
+    if (SURFACE_CHANGE_KINDS.has(k) || CONTEXT_SURFACE_CHANGE_KINDS.has(k)) out[k] = num(c);
   }
   return out;
 }

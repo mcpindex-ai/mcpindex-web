@@ -5,7 +5,7 @@
 // or API must be re-validated against a fixed allowlist, deduped, sorted, and length-bounded.
 //
 // SOURCE OF TRUTH: this is the SURFACED subset - it mirrors `SURFACE_KINDS` in
-// mcpindex-trust/scripts/drift_corpus_drain.py exactly (12 kinds). It is NOT the same list as the
+// mcpindex-trust/scripts/drift_corpus_drain.py exactly (13 kinds). It is NOT the same list as the
 // FULL detector taxonomy published in app/.well-known/mcp-index.json (that superset includes
 // tool-added, which is deliberately not surfaced here). Keep in sync with the trust SURFACE_KINDS -
 // a kind the drain surfaces but this set omits is silently dropped from the public display
@@ -25,6 +25,30 @@ export const SURFACE_CHANGE_KINDS: ReadonlySet<string> = new Set([
   'param-mirrored-to-header',
   'tool-removed',
   'deep-schema-undiffable',
+]);
+
+// Server-scoped context-surface kinds, mirrored from the same schema_diff.py taxonomy
+// (the sweep emits them with the sentinel tool "(server)"). Two properties make this a
+// SEPARATE set rather than three more SURFACE_CHANGE_KINDS members:
+//   1. The in-path GATE does not detect these - it pins tool contracts. POSTURE_ROWS
+//      (figure D-07) is generated from SURFACE_CHANGE_KINDS and states observed gate
+//      behaviour per kind; folding sweep-only kinds in would fabricate gate claims.
+//   2. This acceptance path is FORWARD-COMPAT, not live: today the drain never emits
+//      server-scoped rows at all (crawl_changes_to_rows is tool-keyed and drops the
+//      "(server)" sentinel; session audit 2026-08-19), so nothing with these kinds can
+//      reach the blob yet. It goes live when the drain's emit leg lands - tracked with
+//      PUBLISHED_CONTEXT_KINDS (the corroboration-filter half, already on a trust
+//      branch) in the Phase 2 spec follow-ups. The SURFACE mirror pinned in
+//      changeKinds.test.ts stays exact either way.
+// Only the safety-relevant members appear here: the cosmetic context kinds
+// (instructions-removed, instructions-numeric, prompt-added, prompt-removed,
+// prompt-description-changed) are stored corpus-side and never surfaced - the
+// description-only precedent. Upstream mapping is declared PROVISIONAL
+// (schema_diff.py, ~a month of live churn data); a re-grade there must land here.
+export const CONTEXT_SURFACE_CHANGE_KINDS: ReadonlySet<string> = new Set([
+  'instructions-added',
+  'instructions-changed',
+  'prompt-args-changed',
 ]);
 
 // The SAFETY BIT, mirrored from the single source of truth:
@@ -57,6 +81,13 @@ export const SAFETY_RELEVANT_CHANGE_KINDS: ReadonlySet<string> = new Set([
   // A schema too deep to fully diff fails safe: it cannot be proven benign, so it joins the
   // must-review list rather than passing silently as 'no change'.
   'deep-schema-undiffable',
+  // Context surface (server-scoped). Instructions sit OUTSIDE every verdict-binding hash
+  // and are auto-injected into agent context by clients on connect, so added/changed are
+  // must-review; prompt metadata is user-invoked, one notch down, and only its
+  // argument-contract changes carry the bit. Removal and digits-only churn stay off.
+  'instructions-added',
+  'instructions-changed',
+  'prompt-args-changed',
 ]);
 
 /** True when a kind is on the operator's must-review list (the safety bit). */
@@ -99,11 +130,13 @@ export type PostureOutcome = 'PROCEED' | 'PROCEED_NOTIFY' | 'INCONCLUSIVE' | 'HO
  *   3. behaviour-mandated -> INCONCLUSIVE (needs behaviour), not a HOLD;
  *   4. otherwise      -> HOLD under guard and strict.
  *
- * Guard blocks exactly the safety-relevant set: gate.py `_GUARD_DANGEROUS_KINDS` and
- * schema_diff.py `_SAFETY_RELEVANT` were verified member-for-member identical, so the safety bit
- * is a sound source for the guard column. (Guard ALSO blocks on reason markers - a risk
- * escalation, an injection/exfil marker, a description change, a fail-closed error - which are
- * not ChangeKinds and so cannot appear as rows here.)
+ * The guard column was verified by DRIVING the gate (2026-07-27), not by set identity:
+ * gate.py `_GUARD_DANGEROUS_KINDS` is a smaller set than schema_diff.py `_SAFETY_RELEVANT`
+ * (it lacks param-mirrored-to-header and the server-scoped context kinds, which the gate
+ * does not detect), and guard ALSO blocks on reason markers - a risk escalation, an
+ * injection/exfil marker, a description change, a fail-closed error - which are not
+ * ChangeKinds. The observed HOLD behaviour for every surfaced row is what the parity
+ * test pins (clients/ts crossLangParity drives PMH under guard).
  */
 export function postureOutcome(kind: string, posture: Posture): PostureOutcome {
   if (BENIGN_AUTOACCEPT_CHANGE_KINDS.has(kind)) return 'PROCEED';
@@ -113,9 +146,9 @@ export function postureOutcome(kind: string, posture: Posture): PostureOutcome {
 }
 
 // Hard cap on how many kinds render/return for one event - a hostile blob cannot bloat the page or
-// the API response. Comfortably above the real taxonomy size (12) so a legitimate event is never
-// truncated, while a forged 10k-element array is.
-export const MAX_CHANGE_KINDS = 16;
+// the API response. Comfortably above the real accepted taxonomy (13 surfaced + 3 context-surface)
+// so a legitimate event is never truncated, while a forged 10k-element array is.
+export const MAX_CHANGE_KINDS = 24;
 
 /**
  * Coerce an untrusted `change_kinds` value into a validated, deduped, sorted, bounded list of KNOWN
@@ -135,11 +168,12 @@ export function coerceChangeKinds(raw: unknown, max: number = MAX_CHANGE_KINDS):
   if (!Array.isArray(arr)) return [];
   const out = new Set<string>();
   // Input-side scan bound: never iterate a hostile mega-array. 1024 >> the ingest cap (64) >> the
-  // taxonomy (12), so a legitimate value is never truncated; a forged 10M-element array is.
+  // accepted taxonomy (16), so a legitimate value is never truncated; a forged 10M-element array is.
   const scanLimit = Math.min(arr.length, 1024);
   for (let i = 0; i < scanLimit; i++) {
     const k = arr[i];
-    if (typeof k === 'string' && SURFACE_CHANGE_KINDS.has(k)) out.add(k);
+    if (typeof k === 'string' && (SURFACE_CHANGE_KINDS.has(k) || CONTEXT_SURFACE_CHANGE_KINDS.has(k)))
+      out.add(k);
     if (out.size >= max) break; // output-side bound: the rendered list can't grow past `max`
   }
   return [...out].sort();
