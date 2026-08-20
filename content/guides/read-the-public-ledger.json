@@ -6,7 +6,7 @@
   "meta_description": "A walkthrough of the mcpindex drift ledger: open it, read a fingerprint-only event row, spot a safety-relevant change, and read the coverage dashboard.",
   "h1": "Read the public drift ledger and dashboard",
   "project": "mcpindex",
-  "updated": "2026-08-19",
+  "updated": "2026-08-20",
   "est_minutes": 3,
   "outcome": "You can read the public drift ledger and dashboard: what the crawler saw change, how to spot a safety-relevant diff, and what the coverage numbers do (and do not) mean.",
   "body": "The ledger is public proof of the problem the gate solves. mcpindex crawls the public MCP registry every day and records which tool contracts silently change between snapshots. No login, no per-user data, and no server pays to be listed. Here is how to read it. The deduped, citable analysis of the same corpus lives at [The MCP Drift Report](/drift-report).",
@@ -30,6 +30,11 @@
       "id": "safety",
       "heading": "Spot a safety-relevant change",
       "body": "The Safety column flags a change that touched a safety-relevant field, an annotation flipping to destructive or a new required parameter, for example. Read it as 'this one deserves a look,' not as a confirmed vulnerability. A dash means the change was not safety-relevant."
+    },
+    {
+      "id": "context-surface",
+      "heading": "Read a context-surface change",
+      "body": "Below the Events table, a second table appears when the crawler has seen a server change its context surface. These entries are not tools, which is why there is no tool fingerprint column:\n\n| Column | What it means |\n| --- | --- |\n| Server fingerprint | A content hash of the server, never its name |\n| Last seen | When the crawler last saw this surface |\n| What changed | The context kinds: instructions added or changed, or a prompt's argument contract changed |\n\nA context surface is the text a server hands your client to inject into the agent's context when it connects: the server's own instructions, and the metadata of the prompts it offers. It is server-scoped, so one entry covers the whole server rather than a single tool. This text sits outside every tool contract hash, which means a change here moves nothing the gate pins, and the crawler's observation is the only drift signal it has. The section is absent when nothing has been observed."
     },
     {
       "id": "dashboard",
@@ -64,6 +69,10 @@
     {
       "q": "Is a safety-relevant change in the ledger a confirmed vulnerability?",
       "a": "No. The safety-relevant tag means the change touched a safety-relevant field, like an annotation flip or a new required parameter. It flags a change worth reviewing, not a proven exploit. The ledger is a contract-diff, not a safety verdict."
+    },
+    {
+      "q": "Why do some ledger entries have no tool fingerprint?",
+      "a": "Because they are not about a tool. Entries in the context-surface table are server-scoped: they record a change to the instructions or prompt metadata a server injects into an agent's context on connect. One entry covers the whole server, so it carries a server fingerprint and no tool fingerprint."
     }
   ]
 }

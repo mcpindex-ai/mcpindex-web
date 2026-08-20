@@ -1,4 +1,4 @@
-import type { LedgerEvent } from './ledger';
+import type { ContextEvent, LedgerEvent } from './ledger';
 
 // Server-level drift summary for ONE named server, derived purely from the public ledger blob by
 // matching each event's server_fp. Tool-level identities stay anonymized (we never de-anonymize a
@@ -20,6 +20,11 @@ export interface ServerDrift {
   readonly versionSameCount: number;
   readonly versionChangedCount: number;
   readonly versionUndeclaredCount: number;
+  // Server-scoped context-surface drift (instructions / prompt metadata), from the blob's
+  // out-of-band context_events - counted APART from `changes` because these are not tools.
+  readonly contextChanges: number;
+  readonly contextKinds: readonly string[]; // union across this server's context events, sorted
+  readonly contextLastSeen: string | null; // hour-coarsened ISO, or null
 }
 
 /** Filter the ledger's events to one server (by its precomputed server_fp) and summarize. A server
@@ -28,8 +33,10 @@ export function aggregateServerDrift(
   events: readonly LedgerEvent[],
   fp: string,
   ledgerGeneratedAt: string,
+  contextEvents: readonly ContextEvent[] = [], // absent on a blob predating the emit leg
 ): ServerDrift {
   const mine = events.filter((e) => e.server_fp === fp);
+  const mineCtx = contextEvents.filter((e) => e.server_fp === fp);
   const kinds = [...new Set(mine.flatMap((e) => e.change_kinds))].sort();
   // Lexical max is chronological ONLY because last_seen is the fixed-width hour-coarsened shape
   // (YYYY-MM-DDTHH:00:00Z), gated by ledger.ts TS_RE. If that gate ever relaxes, parse to epoch here.
@@ -37,15 +44,26 @@ export function aggregateServerDrift(
     (max, e) => (e.last_seen && (max === null || e.last_seen > max) ? e.last_seen : max),
     null,
   );
+  // Same fixed-width lexical-max trick as lastSeen above (gated by ledger.ts TS_RE).
+  const contextLastSeen = mineCtx.reduce<string | null>(
+    (max, e) => (e.last_seen && (max === null || e.last_seen > max) ? e.last_seen : max),
+    null,
+  );
   return {
     changes: mine.length,
     lastSeen,
     kinds,
+    // Tool events only, on purpose: the context block carries its own safety framing, and the
+    // "safety-relevant diff" badge sits inside the tool-count block - conflating them would
+    // badge a tool count that context drift inflated.
     safetyRelevant: mine.some((e) => e.safety_relevant),
     ledgerGeneratedAt,
     toolsetReplaced: mine.some((e) => e.removal_scope === 'toolset-replaced'),
     versionSameCount: mine.filter((e) => e.version_delta === 'same').length,
     versionChangedCount: mine.filter((e) => e.version_delta === 'changed').length,
     versionUndeclaredCount: mine.filter((e) => e.version_delta === 'undeclared').length,
+    contextChanges: mineCtx.length,
+    contextKinds: [...new Set(mineCtx.flatMap((e) => e.change_kinds))].sort(),
+    contextLastSeen,
   };
 }
