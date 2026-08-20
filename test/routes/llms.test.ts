@@ -13,6 +13,7 @@ import { gateInstallLine } from '../../lib/install/manifest';
 import { loadServers, loadSnapshotMeta } from '../../lib/registry';
 import { SOURCE_LIVENESS_CENSUS } from '../../lib/sourceLiveness';
 import { VERDICT_CONTRACT_VERSION } from '../../lib/verdictContract';
+import { CATALOG_PREAMBLE } from '../../lib/llmsCatalog';
 
 async function bodyOf(res: Response): Promise<string> {
   return res.text();
@@ -109,6 +110,37 @@ test('/llms-full.txt: catalog present, content-type, and runaway size tripwire',
     bytes < TEN_MB,
     `llms-full.txt is ${(bytes / 1024 / 1024).toFixed(1)}MB (>10MB tripwire) — revisit slimming the 16k catalog dump vs. pointing at sitemap/API`,
   );
+});
+
+// ------------------------------------------------------------ injection-relay boundary
+//
+// /llms-full.txt inlines third-party server text into a file built to be fed to LLMs.
+// The catalog boundary (lib/llmsCatalog.ts) holds the hostile fixtures in its own unit
+// tests; these assertions check the boundary is actually WIRED on the live corpus: the
+// preamble ships, no control character reaches the export, and no third-party value
+// escaped to an unprefixed line inside the catalog.
+test('/llms-full.txt: third-party text is framed and line-disciplined', async () => {
+  const body = await bodyOf(await llmsFull());
+  assert.ok(body.includes(CATALOG_PREAMBLE), 'llms-full.txt lost the third-party-text preamble');
+  // Newline is the only permitted control anywhere in the body - including the first-party
+  // guide sections, which do not pass through exportLine.
+  assert.ok(
+    !/[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(body),
+    'a control character reached the export',
+  );
+  // Inside the catalog (everything from the first CATEGORY heading - the only headings
+  // that end with a server count), every indented line must carry a first-party prefix.
+  // A bare indented line would mean a third-party value escaped the CatalogRow boundary.
+  // The earlier first-party sections (Drift Gate, Guides) have their own indented shapes
+  // and are out of scope here.
+  const catStart = body.search(/\n## [^\n]* \(\d+\)\n/);
+  assert.ok(catStart > 0, 'no category heading found in llms-full.txt');
+  const catalog = body.slice(catStart);
+  const escaped = catalog
+    .split('\n')
+    .filter((l) => l.startsWith('  ') && l.trim() !== '')
+    .filter((l) => !/^ {2}(description|installs|provenance|detail): /.test(l));
+  assert.deepEqual(escaped.slice(0, 3), [], 'unprefixed third-party line escaped the boundary');
 });
 
 test('/llms-full.txt: X-Snapshot-Version equals the current snapshot version', async () => {

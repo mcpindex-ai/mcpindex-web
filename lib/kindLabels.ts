@@ -1,7 +1,7 @@
 // Human labels for the surfaced ChangeKind taxonomy. One label per member of
-// SURFACE_CHANGE_KINDS (lib/changeKinds.ts) - parity is test-enforced in kindLabels.test.ts so a
-// taxonomy addition can't silently ship an unlabeled raw token. Unknown codes still degrade
-// gracefully (hyphens -> spaces) rather than hiding.
+// SURFACE_CHANGE_KINDS and CONTEXT_SURFACE_CHANGE_KINDS (lib/changeKinds.ts) - parity is
+// test-enforced in kindLabels.test.ts so a taxonomy addition can't silently ship an unlabeled
+// raw token. Unknown codes still degrade gracefully (hyphens -> spaces) rather than hiding.
 export const KIND_LABEL: Record<string, string> = {
   'added-required-param': 'new required input',
   'added-optional-param': 'new optional input',
@@ -19,6 +19,12 @@ export const KIND_LABEL: Record<string, string> = {
   'param-mirrored-to-header': 'a parameter value is now sent in an HTTP header',
   'tool-removed': 'tool removed',
   'deep-schema-undiffable': 'schema too nested to diff',
+  // Server-scoped context-surface kinds (CONTEXT_SURFACE_CHANGE_KINDS). "Instructions"
+  // alone reads like docs; name the consequence: this text is auto-injected into the
+  // agent's context by the client on connect.
+  'instructions-added': 'server now injects instructions into agent context',
+  'instructions-changed': 'injected server instructions changed',
+  'prompt-args-changed': 'prompt argument contract changed',
 };
 
 export function kindLabel(code: string): string {
