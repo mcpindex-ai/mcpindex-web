@@ -10,7 +10,7 @@
   "faq": [
     {
       "q": "Does MCP notify clients when a server's tools change?",
-      "a": "The spec defines an optional tools/list_changed notification, but servers are not required to send it and clients are not required to act on it or surface it to you. In practice the only reliable signal is re-fetching tools/list and comparing it against the contract you approved."
+      "a": "The spec defines an optional tools/list_changed notification, but servers are not required to send it and clients are not required to act on it or surface it to you. In practice a reliable signal comes one way: re-fetch tools/list yourself and compare it against the contract you approved."
     },
     {
       "q": "What is tool description drift?",
