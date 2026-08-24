@@ -21,7 +21,10 @@ type LaterKeys =
   | 'versionUndeclaredCount'
   | 'contextChanges'
   | 'contextKinds'
-  | 'contextLastSeen';
+  | 'contextLastSeen'
+  | 'contextSafetyRelevant'
+  | 'known'
+  | 'versionEvidence';
 type ServerDrift = Omit<LibServerDrift, LaterKeys> & Partial<Pick<LibServerDrift, LaterKeys>>;
 
 export function ContractDrift({ serverId }: { serverId: string }) {
@@ -55,7 +58,11 @@ export function ContractDrift({ serverId }: { serverId: string }) {
   // Three render states: both planes quiet -> the affirmative clean sentence; tool changes ->
   // the tool block; context-only -> neither (the context block below is the whole story). A
   // server whose injected context drifted must never read as clean.
-  const bothQuiet = drift.changes === 0 && ctxChanges === 0;
+  // `known === false` means the name is not one we crawl, so the zeros carry no information and
+  // the affirmative clean sentence below would be a lie. Undefined (an older deploy's payload)
+  // keeps the previous behaviour. A server page always passes a registry name, so this is a guard
+  // against the component being reused, not against today's caller.
+  const bothQuiet = drift.changes === 0 && ctxChanges === 0 && drift.known !== false;
   const showToolBlock = drift.changes > 0;
 
   return (
@@ -141,6 +148,14 @@ export function ContractDrift({ serverId }: { serverId: string }) {
               </span>
               {ctxLastSeen && (
                 <span className="font-mono text-[11px] text-[var(--color-mute)]">most recent {ctxLastSeen}</span>
+              )}
+              {/* The tool block above carries this badge; without it here a safety-relevant
+                  instructions change renders as the quieter of the two, which is backwards -
+                  injected context is the surface no tool-level gate covers. */}
+              {drift.contextSafetyRelevant && (
+                <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] px-2 py-0.5 border border-[var(--color-cite)] text-[var(--color-cite)]">
+                  safety-relevant diff
+                </span>
               )}
             </div>
             {ctxKinds.length > 0 && (

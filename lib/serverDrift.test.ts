@@ -114,3 +114,81 @@ test('context-only drift: changes 0 with contextChanges > 0 (the zero-state must
   assert.equal(out.changes, 0);
   assert.equal(out.contextChanges, 1);
 });
+
+// ---- absence is not zero (2026-08-24) ----
+// Three fields of the API said "0 / false / clean" where the honest answer was "we cannot tell".
+// Each of these pins one of them, because each was reproducible against the live endpoint.
+
+function cx(over: Partial<ContextEvent>): ContextEvent {
+  return {
+    server_fp: FP_A,
+    sources: 1,
+    safety_relevant: false,
+    last_seen: '2026-06-10T04:00:00Z',
+    change_kinds: ['instructions-changed'],
+    ...over,
+  };
+}
+
+test('known: an unrecognised name is not reported as clean', () => {
+  // `?server=test` returned changes:0 / contextChanges:0 - byte-identical to a clean server.
+  const unknown = aggregateServerDrift([], FP_A, '', [], false);
+  const clean = aggregateServerDrift([], FP_A, '', [], true);
+  assert.equal(unknown.changes, 0);
+  assert.equal(clean.changes, 0);
+  assert.notEqual(unknown.known, clean.known, 'the zeros must be distinguishable');
+  assert.equal(unknown.known, false);
+});
+
+test('known defaults FALSE, so an unwired caller cannot assert knowledge it lacks', () => {
+  assert.equal(aggregateServerDrift([], FP_A, '').known, false);
+});
+
+test('contextSafetyRelevant is separate from the tool-only safetyRelevant flag', () => {
+  // Live 2026-08-24: ai.mcpanalytics/analytics returned safetyRelevant:false while carrying a
+  // safety-relevant instructions-added. Reading the flag next to contextChanges gave a false
+  // all-clear on the one surface no tool gate covers.
+  const out = aggregateServerDrift(
+    [ev({ safety_relevant: false, change_kinds: ['added-optional-param'] })],
+    FP_A,
+    '',
+    [cx({ safety_relevant: true, change_kinds: ['instructions-added'] })],
+    true,
+  );
+  assert.equal(out.safetyRelevant, false, 'tool plane is genuinely quiet');
+  assert.equal(out.contextSafetyRelevant, true, 'context plane is not');
+});
+
+test('contextSafetyRelevant ignores OTHER servers context events', () => {
+  const out = aggregateServerDrift([], FP_A, '', [cx({ server_fp: FP_B, safety_relevant: true })], true);
+  assert.equal(out.contextChanges, 0);
+  assert.equal(out.contextSafetyRelevant, false);
+});
+
+test('versionEvidence: an ungated blob reports unavailable, not three honest-looking zeros', () => {
+  // version_delta is emitted only behind a two-key ratification gate. Measured 2026-08-24: absent
+  // on all 13,862 live events, so every server returned 0/0/0 with no way to know why.
+  const out = aggregateServerDrift([ev({}), ev({ tool_fp: '9'.repeat(32) })], FP_A, '', [], true);
+  assert.equal(out.versionEvidence, 'unavailable');
+  assert.equal(out.versionSameCount + out.versionChangedCount + out.versionUndeclaredCount, 0);
+});
+
+test('versionEvidence is a property of the BLOB, so a clean server still reports recorded', () => {
+  // Keyed on this server's own events it would read 'unavailable' for every quiet server even
+  // with the frame on, which is the same conflation one level down.
+  const out = aggregateServerDrift(
+    [ev({ server_fp: FP_B, version_delta: 'changed' })],
+    FP_A,
+    '',
+    [],
+    true,
+  );
+  assert.equal(out.changes, 0, 'this server has no events');
+  assert.equal(out.versionEvidence, 'recorded', 'but the frame is emitting');
+});
+
+test('versionEvidence: not-recorded is a VALUE, and still counts as the frame being on', () => {
+  const out = aggregateServerDrift([ev({ version_delta: 'not-recorded' })], FP_A, '', [], true);
+  assert.equal(out.versionEvidence, 'recorded');
+  assert.equal(out.versionSameCount + out.versionChangedCount + out.versionUndeclaredCount, 0);
+});
