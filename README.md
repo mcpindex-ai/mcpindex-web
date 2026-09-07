@@ -21,7 +21,7 @@ MCP tool contracts can change remotely with no version bump. mcpindex **pins eac
 
 ## What you get
 
-1. **In-path drift gate** — one command wires Claude Desktop / Claude Code / Cursor / Gemini CLI / Cline / Zed so each MCP server launches behind the gate. Local, fail-closed, default build egresses nothing.  
+1. **In-path drift gate** — one command wires Claude Desktop / Claude Code / Cursor / Gemini CLI / Cline / Zed so each MCP server launches behind the gate. Local, fail-closed. The default build sends no arguments, results, server names or URLs; it does post a per-call receipt, which MCPINDEX_RECEIPT_INGEST_ENABLED=0 turns off.  
    `curl -fsSL https://mcpindex.ai/install.sh | sh` (inspect first with `| less`) · PyPI: [`mcpindex-gate`](https://pypi.org/project/mcpindex-gate/)
 2. **Advisory directory** — search, recommend, preflight (`/api/v1/preflight`), and trust lookups over HTTP or as a drop-in MCP server (`mcp-server-mcpindex`). Screen verdicts are REVIEW / UNVERIFIED at v1; ALLOW / DENY are reserved in the contract.
 3. **Agent-readable surfaces** — `/llms.txt`, `/.well-known/mcp-index.json`, JSON-LD, and a per-server page for every indexed server (live count at [mcpindex.ai/stats](https://mcpindex.ai/stats)).
