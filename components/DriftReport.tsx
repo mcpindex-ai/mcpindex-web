@@ -30,8 +30,9 @@ export function DriftReport({ ledger }: { ledger: Ledger }) {
             with their declared version unchanged, where version evidence exists.
           </>
         )}
-        Most drift is harmless: {benignOnly.toLocaleString()} tools changed nothing but an added
-        optional parameter, and a gate should proceed silently on those. Not crying wolf on benign change is the point. Here are the
+        A quarter of drift is nothing but an added optional parameter:{' '}
+        {benignOnly.toLocaleString()} tools changed nothing else, and a gate should proceed
+        silently on those. Not crying wolf on benign change is the point. Here are the
         ones that would actually surprise an agent mid-session.
       </p>
 
