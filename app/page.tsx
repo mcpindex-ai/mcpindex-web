@@ -103,13 +103,13 @@ export default async function Home() {
         // npm, a different package; stamping it here asserted the wrong licence for the thing
         // a reader actually installs.
         // codeRepository is deliberately ABSENT: the gate's source is not public, and pointing
-        // it at the website repo asserted an open-source gate that PolyForm-Noncommercial denies.
+        // it at the website repo asserted a public source the gate does not have.
         '@type': 'SoftwareSourceCode',
         name: 'mcpindex drift gate',
         description:
           'An in-path trust gate that pins the contract of every tool you wire through it and HOLDs a call the moment that contract silently changes, and grades the blast radius of every call it sees (read, write, delete, send; reversible or not) before your agent acts. Deterministic and advisory - a contract-diff and a blast-radius label, not a safety verdict.',
         url: 'https://mcpindex.ai',
-        runtimePlatform: 'Node.js',
+        runtimePlatform: 'Python',
         isAccessibleForFree: true,
         license: 'https://opensource.org/licenses/MIT',
         author: { '@id': 'https://mcpindex.ai/#org' },

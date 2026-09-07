@@ -40,7 +40,7 @@ const JSON_LD = {
       '@type': 'SoftwareSourceCode',
       name: 'mcpindex gate',
       url: 'https://mcpindex.ai/install',
-      runtimePlatform: 'Node.js',
+      runtimePlatform: 'Python',
       isAccessibleForFree: true,
       license: 'https://opensource.org/licenses/MIT',
       description:
