@@ -195,6 +195,36 @@ export default function PrivacyPage() {
           because we do not use advertising trackers.
         </p>
         <p>
+          <strong>If you operate a server we list.</strong> Everything above is about data
+          from the person running the gate. This paragraph is about you. We read the public
+          MCP registry, and for each listed server that answers over HTTP we fetch its
+          declared tool list and snapshot the contracts: tool names, descriptions, input and
+          output schemas, annotations. We do this daily, and a server can be re-read out of
+          band when something reports a change on one of its tools, at most once an hour per
+          flagged tool. We never call a tool and we send no arguments. Only declarations.
+        </p>
+        <p>
+          Your server appears on the public ledger under a fingerprint of its registry name.
+          That is a key and not anonymity: the salt is a public constant that ships in our
+          client and the registry it covers is public, so the mapping is recoverable by
+          anyone who wants it. We publish no fingerprint-to-name list and no worst-offenders
+          ranking. The per-server drift endpoint answers by registry name. There is no
+          working opt-out flag on this path today: the flag exists in one crawler and the
+          crawl that feeds the public ledger does not read it. We would rather write that
+          down than let the flag imply a control it does not provide.
+        </p>
+        <p>
+          Delist policy: we do not have one written down yet. That is a real gap and not a
+          hedge, and it is being decided. Until it is, email us about a listed server and we
+          will answer individually. Email{' '}
+          <ObfuscatedEmail
+            user="hello"
+            domain="mcpindex.ai"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+          />{' '}
+          about a listed server.
+        </p>
+        <p>
           GDPR / CCPA: email{' '}
           <ObfuscatedEmail
             user="hello"
