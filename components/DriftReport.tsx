@@ -59,8 +59,11 @@ export function DriftReport({ ledger }: { ledger: Ledger }) {
 
       <p className="mt-4 font-mono text-[11px] leading-[1.6] text-[var(--color-mute)] max-w-2xl">
         A contract diff, observed between snapshots. Not a safety verdict, not a claim any change is
-        malicious, and not prevention: the ledger observes, the gate holds. Every entry is a
-        fingerprint, never a named server. Numbers update daily and are self-verifiable at{' '}
+        malicious, and not prevention: the ledger observes, the gate holds. Every entry is keyed
+        by a fingerprint of the registry name. That is a key, not a disguise: the registry is
+        public and the fingerprint is derivable from it. What we do not publish is a
+        fingerprint-to-name mapping or a worst-offenders list. Numbers update daily and are
+        self-verifiable at{' '}
         <Link href="/api/v1/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
           /api/v1/ledger
         </Link>
