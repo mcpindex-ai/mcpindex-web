@@ -28,7 +28,7 @@ const EDGES: [string, string][] = [
   ],
   [
     'Tier-0 is live; tiers 1-3 are built but held off by default',
-    'What runs on Cursor today: the in-path stdio interceptor, the TOFU pin with cross-restart persistence, the deterministic ChangeKind diff, Monitor / Guard / Strict postures, and the marker scan for input and output schemas. Above tier-0 the ladder is built as in-path seams (a cloud tier-1 corpus lookup, a tier-2 LLM consult, a tier-3 behavioral verifier), but each is held off by default and requires explicit opt-in. The default build egresses nothing and stays fail-closed.',
+    'What runs on Cursor today: the in-path stdio interceptor, the TOFU pin with cross-restart persistence, the deterministic ChangeKind diff, Monitor / Guard / Strict postures, and the marker scan for input and output schemas. Above tier-0 the ladder is built as in-path seams (a cloud tier-1 corpus lookup, a tier-2 LLM consult, a tier-3 behavioral verifier), but each is held off by default and requires explicit opt-in. The default build stays fail-closed and posts a per-call receipt you can turn off.',
   ],
   [
     'The behavioral tier clears or refutes - it never proves safe',
