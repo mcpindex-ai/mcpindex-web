@@ -8,7 +8,7 @@ import { buildDigest } from '@/lib/driftDigest';
 
 export function DriftReport({ ledger }: { ledger: Ledger }) {
   const { stat, events } = ledger;
-  const { standouts, benign } = buildDigest(events);
+  const { standouts, benignOnly } = buildDigest(events);
   const asOf = ledger.generated_at?.slice(0, 10) || '';
 
   return (
@@ -30,8 +30,8 @@ export function DriftReport({ ledger }: { ledger: Ledger }) {
             with their declared version unchanged, where version evidence exists.
           </>
         )}
-        Most drift is harmless: {benign.toLocaleString()} just added an optional parameter, and a gate
-        should proceed silently on those. Not crying wolf on benign change is the point. Here are the
+        Most drift is harmless: {benignOnly.toLocaleString()} tools changed nothing but an added
+        optional parameter, and a gate should proceed silently on those. Not crying wolf on benign change is the point. Here are the
         ones that would actually surprise an agent mid-session.
       </p>
 

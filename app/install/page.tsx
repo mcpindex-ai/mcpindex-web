@@ -40,9 +40,9 @@ const JSON_LD = {
       '@type': 'SoftwareSourceCode',
       name: 'mcpindex gate',
       url: 'https://mcpindex.ai/install',
-      codeRepository: 'https://github.com/mcpindex-ai/mcpindex-web',
       runtimePlatform: 'Node.js',
       isAccessibleForFree: true,
+      license: 'https://polyformproject.org/licenses/noncommercial/1.0.0/',
       description:
         'An in-path gate that runs a deterministic contract-diff on every MCP tool call and flags changes since you last approved a server. It reports changes; it is not a safety verdict.',
     },

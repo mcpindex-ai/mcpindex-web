@@ -16,7 +16,11 @@ test('buildDigest aggregates ChangeKinds into priority-ordered standouts + benig
     ev(['output-schema-changed']),
     ev(['removed-param']),
   ]);
-  assert.equal(d.benign, 2); // two added-optional-param
+  assert.equal(d.benign, 2); // two added-optional-param OCCURRENCES
+  // ...but only one of those tools changed nothing else. Site copy that says "changed
+  // nothing but an added optional parameter" must use benignOnly, or it is false for
+  // every tool in the overlap (2,412 of 7,501 on the live corpus, 2026-09-07).
+  assert.equal(d.benignOnly, 1);
   assert.equal(d.standouts[0].kind, 'annotation-flip-to-destructive'); // most-alarming first
   assert.equal(d.standouts[0].count, 2);
   assert.equal(d.standouts.find((s) => s.kind === 'added-required-param')?.count, 1);

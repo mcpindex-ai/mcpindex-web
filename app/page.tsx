@@ -97,15 +97,17 @@ export default async function Home() {
         // The gate is free, source-available software distributed as a package. Typed as
         // SoftwareSourceCode (not SoftwareApplication) so it stays out of Google's app
         // rich-result program, which requires a user rating we cannot honestly supply.
-        // codeRepository/isAccessibleForFree carry the "free, installable" signal to LLMs.
+        // isAccessibleForFree + license carry the "free for noncommercial use" signal.
+        // codeRepository is deliberately ABSENT: the gate's source is not public, and pointing
+        // it at the website repo asserted an open-source gate that PolyForm-Noncommercial denies.
         '@type': 'SoftwareSourceCode',
         name: 'mcpindex drift gate',
         description:
           'An in-path trust gate that pins the contract of every tool you wire through it and HOLDs a call the moment that contract silently changes, and grades the blast radius of every call it sees (read, write, delete, send; reversible or not) before your agent acts. Deterministic and advisory - a contract-diff and a blast-radius label, not a safety verdict.',
         url: 'https://mcpindex.ai',
-        codeRepository: 'https://github.com/mcpindex-ai/mcpindex-web',
         runtimePlatform: 'Node.js',
         isAccessibleForFree: true,
+        license: 'https://polyformproject.org/licenses/noncommercial/1.0.0/',
         author: { '@id': 'https://mcpindex.ai/#org' },
       },
       {

@@ -24,7 +24,14 @@ const CHANGEKIND_COPY: ReadonlyArray<readonly [string, string]> = [
 
 export interface DriftDigest {
   readonly standouts: readonly DriftStandout[];
-  readonly benign: number; // added-optional-param: the no-false-alarm control
+  readonly benign: number; // added-optional-param occurrences (OVERLAPS safety-relevant)
+  /** Tools whose ONLY change kind was added-optional-param.
+   *
+   * `benign` counts every tool carrying that kind, and change kinds are multi-label, so a
+   * tool that also flipped an annotation is in both `benign` and `safety_relevant`. Saying
+   * "N just added an optional parameter" off `benign` is therefore false for the overlap
+   * (2,412 of 7,501 on the 2026-09-07 pull). Copy that claims "nothing but" must use this. */
+  readonly benignOnly: number;
 }
 
 /** Aggregate ChangeKinds across events into the digest. Total, deterministic. */
@@ -38,5 +45,9 @@ export function buildDigest(events: readonly LedgerEvent[]): DriftDigest {
     const count = counts.get(kind) ?? 0;
     if (count > 0) standouts.push({ kind, count, label });
   }
-  return { standouts, benign: counts.get('added-optional-param') ?? 0 };
+  let benignOnly = 0;
+  for (const e of events) {
+    if (e.change_kinds.length === 1 && e.change_kinds[0] === 'added-optional-param') benignOnly += 1;
+  }
+  return { standouts, benign: counts.get('added-optional-param') ?? 0, benignOnly };
 }
