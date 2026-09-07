@@ -62,7 +62,8 @@ export function DriftReport({ ledger }: { ledger: Ledger }) {
         malicious, and not prevention: the ledger observes, the gate holds. Every entry is keyed
         by a fingerprint of the registry name. That is a key, not a disguise: the registry is
         public and the fingerprint is derivable from it. What we do not publish is a
-        fingerprint-to-name mapping or a worst-offenders list. Numbers update daily and are
+        fingerprint-to-name mapping or a worst-offenders list. If this is your server, what we
+        read and what we hold is at <Link href="/privacy#operators" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">privacy</Link>. Numbers update daily and are
         self-verifiable at{' '}
         <Link href="/api/v1/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
           /api/v1/ledger

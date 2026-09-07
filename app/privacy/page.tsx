@@ -142,8 +142,13 @@ export default function PrivacyPage() {
           <strong>on by default</strong>. After each gated tool call the gate emits a compact,
           credential-blind receipt. Here is the complete list of what a receipt contains: a
           random receipt id; the tool contract hash (a sha256 of the tool&rsquo;s public
-          contract); the gate verdict; a closed-vocabulary action classification (read / write
-          / execute class, resource kind, reversibility); a closed-vocabulary run context
+          contract, with no per-install salt, so for a tool on the public registry we can
+          match it to the declaration we already crawled: the receipt tells us which public
+          tools you gate, while a private server&rsquo;s tools stay unmatched); the gate verdict; a closed-vocabulary action classification (read / write
+          / execute class, resource kind, reversibility, an egress class, an autonomy ceiling
+          and a flag for whether that ceiling was derived statically or calibrated,
+          closed-vocabulary known-risk notes, and typed references to the evidence behind the
+          classification); a closed-vocabulary run context
           (autonomy level, task-intent class, a human-in-the-loop flag, framework name); a
           closed-vocabulary outcome (status, side-effect class, a reverted flag, a coarse
           latency bucket); a yes/no/unclear &ldquo;justified&rdquo; flag; and a timestamp
@@ -195,7 +200,7 @@ export default function PrivacyPage() {
           because we do not use advertising trackers.
         </p>
         <p>
-          <strong>If you operate a server we list.</strong> Everything above is about data
+          <strong id="operators">If you operate a server we list.</strong> Everything above is about data
           from the person running the gate. This paragraph is about you. We read the public
           MCP registry, and for each listed server that answers over HTTP we fetch its
           declared tool list and snapshot the contracts: tool names, descriptions, input and

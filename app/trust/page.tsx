@@ -243,8 +243,9 @@ export default function TrustPage() {
             <Link href="/privacy" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">privacy</Link>.
           </Edge>
           <Edge head="Sub-processors.">
-            None in the default local deployment - nothing leaves the host,
-            so there is nothing to sub-process. If you opt into the cloud tier-1
+            None. In the default local deployment the only thing that leaves is a
+            credential-blind per-call receipt to our own ingest, which is us and not a
+            sub-processor, and MCPINDEX_RECEIPT_INGEST_ENABLED=0 stops it. If you opt into the cloud tier-1
             lookup, the request lands on our US-region edge (Vercel) and no other
             sub-processor sees it. A current sub-processor list is available on
             request.

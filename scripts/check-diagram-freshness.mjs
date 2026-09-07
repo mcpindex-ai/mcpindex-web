@@ -153,10 +153,14 @@ const TRIPWIRES = {
       ? null
       : 'tiers 1-3 are no longer declared held-off in the machine descriptor. The tier-ladder figure still draws them dark: redraw it before shipping the capability.',
 
-  'default-build-egresses-nothing': () =>
-    wellKnown.includes("'default_build_egresses_nothing_fail_closed'")
+  // Re-keyed after the egress correction. The old wire read the retracted capability
+  // token, so removing that token fired the tripwire and blocked the build, which is
+  // exactly what it is for: the figure had not been redrawn. Pointing it at the token
+  // that now ships keeps the guard live instead of retiring it.
+  'default-build-receipt-only': () =>
+    wellKnown.includes("'default_build_sends_no_args_results_or_names_receipt_optional'")
       ? null
-      : 'the default build no longer declares zero egress. The trust-boundary figure still says nothing crosses by default: redraw it.',
+      : 'the machine descriptor no longer declares the receipt-only default. The trust-boundary figure draws a per-call receipt crossing by default: redraw it or restore the capability.',
 
   'd3-not-graduated': () => {
     const cur = Number((honestLimits.match(/D3_CONFORMING_LABELS = (\d+)/) ?? [])[1]);

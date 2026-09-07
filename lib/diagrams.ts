@@ -151,7 +151,7 @@ export const DIAGRAMS: readonly DiagramMeta[] = [
     fig: '01',
     title: 'Where the gate sits',
     claim: 'The gate is inside the call path, so a hold actually stops the call.',
-    alt: 'Without mcpindex an agent calls an MCP server directly with nothing in between. With mcpindex the gate sits in the call path: it pins the contract, diffs it, and either proceeds to the server when the live contract matches the pin, or holds the call and returns it to the agent when the contract has changed. The gate runs on your host, holds no credentials, and the default build egresses nothing.',
+    alt: 'Without mcpindex an agent calls an MCP server directly with nothing in between. With mcpindex the gate sits in the call path: it pins the contract, diffs it, and either proceeds to the server when the live contract matches the pin, or holds the call and returns it to the agent when the contract has changed. The gate runs on your host, holds no credentials, and the default build posts a per-call receipt, no args or results.',
     queries: ['mcp architecture diagram', 'how does mcp work diagram', 'mcp interceptor', 'in-path mcp gate'],
     placements: ['/', '/install', '/docs', '/diagrams/where-the-gate-sits'],
     derives: [],
@@ -197,12 +197,12 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
     id: 'trust-boundary',
     fig: '03',
     title: 'Trust boundary',
-    claim: 'By default, nothing crosses the boundary to mcpindex.',
-    alt: 'Inside your host sit the agent, the mcpindex gate and a local pin store. By default nothing crosses to mcpindex because the tier-0 contract diff runs locally. The tool call and your credentials pass through untouched to the MCP server and the gate holds no keys. Two optional opt-in crossings exist: a contract hash to the mcpindex US edge, and a salted HMAC fingerprint to the drift network. Tokens, arguments, schema bodies, descriptions, URLs, server names, tool names and your call data never cross.',
+    claim: 'By default one thing crosses: a credential-blind per-call receipt.',
+    alt: 'Inside your host sit the agent, the mcpindex gate and a local pin store. The tier-0 contract diff runs locally; by default the one thing that crosses to mcpindex is a credential-blind receipt per gated call, carrying a contract hash, a verdict, closed-vocabulary fields and an hour-rounded time, disabled with MCPINDEX_RECEIPT_INGEST_ENABLED=0. The tool call and your credentials pass through untouched to the MCP server and the gate holds no keys. Two optional opt-in crossings exist: a contract hash to the mcpindex US edge, and a salted HMAC fingerprint to the drift network. Tokens, arguments, schema bodies, descriptions, URLs, server names, tool names and your call data never cross.',
     queries: ['mcp security architecture', 'mcp trust boundary', 'does mcpindex phone home', 'mcp gate data flow'],
     placements: ['/trust', '/privacy', '/diagrams/trust-boundary'],
     derives: [],
-    tripwire: 'default-build-egresses-nothing',
+    tripwire: 'default-build-receipt-only',
     reviewed: REVIEWED,
     twin: `+- YOUR HOST ---------------------------------------+
 |                                                   |
@@ -210,9 +210,13 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
 |                                        local disk |
 +-----------+---------------------------+-----------+
             |                           |
-   DEFAULT  | nothing crosses to        | tools/call + your credentials
-            | mcpindex. the tier-0      +-------------> [ MCP server ]
-            | contract-diff runs here.  |  passed through untouched.
+   DEFAULT  | per-call receipt --------------------> [ mcpindex ingest ]
+            | contract hash, verdict, action class,
+            | hour-rounded time. off with
+            | MCPINDEX_RECEIPT_INGEST_ENABLED=0.
+            |                           | tools/call + your credentials
+            | the tier-0 contract-diff  +-------------> [ MCP server ]
+            | runs here, on your host.  |  passed through untouched.
             |                           |  the gate holds no keys.
     OPT-IN  | contract hash ------------------------> [ mcpindex edge - US ]
             | a deterministic hash of the public tool contract

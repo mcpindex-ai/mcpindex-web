@@ -24,7 +24,7 @@
     {
       "id": "read-event",
       "heading": "Read an event row",
-      "body": "Each row in the Events table is one observed contract change, and it is deliberately fingerprint-only:\n\n| Column | What it means |\n| --- | --- |\n| Tool fingerprint | A content hash of the tool, not its name |\n| Server fingerprint | A content hash of the server (a dash if none was recorded) |\n| Last seen | When the crawler last saw this contract |\n| What changed | The change kinds: a new required param, an annotation flip, a narrowed constraint |\n| Safety | Tagged when the change touched a safety-relevant field |\n\nmcpindex reports that a contract changed without publicly naming a specific server."
+      "body": "Each row in the Events table is one observed contract change, and it carries fingerprints rather than names:\n\n| Column | What it means |\n| --- | --- |\n| Tool fingerprint | A content hash of the tool, not its name |\n| Server fingerprint | A content hash of the server (a dash if none was recorded) |\n| Last seen | When the crawler last saw this contract |\n| What changed | The change kinds: a new required param, an annotation flip, a narrowed constraint |\n| Safety | Tagged when the change touched a safety-relevant field |\n\nThe table names no server. The fingerprint is a key rather than anonymity: it is an HMAC of the registry name under a public constant salt, over a public registry, so it is derivable. We publish no fingerprint-to-name list."
     },
     {
       "id": "safety",
@@ -64,7 +64,7 @@
   "faq": [
     {
       "q": "Does the mcpindex drift ledger name the servers that changed?",
-      "a": "No. Every event is fingerprint-only: a content hash of the tool and (when recorded) the server, never the name. mcpindex reports that a contract changed without publicly naming a specific server."
+      "a": "No. The ledger publishes no names, but the fingerprint is a key rather than anonymity. The server fingerprint is an HMAC of the registry name under a salt that is a public constant in the shipped client, over a registry that is public, so the mapping is recoverable by anyone who wants it. We publish no fingerprint-to-name list and no worst-offenders ranking, and the per-server drift endpoint answers by registry name."
     },
     {
       "q": "Is a safety-relevant change in the ledger a confirmed vulnerability?",
