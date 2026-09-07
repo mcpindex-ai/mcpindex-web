@@ -42,7 +42,7 @@ const JSON_LD = {
       url: 'https://mcpindex.ai/install',
       runtimePlatform: 'Node.js',
       isAccessibleForFree: true,
-      license: 'https://polyformproject.org/licenses/noncommercial/1.0.0/',
+      license: 'https://opensource.org/licenses/MIT',
       description:
         'An in-path gate that runs a deterministic contract-diff on every MCP tool call and flags changes since you last approved a server. It reports changes; it is not a safety verdict.',
     },

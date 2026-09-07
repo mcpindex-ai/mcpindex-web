@@ -97,7 +97,11 @@ export default async function Home() {
         // The gate is free, source-available software distributed as a package. Typed as
         // SoftwareSourceCode (not SoftwareApplication) so it stays out of Google's app
         // rich-result program, which requires a user rating we cannot honestly supply.
-        // isAccessibleForFree + license carry the "free for noncommercial use" signal.
+        // isAccessibleForFree + license carry the "free, MIT, installable" signal. This node
+        // is the GATE, which is mcpindex-gate on PyPI under MIT (packaging/gate/pyproject.toml)
+        // and is what /install installs. PolyForm-Noncommercial belongs to @mcp-index/sdk on
+        // npm, a different package; stamping it here asserted the wrong licence for the thing
+        // a reader actually installs.
         // codeRepository is deliberately ABSENT: the gate's source is not public, and pointing
         // it at the website repo asserted an open-source gate that PolyForm-Noncommercial denies.
         '@type': 'SoftwareSourceCode',
@@ -107,7 +111,7 @@ export default async function Home() {
         url: 'https://mcpindex.ai',
         runtimePlatform: 'Node.js',
         isAccessibleForFree: true,
-        license: 'https://polyformproject.org/licenses/noncommercial/1.0.0/',
+        license: 'https://opensource.org/licenses/MIT',
         author: { '@id': 'https://mcpindex.ai/#org' },
       },
       {
