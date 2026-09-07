@@ -166,7 +166,7 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
                                              the contract changed since you pinned it.
                                              the call never leaves your machine.
 
-               runs on your host - zero credential custody - default build egresses nothing`,
+               runs on your host - zero credential custody - posts a per-call receipt, no args or results`,
   },
   {
     id: 'silent-contract-drift-timeline',
@@ -245,7 +245,7 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
           ChangeKind taxonomy                                     fail-closed
           + marker scan
 
-  the default build is tier-0 only. it egresses nothing.
+  the default build is tier-0 only. a per-call receipt leaves; no args, results or server names.
   the behavioural tier clears or refutes. it never proves a tool safe.`,
   },
   {

@@ -8,8 +8,8 @@
   "project": "mcpindex",
   "updated": "2026-08-11",
   "est_minutes": 2,
-  "outcome": "Your install's private receipt log, decoded: which tool ran, the verdict, and the action on each row, with the guarantee that no arguments or content are ever stored.",
-  "body": "The gate keeps a running record of what it saw: one receipt per gated call, private to your install. It is credential-blind by design. Here is how to find it and read it.",
+  "outcome": "Your install's receipt log, decoded: which tool ran, the verdict, and the action on each row, with the guarantee that no arguments or content are ever stored.",
+  "body": "The gate keeps a running record of what it saw: one receipt per gated call, keyed to your install and posted to mcpindex.ai by default (MCPINDEX_RECEIPT_INGEST_ENABLED=0 stops that). It is credential-blind by design, and the install id is the only thing gating read access to the page, so treat the URL like a secret. Here is how to find it and read it.",
   "steps": [
     {
       "id": "find-id",

@@ -452,10 +452,12 @@ export default async function DriftReportPage() {
             above.
           </li>
           <li>
-            <strong className="text-[var(--color-ink)]">Anonymization:</strong> tools and
-            servers are salted fingerprints on every public surface of this dataset. This page
-            names no server; per-server context lives on the named server pages with their own
-            fairness labels.
+            <strong className="text-[var(--color-ink)]">Keying:</strong> tools and servers
+            appear as fingerprints of their registry identifiers on every public surface of
+            this dataset. That is a key, not anonymity: the registry is public and the salt
+            ships in the client, so the mapping is recoverable. This page names no server and
+            publishes no fingerprint-to-name mapping; per-server context lives on the named
+            server pages with their own fairness labels.
           </li>
         </ul>
         <p className="mt-4 text-[14px] leading-[1.55] text-[var(--color-cite)]">
