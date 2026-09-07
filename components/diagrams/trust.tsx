@@ -54,10 +54,10 @@ export function DTrustBoundary() {
         DEFAULT
       </M>
       <S x={64} y={252} size={12.5}>
-        nothing crosses to mcpindex. the tier-0
+        a credential-blind receipt per gated call.
       </S>
       <S x={64} y={269} size={12.5}>
-        contract-diff runs entirely in here.
+        the tier-0 contract-diff runs in here.
       </S>
 
       {/* the one crossing that always happens: the call itself, untouched */}
