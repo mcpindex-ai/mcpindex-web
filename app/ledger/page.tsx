@@ -183,8 +183,10 @@ export default async function LedgerPage() {
           Events
         </h2>
         <p className="mt-4 text-[14px] leading-[1.55] text-[var(--color-mute)]">
-          Tools and servers are shown as content fingerprints, not names: mcpindex reports that a
-          contract changed without publicly naming a specific server. A dash means no server
+          Tools and servers appear as fingerprints of their registry identifiers. The salt is a
+          public constant that ships in the client and the registry is public, so a fingerprint
+          is a stable key rather than anonymity. This page names no server and publishes no
+          fingerprint-to-name list or worst-offenders ranking. A dash means no server
           fingerprint was recorded.
         </p>
         {events.length === 0 ? (

@@ -74,7 +74,9 @@ export default function PrivacyPage() {
           makes a read-only query to <span className="inline-code">/api/v1/drift/any</span> to ask
           whether a tool&rsquo;s contract already drifted, so it can warn you on the first call;
           that query sends only a salted fingerprint. It <strong>never</strong> sends tool schemas,
-          arguments, descriptions, URLs, or server/tool names. There are three on settings, each
+          arguments, descriptions, URLs, or server/tool names. The fingerprint is a stable key,
+          not anonymity: the salt is a public constant in the shipped client and the registry it
+          covers is public, so a fingerprint of a registry name is derivable by anyone. There are three on settings, each
           a superset of the one before: <span className="inline-code">lookup</span> is{' '}
           <strong>read-only</strong> - it makes the{' '}
           <span className="inline-code">/api/v1/drift/any</span> query above and reports{' '}
