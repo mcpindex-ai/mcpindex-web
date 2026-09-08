@@ -139,13 +139,39 @@ export type PostureOutcome = 'PROCEED' | 'PROCEED_NOTIFY' | 'INCONCLUSIVE' | 'HO
  * (it lacks param-mirrored-to-header and the server-scoped context kinds, which the gate
  * does not detect), and guard ALSO blocks on reason markers - a risk escalation, an
  * injection/exfil marker, a description change, a fail-closed error - which are not
- * ChangeKinds. The observed HOLD behaviour for every surfaced row is what the parity
- * test pins (clients/ts crossLangParity drives PMH under guard).
+ * ChangeKinds.
+ *
+ * Corrected 2026-09-07 by driving the gate again. This function returned HOLD for every
+ * safety-relevant kind under guard, including param-mirrored-to-header, and the sentence
+ * above already said the guard set lacks that kind. Observed for a pinned `api_key` that
+ * gains `x-mcp-header`:
+ *   guard   -> static HOLD, effective PROCEED, "notify-only (guard)"
+ *   strict  -> HOLD
+ *   monitor -> PROCEED, notify-only
+ * Three campaign surfaces concede exactly that gap ("my ledger flags it and my gate only
+ * notifies"), so a reader who checked the concession found this page disagreeing with the
+ * founder about his own product.
  */
+export const GUARD_DANGEROUS_CHANGE_KINDS: ReadonlySet<string> = new Set([
+  'annotation-flip-to-destructive',
+  'added-required-param',
+  'required-set-expanded',
+  'removed-param',
+  'type-changed',
+  'enum-values-removed',
+  'constraint-narrowed',
+  'tool-removed',
+  'output-schema-changed',
+  'deep-schema-undiffable',
+]);
+
 export function postureOutcome(kind: string, posture: Posture): PostureOutcome {
   if (BENIGN_AUTOACCEPT_CHANGE_KINDS.has(kind)) return 'PROCEED';
   if (posture === 'monitor') return 'PROCEED_NOTIFY';
   if (BEHAVIORAL_MANDATED_CHANGE_KINDS.has(kind)) return 'INCONCLUSIVE';
+  // Guard blocks the unambiguously dangerous and notifies on the rest. Strict holds
+  // anything it cannot prove benign.
+  if (posture === 'guard' && !GUARD_DANGEROUS_CHANGE_KINDS.has(kind)) return 'PROCEED_NOTIFY';
   return 'HOLD';
 }
 

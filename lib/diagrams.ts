@@ -152,7 +152,7 @@ export const DIAGRAMS: readonly DiagramMeta[] = [
     fig: '01',
     title: 'Where the gate sits',
     claim: 'The gate is inside the call path, so a hold actually stops the call.',
-    alt: 'Without mcpindex an agent calls an MCP server directly with nothing in between. With mcpindex the gate sits in the call path: it pins the contract, diffs it, and either proceeds to the server when the live contract matches the pin, or holds the call and returns it to the agent when the contract has changed. The gate runs on your host, holds no credentials, and the default build posts a per-call receipt, no args or results.',
+    alt: 'Without mcpindex an agent calls an MCP server directly with nothing in between. With mcpindex the gate sits in the call path: it pins the contract, diffs it, and either proceeds to the server when the live contract matches the pin, or holds the call and returns it to the agent when the contract has changed. The gate runs on your host and holds no credentials. The wired proxy posts nothing; the SDK wrapper posts a credential-blind per-call receipt by default, with no arguments or results.',
     queries: ['mcp architecture diagram', 'how does mcp work diagram', 'mcp interceptor', 'in-path mcp gate'],
     placements: ['/', '/install', '/docs', '/diagrams/where-the-gate-sits'],
     derives: [],
@@ -167,7 +167,8 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
                                              the contract changed since you pinned it.
                                              the call never leaves your machine.
 
-               runs on your host - zero credential custody - posts a per-call receipt, no args or results`,
+               runs on your host - zero credential custody
+               wired proxy sends nothing - SDK wrapper posts a receipt, no args or results`,
   },
   {
     id: 'silent-contract-drift-timeline',
@@ -307,7 +308,7 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
     fig: '07',
     title: 'Posture and ChangeKind',
     claim: 'The gate reads a fixed table, not a judgement call - and strict does not hold every drift.',
-    alt: 'A matrix of the thirteen surfaced ChangeKinds against the three postures, generated from the gate source. Monitor releases every drift hold: every kind returns proceed-with-note, though a tamper hold and an internal error still stop the call. Guard, the default, holds the nine kinds that carry the safety bit, resolves annotation-flip-to-destructive and output-schema-changed to inconclusive because behaviour is the gate rather than a block, and lets the two provably benign kinds proceed. Strict matches guard except that it also holds the inconclusive pair; it does not hold every drift, because the benign auto-accept runs before the posture layer and re-pins a proven-benign change. An injection or exfiltration marker is a separate scan rather than a ChangeKind, so it is not a row, though guard blocks on it.',
+    alt: 'A matrix of the thirteen surfaced ChangeKinds against the three postures, generated from the gate source. Monitor releases every drift hold: every kind returns proceed-with-note, though a tamper hold and an internal error still stop the call. Guard, the default, holds the ten kinds in the guard-dangerous set, resolves annotation-flip-to-destructive and output-schema-changed to inconclusive because behaviour is the gate rather than a block, lets the two provably benign kinds proceed, and returns proceed-with-note on a safety-relevant kind outside that set, which is where param-mirrored-to-header lands. Strict matches guard except that it also holds the inconclusive pair; it does not hold every drift, because the benign auto-accept runs before the posture layer and re-pins a proven-benign change. An injection or exfiltration marker is a separate scan rather than a ChangeKind, so it is not a row, though guard blocks on it.',
     queries: ['mcp changekind taxonomy', 'mcpindex postures', 'monitor guard strict mcp', 'mcp contract diff kinds'],
     placements: ['/guides/tune-postures', '/methodology', '/diagrams/posture-matrix'],
     derives: [

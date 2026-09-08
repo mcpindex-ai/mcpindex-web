@@ -100,4 +100,4 @@ remove_tool() {
 if [ "$PLATFORM" = "macos" ]; then remove_watcher_macos; else remove_watcher_linux; fi
 unwire_hosts
 remove_tool
-say "done. mcpindex is uninstalled; your host configs were un-wired in place."
+say "done. host configs un-wired, watcher removed. Your local state stays at ~/.mcpindex (pins, consent, install id); delete it if you want the install id gone too - a reinstall reuses it."

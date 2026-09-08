@@ -18,6 +18,7 @@ import {
   SAFETY_RELEVANT_CHANGE_KINDS,
   BENIGN_AUTOACCEPT_CHANGE_KINDS,
   BEHAVIORAL_MANDATED_CHANGE_KINDS,
+  GUARD_DANGEROUS_CHANGE_KINDS,
 } from './changeKinds';
 
 test('every figure carries the four artifacts that make it legible to a model', () => {
@@ -96,13 +97,26 @@ test('behaviour-mandated kinds resolve to INCONCLUSIVE, never a flat HOLD', () =
   }
 });
 
-test('every other safety-relevant kind HOLDs under guard and strict', () => {
+// Corrected 2026-09-07. This asserted that guard HOLDs every safety-relevant kind, which
+// is what postureOutcome returned and what the figure rendered, and it is not what the
+// shipped gate does. Driving it on a pinned api_key that gains x-mcp-header gives guard
+// PROCEED with "notify-only (guard)". gate.py's _GUARD_DANGEROUS_KINDS is a smaller set
+// than the safety-relevant one, and three campaign surfaces concede exactly that gap.
+test('guard holds the dangerous kinds and notifies on the rest; strict holds both', () => {
   for (const r of POSTURE_ROWS) {
     if (BENIGN_AUTOACCEPT_CHANGE_KINDS.has(r.kind)) continue;
     if (BEHAVIORAL_MANDATED_CHANGE_KINDS.has(r.kind)) continue;
-    assert.equal(r.guard, 'HOLD', `${r.kind}: carries the safety bit, guard must hold`);
+    const expected = GUARD_DANGEROUS_CHANGE_KINDS.has(r.kind) ? 'HOLD' : 'PROCEED_NOTIFY';
+    assert.equal(r.guard, expected, `${r.kind}: guard must ${expected}`);
     assert.equal(r.strict, 'HOLD', `${r.kind}: strict must hold what it cannot prove benign`);
   }
+});
+
+test('param-mirrored-to-header notifies under guard, matching the campaign concession', () => {
+  const row = POSTURE_ROWS.find((r) => r.kind === 'param-mirrored-to-header');
+  assert.ok(row, 'the header-mirror row must be on the matrix');
+  assert.equal(row.guard, 'PROCEED_NOTIFY');
+  assert.equal(row.strict, 'HOLD');
 });
 
 test('rows sort blocking first, benign last, so the figure reads by severity', () => {

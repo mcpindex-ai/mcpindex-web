@@ -218,7 +218,7 @@ export default async function Home() {
                 label="Install the mcpindex gate (one command)"
                 value={INSTALL_SHELL_COMMAND}
                 trackSource="homepage_hero"
-                notes="No pipe-to-shell: installs the PyPI package, then runs the wiring wizard. Script alternative: curl -fsSL https://mcpindex.ai/install.sh | sh (read it first with | less). Restarts your host after wiring."
+                notes="No pipe-to-shell: installs the PyPI package, then runs the wiring wizard, and leaves nothing resident. Script alternative: curl -fsSL https://mcpindex.ai/install.sh | sh (read it first with | less) - it also bootstraps uv and registers a background watcher as a login item that wires newly added servers, with no flag to skip it. Restarts your host after wiring."
               />
             </div>
             <p className="mt-3 font-mono text-[12px] leading-[1.5] text-[var(--color-mute)]">

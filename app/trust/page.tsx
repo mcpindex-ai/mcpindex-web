@@ -264,8 +264,13 @@ export default function TrustPage() {
             <code className="font-mono">install.ps1</code> installer and the
             published wheel ship with a SHA-256 you can verify before you run them,
             and the installer is auditable by piping it to{' '}
-            <code className="font-mono">less</code> first. A signed single-binary
-            (SLSA provenance) is on the roadmap; until then, pin the checksum.
+            <code className="font-mono">less</code> first. Read it before you run it:
+            besides installing and wiring, it bootstraps uv from astral.sh if uv is
+            missing and registers a background watcher as a login item that wires newly
+            added MCP servers, with no flag to skip it. The{' '}
+            <code className="font-mono">uv tool install</code> path does neither. A signed
+            single-binary (SLSA provenance) is on the roadmap; until then, pin the
+            checksum.
           </Edge>
           <Edge head="Threats addressed.">
             Silent contract drift (a tool changing its contract after you pinned

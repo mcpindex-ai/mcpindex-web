@@ -22,7 +22,7 @@ export default function PrivacyPage() {
         Privacy.
       </h1>
       <p className="mt-2 font-mono text-[11.5px] text-[var(--color-mute)]">
-        Last updated: 2026-08-12
+        Last updated: 2026-09-07
       </p>
 
       <div className="mt-10 space-y-6 text-[14.5px] leading-[1.65] text-[var(--color-cite)]">

@@ -18,8 +18,13 @@
     {
       "id": "install",
       "heading": "Install the gate",
-      "body": "Run this in your terminal. It installs the gate binary and rewrites each MCP host's config so that host's servers launch behind the gate. Free, no account, runs locally. Want to see it before it writes? Run mcpindex-config-wire plan first: it lists every host and entry it would rewrite and changes nothing.",
+      "body": "Run this in your terminal. It needs uv already installed (`brew install uv`, or see astral.sh). It installs the gate binary and rewrites each MCP host's config so that host's servers launch behind the gate. Free, no account, runs locally.\n\nOne limit to know before you run it: the wiring rewrites stdio entries. A server your host reaches over a url is left exactly as it was and shows up as skipped_http in the summary line. Covering those needs the http gateway, which is not wired by this command.\n\nWant to see it before it writes? Run mcpindex-config-wire plan first: it lists every host and entry it would rewrite and changes nothing.",
       "embed": "install-command"
+    },
+    {
+      "id": "resident",
+      "heading": "What stays resident, and what does not",
+      "body": "The uv command above installs a binary and rewrites config files. Nothing keeps running afterwards.\n\nThe one-script install (`curl -fsSL https://mcpindex.ai/install.sh | sh`) does more. It bootstraps uv from astral.sh if uv is missing, and it registers a background watcher as a login item (a launchd agent on macOS, a systemd user unit on Linux) that wires any MCP server you add later without asking again. It runs whether or not you accepted the wiring, and there is no flag to skip it.\n\nIf you would rather nothing stayed resident, use the uv command. To remove a watcher you already installed: `curl -fsSL https://mcpindex.ai/uninstall.sh | sh`."
     },
     {
       "id": "wired",
@@ -31,12 +36,12 @@
       "id": "restart",
       "heading": "Restart your host",
       "body": "Quit and reopen the host you use (Claude Desktop, Cursor, and so on) so it reloads the gated config. Nothing changes about how you call your tools. The gate sits in the path and stays quiet until a contract drifts.",
-      "troubleshoot": "If tools stop appearing after the restart, run `mcpindex-config-wire status` to check the wiring, or `mcpindex-config-wire unwire` to restore every host config. `uninstall.sh` is not written to your machine by either install path; if you used the install script, run `curl -fsSL https://mcpindex.ai/uninstall.sh | sh`, which also removes the watcher unit it registered."
+      "troubleshoot": "If tools stop appearing after the restart, run `mcpindex-config-wire status` to check the wiring, or `mcpindex-config-wire unwire` to restore every host config. `uninstall.sh` is not written to your machine by either install path; if you used the install script, run `curl -fsSL https://mcpindex.ai/uninstall.sh | sh`, which also removes the watcher unit it registered. Neither path deletes ~/.mcpindex: your pins, your consent answer and your install id stay on disk, and a reinstall reuses the same install id. Remove that directory if you want the id gone too."
     },
     {
       "id": "watch",
       "heading": "Watch a contract change get held",
-      "body": "Now the part that matters. Pin a tool's contract, apply a change, and watch what the gate does. This runs the real diff logic in your browser (the same mapping the installed gate uses), so there is nothing to fake. Try a breaking change and a benign one:",
+      "body": "Now the part that matters. Pin a tool's contract, apply a change, and watch what the gate does. This is the gate's verdict for five real contract changes, with the posture layer running live in your browser. The verdicts come from the gate's own scenario suite; the diff itself runs on your machine, not here. Try a breaking change and a benign one:",
       "embed": "drift-gate-demo"
     },
     {
@@ -64,7 +69,7 @@
     {
       "id": "monitor",
       "heading": "Run it log-only for a week before it blocks anything",
-      "body": "The wire command has no posture flag of its own yet. Pass the posture through the proxy command instead, and keep the --from pin the default gives you:\\n\\nmcpindex-config-wire wire --repin --proxy-cmd \"uvx --from mcpindex-gate==0.14.0 mcpindex-proxy --posture monitor\"\\n\\n0.14.0 is what PyPI serves today. Pin whatever is current when you run it. Monitor downgrades every drift hold to a note and lets the call through, and the flag survives a later re-wire. Two things still stop a call in monitor: an unreadable pin store, and a bug in the gate's own code. Both fail closed on purpose and neither is settable by posture."
+      "body": "The wire command has no posture flag of its own yet. Pass the posture through the proxy command instead, and keep the --from pin the default gives you:\\n\\nmcpindex-config-wire wire --repin --proxy-cmd \"uvx --from mcpindex-gate mcpindex-proxy --posture monitor\"\\n\\nAdd ==<version> if you want the pin the default gives you; mcpindex-config-wire status prints the version it wired. Monitor downgrades every drift hold to a note and lets the call through, and the flag survives a later re-wire. Two things still stop a call in monitor: an unreadable pin store, and a bug in the gate's own code. Both fail closed on purpose and neither is settable by posture."
     }
   ],
   "next": {
