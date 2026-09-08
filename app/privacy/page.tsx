@@ -61,6 +61,10 @@ export default function PrivacyPage() {
           <span className="inline-code">mcpindex-gate</span> clients): <strong>off by
           default</strong>. The SDK sends <strong>nothing</strong> unless you set{' '}
           <span className="inline-code">MCPINDEX_DRIFT_TELEMETRY</span> to one of the three on
+                    The wiring command also asks once, on a terminal, and records your answer in{' '}
+          <span className="inline-code">~/.mcpindex/consent.json</span>. Answering anything
+          other than y or yes leaves it off, and the one-script install does not ask at
+          all.{' '}
           settings below - and note that all three, <em>including</em>{' '}
           <span className="inline-code">lookup</span>, send at least a fingerprint. When
           set to <span className="inline-code">detection</span>,

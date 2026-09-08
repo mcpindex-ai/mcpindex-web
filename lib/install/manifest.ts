@@ -191,7 +191,7 @@ export function gateInstallLine({ code = false }: { code?: boolean } = {}): stri
   const cmd = (s: string) => (code ? `\`${s}\`` : s);
   return (
     `Install: one-click config-wire across ${GATE_WIRING_HOSTS.join(' / ')} via ${cmd(UV_INSTALL_WIRED)} or ${cmd(CURL_INSTALL)} ` +
-    `(rewrites the host config to route each server through the gate; zero credentials change hands), ` +
+    `(rewrites the host config to route each server through the gate; no credentials are sent anywhere), ` +
     `or the SDK wrap() one-liner (TS + Python) around an already-authenticated session. ` +
     `Legacy ${cmd(LEGACY_EOL_PACKAGE)} is EOL (frozen 0.7.0); install ${cmd(PACKAGES.gateBinary)}, not preflight. See /docs.`
   );

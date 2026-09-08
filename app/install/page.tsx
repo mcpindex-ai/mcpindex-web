@@ -121,7 +121,7 @@ export default function InstallPage() {
         <section className="mt-14 rule-t pt-8">
           <div className={`${KICKER} mb-2`}>1 · Install the gate</div>
           <p className="text-[15px] leading-[1.65] text-[var(--color-cite)] mb-5">
-            The one-liner installs the gate and wires your MCP hosts to route tool calls through it. Prefer to
+            The one-liner installs the gate and wires your MCP hosts to route tool calls through it. It wires stdio entries; a server your host reaches over a url is left as it was and counted in skipped_http. Prefer to
             install the binary yourself? Use uv or pip below.
           </p>
 

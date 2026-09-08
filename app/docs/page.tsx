@@ -181,10 +181,14 @@ curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
           >
             The example above wraps a stdio server. An <Mono>http</Mono> /{' '}
             <Mono>url</Mono> entry (a remote server like a hosted GitHub MCP) is
-            routed through a local gateway instead: the gate rewrites the entry to
-            point your client at a loopback gateway, and the gateway forwards to
-            the upstream with your original <Mono>headers</Mono> threaded through
-            untouched - same zero-custody posture, just over HTTP.
+            left exactly as it was by the published install and counted in{' '}
+            <Mono>skipped_http</Mono>. Covering one needs the http gateway, and{' '}
+            <Mono>mcpindex-config-wire</Mono> only routes through it when you pass{' '}
+            <Mono>--gateway-base-url</Mono>, which nothing in the shipped package
+            serves today. When a gateway is running, the gate rewrites the entry to
+            point your client at a loopback gateway and the gateway forwards to the
+            upstream with your original <Mono>headers</Mono> threaded through
+            untouched.
           </p>
           <p
             className="mt-2 text-[13px] leading-[1.5]"

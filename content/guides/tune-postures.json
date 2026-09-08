@@ -35,7 +35,7 @@
     {
       "id": "pick",
       "heading": "Which posture to pick",
-      "body": "Start on Guard, the default: it catches real breaking changes without nagging on cosmetic churn. Move to Strict when you want to review every drift yourself, for higher-stakes or production agents. Use Monitor when you want the signal but never a pause, awareness only."
+      "body": "Start on Guard, the default: it catches real breaking changes without nagging on cosmetic churn. Move to Strict when you want to review every drift yourself, for higher-stakes or production agents. Use Monitor when you want the signal and no drift pause; a tamper hold and an internal error still stop the call."
     }
   ],
   "next": {
