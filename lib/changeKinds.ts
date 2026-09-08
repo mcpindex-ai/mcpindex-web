@@ -128,7 +128,9 @@ export type PostureOutcome = 'PROCEED' | 'PROCEED_NOTIFY' | 'INCONCLUSIVE' | 'HO
  *
  * Mirrors Gate.validate_drift -> Gate.apply_posture, in that order:
  *   1. proven-benign  -> PROCEED (re-pinned) in EVERY posture, posture never consulted;
- *   2. monitor        -> never blocks; any non-PROCEED verdict downgrades to PROCEED-with-note;
+ *   2. monitor        -> releases every DRIFT hold; any non-PROCEED drift verdict downgrades
+ *                        to PROCEED-with-note. Tamper evidence and an internal error are
+ *                        above the posture layer and still hold (gate.py:1798, :1805);
  *   3. behaviour-mandated -> INCONCLUSIVE (needs behaviour), not a HOLD;
  *   4. otherwise      -> HOLD under guard and strict.
  *

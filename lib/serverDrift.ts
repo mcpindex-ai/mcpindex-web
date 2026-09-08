@@ -1,8 +1,9 @@
 import type { ContextEvent, LedgerEvent } from './ledger';
 
 // Server-level drift summary for ONE named server, derived purely from the public ledger blob by
-// matching each event's server_fp. Tool-level identities stay anonymized (we never de-anonymize a
-// tool_fp). This is the pure aggregation; the Redis-touching reader is in serverDriftServer.ts.
+// matching each event's server_fp. Tool-level rows carry a fingerprint, which keys the public
+// registry rather than anonymizing it (we never resolve a tool_fp back to a tool name here).
+// This is the pure aggregation; the Redis-touching reader is in serverDriftServer.ts.
 
 export interface ServerDrift {
   readonly changes: number; // ledger events (drifting tools) attributed to this server in the window

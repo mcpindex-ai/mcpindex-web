@@ -92,7 +92,7 @@ export default function MethodologyPage() {
           <Dim
             label="Postures"
             kind="policy"
-            body="Monitor never blocks: every drift returns proceed-with-note. Guard (default) holds the unambiguously-breaking and dangerous changes while letting a proven-benign drift through; two kinds where behaviour is the gate (annotation-flip-to-destructive, output-schema-changed) resolve to INCONCLUSIVE rather than a flat block. Strict holds everything it cannot prove benign - NOT every drift: the benign auto-accept (added optional param, new tool, first-time output schema; description byte-identical, no risk escalation, no marker) runs BEFORE the posture layer, so a proven-benign change is re-pinned and proceeds under strict too. Anything else holds before the call."
+            body="Monitor releases every drift hold: each one returns proceed-with-note. Two paths above the posture layer still stop the call under it, an unreadable pin store and an unexpected exception in the gate's own code, and both fail closed on purpose. Guard (default) holds the unambiguously-breaking and dangerous changes while letting a proven-benign drift through; two kinds where behaviour is the gate (annotation-flip-to-destructive, output-schema-changed) resolve to INCONCLUSIVE rather than a flat block. Strict holds everything it cannot prove benign - NOT every drift: the benign auto-accept (added optional param, new tool, first-time output schema; description byte-identical, no risk escalation, no marker) runs BEFORE the posture layer, so a proven-benign change is re-pinned and proceeds under strict too. Anything else holds before the call."
           />
         </ul>
         <Figure id="tier-ladder">{renderDiagram('tier-ladder')}</Figure>

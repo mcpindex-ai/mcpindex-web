@@ -99,7 +99,7 @@ export function DTrustBoundary() {
 
       <ArrowR x1={460} x2={697} y={268} stroke={ACCENT} dashed />
       <M x={470} y={258} caps size={9.5} fill={ACCENT_TEXT}>
-        OPT-IN &middot; SALTED FINGERPRINT
+        OPT-IN &middot; FINGERPRINT, NOT ANONYMITY
       </M>
       <S x={470} y={284} size={10.5} fill={MUTE}>
         + change type, safety flag,

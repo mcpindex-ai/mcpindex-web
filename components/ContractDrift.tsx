@@ -7,7 +7,8 @@ import { fmtUtc, fmtDay } from '@/lib/dates';
 import type { ServerDrift as LibServerDrift } from '@/lib/serverDrift';
 
 // Server-level contract-drift section, fetched at RUNTIME from /api/v1/server-drift (the build can't
-// reach Upstash; this is always current). Server-level only - individual tools stay anonymized.
+// reach Upstash; this is always current). Server-level only; tool-level rows carry a
+// fingerprint, which is a key over the public registry rather than anonymity.
 // Renders nothing while loading or when drift is unavailable (flag off / ledger down) - never a
 // false "clean". Neutral contract-diff framing, mirrors /ledger.
 
@@ -185,7 +186,8 @@ export function ContractDrift({ serverId }: { serverId: string }) {
           Observed by mcpindex&rsquo;s crawler between daily registry snapshots - a contract diff, not
           a safety verdict, and not an in-path prevention (that is the gate). A &ldquo;safety-relevant
           diff&rdquo; touches a safety-relevant field; it is not a confirmed vulnerability. Shown at
-          the server level; individual tools stay anonymized. Absence is not a clean bill of health:
+          the server level. Tool-level rows carry a fingerprint, which is a key over the public
+          registry and not anonymity. Absence is not a clean bill of health:
           only public-registry servers are crawled.
         </p>
       </div>

@@ -283,7 +283,7 @@ Three precisions on what the diff is and is not.
 
 The same diff feeds three operator-selectable postures. Posture is per-install config; the default is **Guard**. A behavioral-mandated INCONCLUSIVE is not a softer PROCEED; under Guard it HOLDs the call until behavior is observed.
 
-- **Monitor**: never blocks. Every call PROCEEDs; a safety-relevant drift is recorded and surfaced as a notify-only note. The break-glass posture for an outage, and the recommended first-week posture for sizing your own HOLD rate before switching to Guard.
+- **Monitor**: releases every drift hold. Every drift PROCEEDs; a safety-relevant drift is recorded and surfaced as a notify-only note. The break-glass posture for an outage, and the recommended first-week posture for sizing your own HOLD rate before switching to Guard.
 - **Guard (default)**: the production posture. It **HOLDs** the unambiguously breaking kinds and any injection/exfil marker; it **routes the behavioral-mandated** kinds to INCONCLUSIVE, with run-behavioral auto-offered *when a verifier is wired*. Until behavior can be observed, the call does not proceed. (For an unowned third party, where no verifier can be wired, the INCONCLUSIVE is a flat HOLD with a behavioral-unavailable note.) It lets a *structurally-benign* drift through. An un-checkable tool (no pin, derivation error) HOLDs.
 - **Strict**: holds on *any* safety-relevant drift; the behavioral-mandated kinds still surface as INCONCLUSIVE. An un-checkable tool HOLDs.
 
