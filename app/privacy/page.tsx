@@ -73,7 +73,7 @@ export default function PrivacyPage() {
           hour-rounded time, and the client SDK tag (<span className="inline-code">py</span> or{' '}
           <span className="inline-code">ts</span>) - plus a random install id that links one
           machine&rsquo;s signals so we can count distinct installs (it is a random token, not
-          derived from you, and is never joined to your IP). Under the same flag, the gate also
+          derived from you, and we do not join it to your IP, though both reach the server in the same request and the request log keeps the IP for 30 days). Under the same flag, the gate also
           makes a read-only query to <span className="inline-code">/api/v1/drift/any</span> to ask
           whether a tool&rsquo;s contract already drifted, so it can warn you on the first call;
           that query sends only a fingerprint. It <strong>never</strong> sends tool schemas,
@@ -170,7 +170,7 @@ export default function PrivacyPage() {
           nothing for tools we have not indexed. Receipts are linked by a random per-install
           token (<span className="inline-code">install_id</span>) generated on first run and
           stored locally. It is <strong>pseudonymous, not anonymous</strong>: it is a random
-          token not derived from you or your machine and is never joined to your IP, but it
+          token not derived from you or your machine and we do not join it to your IP, though both reach the server in the same request and the request log keeps the IP for 30 days, but it
           does link one install&rsquo;s receipts together over time. Keyless installs have no
           account link; if you sign in and configure an{' '}
           <span className="inline-code">api_key</span>, receipts from that install are

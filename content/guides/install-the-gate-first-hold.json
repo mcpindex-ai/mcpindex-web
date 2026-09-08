@@ -18,7 +18,7 @@
     {
       "id": "install",
       "heading": "Install the gate",
-      "body": "Run this in your terminal. It needs uv already installed (`brew install uv`, or see astral.sh). It installs the gate binary and rewrites each MCP host's config so that host's servers launch behind the gate. Free, no account, runs locally.\n\nOne limit to know before you run it: the wiring rewrites stdio entries. A server your host reaches over a url is left exactly as it was and shows up as skipped_http in the summary line. Covering those needs the http gateway, which is not wired by this command.\n\nWant to see it before it writes? Run mcpindex-config-wire plan first: it lists every host and entry it would rewrite and changes nothing.",
+      "body": "Run this in your terminal. It needs uv already installed (`brew install uv`, or see astral.sh). It installs the gate binary and rewrites each MCP host's config so that host's servers launch behind the gate. Free, no account, runs locally.\n\nOne limit to know before you run it: the wiring rewrites stdio entries. A server your host reaches over a url is left exactly as it was and shows up as skipped_http in the summary line. Covering those needs the http gateway. Nothing in the shipped package serves one, and the wire command still takes a --gateway-base-url flag that points your url entries at a local port with nothing behind it, reports success, and leaves them unreachable. Do not pass it. If every entry in your config is a url, this command wires nothing and its next-step line points back at itself.\n\nWant to see it before it writes? Run mcpindex-config-wire plan first: it lists every host and entry it would rewrite and changes nothing. Skipped url entries appear as a count rather than by name.",
       "embed": "install-command"
     },
     {
@@ -69,7 +69,7 @@
     {
       "id": "monitor",
       "heading": "Run it log-only for a week before it blocks anything",
-      "body": "The wire command has no posture flag of its own yet. Pass the posture through the proxy command instead. Doing that replaces the whole launch line, which drops the version the installer wired, so put it back: run mcpindex-config-wire status, read the version it wired, and use it here.\n\nmcpindex-config-wire wire --repin --proxy-cmd \"uvx --from mcpindex-gate==<version> mcpindex-proxy --posture monitor\"\n\nMonitor releases every drift hold and lets the call through, and the flag survives a later re-wire. Two things still stop a call under it: an unreadable pin store, and a bug in the gate's own code. Both fail closed on purpose and neither is settable by posture."
+      "body": "The wire command has no posture flag of its own yet. Pass the posture through the proxy command instead. Doing that replaces the whole launch line, which drops the version the installer wired, so put it back: read the version out of your host's config entry, where the args line names mcpindex-gate==<version>, and use it here. (mcpindex-config-wire status does not print it.)\n\nmcpindex-config-wire wire --repin --proxy-cmd \"uvx --from mcpindex-gate==<version> mcpindex-proxy --posture monitor\"\n\nMonitor releases every drift hold and lets the call through, and the flag survives a later re-wire. Two things still stop a call under it: an unreadable pin store, and a bug in the gate's own code. Both fail closed on purpose and neither is settable by posture.\n\nIn monitor posture, status counts the server as notify-only rather than wired, and its next line still says to wire. That is expected."
     }
   ],
   "next": {
