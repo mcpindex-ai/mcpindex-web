@@ -122,8 +122,7 @@ export function DTrustBoundary() {
         NEVER CROSSES
       </M>
       <S x={94} y={367} size={12.5}>
-        tokens &middot; arguments &middot; schema bodies &middot; descriptions &middot; URLs &middot; server names
-        &middot; tool names &middot; your call data
+        tokens &middot; arguments &middot; results &middot; schema bodies &middot; your call data
       </S>
     </Canvas>
   );
