@@ -218,9 +218,14 @@ export default function TrustPage() {
             spoof-resistant identity and process/VM separation are roadmap, and it
             is not the default deployment.
           </Edge>
-          <Edge head="What leaves by default: a per-call receipt, no arguments or results.">
-            The deterministic tier-0 contract-diff runs locally; the default build
-            sends no arguments, results, server names or URLs, posts a per-call receipt you can disable, and never holds your credentials. Tiers 1-3 (cloud
+          <Edge head="What leaves by default: nothing on the wire install, a per-call receipt on the SDK wrapper.">
+            The deterministic tier-0 contract-diff runs locally. The one-command install
+            wires the stdio proxy, and the proxy posts no receipts today, so that path sends
+            nothing. The Python SDK <code className="font-mono">wrap()</code> path posts a
+            credential-blind per-call receipt by default, which you can disable with{' '}
+            <code className="font-mono">MCPINDEX_RECEIPT_INGEST_ENABLED=0</code>. Neither path
+            sends arguments, results, server names or URLs, and neither holds your
+            credentials. Tiers 1-3 (cloud
             corpus lookup, LLM consult, behavioral verifier) are built in-path
             seams, each held off by default and gated behind explicit opt-in.
           </Edge>
@@ -238,14 +243,18 @@ export default function TrustPage() {
             fingerprints of the server/tool id, the contract hashes, the change type, a
             safety flag, an hour-rounded time, a random install id, and the SDK tag - and
             queries the network so it can warn you on the first call. Never a schema, argument,
-            description, URL, or server/tool name. Fail-open: it never blocks or changes a call.
+            description, URL, or server/tool name. The fingerprint is a key over a public
+            registry rather than anonymity: the salt is a public constant that ships in our
+            client, so the mapping is recoverable by anyone who wants it. Fail-open: it never
+            blocks or changes a call.
             Full disclosure on{' '}
             <Link href="/privacy" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">privacy</Link>.
           </Edge>
           <Edge head="Sub-processors.">
-            None. In the default local deployment the only thing that leaves is a
-            credential-blind per-call receipt to our own ingest, which is us and not a
-            sub-processor, and MCPINDEX_RECEIPT_INGEST_ENABLED=0 stops it. If you opt into the cloud tier-1
+            None. The wire install sends nothing off the machine. On the SDK wrapper path the
+            only thing that leaves is a credential-blind per-call receipt to our own ingest,
+            which is us and not a sub-processor, and MCPINDEX_RECEIPT_INGEST_ENABLED=0 stops
+            it. If you opt into the cloud tier-1
             lookup, the request lands on our US-region edge (Vercel) and no other
             sub-processor sees it. A current sub-processor list is available on
             request.

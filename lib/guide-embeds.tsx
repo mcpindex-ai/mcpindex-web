@@ -62,13 +62,16 @@ export const EMBED_REGISTRY: Record<EmbedKey, Embed> = {
         <CopyField value={UV_INSTALL_WIRED} trackSource="guide-install-uv" />
         <Disclose summary="Prefer the one-script install?" className="mt-3">
           <p className="mt-0">
-            The install script does the same install + wiring in one pass - read it before you
-            run it:
+            The install script does more than the uv command above, so read it before you
+            run it. On top of the same install and wiring it bootstraps uv from
+            astral.sh if uv is missing (opt out with --no-bootstrap), and it registers a
+            background watcher as a login item that wires newly added MCP servers for you.
+            There is no flag to skip the watcher. The uv path does neither of those:
           </p>
           <CopyField
             value={INSPECT_INSTALL}
             label="Read the script first"
-            notes="Pipe to less to read it before you run it. uninstall.sh restores the original config."
+            notes="Pipe to less to read it before you run it. curl -fsSL https://mcpindex.ai/uninstall.sh | sh restores the original config and removes the watcher unit."
             trackSource="guide-install-inspect"
           />
           <CopyField value={CURL_INSTALL} label="Run it" trackSource="guide-install-curl" />

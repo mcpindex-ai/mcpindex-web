@@ -65,8 +65,8 @@ export default function PrivacyPage() {
           <span className="inline-code">lookup</span>, send at least a fingerprint. When
           set to <span className="inline-code">detection</span>,
           a tool-pin or a contract drift sends one one-way signal to{' '}
-          <span className="inline-code">/api/v1/drift</span>: salted (HMAC) fingerprints of the
-          server/tool id, the contract hashes, the change type, a safety flag, an
+          <span className="inline-code">/api/v1/drift</span>: HMAC fingerprints, over a
+          public constant salt, of the server/tool id, the contract hashes, the change type, a safety flag, an
           hour-rounded time, and the client SDK tag (<span className="inline-code">py</span> or{' '}
           <span className="inline-code">ts</span>) - plus a random install id that links one
           machine&rsquo;s signals so we can count distinct installs (it is a random token, not
@@ -138,9 +138,12 @@ export default function PrivacyPage() {
           reported server count is a floor and the tool says so.
         </p>
         <p>
-          Call receipts (the <span className="inline-code">mcpindex-gate</span> client):{' '}
-          <strong>on by default</strong>. After each gated tool call the gate emits a compact,
-          credential-blind receipt. Here is the complete list of what a receipt contains: a
+          Call receipts (the Python SDK <span className="inline-code">wrap()</span> path
+          inside <span className="inline-code">mcpindex-gate</span>):{' '}
+          <strong>on by default</strong>. The one-command install wires the stdio proxy, and
+          the proxy posts no receipts today, so that install path sends nothing. On the
+          wrapper path, after each gated tool call the gate emits a compact, credential-blind
+          receipt. Here is the complete list of what a receipt contains: a
           random receipt id; the tool contract hash (a sha256 of the tool&rsquo;s public
           contract, with no per-install salt, so for a tool on the public registry we can
           match it to the declaration we already crawled: the receipt tells us which public
@@ -206,7 +209,12 @@ export default function PrivacyPage() {
           declared tool list and snapshot the contracts: tool names, descriptions, input and
           output schemas, annotations. We do this daily, and a server can be re-read out of
           band when something reports a change on one of its tools, at most once an hour per
-          flagged tool. We never call a tool and we send no arguments. Only declarations.
+          flagged tool. If your server declares prompt capabilities we also read{' '}
+          <span className="inline-code">prompts/list</span>, which returns prompt metadata and
+          never the template bodies, and on servers that support it we send one{' '}
+          <span className="inline-code">server/discover</span> call first. We never call a
+          tool, we never call <span className="inline-code">prompts/get</span>, and we send no
+          arguments. Only declarations.
         </p>
         <p>
           Your server appears on the public ledger under a fingerprint of its registry name.

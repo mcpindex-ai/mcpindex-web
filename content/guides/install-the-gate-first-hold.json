@@ -6,7 +6,7 @@
   "meta_description": "A start-to-finish walkthrough: install the mcpindex gate, see which MCP hosts it wires, then watch it HOLD a silently changed tool contract before your agent acts. Roughly 4 minutes.",
   "h1": "Install the gate and watch your first HOLD",
   "project": "mcpindex",
-  "updated": "2026-08-11",
+  "updated": "2026-09-07",
   "est_minutes": 4,
   "outcome": "The gate installed and wired into your MCP hosts, and a live contract change held right in front of you, so you know exactly what a HOLD looks like before it matters.",
   "impatient": {
@@ -18,7 +18,7 @@
     {
       "id": "install",
       "heading": "Install the gate",
-      "body": "Run this in your terminal. It installs the gate binary and rewrites each MCP host's config so that host's servers launch behind the gate. Free, no account, runs locally.",
+      "body": "Run this in your terminal. It installs the gate binary and rewrites each MCP host's config so that host's servers launch behind the gate. Free, no account, runs locally. Want to see it before it writes? Run mcpindex-config-wire plan first: it lists every host and entry it would rewrite and changes nothing.",
       "embed": "install-command"
     },
     {
@@ -31,7 +31,7 @@
       "id": "restart",
       "heading": "Restart your host",
       "body": "Quit and reopen the host you use (Claude Desktop, Cursor, and so on) so it reloads the gated config. Nothing changes about how you call your tools. The gate sits in the path and stays quiet until a contract drifts.",
-      "troubleshoot": "If tools stop appearing after the restart, run `mcpindex-config-wire status` to check the wiring, or `uninstall.sh` to un-wire every host config and restore the originals."
+      "troubleshoot": "If tools stop appearing after the restart, run `mcpindex-config-wire status` to check the wiring, or `mcpindex-config-wire unwire` to restore every host config. `uninstall.sh` is not written to your machine by either install path; if you used the install script, run `curl -fsSL https://mcpindex.ai/uninstall.sh | sh`, which also removes the watcher unit it registered."
     },
     {
       "id": "watch",
@@ -64,7 +64,7 @@
     {
       "id": "monitor",
       "heading": "Run it log-only for a week before it blocks anything",
-      "body": "The wire command has no posture flag of its own yet. Pass the posture through the proxy command instead, and keep the --from pin the default gives you:\\n\\nmcpindex-config-wire wire --repin --proxy-cmd \"uvx --from mcpindex-gate==0.14.1 mcpindex-proxy --posture monitor\"\\n\\nPin the version to whatever is current when you run it. Monitor downgrades every drift hold to a note and lets the call through, and the flag survives a later re-wire. Two things still stop a call in monitor: an unreadable pin store, and a bug in the gate's own code. Both fail closed on purpose and neither is settable by posture."
+      "body": "The wire command has no posture flag of its own yet. Pass the posture through the proxy command instead, and keep the --from pin the default gives you:\\n\\nmcpindex-config-wire wire --repin --proxy-cmd \"uvx --from mcpindex-gate==0.14.0 mcpindex-proxy --posture monitor\"\\n\\n0.14.0 is what PyPI serves today. Pin whatever is current when you run it. Monitor downgrades every drift hold to a note and lets the call through, and the flag survives a later re-wire. Two things still stop a call in monitor: an unreadable pin store, and a bug in the gate's own code. Both fail closed on purpose and neither is settable by posture."
     }
   ],
   "next": {
