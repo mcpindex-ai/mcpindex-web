@@ -72,7 +72,8 @@ const REVIEWED = '2026-07-27';
  *     proven-benign drift proceeds under strict too.
  *   - annotation-flip-to-destructive and output-schema-changed resolve to INCONCLUSIVE, a third
  *     state ("behaviour is the gate"), not HOLD.
- *   - MONITOR returns PROCEED-with-note, never a block, for every kind.
+ *   - MONITOR returns PROCEED-with-note for every drift kind; a tamper hold and an internal
+ * error sit above the posture layer and still stop the call.
  */
 export type PostureRow = {
   kind: string;

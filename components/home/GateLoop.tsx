@@ -13,7 +13,7 @@ export const GATE_LOOP_STEPS: {
   {
     n: '01',
     title: 'Install once, rides your agent',
-    body: 'One config-wire in Claude Desktop, Claude Code, Cursor, Gemini CLI, Cline, or Zed. The gate sits in your agent’s MCP session. No credentials; the contract-diff runs locally and the default build posts a per-call receipt, no arguments or results.',
+    body: 'One config-wire in Claude Desktop, Claude Code, Cursor, Gemini CLI, Cline, or Zed. The gate sits in your agent’s MCP session. No credentials; the contract-diff runs locally. The wired proxy posts nothing; the SDK wrapper posts a per-call receipt, no arguments or results.',
     detail:
       'The optional cloud tier-1 lookup, held off by default, sends only a contract hash-never tokens or call data.',
     note: 'stdio interceptor + TS / Python SDK',
