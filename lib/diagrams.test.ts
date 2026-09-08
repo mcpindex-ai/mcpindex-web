@@ -69,7 +69,8 @@ test('the posture matrix is GENERATED from the gate sets, not typed', () => {
 // The three rules below are the OBSERVED behaviour of corpus_eval/tooling/cse/gate.py, captured
 // 2026-07-27 by driving the real Gate at each posture. They are the contract this figure draws;
 // if the gate changes, these fail and the figure must be redrawn.
-test('MONITOR releases every drift hold - every kind proceeds', () => {
+// Tamper evidence and an internal error sit above the posture layer and still stop the call.
+test('MONITOR releases every drift hold, tamper evidence still stops the call - every kind proceeds', () => {
   for (const r of POSTURE_ROWS) {
     assert.ok(
       r.monitor === 'PROCEED' || r.monitor === 'PROCEED_NOTIFY',

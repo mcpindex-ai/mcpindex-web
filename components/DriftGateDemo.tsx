@@ -136,7 +136,8 @@ const DRIFTS: ReadonlyArray<Drift> = [
 // Faithful port of Gate.applyPosture(). A PROCEED short-circuits (so the benign
 // added-optional, which the gate auto-accepts to PROCEED, is NEVER held - not
 // even under STRICT; that short-circuit is the gate's real "no false alarm"
-// property). MONITOR notifies and proceeds on a drift; GUARD blocks the
+// property). MONITOR notifies and proceeds on a drift, though tamper evidence and an
+// internal error still stop the call above the posture layer; GUARD blocks the
 // unambiguous-dangerous + behavioral-mandated classes and notify-proceeds the
 // rest; STRICT lets any non-PROCEED verdict stand.
 function applyPosture(d: Drift, posture: Posture): EffectiveDecision {

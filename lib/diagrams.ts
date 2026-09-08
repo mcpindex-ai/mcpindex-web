@@ -153,7 +153,7 @@ export const DIAGRAMS: readonly DiagramMeta[] = [
     fig: '01',
     title: 'Where the gate sits',
     claim: 'The gate is inside the call path, so a hold actually stops the call.',
-    alt: 'Without mcpindex an agent calls an MCP server directly with nothing in between. With mcpindex the gate sits in the call path: it pins the contract, diffs it, and either proceeds to the server when the live contract matches the pin, or holds the call and returns it to the agent when the contract has changed. The gate runs on your host and holds no credentials. The wired proxy posts nothing; the SDK wrapper posts a credential-blind per-call receipt by default, with no arguments or results.',
+    alt: 'Without mcpindex an agent calls an MCP server directly with nothing in between. With mcpindex the gate sits in the call path: it pins the contract, diffs it, and either proceeds to the server when the live contract matches the pin, or holds the call and returns it to the agent when the contract has changed. The gate runs on your host and sends no credentials anywhere, though wiring passes your server env through its process. The wired proxy posts nothing; the SDK wrapper posts a credential-blind per-call receipt by default, with no arguments or results.',
     queries: ['mcp architecture diagram', 'how does mcp work diagram', 'mcp interceptor', 'in-path mcp gate'],
     placements: ['/', '/install', '/docs', '/diagrams/where-the-gate-sits'],
     derives: [],
