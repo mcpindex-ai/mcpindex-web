@@ -62,7 +62,7 @@ export default function PrivacyPage() {
           default</strong>. The SDK sends <strong>nothing</strong> unless you set{' '}
           <span className="inline-code">MCPINDEX_DRIFT_TELEMETRY</span> to one of the three on
           settings below - and note that all three, <em>including</em>{' '}
-          <span className="inline-code">lookup</span>, send at least a salted fingerprint. When
+          <span className="inline-code">lookup</span>, send at least a fingerprint. When
           set to <span className="inline-code">detection</span>,
           a tool-pin or a contract drift sends one one-way signal to{' '}
           <span className="inline-code">/api/v1/drift</span>: salted (HMAC) fingerprints of the
@@ -73,7 +73,7 @@ export default function PrivacyPage() {
           derived from you, and is never joined to your IP). Under the same flag, the gate also
           makes a read-only query to <span className="inline-code">/api/v1/drift/any</span> to ask
           whether a tool&rsquo;s contract already drifted, so it can warn you on the first call;
-          that query sends only a salted fingerprint. It <strong>never</strong> sends tool schemas,
+          that query sends only a fingerprint. It <strong>never</strong> sends tool schemas,
           arguments, descriptions, URLs, or server/tool names. The fingerprint is a stable key,
           not anonymity: the salt is a public constant in the shipped client and the registry it
           covers is public, so a fingerprint of a registry name is derivable by anyone. There are three on settings, each
