@@ -80,7 +80,7 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 ## Drift Network (crawler-corroborated; warns you on call 1)
 
 - What it is: mcpindex crawls the public MCP registry every day and records which tool contracts silently change. When you pin a tool, the gate can ask the network whether the crawler already caught that contract drifting - and warn you on the FIRST call, before a change you never saw burns you. A contract-diff advisory; it rides alongside the verdict and never moves PROCEED/HOLD.
-- Opt-in: enable with MCPINDEX_DRIFT_TELEMETRY=detection (off by default). Under the same flag the gate emits one one-way salted-fingerprint signal on a pin/drift and queries the network; it never sends schemas, arguments, descriptions, URLs, or server/tool names.
+- Opt-in: enable with MCPINDEX_DRIFT_TELEMETRY=detection (off by default). Under the same flag the gate emits one one-way fingerprint signal on a pin/drift and queries the network; it never sends schemas, arguments, descriptions, URLs, or server/tool names.
 - Corroboration is crawler-first: the public count floors at the crawler (sources=1), never forgeable install reports.
 - Public proof: every drift the crawler catches is in the public drift ledger (/ledger).
 

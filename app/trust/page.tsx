@@ -234,8 +234,8 @@ export default function TrustPage() {
           </Edge>
           <Edge head="Optional egress: the drift network.">
             If you opt into drift telemetry (<code className="font-mono">MCPINDEX_DRIFT_TELEMETRY=detection</code>,
-            off by default), the gate emits one one-way signal on a pin or a drift - salted
-            (HMAC) fingerprints of the server/tool id, the contract hashes, the change type, a
+            off by default), the gate emits one one-way signal on a pin or a drift - 
+            fingerprints of the server/tool id, the contract hashes, the change type, a
             safety flag, an hour-rounded time, a random install id, and the SDK tag - and
             queries the network so it can warn you on the first call. Never a schema, argument,
             description, URL, or server/tool name. Fail-open: it never blocks or changes a call.
