@@ -60,6 +60,11 @@
         "label": "Open your Gate Activity",
         "look_for": "the tool hash, the verdict (ALLOW, REVIEW, or DENY), and the action, one row per gated call. Paste your install id from ~/.mcpindex/install_id, on this one-command install the page stays empty; it fills only on the SDK wrapper path."
       }
+    },
+    {
+      "id": "monitor",
+      "heading": "Run it log-only for a week before it blocks anything",
+      "body": "The wire command has no posture flag of its own yet. Pass the posture through the proxy command instead, and keep the --from pin the default gives you:\\n\\nmcpindex-config-wire wire --repin --proxy-cmd \"uvx --from mcpindex-gate==0.14.1 mcpindex-proxy --posture monitor\"\\n\\nPin the version to whatever is current when you run it. Monitor downgrades every drift hold to a note and lets the call through, and the flag survives a later re-wire. Two things still stop a call in monitor: an unreadable pin store, and a bug in the gate's own code. Both fail closed on purpose and neither is settable by posture."
     }
   ],
   "next": {
