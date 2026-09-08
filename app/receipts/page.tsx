@@ -67,8 +67,10 @@ export default async function ReceiptsPage({ searchParams }: PageProps) {
       {receipts.length === 0 ? (
         <div className="mt-10 border border-[var(--color-rule)] bg-white px-5 py-6">
           <p className="text-[15px] leading-[1.55] text-[var(--color-ink)]">
-            No activity yet for this install ID. If you just installed the gate, calls appear
-            here after your first gated call. If you reached this by typing the URL, double-check
+            No activity yet for this install ID. If you installed with the one-command
+            wire, this page stays empty by design: the wired proxy posts no receipts.
+            Receipts come from the Python SDK wrapper, and appear after your first gated
+            call. If you reached this by typing the URL, double-check
             the install ID printed by the gate at install time.
           </p>
         </div>

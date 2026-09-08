@@ -3,12 +3,12 @@
   "kind": "walkthrough",
   "order": 1,
   "title": "Install the mcpindex gate and watch your first HOLD",
-  "meta_description": "A start-to-finish walkthrough: install the mcpindex gate, see which MCP hosts it wires, then watch it HOLD a silently changed tool contract before your agent acts. Roughly 4 minutes.",
+  "meta_description": "A start-to-finish walkthrough: install the mcpindex gate, see which MCP hosts it wires, then see what a HOLD looks like on a replayed contract change. Roughly 4 minutes.",
   "h1": "Install the gate and watch your first HOLD",
   "project": "mcpindex",
   "updated": "2026-09-07",
   "est_minutes": 4,
-  "outcome": "The gate installed and wired into your MCP hosts, and a live contract change held right in front of you, so you know exactly what a HOLD looks like before it matters.",
+  "outcome": "The gate installed and wired into your stdio MCP hosts, and a worked example of what a HOLD looks like, so you recognise one when your own contract moves.",
   "impatient": {
     "label": "Skip ahead and watch a contract change get held first",
     "target_id": "watch"
@@ -40,7 +40,7 @@
     },
     {
       "id": "watch",
-      "heading": "Watch a contract change get held",
+      "heading": "What a HOLD looks like",
       "body": "Now the part that matters. Pin a tool's contract, apply a change, and watch what the gate does. This is the gate's verdict for five real contract changes, with the posture layer running live in your browser. The verdicts come from the gate's own scenario suite; the diff itself runs on your machine, not here. Try a breaking change and a benign one:",
       "embed": "drift-gate-demo"
     },
@@ -59,7 +59,7 @@
     {
       "id": "receipts",
       "heading": "Your receipts page, and which install path fills it",
-      "body": "This one-command install wires a proxy, and the proxy does not post receipts today, so by default nothing leaves your host. The wiring command does ask you once whether to join the drift network; answer anything other than y or yes and it stays off. To turn it off later: mcpindex-config-wire wire --repin --drift-telemetry off; setting the variable in your shell will not reach it, because the wiring writes the setting into your MCP host's config entry and that is what the proxy reads. Say yes and each pin and each drift sends a fingerprint of the server and tool, the two contract hashes, the change type, a safety flag, an hour-rounded time, a client tag, and the same random install id your receipts page is keyed to.  The fingerprint is a key over a public registry, not anonymity. The Python SDK wrapper is the half that posts a credential-blind receipt per gated call, on by default; set MCPINDEX_RECEIPT_INGEST_ENABLED=0 to turn that off. Your receipts page fills up only on the wrapper path. It is credential-blind: the contract hash, the verdict and the action, closed-vocabulary fields about the run and its outcome, and an hour-rounded timestamp, never the arguments, the results, the server name or the URL. Set  On the receipt that decision is logged on the trust axis: a PROCEED shows as ALLOW, a HOLD as DENY, an inconclusive as REVIEW. On the wrapper path this page is where you check what the gate did. On this one-command install it stays empty, and the gate's stderr line is where you look instead. Your install id is a random token at ~/.mcpindex/install_id (run: cat ~/.mcpindex/install_id), and your page lives at mcpindex.ai/receipts?id=<install-id>. It fills only on the wrapper path. Treat that URL like a secret: the install id is the only thing gating read access, so anyone holding it can read that install's call log. From gate v0.9.0 the gate also prints a local weekly summary line (calls gated, drift seen, holds) that links the same page; the counters are local-only and nothing about that line is sent anywhere.",
+      "body": "This one-command install wires a proxy, and the proxy does not post receipts today, so by default nothing leaves your host. The wiring command does ask you once whether to join the drift network; answer anything other than y or yes and it stays off. To turn it off later: mcpindex-config-wire wire --repin --drift-telemetry off; setting the variable in your shell will not reach it, because the wiring writes the setting into your MCP host's config entry and that is what the proxy reads. Say yes and each pin and each drift sends a fingerprint of the server and tool, the two contract hashes, the change type, a safety flag, an hour-rounded time, a client tag, and the same random install id your receipts page is keyed to.  The fingerprint is a key over a public registry, not anonymity. The Python SDK wrapper is the half that posts a credential-blind receipt per gated call, on by default; set MCPINDEX_RECEIPT_INGEST_ENABLED=0 to turn that off. Your receipts page fills up only on the wrapper path. It is credential-blind: the contract hash, the verdict and the action, closed-vocabulary fields about the run and its outcome, and an hour-rounded timestamp, never the arguments, the results, the server name or the URL.\n\nOn the receipt that decision is logged on the trust axis: a PROCEED shows as ALLOW, a HOLD as DENY, an inconclusive as REVIEW. On the wrapper path this page is where you check what the gate did. On this one-command install it stays empty, and the gate's stderr line is where you look instead. Your install id is a random token at ~/.mcpindex/install_id (run: cat ~/.mcpindex/install_id), and your page lives at mcpindex.ai/receipts?id=<install-id>. It fills only on the wrapper path. Treat that URL like a secret: the install id is the only thing gating read access, so anyone holding it can read that install's call log. From gate v0.9.0 the gate also prints a local weekly summary line (calls gated, drift seen, holds) that links the same page; the counters are local-only and nothing about that line is sent anywhere.",
       "deep_link": {
         "href": "/receipts",
         "label": "Open your Gate Activity",

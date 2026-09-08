@@ -198,8 +198,8 @@ curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
             <strong style={{ color: 'var(--color-ink)' }}>HTTPS upstreams that resolve to a public IP</strong>.
             A plain-<Mono>http</Mono>, <Mono>localhost</Mono>, or LAN upstream is
             rejected (<Mono>ssrf_blocked</Mono>), not silently passed through -
-            gating those is on the roadmap. So a remote HTTPS server is gated like
-            any stdio one; a local HTTP server is not yet covered.
+            gating those is on the roadmap. So neither a remote HTTPS server nor a
+            local HTTP one is covered by this install; both need the http gateway.
           </p>
         </div>
 
