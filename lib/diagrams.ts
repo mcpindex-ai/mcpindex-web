@@ -198,7 +198,7 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
     fig: '03',
     title: 'Trust boundary',
     claim: 'By default one thing crosses: a credential-blind per-call receipt.',
-    alt: 'Inside your host sit the agent, the mcpindex gate and a local pin store. The tier-0 contract diff runs locally; by default the one thing that crosses to mcpindex is a credential-blind receipt per gated call, carrying a contract hash, a verdict, closed-vocabulary fields and an hour-rounded time, disabled with MCPINDEX_RECEIPT_INGEST_ENABLED=0. The tool call and your credentials pass through untouched to the MCP server and the gate holds no keys. Two optional opt-in crossings exist: a contract hash to the mcpindex US edge, and a salted HMAC fingerprint to the drift network. Tokens, arguments, results, schema bodies and your call data never cross. The contract hash and the fingerprint are hashes of public declarations, so for a server on the public registry they can be matched back to the name and the tool.',
+    alt: 'Inside your host sit the agent, the mcpindex gate and a local pin store. The tier-0 contract diff runs locally; by default the one thing that crosses to mcpindex is a credential-blind receipt per gated call, carrying a contract hash, a verdict, closed-vocabulary fields and an hour-rounded time, disabled with MCPINDEX_RECEIPT_INGEST_ENABLED=0. The tool call and your credentials pass through untouched to the MCP server and the gate holds no keys. Two optional opt-in crossings exist: a contract hash to the mcpindex US edge, and a HMAC fingerprint to the drift network. Tokens, arguments, results, schema bodies and your call data never cross. The contract hash and the fingerprint are hashes of public declarations, so for a server on the public registry they can be matched back to the name and the tool.',
     queries: ['mcp security architecture', 'mcp trust boundary', 'does mcpindex phone home', 'mcp gate data flow'],
     placements: ['/trust', '/privacy', '/diagrams/trust-boundary'],
     derives: [],
@@ -220,7 +220,7 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
             |                           |  the gate holds no keys.
     OPT-IN  | contract hash ------------------------> [ mcpindex edge - US ]
             | a deterministic hash of the public tool contract
-    OPT-IN  | salted HMAC fingerprint --------------> [ drift network ]
+    OPT-IN  | HMAC fingerprint --------------> [ drift network ]
             | + change type, safety flag, hour-rounded time. fail-open.
             |
      NEVER  X tokens - arguments - results - schema bodies - your call data
