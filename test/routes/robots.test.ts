@@ -44,6 +44,11 @@ function allows(rule: Rule, path: string): boolean {
 
 const groups = () => robots().rules as Rule[];
 
+// Bots refused outright (app/robots.ts REFUSED_CRAWLERS). Every "stays reachable" assertion
+// below is about crawlers that are allowed in at all; a refused bot is meant to fail them.
+const refused = ['SemrushBot'];
+const admitted = () => groups().filter((r) => !refused.includes(r.userAgent as string));
+
 test('robots: every user-agent group blocks the three handlers that 4xx on GET', () => {
   // A user-agent group inherits nothing from the `*` group, so a per-bot rule that forgot
   // the Disallow would leave that bot hitting endpoints that answer its GET with an error.
@@ -59,7 +64,7 @@ test('robots: the $ anchor keeps /api/v1/drift/any reachable', () => {
   // app/llms.txt/route.ts:129. An unanchored `/api/v1/drift` Disallow is a prefix rule and
   // would take the child down with the parent — silently, since the parent test above would
   // still pass. This is the regression that anchor exists to prevent.
-  for (const rule of groups()) {
+  for (const rule of admitted()) {
     assert.equal(
       allows(rule, '/api/v1/drift/any'),
       true,
@@ -97,7 +102,7 @@ test('robots: the agent API contract stays fetchable by agent crawlers', () => {
   // point at /api/mcp; /.well-known/mcp-index.json republishes the list. Serving agents a
   // document that advertises endpoints their robots.txt forbids is incoherent, and
   // lib/apiUsage.ts counts /api/mcp and /api/v1/preflight as a tracked metric.
-  for (const rule of groups()) {
+  for (const rule of admitted()) {
     for (const path of ['/api/mcp', '/api/v1/preflight', '/api/v1/search', '/api/v1/trust/server/x']) {
       assert.equal(allows(rule, path), true, `${rule.userAgent} is blocked from advertised ${path}`);
     }
@@ -114,7 +119,7 @@ test('robots: the badge endpoint stays crawlable so its noindex can be seen', ()
   // error buckets forever, and invites "Indexed, though blocked by robots.txt" on a URL
   // third-party READMEs link by design. noindex needs a crawl to be read; Disallow prevents
   // exactly that crawl. The two are not interchangeable.
-  for (const rule of groups()) {
+  for (const rule of admitted()) {
     assert.equal(
       allows(rule, '/api/v1/badge/io-github-example-server'),
       true,
@@ -126,7 +131,7 @@ test('robots: the badge endpoint stays crawlable so its noindex can be seen', ()
 test('robots: the page surface is still fully open', () => {
   // The site is deliberately open to every crawler including agent bots. Narrowing the API
   // must not narrow anything a reader can actually land on.
-  for (const rule of groups()) {
+  for (const rule of admitted()) {
     for (const path of ['/', '/server/io-github-example-server', '/guides/how-to-trust-an-mcp-server', '/install']) {
       assert.equal(allows(rule, path), true, `${rule.userAgent} is blocked from ${path}`);
     }
@@ -167,7 +172,24 @@ test('robots: every named AI crawler is classified exactly once', () => {
   // duplicated into both — where the last-wins group silently decides its posture.
   const named = groups().map((r) => r.userAgent as string).filter((u) => u !== '*');
   assert.equal(new Set(named).size, named.length, `duplicate user-agent group: ${named.join(', ')}`);
-  assert.equal(named.length, 8, 'expected 8 named AI crawlers across the two classes');
+  assert.equal(named.length, 9, 'expected 9 named crawlers: 3 retrieval + 5 training + 1 refused');
+});
+
+test('robots: the refused SEO crawler gets nothing, and only it', () => {
+  // SemrushBot renders pages for its own database and nothing comes back: no reader, no
+  // citation, no answer engine, no SERP to strand a URL in. Measured 2026-09-05..07 it was
+  // 17.7% of fresh renders on /server/[slug], each a billed ISR write. Both directions:
+  // it must be shut out of the page surface, and the block must not leak into `*`.
+  const seen = groups().filter((r) => refused.includes(r.userAgent as string));
+  assert.equal(seen.length, refused.length, 'a refused crawler group went missing');
+  for (const rule of seen) {
+    for (const path of ['/', '/server/io-github-example-server', '/guides/x', '/api/v1/badge/x', '/llms.txt']) {
+      assert.equal(allows(rule, path), false, `${rule.userAgent} can still fetch ${path}`);
+    }
+  }
+  const star = groups().find((r) => r.userAgent === '*');
+  assert.ok(star, 'the `*` group went missing');
+  assert.equal(allows(star, '/server/io-github-example-server'), true, 'the refusal leaked into `*`');
 });
 
 test('robots: still advertises the sitemap and canonical host', () => {

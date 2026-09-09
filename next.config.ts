@@ -55,13 +55,20 @@ const embedSecurityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Inline the (small, Tailwind-atomic) stylesheet into <head> instead of a
-  // render-blocking <link>. The CSS chunk was the whole critical-request chain
-  // after the document (~11.7 KiB, +1 RTT before first paint). CSP already
-  // permits style-src 'unsafe-inline', so this needs no header change.
-  experimental: {
-    inlineCss: true,
-  },
+  // CSS is a <link>, on purpose. `experimental.inlineCss` was on from 2026-07-28
+  // (eead413) to save one RTT on an "~11.7 KiB" stylesheet. Measured 2026-09-07 on
+  // /server/ai-agentroam-agentroam: the stylesheet had grown to 52 KB raw, and Next
+  // inlines it three times per page - once as <style> and twice, verbatim, inside
+  // the React flight payload - so 158 KB of a 244 KB page was CSS (89 KB without it;
+  // 48 KB vs 16 KB gzipped). Every ISR render writes that page to the cache, and
+  // Vercel bills ISR writes per 8 KB. On ~14k server-page renders a day (Sep 5-7:
+  // 78.8% of requests on /server/[slug] were cache MISSes, i.e. fresh renders after
+  // one of ~6 daily deploys) the inlined CSS was ~two thirds of the ISR write bytes,
+  // the single largest line on the Vercel bill. The RTT it saved is paid only by a
+  // human's first navigation, and the hashed stylesheet is immutable-cached after
+  // that. Bots, which are >95% of server-page traffic, never saw the benefit.
+  // If it ever goes back on, re-measure the raw page size first.
+  experimental: {},
   // Ghost paths seen in Analytics (bots/typos) — send humans to real surfaces.
   async redirects() {
     return [
@@ -81,6 +88,15 @@ const nextConfig: NextConfig = {
       // POSTs JSON-RPC to /mcp follows through to /api/mcp intact. Before this, /mcp —
       // the URL people actually guess and that external directories link — was a 404.
       { source: "/mcp", destination: "/api/mcp", permanent: true },
+      // ElevenLabs published io.elevenlabs/mcp on 2026-09-08, so /unregistered/elevenlabs
+      // stated something false and its entry came out of lib/unregistered.ts. The page was
+      // in the sitemap for three weeks (added 2026-08-18), so it goes to the real server
+      // page rather than 404ing whatever Google indexed.
+      {
+        source: "/unregistered/elevenlabs",
+        destination: "/server/io-elevenlabs-mcp",
+        permanent: true,
+      },
     ];
   },
   async headers() {

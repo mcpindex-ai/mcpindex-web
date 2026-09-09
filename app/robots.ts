@@ -29,6 +29,22 @@ const RETRIEVAL_CRAWLERS = ['ChatGPT-User', 'OAI-SearchBot', 'PerplexityBot'];
 // is the only thing that needs editing, not the rules.
 const TRAINING_CRAWLERS = ['GPTBot', 'anthropic-ai', 'ClaudeBot', 'cohere-ai', 'Google-Extended'];
 
+// REFUSED bots are the third class, and it has one member on purpose. SemrushBot crawls
+// to fill Semrush's own SEO database: it is not a reader, it does not cite, it sends no
+// traffic, and it feeds no answer engine - so neither of the postures above applies, and
+// there is no SERP for a blocked URL to be stranded in (the hazard the long note below
+// is about). What it does do is render pages. Measured 2026-09-05..07 with
+// `vercel metrics vercel.request.count --group-by bot_name` on /server/[slug]: semrush
+// was 16.3% of all requests and 17.7% of cache MISSes, i.e. fresh ISR renders, each of
+// which is a billed ISR write. Second only to Amazonbot (21.6% / 24.2%), which stays
+// allowed here because its fetches do reach a user through Alexa answers; it is capped
+// at the Vercel WAF instead (rate limit on user agent), which does not depend on the bot
+// honouring crawl-delay. Googlebot, for scale, was 1.5%.
+// Vercel's semrush bucket over those three days was 99.5% SemrushBot/7~bl and 0.5%
+// SemrushBot-BA (grouped by client_user_agent), so the one prefix token covers it.
+// Rank tracking still comes from Ahrefs and GSC; nothing on our side reads Semrush.
+const REFUSED_CRAWLERS = ['SemrushBot'];
+
 // Blocking is the LAST resort here, and the block is deliberately three paths wide rather
 // than the whole API. Everything under /api/ already carries X-Robots-Tag: noindex from
 // vercel.json (shipped 2026-07-28), and noindex is the better instrument wherever it can
@@ -99,6 +115,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: RULE.allow,
         disallow: [...RULE.disallow, ...BULK_CORPUS],
       })),
+      ...REFUSED_CRAWLERS.map((userAgent) => ({ userAgent, disallow: ['/'] })),
     ],
     sitemap: 'https://mcpindex.ai/sitemap.xml',
     host: 'https://mcpindex.ai',
