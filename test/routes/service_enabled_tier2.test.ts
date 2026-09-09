@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import { callRoute } from './_harness';
 import { __setScreenFetchForTest } from '../../lib/screen';
 import { __setBrevoFetchForTest } from '../../lib/brevo';
-import { __setLedgerServerRedisForTest } from '../../lib/ledgerServer';
+import { __setLedgerServerRedisForTest, decodeLedgerRaw } from '../../lib/ledgerServer';
+import { gzipSync } from 'node:zlib';
 import { __setLeadCaptureRedisForTest, LEAD_CAPTURE_KEY } from '../../lib/leadCapture';
 import { POST as screen } from '../../app/api/v1/screen/route';
 import { POST as waitlist } from '../../app/api/waitlist/route';
@@ -125,4 +126,50 @@ test('ledger: enabled + valid blob → 200, no-store', async () => {
   const r = await callRoute(ledger, '/api/v1/ledger');
   assert.equal(r.status, 200);
   assert.match(r.headers.get('cache-control') ?? '', /no-store/);
+});
+
+// gz1: wire format. The drain writes it behind MCPINDEX_LEDGER_GZIP; the reader has to accept it
+// AND the plain form forever, because a drain rollback must not need a redeploy.
+const gz1 = (json: string) => `gz1:${gzipSync(Buffer.from(json, 'utf8')).toString('base64')}`;
+
+test('decodeLedgerRaw passes through everything that is not gz1:', () => {
+  const json = JSON.stringify(LEDGER_BLOB);
+  assert.equal(decodeLedgerRaw(json), json);
+  // @upstash/redis auto-deserializes a JSON value, so an object arrives here untouched.
+  assert.deepEqual(decodeLedgerRaw(LEDGER_BLOB), LEDGER_BLOB);
+  assert.equal(decodeLedgerRaw(null), null);
+  assert.equal(decodeLedgerRaw(undefined), undefined);
+  assert.equal(decodeLedgerRaw(42), 42);
+});
+
+test('decodeLedgerRaw round-trips a gz1: payload back to the identical JSON string', () => {
+  const json = JSON.stringify(LEDGER_BLOB);
+  assert.equal(decodeLedgerRaw(gz1(json)), json);
+});
+
+test('decodeLedgerRaw returns null on a corrupt gz1: payload, never throws', () => {
+  const good = gz1(JSON.stringify(LEDGER_BLOB));
+  assert.equal(decodeLedgerRaw(good.slice(0, good.length - 40)), null, 'truncated gzip');
+  assert.equal(decodeLedgerRaw('gz1:' + Buffer.from('not gzip at all').toString('base64')), null);
+  assert.equal(decodeLedgerRaw('gz1:'), null, 'empty payload');
+  assert.equal(decodeLedgerRaw('gz1:!!!!'), null, 'base64 that decodes to nothing');
+});
+
+test('ledger: a gz1: blob serves the same 200 as the plain one', async () => {
+  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
+  const payload = gz1(JSON.stringify(LEDGER_BLOB));
+  __setLedgerServerRedisForTest({ async get() { return payload; } } as any);
+  const r = await callRoute(ledger, '/api/v1/ledger');
+  assert.equal(r.status, 200);
+  const body = obj(r);
+  assert.equal(body.schema, 'mcpindex.drift.ledger/2');
+  assert.equal(body.stat.tools_observed_drifting, 2);
+  assert.equal(body.events.length, 1);
+});
+
+test('ledger: a corrupt gz1: blob is 503 unavailable, never a stale or partial 200', async () => {
+  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
+  __setLedgerServerRedisForTest({ async get() { return 'gz1:' + Buffer.from('junk').toString('base64'); } } as any);
+  const r = await callRoute(ledger, '/api/v1/ledger');
+  assert.equal(r.status, 503);
 });
