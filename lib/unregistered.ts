@@ -92,13 +92,6 @@ export const UNREGISTERED: UnregisteredEntry[] = [
     officialNamespaces: ['com.shopify', 'dev.shopify', 'io.github.shopify'],
   },
   {
-    slug: 'elevenlabs',
-    name: 'ElevenLabs',
-    vendor: 'ElevenLabs',
-    token: 'elevenlabs',
-    officialNamespaces: ['io.elevenlabs', 'com.elevenlabs', 'io.github.elevenlabs'],
-  },
-  {
     slug: 'rollbar',
     name: 'Rollbar',
     vendor: 'Rollbar',
