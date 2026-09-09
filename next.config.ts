@@ -88,6 +88,15 @@ const nextConfig: NextConfig = {
       // POSTs JSON-RPC to /mcp follows through to /api/mcp intact. Before this, /mcp —
       // the URL people actually guess and that external directories link — was a 404.
       { source: "/mcp", destination: "/api/mcp", permanent: true },
+      // ElevenLabs published io.elevenlabs/mcp on 2026-09-08, so /unregistered/elevenlabs
+      // stated something false and its entry came out of lib/unregistered.ts. The page was
+      // in the sitemap for three weeks (added 2026-08-18), so it goes to the real server
+      // page rather than 404ing whatever Google indexed.
+      {
+        source: "/unregistered/elevenlabs",
+        destination: "/server/io-elevenlabs-mcp",
+        permanent: true,
+      },
     ];
   },
   async headers() {
