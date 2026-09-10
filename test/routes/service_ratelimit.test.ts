@@ -66,6 +66,73 @@ test('ledger: enabled + over-limit → 429', async () => {
   assert.equal(r.status, 429);
 });
 
+// The bulk-export budget on /api/v1/ledger. Separate key, separate ceiling: that route is the
+// only one on the shared drift-read budget that returns the WHOLE blob, and the drain rewrites
+// the blob once an hour, so nothing legitimate asks for it more than a few times a minute.
+// A Redis that actually counts per key, so these can assert on WHICH budget was spent.
+function countingRedis(): { client: any; hits: Map<string, number> } {
+  const hits = new Map<string, number>();
+  return {
+    hits,
+    client: {
+      async incr(k: string) { const n = (hits.get(k) ?? 0) + 1; hits.set(k, n); return n; },
+      async expire() { return 1; },
+      async get() { return null; },
+    } as any,
+  };
+}
+const keysMatching = (hits: Map<string, number>, prefix: string) =>
+  [...hits.keys()].filter((k) => k.startsWith(prefix));
+
+test('ledger: the 11th request in a minute from one IP is 429, the 10th is not', async () => {
+  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
+  const { client } = countingRedis();
+  __setRatelimitRedisForTest(client);
+  // The blob itself is unavailable here (no ledger redis injected), so a request that PASSES the
+  // limiter lands on 503. What matters is 503 vs 429: the limiter let it through either way.
+  for (let i = 1; i <= 10; i++) {
+    const r = await callRoute(ledger, '/api/v1/ledger', { ip: '7.7.7.7' });
+    assert.notEqual(r.status, 429, `request ${i} must not be rate limited`);
+  }
+  const r = await callRoute(ledger, '/api/v1/ledger', { ip: '7.7.7.7' });
+  assert.equal(r.status, 429);
+  assert.equal(r.headers.get('retry-after'), '60');
+});
+
+test('ledger: the bulk budget is per-IP, so one heavy client cannot 429 another', async () => {
+  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
+  const { client } = countingRedis();
+  __setRatelimitRedisForTest(client);
+  for (let i = 0; i < 11; i++) await callRoute(ledger, '/api/v1/ledger', { ip: '7.7.7.7' });
+  const other = await callRoute(ledger, '/api/v1/ledger', { ip: '8.8.8.8' });
+  assert.notEqual(other.status, 429);
+});
+
+test('ledger: a throttled bulk client does NOT spend the shared drift-read budget', async () => {
+  // The whole reason this is a separate counter. /api/v1/drift/any is the installed SDK's gate
+  // check and bursts by design; a ledger scraper must not eat into it.
+  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
+  const { client, hits } = countingRedis();
+  __setRatelimitRedisForTest(client);
+  for (let i = 0; i < 20; i++) await callRoute(ledger, '/api/v1/ledger', { ip: '7.7.7.7' });
+  const bulk = keysMatching(hits, 'ledger:read:ip:');
+  const shared = keysMatching(hits, 'drift:read:ip:');
+  assert.equal(bulk.length, 1, 'one bulk key for one IP+minute');
+  assert.equal(hits.get(bulk[0]), 20, 'every request counted against the bulk budget');
+  // 10 allowed through to the shared check; the other 10 were refused before reaching it.
+  assert.equal(shared.length, 1);
+  assert.equal(hits.get(shared[0]), 10, 'refused requests must not spend the shared allowance');
+});
+
+test('ledger: unconfigured Redis fails OPEN, never 429s a public read surface', async () => {
+  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
+  __setRatelimitRedisForTest(null);
+  for (let i = 0; i < 30; i++) {
+    const r = await callRoute(ledger, '/api/v1/ledger', { ip: '7.7.7.7' });
+    assert.notEqual(r.status, 429);
+  }
+});
+
 test('login/start: enabled + over-limit → 429', async () => {
   process.env.MCPINDEX_LOGIN_ENABLED = '1';
   const r = await callRoute(loginStart, '/api/auth/login/start', { ip: '9.9.9.9' });
