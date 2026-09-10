@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { ledgerEnabled } from '@/lib/ledger';
 import { loadLedger } from '@/lib/ledgerServer';
-import { checkDriftReadLimit } from '@/lib/ratelimit';
+import { checkDriftReadLimit, checkLedgerReadLimit } from '@/lib/ratelimit';
 
 // Public drift ledger (M4): the contract changes mcpindex's CRAWLER OBSERVED between daily
 // registry snapshots - a contract diff, not a safety verdict, not an in-path prevention. Read-only.
@@ -22,7 +22,15 @@ export async function GET(req: NextRequest) {
   if (!ledgerEnabled()) {
     return Response.json({ error: 'not_found' }, { status: 404 });
   }
-  const limit = await checkDriftReadLimit(clientIp(req), new Date());
+  const ip = clientIp(req);
+  const now = new Date();
+  // Bulk-export budget first, so a client hammering the whole blob is refused WITHOUT burning
+  // the shared drift-read allowance that /api/v1/drift/any (the SDK gate check) runs on.
+  const bulk = await checkLedgerReadLimit(ip, now);
+  if (!bulk.ok) {
+    return Response.json({ error: 'rate_limited' }, { status: 429, headers: { 'retry-after': '60' } });
+  }
+  const limit = await checkDriftReadLimit(ip, now);
   if (!limit.ok) {
     return Response.json({ error: 'rate_limited' }, { status: 429, headers: { 'retry-after': '60' } });
   }

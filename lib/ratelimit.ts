@@ -105,6 +105,26 @@ export async function checkDriftLimit(ip: string, now: Date): Promise<DriftLimit
 const DRIFT_READ_PER_IP_PER_MIN = 600;
 const DRIFT_READ_GLOBAL_PER_DAY = 5_000_000;
 
+// /api/v1/ledger gets its own tighter per-IP budget ON TOP of the shared one above, because it
+// is the only route on that budget that returns the WHOLE blob. The other two answer a question
+// (`drift/any` a SISMEMBER, `server-drift` one server's rollup); this one is a bulk export.
+//
+// The numbers, measured 2026-09-08: the blob was 5,397,238B and the route is `force-dynamic`
+// with `cache-control: no-store`, so every request is a fresh Upstash GET of all of it. At 600
+// requests a minute one compliant client could pull 3.24GB/min. Nobody legitimate does that:
+// the drain rewrites the blob ONCE AN HOUR, so request 2 through 600 in any minute receive
+// bytes identical to request 1.
+//
+// 10/min is 600x the useful rate and drops the worst case by 60x. It cannot go on the shared
+// counter: `drift/any` is the installed SDK's gate check, which bursts by design on a first
+// pin, and throttling that to fix a problem it does not have would starve real users.
+//
+// LIMIT OF THIS CONTROL, stated plainly: `clientIp()` falls back to `x-forwarded-for` and
+// `x-real-ip`, which a client controls on any request that does not arrive through Vercel's
+// proxy. This stops accidents, runaway scripts and casual scraping. It does not stop someone
+// who wants past it, and it was never going to.
+const LEDGER_READ_PER_IP_PER_MIN = 10;
+
 // Drift identity register limit (/api/v1/drift/register). Tighter than ingest - registration
 // is an abuse vector (identity minting). Fail-open on Redis error.
 const REGISTER_PER_IP_PER_MIN = 10;
@@ -317,6 +337,32 @@ export async function checkOwnerBehaviorLimit(ip: string, now: Date): Promise<Dr
     const g = await r.incr(gKey);
     if (g === 1) await r.expire(gKey, 90_000);
     return g > OWNER_BEHAVIOR_GLOBAL_PER_DAY ? { ok: false } : { ok: true };
+  } catch {
+    return { ok: true }; // fail-open on Redis error
+  }
+}
+
+/** The bulk-export budget for /api/v1/ledger, checked BEFORE `checkDriftReadLimit`.
+ *
+ * Deliberately a separate key (`ledger:read:ip:*`), so the two budgets cannot interfere: a
+ * throttled ledger client must not consume the shared drift-read allowance that the SDK's gate
+ * check runs on, and vice versa.
+ *
+ * Costs one extra INCR per ledger request against the same Upstash bill this exists to protect.
+ * At the volumes involved that is noise next to a 5.4MB GET, and it only runs on this one route.
+ *
+ * Fail-open on a Redis error, matching every other limiter here: a cache hiccup must not 429 a
+ * public read surface. */
+export async function checkLedgerReadLimit(ip: string, now: Date): Promise<DriftLimit> {
+  const r = redis();
+  if (!r) return { ok: true }; // fail-open
+
+  const min = now.toISOString().slice(0, 16);
+  try {
+    const ipKey = `ledger:read:ip:${ip}:${min}`;
+    const c = await r.incr(ipKey);
+    if (c === 1) await r.expire(ipKey, 70);
+    return c > LEDGER_READ_PER_IP_PER_MIN ? { ok: false } : { ok: true };
   } catch {
     return { ok: true }; // fail-open on Redis error
   }
