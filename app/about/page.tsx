@@ -144,11 +144,20 @@ export default function AboutPage() {
           Author
         </div>
         <h2 className="text-[22px] tracking-tight font-medium text-[var(--color-ink)]">
-          GB
+          Gautam Bharti
         </h2>
         <p className="mt-3 text-[15px] leading-[1.6] text-[var(--color-cite)]">
           Writes about agent infrastructure, platform design, and the MCP
-          ecosystem. Reach the project at{' '}
+          ecosystem. mcpindex.ai is operated by Bhartis LLC. ORCID{' '}
+          <a
+            href="https://orcid.org/0009-0001-4448-1438"
+            target="_blank"
+            rel="noreferrer"
+            className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
+          >
+            0009-0001-4448-1438
+          </a>
+          . Reach the project at{' '}
           <a href="mailto:hello@mcpindex.ai" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
             hello@mcpindex.ai
           </a>
