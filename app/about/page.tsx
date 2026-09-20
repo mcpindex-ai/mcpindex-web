@@ -3,6 +3,7 @@ import { Figure } from '@/components/Figure';
 import { renderDiagram } from '@/components/diagrams';
 import type { Metadata } from 'next';
 import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
+import { AUTHOR_NAME, AUTHOR_ORCID, AUTHOR_ORCID_URL } from '@/lib/author';
 
 // Dated on purpose: the commercial-status statement is a point-in-time claim, so a
 // reader can tell whether it is current. Bump it only when the status actually changes.
@@ -144,18 +145,18 @@ export default function AboutPage() {
           Author
         </div>
         <h2 className="text-[22px] tracking-tight font-medium text-[var(--color-ink)]">
-          Gautam Bharti
+          {AUTHOR_NAME}
         </h2>
         <p className="mt-3 text-[15px] leading-[1.6] text-[var(--color-cite)]">
           Writes about agent infrastructure, platform design, and the MCP
           ecosystem. mcpindex.ai is operated by Bhartis LLC. ORCID{' '}
           <a
-            href="https://orcid.org/0009-0001-4448-1438"
+            href={AUTHOR_ORCID_URL}
             target="_blank"
             rel="noreferrer"
             className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]"
           >
-            0009-0001-4448-1438
+            {AUTHOR_ORCID}
           </a>
           . Reach the project at{' '}
           <a href="mailto:hello@mcpindex.ai" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">

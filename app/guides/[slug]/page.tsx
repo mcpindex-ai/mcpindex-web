@@ -13,6 +13,7 @@ import { getServer } from '@/lib/registry';
 import { jsonLdSafe } from '@/lib/jsonLd';
 import { Prose } from '@/components/proseComponents';
 import { GuideWalkthrough } from '@/components/GuideWalkthrough';
+import { AUTHOR_NAME, AUTHOR_ORCID, AUTHOR_ORCID_URL } from '@/lib/author';
 
 export const revalidate = 3600;
 
@@ -69,6 +70,12 @@ export default async function GuidePage(
 
   const url = `https://mcpindex.ai/guides/${slug}`;
   const org = { '@type': 'Organization', name: 'mcpindex', url: 'https://mcpindex.ai' };
+  const author = {
+    '@type': 'Person',
+    name: AUTHOR_NAME,
+    url: 'https://mcpindex.ai/about',
+    sameAs: [AUTHOR_ORCID_URL],
+  };
 
   // model-generated text goes into a dangerouslySetInnerHTML script; escape "<"
   // so a "</script>" in title/h1/description cannot break out of the LD block.
@@ -80,7 +87,7 @@ export default async function GuidePage(
       headline: guide.h1,
       description: guide.metaDescription,
       url,
-      author: org,
+      author,
       publisher: org,
       ...(guide.updated ? { datePublished: guide.updated, dateModified: guide.updated } : {}),
     },
@@ -135,6 +142,26 @@ export default async function GuidePage(
       <h1 className="mt-3 t-page-h1 font-medium text-[var(--color-ink)]">
         {guide.h1}
       </h1>
+      <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-mute)]">
+        <Link href="/about" className="hover:text-[var(--color-accent-strong)]">
+          {AUTHOR_NAME}
+        </Link>
+        <span aria-hidden="true">&middot;</span>
+        <a
+          href={AUTHOR_ORCID_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="hover:text-[var(--color-accent-strong)]"
+        >
+          ORCID {AUTHOR_ORCID}
+        </a>
+        {guide.updated && (
+          <>
+            <span aria-hidden="true">&middot;</span>
+            <span>{guide.updated}</span>
+          </>
+        )}
+      </div>
       {isWalkthrough ? (
         <GuideWalkthrough guide={guide} />
       ) : (
