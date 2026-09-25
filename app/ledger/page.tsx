@@ -4,7 +4,7 @@ import { renderDiagram } from '@/components/diagrams';
 import Link from 'next/link';
 import { pageMetadata } from '@/lib/seo';
 import { notFound } from 'next/navigation';
-import { ledgerEnabled } from '@/lib/ledger';
+import { ledgerEnabled, type FleetEvent } from '@/lib/ledger';
 import { loadLedger } from '@/lib/ledgerServer';
 import { DriftReport } from '@/components/DriftReport';
 import { jsonLdSafe } from '@/lib/jsonLd';
@@ -25,6 +25,103 @@ export const metadata: Metadata = pageMetadata({
 
 function truncateFp(fp: string): string {
   return fp.length >= 12 ? `${fp.slice(0, 12)}...` : fp;
+}
+
+const TH =
+  'rule-b rule-r px-3 py-2 align-top font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-mute)]';
+const TD_NUM = 'rule-b rule-r px-3 py-2 align-top font-mono text-[13px] text-[var(--color-cite)] tabular-nums';
+
+// Ledger /3: one row per publisher-wide change. Rendered ABOVE the per-tool table and
+// safety-relevant first, because a reader who stops at the first table must not miss a
+// publisher that flipped a safety field across hundreds of servers.
+function PublisherWideChanges({ fleets, maxRows }: { fleets: readonly FleetEvent[]; maxRows: number }) {
+  const rows = [...fleets]
+    .sort(
+      (a, b) =>
+        Number(b.safety_relevant) - Number(a.safety_relevant) ||
+        b.day.localeCompare(a.day) ||
+        b.tools - a.tools,
+    )
+    .slice(0, maxRows);
+  return (
+    <section className="mt-12">
+      <h2 className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
+        Publisher-wide changes
+      </h2>
+      <p className="mt-4 text-[14px] leading-[1.55] text-[var(--color-mute)]">
+        Each row is one publisher changing tools (or server context) of the same kind on at least 10
+        of its servers in one UTC day, counted once. &ldquo;Of the same kind&rdquo; means the same
+        change kinds, not necessarily the same field. Safety-relevant rows come first; their tool
+        fingerprints are listed in{' '}
+        <Link href="/api/v1/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
+          /api/v1/ledger
+        </Link>
+        .
+      </p>
+      <div className="mt-6 site-table-wrap rule-t rule-b rule-l rule-r">
+        <table className="w-full border-collapse text-left text-[13px]">
+          <caption className="sr-only">
+            Publisher-wide changes: publisher fingerprint, UTC day, what changed, how many servers and
+            tools, and whether the change touched a safety-relevant field.
+          </caption>
+          <thead className="bg-[#fafaf9]">
+            <tr>
+              <th scope="col" className={TH}>Publisher fingerprint</th>
+              <th scope="col" className={TH}>Day</th>
+              <th scope="col" className={TH}>What changed</th>
+              <th scope="col" className={TH}>Servers</th>
+              <th scope="col" className={TH}>Tools</th>
+              <th scope="col" className={TH}>Safety</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((f, i) => (
+              <tr key={`${f.publisher_fp}:${f.day}:${f.plane}:${i}`}>
+                <td className={TD_NUM}>{truncateFp(f.publisher_fp)}</td>
+                <td className={TD_NUM}>{f.day}</td>
+                <td className="rule-b rule-r px-3 py-2 align-top text-[13px] text-[var(--color-cite)]">
+                  <div className="flex flex-wrap gap-1">
+                    {f.plane === 'context' && (
+                      <span className="inline-block font-mono text-[10.5px] tracking-[0.04em] px-2 py-0.5 border border-[var(--color-accent)] text-[var(--color-ink)]">
+                        server context
+                      </span>
+                    )}
+                    {f.change_kinds.map((k) => (
+                      <span
+                        key={k}
+                        className="inline-block font-mono text-[10.5px] tracking-[0.04em] px-2 py-0.5 border border-[var(--color-mute)] text-[var(--color-cite)]"
+                      >
+                        {k}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+                <td className={TD_NUM}>{f.servers.toLocaleString()}</td>
+                <td className={TD_NUM}>{f.plane === 'context' ? '-' : f.tools.toLocaleString()}</td>
+                <td className="rule-b rule-r px-3 py-2 align-top text-[13px] text-[var(--color-cite)]">
+                  {f.safety_relevant ? (
+                    <span className="inline-block font-mono text-[10.5px] uppercase tracking-[0.08em] px-2 py-0.5 border border-[var(--color-cite)] text-[var(--color-cite)]">
+                      safety-relevant diff
+                    </span>
+                  ) : (
+                    <>
+                      <span className="sr-only">Not safety-relevant</span>
+                      <span aria-hidden="true" className="text-[var(--color-mute)]">-</span>
+                    </>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {fleets.length > maxRows && (
+        <p className="mt-4 text-[13px] leading-[1.55] text-[var(--color-mute)]">
+          Showing {maxRows} of {fleets.length.toLocaleString()} publisher-wide changes.
+        </p>
+      )}
+    </section>
+  );
 }
 
 
@@ -51,6 +148,17 @@ export default async function LedgerPage() {
   }
 
   const { stat, events } = ledger;
+  // Ledger /3 only: figures outside publisher-wide changes, and the changes themselves. Both are
+  // absent on a /2 blob, and every block below renders exactly its /2 markup when they are.
+  const ind = stat.independent;
+  // Keyed on the SCHEMA, not on whether any fleet rows survived: under /3 the per-tool tables
+  // omit fleet-only tools whether or not a publisher-wide change is listed.
+  const isV3 = ledger.fleet_events !== undefined;
+  const fleets = ledger.fleet_events ?? [];
+  // Tools counted both above and inside a publisher-wide change (they also changed on their own).
+  const overlap = ind
+    ? Math.max(0, ind.tools_observed_drifting + ind.fleet_tools - stat.tools_observed_drifting)
+    : 0;
 
   // Cap the rendered table: ~3.7k rows was ~38k DOM nodes / ~9MB of HTML, which taxes
   // low-end and mobile devices. The full corpus stays honest via the aggregate stats
@@ -106,6 +214,31 @@ export default async function LedgerPage() {
           <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
             Observed
           </div>
+          {ind ? (
+            <>
+              <p className="mt-2 font-mono text-[32px] leading-none text-[var(--color-ink)] tabular-nums">
+                {ind.tools_observed_drifting.toLocaleString()} tools changed a contract field we
+                publish, outside publisher-wide changes
+              </p>
+              {/* A publisher-wide change is one publisher changing tools of the same kind on at
+                  least 10 of its servers in one UTC day (drain: fleet_partition). Counting each
+                  of those tools separately made one operator's single deploy most of the
+                  headline (72,212 of 97,506 on 2026-09-25), so it is counted once here and the
+                  every-tool total stays beside it. */}
+              <p className="mt-2 font-mono text-[13px] text-[var(--color-cite)] tabular-nums">
+                {`${ind.fleet_changes.toLocaleString()} publisher-wide tool change${ind.fleet_changes === 1 ? '' : 's'}`},
+                each one publisher changing tools of the same kind on at least 10 of its servers in one
+                day, touched{' '}
+                {ind.fleet_tools.toLocaleString()} tools
+                {overlap > 0 ? `, ${overlap.toLocaleString()} of which also changed on their own` : ''}.
+                Counting every tool, {stat.tools_observed_drifting.toLocaleString()} of{' '}
+                {stat.total_contract_drifts_observed.toLocaleString()} tools observed drifting changed
+                a field we publish; the remainder changed in ways we record but do not publish,
+                predominantly description-only edits.
+              </p>
+            </>
+          ) : (
+          <>
           <p className="mt-2 font-mono text-[32px] leading-none text-[var(--color-ink)] tabular-nums">
             {stat.tools_observed_drifting.toLocaleString()} tools changed a contract field we
             publish
@@ -114,7 +247,8 @@ export default async function LedgerPage() {
             These two numbers are a FRACTION, not a product. `total_contract_drifts_observed` is
             len({tool_fp ...}) over every crawl-observed drift INCLUDING the description-only ones
             the surfacing filter drops (drift_corpus_drain.py:1335-1339), and
-            `tools_observed_drifting` is len(events) - the surfaced, contract-affecting subset of
+            `tools_observed_drifting` is the count of surfaced tools (len(events) on a /2 blob; on /3
+            events omit tools whose only change was publisher-wide) - the contract-affecting subset of
             that same set (:750). The drain's own comment states the intent: "N (surfaced) of M
             (all observed)".
 
@@ -128,13 +262,22 @@ export default async function LedgerPage() {
             remainder changed in ways we record but do not publish, predominantly description-only
             edits.
           </p>
+          </>
+          )}
         </div>
 
         <dl>
           <div className="rule-b row-2up-end py-5 px-2">
-            <dt className="font-mono text-[12.5px] text-[var(--color-cite)]">Servers affected</dt>
+            <dt className="font-mono text-[12.5px] text-[var(--color-cite)]">
+              Servers affected
+              {ind && (
+                <span className="block mt-1 font-mono text-[11px] text-[var(--color-mute)] normal-case">
+                  Outside publisher-wide changes; {stat.servers.toLocaleString()} counting every server.
+                </span>
+              )}
+            </dt>
             <dd className="font-mono text-[16px] text-[var(--color-ink)] tabular-nums text-right">
-              {stat.servers.toLocaleString()}
+              {(ind ? ind.servers : stat.servers).toLocaleString()}
             </dd>
           </div>
           <div className="rule-b row-2up-end py-5 px-2">
@@ -142,10 +285,12 @@ export default async function LedgerPage() {
               Safety-relevant contract changes
               <span className="block mt-1 font-mono text-[11px] text-[var(--color-mute)] normal-case">
                 Changes that touch a safety-relevant field - not confirmed vulnerabilities.
+                {ind &&
+                  ` Outside publisher-wide changes; ${stat.safety_relevant.toLocaleString()} counting every tool.`}
               </span>
             </dt>
             <dd className="font-mono text-[16px] text-[var(--color-ink)] tabular-nums text-right">
-              {stat.safety_relevant.toLocaleString()}
+              {(ind ? ind.safety_relevant : stat.safety_relevant).toLocaleString()}
             </dd>
           </div>
         </dl>
@@ -178,14 +323,25 @@ export default async function LedgerPage() {
         )}
       </section>
 
+      {fleets.length > 0 && <PublisherWideChanges fleets={fleets} maxRows={MAX_ROWS} />}
+
       <section className="mt-12">
         <h2 className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
           Events
         </h2>
         <p className="mt-4 text-[14px] leading-[1.55] text-[var(--color-mute)]">
-          Tools and servers are shown as content fingerprints, not names: mcpindex reports that a
-          contract changed without publicly naming a specific server. A dash means no server
-          fingerprint was recorded.
+          Tools and servers are shown as fingerprints: keyed hashes of their public registry names
+          under a published key. Anyone can recompute them, so they identify a server without
+          printing its name; they are not a privacy measure. A dash means no server fingerprint
+          was recorded.
+          {isV3 && (
+            <>
+              {' '}
+              A tool whose only change was part of a publisher-wide change is counted in that change
+              above and not listed here; the gate&apos;s drift check still answers for it at{' '}
+              <code className="font-mono text-[13px]">/api/v1/drift/any?fp=</code>.
+            </>
+          )}
         </p>
         {events.length === 0 ? (
           <p className="mt-4 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
@@ -288,7 +444,8 @@ export default async function LedgerPage() {
         {truncated && (
           <p className="mt-4 text-[13px] leading-[1.55] text-[var(--color-mute)]">
             Showing the {MAX_ROWS} most recently-observed of{' '}
-            {events.length.toLocaleString()} contract changes. The complete, machine-readable
+            {events.length.toLocaleString()} contract changes
+            {isV3 ? ' outside publisher-wide changes' : ''}. The complete, machine-readable
             ledger is at{' '}
             <Link href="/api/v1/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
               /api/v1/ledger
@@ -312,6 +469,16 @@ export default async function LedgerPage() {
             auto-injects into an agent&apos;s context on connect. These sit outside every tool
             contract hash, so this observation is their only drift signal. The published kinds
             are the safety-relevant subset of the context taxonomy.
+            {isV3 && (
+              <>
+                {' '}
+                A server whose only context change was part of a publisher-wide change is counted in
+                that change above and not listed here
+                {ind
+                  ? ` (${ind.context_fleet_surfaces.toLocaleString()} surface${ind.context_fleet_surfaces === 1 ? '' : 's'} across ${ind.context_fleet_changes.toLocaleString()} publisher-wide context change${ind.context_fleet_changes === 1 ? '' : 's'})`
+                  : ''}.
+              </>
+            )}
           </p>
           <div className="mt-6 site-table-wrap rule-t rule-b rule-l rule-r">
             <table className="w-full border-collapse text-left text-[13px]">

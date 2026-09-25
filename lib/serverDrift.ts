@@ -1,4 +1,13 @@
-import type { ContextEvent, LedgerEvent } from './ledger';
+import type { ContextEvent, FleetEvent, LedgerEvent } from './ledger';
+
+// A publisher-wide change this server took part in (ledger /3). Present on ServerDrift only when
+// the server is a member of at least one, so a /2 blob serves byte-identical answers.
+export interface PublisherWideChange {
+  readonly plane: 'tool' | 'context';
+  readonly day: string;
+  readonly change_kinds: readonly string[];
+  readonly servers: number; // servers from this publisher showing a change of the same kind that day
+}
 
 // Server-level drift summary for ONE named server, derived purely from the public ledger blob by
 // matching each event's server_fp. Tool-level identities stay anonymized (we never de-anonymize a
@@ -43,10 +52,22 @@ export interface ServerDrift {
   // absence is not zero; this is that distinction surviving to the API boundary. Measured
   // 2026-08-24: absent on all 13,862 live events, so this reads 'unavailable' in production today.
   readonly versionEvidence: 'recorded' | 'unavailable';
+  // /3 only, and only for a member server: the publisher-wide changes folded into the counts
+  // above. Everything else on this object means exactly what it meant under /2.
+  readonly publisherWide?: readonly PublisherWideChange[];
+  // How many more publisher-wide changes beyond the PUBLISHER_WIDE_SHOWN listed above. Absent
+  // when none were left out.
+  readonly publisherWideMore?: number;
 }
 
+const PUBLISHER_WIDE_SHOWN = 10;
+
 /** Filter the ledger's events to one server (by its precomputed server_fp) and summarize. A server
- * with no matching events returns changes:0 (honest "none observed in window"), never null. */
+ * with no matching events returns changes:0 (honest "none observed in window").
+ *
+ * Returns null only for a /3 blob that contradicts itself about this server: it lists the server
+ * in a publisher-wide tool change but gives it no tools anywhere. Answering changes:0 there would
+ * be a false clean, so the caller serves "unavailable" instead. A /2 blob never returns null. */
 export function aggregateServerDrift(
   events: readonly LedgerEvent[],
   fp: string,
@@ -57,41 +78,91 @@ export function aggregateServerDrift(
   // consulted the registry assert knowledge it does not have, which is precisely the false-clean
   // this field exists to kill. `false` degrades to "we cannot vouch for these zeros".
   known: boolean = false,
-): ServerDrift {
+  // Ledger /3 publisher-wide changes. [] for a /2 blob, which leaves every output unchanged.
+  fleetEvents: readonly FleetEvent[] = [],
+): ServerDrift | null {
   const mine = events.filter((e) => e.server_fp === fp);
   const mineCtx = contextEvents.filter((e) => e.server_fp === fp);
-  const kinds = [...new Set(mine.flatMap((e) => e.change_kinds))].sort();
+  // This server's share of each publisher-wide change it took part in. Folding these back in is
+  // what keeps a member's answer identical to /2, where every one of its tools was an event:
+  // `page_tools` counts only tools with no independent event, each in exactly one fleet event,
+  // so it adds the missing tools without double counting; kinds, safety, last_seen and the
+  // removal label fold in from every membership, because an independent event carries only the
+  // kinds of its own rows.
+  const toolShare: Array<{ ev: FleetEvent; m: FleetEvent['members'][number] }> = [];
+  const ctxShare: Array<{ ev: FleetEvent; m: FleetEvent['members'][number] }> = [];
+  for (const ev of fleetEvents) {
+    for (const m of ev.members) {
+      if (m.server_fp !== fp) continue;
+      (ev.plane === 'tool' ? toolShare : ctxShare).push({ ev, m });
+    }
+  }
+  const kinds = [
+    ...new Set([
+      ...mine.flatMap((e) => e.change_kinds),
+      ...toolShare.flatMap(({ ev }) => ev.change_kinds),
+    ]),
+  ].sort();
   // Lexical max is chronological ONLY because last_seen is the fixed-width hour-coarsened shape
   // (YYYY-MM-DDTHH:00:00Z), gated by ledger.ts TS_RE. If that gate ever relaxes, parse to epoch here.
-  const lastSeen = mine.reduce<string | null>(
-    (max, e) => (e.last_seen && (max === null || e.last_seen > max) ? e.last_seen : max),
-    null,
-  );
-  // Same fixed-width lexical-max trick as lastSeen above (gated by ledger.ts TS_RE).
-  const contextLastSeen = mineCtx.reduce<string | null>(
-    (max, e) => (e.last_seen && (max === null || e.last_seen > max) ? e.last_seen : max),
-    null,
-  );
+  const latest = (stamps: readonly string[]): string | null =>
+    stamps.reduce<string | null>((max, s) => (s && (max === null || s > max) ? s : max), null);
+  const lastSeen = latest([...mine.map((e) => e.last_seen), ...toolShare.map(({ m }) => m.last_seen)]);
+  const contextLastSeen = latest([
+    ...mineCtx.map((e) => e.last_seen),
+    ...ctxShare.map(({ m }) => m.last_seen),
+  ]);
+  const sumShare = (k: 'version_same' | 'version_changed' | 'version_undeclared'): number =>
+    toolShare.reduce((n, { m }) => n + (m[k] ?? 0), 0);
+  const changes = mine.length + toolShare.reduce((n, { m }) => n + m.page_tools, 0);
+  if (toolShare.length > 0 && changes === 0) return null;
+  // One line per (plane, day, kinds), newest first, a bounded number of them: a blob that lists
+  // a server in many events must not turn one server's answer into an unbounded list.
+  const byKey = new Map<string, PublisherWideChange>();
+  for (const { ev } of [...toolShare, ...ctxShare]) {
+    const key = `${ev.plane}|${ev.day}|${ev.change_kinds.join(',')}`;
+    const prev = byKey.get(key);
+    if (!prev || ev.servers > prev.servers) {
+      byKey.set(key, { plane: ev.plane, day: ev.day, change_kinds: ev.change_kinds, servers: ev.servers });
+    }
+  }
+  const allWide = [...byKey.values()].sort((a, b) => b.day.localeCompare(a.day) || a.plane.localeCompare(b.plane));
+  const publisherWide = allWide.slice(0, PUBLISHER_WIDE_SHOWN);
   return {
-    changes: mine.length,
+    changes,
     lastSeen,
     kinds,
     // Tool events only, on purpose: the context block carries its own safety framing, and the
     // "safety-relevant diff" badge sits inside the tool-count block - conflating them would
     // badge a tool count that context drift inflated.
-    safetyRelevant: mine.some((e) => e.safety_relevant),
+    safetyRelevant: mine.some((e) => e.safety_relevant) || toolShare.some(({ m }) => m.safety_relevant),
     ledgerGeneratedAt,
-    toolsetReplaced: mine.some((e) => e.removal_scope === 'toolset-replaced'),
-    versionSameCount: mine.filter((e) => e.version_delta === 'same').length,
-    versionChangedCount: mine.filter((e) => e.version_delta === 'changed').length,
-    versionUndeclaredCount: mine.filter((e) => e.version_delta === 'undeclared').length,
-    contextChanges: mineCtx.length,
-    contextKinds: [...new Set(mineCtx.flatMap((e) => e.change_kinds))].sort(),
+    toolsetReplaced:
+      mine.some((e) => e.removal_scope === 'toolset-replaced') ||
+      toolShare.some(({ m }) => m.toolset_replaced),
+    versionSameCount: mine.filter((e) => e.version_delta === 'same').length + sumShare('version_same'),
+    versionChangedCount:
+      mine.filter((e) => e.version_delta === 'changed').length + sumShare('version_changed'),
+    versionUndeclaredCount:
+      mine.filter((e) => e.version_delta === 'undeclared').length + sumShare('version_undeclared'),
+    // A server has at most one context surface, so it counts once whether it changed on its own,
+    // in a publisher-wide change, or both - exactly the one context event it had under /2.
+    contextChanges: mineCtx.length > 0 ? mineCtx.length : ctxShare.length > 0 ? 1 : 0,
+    contextKinds: [
+      ...new Set([...mineCtx.flatMap((e) => e.change_kinds), ...ctxShare.flatMap(({ ev }) => ev.change_kinds)]),
+    ].sort(),
     contextLastSeen,
-    contextSafetyRelevant: mineCtx.some((e) => e.safety_relevant),
+    contextSafetyRelevant:
+      mineCtx.some((e) => e.safety_relevant) || ctxShare.some(({ m }) => m.safety_relevant),
     known,
     // A property of the BLOB, not of this server: a clean server must not report 'unavailable'
-    // while the frame is on. Any event carrying the field at all means the frame is emitting.
-    versionEvidence: events.some((e) => e.version_delta !== undefined) ? 'recorded' : 'unavailable',
+    // while the frame is on. Any event (or /3 fleet member) carrying the field means it is emitting.
+    versionEvidence:
+      events.some((e) => e.version_delta !== undefined) ||
+      fleetEvents.some((ev) => ev.members.some((m) => m.version_same !== undefined))
+        ? 'recorded'
+        : 'unavailable',
+    ...(publisherWide.length > 0 ? { publisherWide } : {}),
+    ...(allWide.length > publisherWide.length ? { publisherWideMore: allWide.length - publisherWide.length } : {}),
   };
 }

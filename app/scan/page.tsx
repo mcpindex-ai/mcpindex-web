@@ -77,6 +77,22 @@ export default async function ScanPage() {
         }
       : null;
 
+  // Ledger /3: quote the figures outside publisher-wide changes, with the every-tool total beside
+  // them. coerceIndependent already enforced every subset invariant against the totals, so these
+  // need no re-check here. Absent on a /2 blob, which renders the sentences above unchanged.
+  const ind = s?.independent;
+  const indSafety =
+    ind && ind.safety_relevant > 0 && safety
+      ? { n: ind.safety_relevant.toLocaleString('en-US'), total: safety }
+      : null;
+  const indSilent =
+    ind && typeof ind.silent_same_version === 'number' && ind.tools_observed_drifting > 0
+      ? {
+          n: ind.silent_same_version.toLocaleString('en-US'),
+          of: ind.tools_observed_drifting.toLocaleString('en-US'),
+        }
+      : null;
+
   return (
     <article className="site-container pt-16 pb-24">
       <script
@@ -99,7 +115,30 @@ export default async function ScanPage() {
         which calls can&apos;t be undone, which send data off your machine, and how many contracts are{' '}
         <strong className="text-[var(--color-ink)]">unpinned</strong>, with nothing watching them for change.
       </p>
-      {safety && (
+      {indSafety && (
+        <p className="mt-3 text-[15px] leading-[1.6] text-[var(--color-cite)]">
+          That last one is not hypothetical. Across the public MCP servers we re-crawl daily,{' '}
+          <strong className="text-[var(--color-ink)]">{indSafety.n} tools</strong> have changed a
+          safety-relevant field outside publisher-wide changes ({indSafety.total} counting every tool,
+          including publishers that changed many of their servers at once). Not confirmed
+          vulnerabilities, but the changes a pin exists to catch.
+          {indSilent && (
+            <>
+              {' '}
+              Of the {indSilent.of} tools drifting outside publisher-wide changes,{' '}
+              <strong className="text-[var(--color-ink)]">{indSilent.n}</strong> have only ever changed
+              with their declared version unchanged, where version evidence exists, so a version pin does
+              not see them.
+            </>
+          )}{' '}
+          <Link href="/ledger" className={UNDERLINE}>
+            Check the numbers yourself &rarr;
+          </Link>
+        </p>
+      )}
+      {/* Under /3 the every-tool sentence is the fleet-dominated one the twin exists to replace, so
+          with a twin present and no safety twin to quote, say nothing rather than fall back. */}
+      {!ind && safety && (
         <p className="mt-3 text-[15px] leading-[1.6] text-[var(--color-cite)]">
           That last one is not hypothetical. Across the public MCP servers we re-crawl daily,{' '}
           <strong className="text-[var(--color-ink)]">{safety} tools</strong> have changed a safety-relevant

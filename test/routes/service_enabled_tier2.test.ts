@@ -173,3 +173,53 @@ test('ledger: a corrupt gz1: blob is 503 unavailable, never a stale or partial 2
   const r = await callRoute(ledger, '/api/v1/ledger');
   assert.equal(r.status, 503);
 });
+
+// Ledger /3 (publisher-wide changes counted once). The route serves the object parseLedgerBlob
+// rebuilds, which used to hard-code the /2 schema string and drop unknown keys: /3 content would
+// have gone out labelled /2 with its fleet_events missing.
+const LEDGER_BLOB_V3 = {
+  ...LEDGER_BLOB,
+  schema: 'mcpindex.drift.ledger/3',
+  stat: {
+    ...LEDGER_BLOB.stat,
+    independent: {
+      tools_observed_drifting: 1, servers: 1, safety_relevant: 1,
+      fleet_changes: 1, fleet_tools: 1, fleet_servers: 1, context_fleet_changes: 0, context_fleet_surfaces: 0,
+    },
+  },
+  fleet_events: [{
+    plane: 'tool', publisher_fp: 'c'.repeat(32), day: '2026-06-09', change_kinds: ['added-optional-param'],
+    safety_relevant: false, servers: 10, tools: 1,
+    members: [{ server_fp: 'a'.repeat(32), page_tools: 1, last_seen: '2026-06-09T06:00:00Z', safety_relevant: false, toolset_replaced: false }],
+  }],
+};
+
+test('ledger: a /3 blob is served as /3 with its fleet events and twin intact', async () => {
+  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
+  const payload = gz1(JSON.stringify(LEDGER_BLOB_V3));
+  __setLedgerServerRedisForTest({ async get() { return payload; } } as any);
+  const r = await callRoute(ledger, '/api/v1/ledger');
+  assert.equal(r.status, 200);
+  const body = obj(r);
+  assert.equal(body.schema, 'mcpindex.drift.ledger/3');
+  assert.equal(body.fleet_events.length, 1);
+  assert.equal(body.fleet_events[0].members[0].page_tools, 1);
+  assert.equal(body.stat.independent.fleet_changes, 1);
+  assert.equal(body.stat.tools_observed_drifting, 2, 'the total keeps its /2 meaning');
+});
+
+test('ledger: a /2 blob gains no /3 keys on the way out', async () => {
+  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
+  __setLedgerServerRedisForTest({ async get() { return JSON.stringify(LEDGER_BLOB); } } as any);
+  const body = obj(await callRoute(ledger, '/api/v1/ledger'));
+  assert.equal(body.schema, 'mcpindex.drift.ledger/2');
+  assert.equal('fleet_events' in body, false);
+  assert.equal('independent' in body.stat, false);
+});
+
+test('decodeLedgerRaw: a plain string over the decode bound is refused before any parse', () => {
+  const over = 'x'.repeat(64 * 1024 * 1024 + 1);
+  assert.equal(decodeLedgerRaw(over), null);
+  const json = JSON.stringify(LEDGER_BLOB);
+  assert.equal(decodeLedgerRaw(json), json, 'a normal plain blob still passes through');
+});

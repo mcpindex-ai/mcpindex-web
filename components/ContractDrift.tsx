@@ -7,7 +7,7 @@ import { fmtUtc, fmtDay } from '@/lib/dates';
 import type { ServerDrift as LibServerDrift } from '@/lib/serverDrift';
 
 // Server-level contract-drift section, fetched at RUNTIME from /api/v1/server-drift (the build can't
-// reach Upstash; this is always current). Server-level only - individual tools stay anonymized.
+// reach Upstash; this is always current). Server-level only - individual tools are not named.
 // Renders nothing while loading or when drift is unavailable (flag off / ledger down) - never a
 // false "clean". Neutral contract-diff framing, mirrors /ledger.
 
@@ -24,7 +24,9 @@ type LaterKeys =
   | 'contextLastSeen'
   | 'contextSafetyRelevant'
   | 'known'
-  | 'versionEvidence';
+  | 'versionEvidence'
+  | 'publisherWide'
+  | 'publisherWideMore';
 type ServerDrift = Omit<LibServerDrift, LaterKeys> & Partial<Pick<LibServerDrift, LaterKeys>>;
 
 export function ContractDrift({ serverId }: { serverId: string }) {
@@ -181,11 +183,24 @@ export function ContractDrift({ serverId }: { serverId: string }) {
             </p>
           </div>
         )}
+        {/* Ledger /3: the counts above already include these; this line only says where they came
+            from, so many tools changing on one day are not read as that many separate decisions. */}
+        {(drift.publisherWide ?? []).map((w, i) => (
+          <p key={`${w.plane}:${w.day}:${i}`} className="mt-4 text-[13px] leading-[1.55] text-[var(--color-cite)]">
+            Part of a publisher-wide change{w.plane === 'context' ? ' to server context' : ''} of the
+            same kind on {w.day}, seen on {w.servers.toLocaleString()} servers from this publisher.
+          </p>
+        ))}
+        {(drift.publisherWideMore ?? 0) > 0 && (
+          <p className="mt-2 text-[13px] leading-[1.55] text-[var(--color-cite)]">
+            And {drift.publisherWideMore?.toLocaleString()} earlier publisher-wide changes.
+          </p>
+        )}
         <p className="mt-4 font-mono text-[10.5px] leading-[1.55] text-[var(--color-mute)]">
           Observed by mcpindex&rsquo;s crawler between daily registry snapshots - a contract diff, not
           a safety verdict, and not an in-path prevention (that is the gate). A &ldquo;safety-relevant
           diff&rdquo; touches a safety-relevant field; it is not a confirmed vulnerability. Shown at
-          the server level; individual tools stay anonymized. Absence is not a clean bill of health:
+          the server level; individual tools are not named. Absence is not a clean bill of health:
           only public-registry servers are crawled.
         </p>
       </div>

@@ -72,5 +72,6 @@ export async function loadServerDrift(serverId: string): Promise<ServerDrift | n
     ledger.generated_at,
     ledger.context_events,
     (await registryNames()).has(serverId),
+    ledger.fleet_events ?? [],
   );
 }
