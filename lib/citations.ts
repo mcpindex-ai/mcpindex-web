@@ -78,3 +78,17 @@ export const CITATION_DECLARED_EFFECT: Citation = {
   note      = {Concept DOI; resolves to the latest version. CC-BY-4.0}
 }`,
 };
+
+/** Joint paper behind the AI Context San Jose talk. Concept DOI at the co-author's request, so the pointer follows a v2. */
+export const CITATION_BINDING_GAP_PAPER: Citation = {
+  label: 'Paper: Declared vs. Observed',
+  bibtex: `@misc{bharti2026declared,
+  author    = {Bharti, Gautam and Agnihotri, Mayur},
+  title     = {Declared vs. Observed: Measuring the Binding Gap in MCP Tool Declarations},
+  year      = {2026},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.22649163},
+  url       = {https://doi.org/10.5281/zenodo.22649163},
+  note      = {Preprint. Concept DOI; resolves to the latest version. Version 1.0 is 10.5281/zenodo.22649164. CC-BY-4.0}
+}`,
+};

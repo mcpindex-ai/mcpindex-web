@@ -94,6 +94,7 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 
 - Source Liveness - Baseline v1: a corroborated, timestamp-anchored census of whether the source behind every registry server is still publicly reachable. Finding: ${SOURCE_LIVENESS_CENSUS.reposUnreachable} of ${SOURCE_LIVENESS_CENSUS.reposTotal} referenced GitHub repositories (${SOURCE_LIVENESS_CENSUS.pctUnreachable}) were not publicly accessible as of the ${SOURCE_LIVENESS_CENSUS.sweepDate} census, affecting ${SOURCE_LIVENESS_CENSUS.serversAffected} listed servers. Two independent vantages, 0 cross-vantage disagreements; census digest anchored to Bitcoin via OpenTimestamps. Live: [mcpindex.ai/research/source-liveness](https://mcpindex.ai/research/source-liveness). Archived, CC-BY-4.0: DOI 10.5281/zenodo.21501867 (concept DOI - always resolves to the current version; v1.1 is 10.5281/zenodo.21778894).
 - Drift Report - Edition v1: aggregate + per-server statistics of silent tool-contract changes across the reachable remote population. Live: [mcpindex.ai/drift-report](https://mcpindex.ai/drift-report). Archived, CC-BY-4.0: DOI 10.5281/zenodo.21449149 (concept DOI - always resolves to the current version; v1.1 is 10.5281/zenodo.21778727). Peer-reviewable write-up: "Registry Descriptions Go Stale Unevenly: An 89-Day Measurement of Model Context Protocol Drift, and Why Drift-Ranked Re-Auditing Under-Covers It", arXiv:2608.00997 (https://arxiv.org/abs/2608.00997); longitudinal panel dataset concept DOI 10.5281/zenodo.21709945.
+- The Binding Gap (talk, AI Context San Jose, 2026-09-23): across 44,172 tool contracts on 2,043 registry-listed MCP servers in 35 crawls (2026-06-09 to 2026-08-01), 83.8% declare an effect annotation and 59.3% still carry a declaration bound to the contract the server returns, a 24.5-point binding gap. Slides, method limits and citations: [mcpindex.ai/research/binding-gap](https://mcpindex.ai/research/binding-gap). Paper: "Declared vs. Observed: Measuring the Binding Gap in MCP Tool Declarations", Bharti and Agnihotri, DOI 10.5281/zenodo.22649163 (concept; v1.0 is 10.5281/zenodo.22649164); dataset DOI 10.5281/zenodo.21778281 (concept; figures from v1 10.5281/zenodo.21778282).
 
 ## Diagrams (CC BY 4.0, free to reuse with attribution)
 
@@ -180,6 +181,7 @@ This is the advisory directory client - not the in-path gate (\`mcpindex-gate\` 
 - [Stats](https://mcpindex.ai/stats): How many MCP servers are there? Live official-registry count with stated methodology (what counts as a server).
 - [Whitepaper](https://mcpindex.ai/whitepaper): Architecture whitepaper: gate, threat model, methodology, honest limits. Public; free PDF, no email wall.
 - [Source Liveness](https://mcpindex.ai/research/source-liveness): Census of which listed servers' source repository is still publicly reachable; ${SOURCE_LIVENESS_CENSUS.ratioPhrase} are not. Archived with a DOI (CC-BY-4.0).
+- [The Binding Gap](https://mcpindex.ai/research/binding-gap): Talk slides and figures: how many MCP tool declarations still match the contract the server serves.
 - [About](https://mcpindex.ai/about): Why this exists.
 
 Unofficial. Not affiliated with Anthropic.
