@@ -123,7 +123,7 @@ export default function BindingGapTalkPage() {
         now unsafe, so this works as a change tripwire and makes no safety call on
         its own. Declared, bound, stale and unobserved are the four states the talk
         uses; the vocabulary was developed jointly with Mayur Agnihotri,
-        StraightArc Technologies (ORCID 0009-0007-0137-3780).
+        StraightArc Technologies Pvt. Ltd. (ORCID 0009-0007-0137-3780).
       </p>
 
       <h2 className="mt-12 t-h2 font-medium text-[var(--color-ink)]">Cite this</h2>
@@ -138,11 +138,11 @@ export default function BindingGapTalkPage() {
         <a href="https://doi.org/10.5281/zenodo.21778282" target="_blank" rel="noreferrer" className={LINK}>
           10.5281/zenodo.21778282
         </a>
-        . Paper version{' '}
+        . The talk quoted paper version 1.0,{' '}
         <a href="https://doi.org/10.5281/zenodo.22649164" target="_blank" rel="noreferrer" className={LINK}>
           10.5281/zenodo.22649164
         </a>
-        .
+        ; the BibTeX above uses the concept DOI, which follows later versions.
       </p>
 
       <p className="mt-10 text-[14px] leading-[1.6] text-[var(--color-mute)]">
