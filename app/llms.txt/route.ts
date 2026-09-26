@@ -131,7 +131,7 @@ ${allFilms().map(({ id, film }) => {
 - GET /api/v1/preflight?task=<text>                              Pre-flight: top servers + the rank-1 server's advisory verdict in one call.
 - GET /api/v1/diff?since=<YYYY-MM-DD>                            What changed in the registry since a date.
 - GET /api/v1/drift/any?fp=<tool_fingerprint>                    Fleet drift query: has this tool's contract drifted (crawler-corroborated)? Powers "warns you on call 1". Returns {drifted, sources, safety_relevant}.
-- GET /api/v1/ledger                                             Public drift ledger: contract changes the crawler observed (fingerprint-only; a contract-diff, not a safety verdict).
+- GET /api/v1/ledger                                             Public drift ledger: contract changes the crawler observed (listed by fingerprint, recomputable from registry names; a contract-diff, not a safety verdict).
 - GET /api/v1/trust/tool/<server_id>/<tool_name>                 Per-tool advisory screen verdict (v1: REVIEW when screened, else UNVERIFIED fail-closed; ALLOW/DENY reserved, not produced).
 - GET /api/v1/trust/server/<server_id>                           Server-level advisory screen verdict (same honesty as per-tool).
 - GET /api/registry-count                                        Live server + category count.

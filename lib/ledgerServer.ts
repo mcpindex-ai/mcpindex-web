@@ -64,6 +64,9 @@ export function __setLedgerServerRedisForTest(client: Redis | null | undefined):
  *
  * Exported for the route suite; not part of the module's real surface. */
 export function decodeLedgerRaw(raw: unknown): unknown {
+  // The plain-string path had no size bound at all; hold it to the same one as the gzip path, so
+  // one oversized value cannot cost a parse per request. Today's plain /2 blob is about a third of it.
+  if (typeof raw === 'string' && raw.length > MAX_DECODED_BYTES) return null;
   if (typeof raw !== 'string' || !raw.startsWith(GZIP_PREFIX)) return raw;
   try {
     const gz = Buffer.from(raw.slice(GZIP_PREFIX.length), 'base64');

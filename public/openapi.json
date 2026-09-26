@@ -83,7 +83,7 @@
       "get": {
         "operationId": "driftLedger",
         "summary": "Public drift ledger: contract changes the crawler observed",
-        "description": "Fingerprint-only contract diffs - a contract-diff record, not a safety verdict.",
+        "description": "Contract diffs listed by fingerprint (keyed hashes of public registry names under a published key; recomputable, not anonymous) - a contract-diff record, not a safety verdict. Schema mcpindex.drift.ledger/2, or /3 once publisher-wide changes are counted once: /3 adds fleet_events and stat.independent, and its events omit tools whose only change was part of a publisher-wide change (look those up with /api/v1/drift/any).",
         "responses": { "200": { "description": "Ledger entries.", "content": { "application/json": { "schema": { "type": "object" } } } } }
       }
     },

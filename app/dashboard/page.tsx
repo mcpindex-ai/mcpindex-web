@@ -40,6 +40,20 @@ export default async function DashboardPage() {
           label: 'Tools observed drifting',
           value: ledger.stat.tools_observed_drifting,
         },
+        // Ledger /3 only. The two rows above keep their meaning (every tool); these say how much of
+        // that is publishers changing many of their servers at once. Absent on a /2 blob.
+        ...(ledger.stat.independent
+          ? [
+              {
+                label: 'Tools drifting outside publisher-wide changes',
+                value: ledger.stat.independent.tools_observed_drifting,
+              },
+              {
+                label: 'Publisher-wide tool changes (one publisher, 10+ servers, one day)',
+                value: ledger.stat.independent.fleet_changes,
+              },
+            ]
+          : []),
       ]
     : [];
 

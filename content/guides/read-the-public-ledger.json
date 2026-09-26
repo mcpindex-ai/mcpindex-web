@@ -6,7 +6,7 @@
   "meta_description": "A walkthrough of the mcpindex drift ledger: open it, read a fingerprint-only event row, spot a safety-relevant change, and read the coverage dashboard.",
   "h1": "Read the public drift ledger and dashboard",
   "project": "mcpindex",
-  "updated": "2026-08-20",
+  "updated": "2026-09-25",
   "est_minutes": 3,
   "outcome": "You can read the public drift ledger and dashboard: what the crawler saw change, how to spot a safety-relevant diff, and what the coverage numbers do (and do not) mean.",
   "body": "The ledger is public proof of the problem the gate solves. mcpindex crawls the public MCP registry every day and records which tool contracts silently change between snapshots. No login, no per-user data, and no server pays to be listed. Here is how to read it. The deduped, citable analysis of the same corpus lives at [The MCP Drift Report](/drift-report).",
@@ -24,7 +24,7 @@
     {
       "id": "read-event",
       "heading": "Read an event row",
-      "body": "Each row in the Events table is one observed contract change, and it is deliberately fingerprint-only:\n\n| Column | What it means |\n| --- | --- |\n| Tool fingerprint | A content hash of the tool, not its name |\n| Server fingerprint | A content hash of the server (a dash if none was recorded) |\n| Last seen | When the crawler last saw this contract |\n| What changed | The change kinds: a new required param, an annotation flip, a narrowed constraint |\n| Safety | Tagged when the change touched a safety-relevant field |\n\nmcpindex reports that a contract changed without publicly naming a specific server."
+      "body": "Each row in the Events table is one observed contract change, and it lists fingerprints rather than names:\n\n| Column | What it means |\n| --- | --- |\n| Tool fingerprint | A keyed hash of the server and tool names |\n| Server fingerprint | A keyed hash of the server's registry name (a dash if none was recorded) |\n| Last seen | When the crawler last saw this contract |\n| What changed | The change kinds: a new required param, an annotation flip, a narrowed constraint |\n| Safety | Tagged when the change touched a safety-relevant field |\n\nFingerprints keep names off the page, but they are not a privacy measure: the key is published, so anyone can recompute a fingerprint from a public registry name and match it."
     },
     {
       "id": "safety",
@@ -34,7 +34,7 @@
     {
       "id": "context-surface",
       "heading": "Read a context-surface change",
-      "body": "Below the Events table, a second table appears when the crawler has seen a server change its context surface. These entries are not tools, which is why there is no tool fingerprint column:\n\n| Column | What it means |\n| --- | --- |\n| Server fingerprint | A content hash of the server, never its name |\n| Last seen | When the crawler last saw this surface |\n| What changed | The context kinds: instructions added or changed, or a prompt's argument contract changed |\n\nA context surface is the text a server hands your client to inject into the agent's context when it connects: the server's own instructions, and the metadata of the prompts it offers. It is server-scoped, so one entry covers the whole server rather than a single tool. This text sits outside every tool contract hash, which means a change here moves nothing the gate pins, and the crawler's observation is the only drift signal it has. The section is absent when nothing has been observed."
+      "body": "Below the Events table, a second table appears when the crawler has seen a server change its context surface. These entries are not tools, which is why there is no tool fingerprint column:\n\n| Column | What it means |\n| --- | --- |\n| Server fingerprint | A keyed hash of the server's registry name |\n| Last seen | When the crawler last saw this surface |\n| What changed | The context kinds: instructions added or changed, or a prompt's argument contract changed |\n\nA context surface is the text a server hands your client to inject into the agent's context when it connects: the server's own instructions, and the metadata of the prompts it offers. It is server-scoped, so one entry covers the whole server rather than a single tool. This text sits outside every tool contract hash, which means a change here moves nothing the gate pins, and the crawler's observation is the only drift signal it has. The section is absent when nothing has been observed."
     },
     {
       "id": "dashboard",
@@ -64,7 +64,7 @@
   "faq": [
     {
       "q": "Does the mcpindex drift ledger name the servers that changed?",
-      "a": "No. Every event is fingerprint-only: a content hash of the tool and (when recorded) the server, never the name. mcpindex reports that a contract changed without publicly naming a specific server."
+      "a": "It shows fingerprints, not names, but they are not anonymous. Each fingerprint is a keyed hash of the public registry name under a published key, so anyone can recompute it and match it to a server. Treat them as stable IDs, not as privacy."
     },
     {
       "q": "Is a safety-relevant change in the ledger a confirmed vulnerability?",
