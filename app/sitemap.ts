@@ -80,6 +80,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         : []),
       { url: `${base}/dashboard`, priority: 0.5, changeFrequency: 'hourly' },
       { url: `${base}/research/source-liveness`, priority: 0.8, changeFrequency: 'weekly' },
+      { url: `${base}/research/binding-gap`, priority: 0.7, changeFrequency: 'yearly' },
       { url: `${base}/screen`, priority: 0.8, changeFrequency: 'monthly' },
       { url: `${base}/scan`, priority: 0.8, changeFrequency: 'monthly' },
       { url: `${base}/install`, priority: 0.9, changeFrequency: 'monthly' },
