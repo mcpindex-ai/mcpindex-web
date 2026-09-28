@@ -173,7 +173,7 @@ This is the advisory directory client - not the in-path gate (\`mcpindex-gate\` 
 - [Servers](https://mcpindex.ai/servers): A-Z browse hub over all ${servers} per-server detail pages (JSON-LD typed, verdict surfaced when available); individual pages live at /server/<slug>.
 - [Guides](https://mcpindex.ai/guides): Practical guides: trust/security reviews, comparisons, integration how-tos; individual guides at /guides/<slug>.
 - [What is MCP 2.0?](https://mcpindex.ai/guides/what-is-mcp-2-0): The 2026-07-28 revision explained - what changed on the wire, the one-curl probe to check any server's protocol era, dual-era migration notes, measured-adoption stance.
-- [How many MCP servers change their tool definitions after publishing?](https://mcpindex.ai/guides/how-many-mcp-servers-change-their-tools-after-publishing): The measured answer - 89-day panel rates across 18,748 registry servers, change concentration, and the 62.4% no-version-bump share on live contracts, with CC-BY DOIs.
+- [How many MCP servers change their tool definitions after publishing?](https://mcpindex.ai/guides/how-many-mcp-servers-change-their-tools-after-publishing): The measured answer - 89-day panel rates on the official registry, change concentration across 18,748 servers, and the 62.4% no-version-bump share on live contracts, with CC-BY DOIs.
 - [Best by category](https://mcpindex.ai/best): Curated picks per category, at /best/<category>.
 - [Leaderboard](https://mcpindex.ai/leaderboard): Top 50 by MCP Quality Score.
 - [MCP tool drift](https://mcpindex.ai/drift): The citable definition of tool drift, what counts as drift, how it is measured, and the frozen rates with DOIs.
