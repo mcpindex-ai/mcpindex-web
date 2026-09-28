@@ -100,7 +100,19 @@ export function Footer() {
         </div>
 
         <div className="rule-t mt-12 pt-6 flex flex-col sm:flex-row justify-between gap-3 font-mono text-[11.5px] text-[var(--color-mute)]">
-          <div>© 2026 mcpindex.ai</div>
+          <div>
+            © 2026 mcpindex.ai · Research and engineering by{' '}
+            <Link href="/about" className={LINK}>Gautam Bharti</Link>
+            {' · '}
+            <a
+              href="https://orcid.org/0009-0001-4448-1438"
+              target="_blank"
+              rel="noreferrer"
+              className={LINK}
+            >
+              ORCID 0009-0001-4448-1438
+            </a>
+          </div>
           <div>mcpindex.ai · the in-path trust gate for agent tool calls</div>
         </div>
       </div>
