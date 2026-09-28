@@ -8,7 +8,13 @@
 // Registry figures are the MCP Registry Drift Panel (concept DOI 10.5281/zenodo.21709945), copied
 // from mcpindex-trust corpus_eval/drift_panel/deposit/survival.csv and figures.json, panel pin
 // d4579dbf, data cutoff 2026-07-28T21:13:35Z. That file is not in this repo, so the values are
-// literal here and pinned by driftDefinition.test.ts against the same numbers the guides quote.
+// literal here. Two estimands, and the page must not blur them:
+//   - survival rates: for each starting observation, the share of servers listed then whose
+//     entry differed from its starting value at any observation within N days (a revert still
+//     counts), averaged over starting observations. The denominator is each cohort's own
+//     snapshot, NOT the 18,748.
+//   - concentration: over the 18,748 servers seen in at least 10 observations. "top10pct" is the
+//     top 10% of THOSE servers ranked by change count, not the top 10% of servers that changed.
 import edition from '@/data/report-edition-v1.json';
 
 export const DRIFT_TERM = 'MCP tool drift';
@@ -22,6 +28,7 @@ export const DRIFT_CONTRACT_SCOPE =
   'output schema and annotations.';
 
 const agg = edition.aggregates;
+const flips = agg.flip_segmentation;
 
 export const LIVE_EDITION = {
   snapshots: edition.coverage.snapshot_count,
@@ -30,9 +37,14 @@ export const LIVE_EDITION = {
   lastSnapshot: edition.coverage.last_snapshot.slice(0, 10),
   outageDays: Math.round(edition.coverage.gap_spans[0]?.days ?? 0),
   incidents: agg.deduped_safety_incidents,
+  kindsObserved: Object.keys(agg.incidents_by_kind).length,
   sameVersion: agg.version_delta_split.same,
   silentPct: agg.silent_share_pct,
   flips: agg.incidents_by_kind['annotation-flip-to-destructive'],
+  // First-labeling: the old record had no annotations block, so the tool is declaring hints for
+  // the first time. Guarantee change: an existing annotations block moved to destructive.
+  flipsFirstLabel: flips['first-labeling|same'] + flips['first-labeling|changed'],
+  flipsGuaranteeChange: flips['guarantee-change|same'] + flips['guarantee-change|changed'],
   stableIncidents: edition.headline_excluding_unstable.deduped_safety_incidents,
   stableSilentPct: edition.headline_excluding_unstable.silent_share_pct,
   unstableTools: edition.unstable.unstable_tool_count,
@@ -40,29 +52,30 @@ export const LIVE_EDITION = {
   conceptDoi: edition.concept_doi,
 } as const;
 
-// Concentration of the live-contract figures, computed 2026-09-28 from the edition's own public
-// file (per-server-summaries.csv in the version DOI above; one row per server with at least one
-// incident). Publisher = the server id up to the first "/", so io.github.x/a and io.github.x/b
-// are one publisher. Recompute from that CSV; nothing here depends on private data.
+// Concentration of the live-contract figures, from the edition's own public file, vendored as
+// data/report-edition-v1-per-server.csv (md5 f3dba24134204d6db743f2db452bcc35, identical to the
+// Zenodo copy). driftDefinition.test.ts recomputes every value below from that CSV. Publisher =
+// the server id up to the first "/"; four rows are keyed by display name and count as their own
+// publisher, so publisher shares here are an upper bound on dispersion, not a lower one.
 export const LIVE_CONCENTRATION = {
   servers: 291,
-  publishers: 194,
-  topPublisherIncidents: 229,
-  topPublisherPct: 9.1,
-  publishersMostlySameVersion: 137,
   flipServers: 24,
+  topSameVersionPublisher: 156,
+  topSameVersionPct: 10.0,
+  topFiveSameVersionPct: 37.1,
 } as const;
 
-// survival.csv: share of eligible servers whose value differed from its cohort-start value at
-// any observation within N days (a change that later reverts still counts).
 export const REGISTRY_PANEL = {
   observations: 120,
   spanDays: 88.6,
   cutoff: '2026-07-28',
-  eligible: 18748,
+  cohorts: { d30: 60, d60: 36, d89: 9 },
+  minWindowDaysAt89: 80,
   descriptionPct: { d30: 3.3, d60: 5.5, d89: 6.9 },
   descriptorPct: { d30: 11.9, d60: 16.3, d89: 19.1 },
+  eligible: 18748,
+  eligibleMinObservations: 10,
   neverChangedPct: 75.2,
-  top10ChangerSharePct: 78.7,
+  topTenthSharePct: 78.7,
   conceptDoi: '10.5281/zenodo.21709945',
 } as const;

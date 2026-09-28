@@ -7,7 +7,11 @@ import {
   CITATION_PANEL,
   CITATION_PAPER,
 } from '@/lib/citations';
-import { SAFETY_RELEVANT_CHANGE_KINDS, SURFACE_CHANGE_KINDS } from '@/lib/changeKinds';
+import {
+  CONTEXT_SURFACE_CHANGE_KINDS,
+  SAFETY_RELEVANT_CHANGE_KINDS,
+  SURFACE_CHANGE_KINDS,
+} from '@/lib/changeKinds';
 import {
   DRIFT_CONTRACT_SCOPE,
   DRIFT_DEFINITION,
@@ -24,10 +28,10 @@ import { pageMetadata } from '@/lib/seo';
 // /ledger, which this page links to and never reads, so a cited number cannot change under a reader.
 
 export const metadata: Metadata = pageMetadata({
-  title: 'MCP tool drift: definition, kinds and measured rates',
+  title: 'MCP tool drift: definition and measured rates',
   description:
-    "MCP tool drift is a change to a tool's contract after a client has seen it. What counts, " +
-    'how it is measured, and the measured rates, with DOIs.',
+    "MCP tool drift is a change to a tool's contract after a client has seen it. What counts " +
+    'as drift and how often it happens, with DOIs.',
   image: '/opengraph-image',
   path: '/drift',
 });
@@ -46,6 +50,7 @@ export default function DriftDefinitionPage() {
   const C = LIVE_CONCENTRATION;
   const R = REGISTRY_PANEL;
   const kinds = [...SURFACE_CHANGE_KINDS];
+  const serverKinds = [...CONTEXT_SURFACE_CHANGE_KINDS];
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -54,7 +59,6 @@ export default function DriftDefinitionPage() {
     alternateName: ['tool drift', 'MCP contract drift'],
     description: `${DRIFT_DEFINITION} ${DRIFT_CONTRACT_SCOPE}`,
     url: 'https://mcpindex.ai/drift',
-    inDefinedTermSet: { '@type': 'DefinedTermSet', name: 'mcpindex glossary' },
   };
 
   return (
@@ -86,8 +90,8 @@ export default function DriftDefinitionPage() {
         <dt className="mt-4 font-medium text-[var(--color-ink)]">Rug pull</dt>
         <dd className="mt-1">
           What security writing calls drift done on purpose, after a tool has passed review. The
-          term asserts intent. Drift does not, and most of the drift we observe looks like ordinary,
-          unannounced maintenance.
+          term asserts intent. Drift does not, and a contract diff cannot tell a rug pull from
+          routine maintenance.
         </dd>
         <dt className="mt-4 font-medium text-[var(--color-ink)]">Registry drift</dt>
         <dd className="mt-1">
@@ -95,13 +99,17 @@ export default function DriftDefinitionPage() {
           about itself and the contract is what it serves, and either can move while the other
           stays put.
         </dd>
+        <dt className="mt-4 font-medium text-[var(--color-ink)]">Safety-relevant drift</dt>
+        <dd className="mt-1">
+          Drift of a kind marked safety-relevant in the table below: a change a person should look
+          at before the tool runs again.
+        </dd>
       </dl>
 
       <h2 className={H2}>What counts</h2>
       <p className={P}>
-        Every observed change is classified into a fixed set of kinds. These are the kinds published
-        on the <Link href="/ledger" className={LINK}>drift ledger</Link>. A safety-relevant kind is
-        one a person should look at before the tool runs again.
+        Each change the crawler observes is classified into a fixed set of kinds. These are the
+        tool-level kinds published on the <Link href="/ledger" className={LINK}>drift ledger</Link>.
       </p>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-[14px] leading-[1.5] text-[var(--color-cite)]">
@@ -124,41 +132,48 @@ export default function DriftDefinitionPage() {
         </table>
       </div>
       <p className={P}>
-        Two more kinds are recorded and kept off the ledger: a tool being added, and an edit to
-        description text with no structural change. A description edit is still drift under the
+        The ledger also publishes {serverKinds.length} server-level kinds, all safety-relevant:{' '}
+        {serverKinds.map((k, i) => (
+          <span key={k}>
+            {kindLabel(k)} (<code>{k}</code>){i < serverKinds.length - 1 ? '; ' : '.'}
+          </span>
+        ))}
+      </p>
+      <p className={P}>
+        More kinds are recorded and kept off the ledger, among them a tool being added and an edit
+        to description text with no structural change. A description edit is still drift under the
         definition above, and a poisoned description is one way an attack arrives, but on its own
         the classifier grades it cosmetic.
       </p>
 
       <h2 className={H2}>What drift is not</h2>
       <p className={P}>
-        It is not a safety verdict. A contract diff says the contract changed. Whether the new one is
-        safe is a separate question.
+        A contract diff says the contract changed. Whether the new contract is safe is a separate
+        question, and this page makes no safety call.
       </p>
       <p className={P}>
-        It does not cover a change in behaviour under an unchanged contract. A server that keeps its
-        contract byte for byte and changes what the tool does is invisible to any contract
+        A change in behavior under an unchanged contract is outside the definition. A server that
+        keeps its contract byte for byte and changes what the tool does is invisible to any contract
         comparison, including ours.
-      </p>
-      <p className={P}>
-        It is not an outage. Only servers reachable in both snapshots are compared, so a server
-        going offline never counts as its tools being removed.
       </p>
 
       <h2 className={H2}>How it is measured</h2>
       <p className={P}>
         Live contracts: a daily crawl of the reachable remote servers in the official MCP registry
-        calls <code>tools/list</code> on each and diffs consecutive snapshots with a deterministic
-        classifier. The frozen edition below covers {L.snapshots} snapshots across {L.days} days,
-        {' '}{L.firstSnapshot} to {L.lastSnapshot}, including one disclosed {L.outageDays}-day
-        crawler outage. Changes across the outage are attributed to its endpoints and never dated
-        inside it.
+        calls <code>tools/list</code> on each and compares every snapshot with the one before it,
+        so it also records changes that are later reverted. Only servers reachable in both
+        snapshots are compared, so a server going offline never counts as its tools being removed.
+        The frozen edition below covers {L.snapshots} snapshots across {L.days} days,{' '}
+        {L.firstSnapshot} to {L.lastSnapshot}, including a {L.outageDays}-day crawler outage.
+        Changes that happened and were undone entirely inside the outage were never observed.
       </p>
       <p className={P}>
         Registry entries: {R.observations} observations of the official registry over {R.spanDays}
-        {' '}days, to {R.cutoff}, covering {n(R.eligible)} servers present long enough to be eligible.
-        A server counts as changed within N days if its entry differed from its starting value at any
-        observation in that window, so a change that later reverts still counts.
+        {' '}days, to {R.cutoff}. For each starting observation, take every server listed then and
+        count the share whose entry differed from its starting value at any observation within N
+        days; a change that later reverts still counts. Each rate is the mean over starting
+        observations: {R.cohorts.d30} for 30 days, {R.cohorts.d60} for 60 and {R.cohorts.d89} for 89,
+        the last using windows of at least {R.minWindowDaysAt89} days.
       </p>
 
       <h2 className={H2}>The numbers</h2>
@@ -196,10 +211,12 @@ export default function DriftDefinitionPage() {
         </table>
       </div>
       <p className={P}>
-        These changes came from {C.servers} servers run by {C.publishers} publishers. The largest
-        publisher accounts for {C.topPublisherPct}% of them, and {C.publishersMostlySameVersion} of
-        the {C.publishers} publishers shipped most of their changes with the version unchanged, so
-        the {L.silentPct}% does not come from one fleet.
+        The {n(L.incidents)} changes came from {C.servers} servers and span {L.kindsObserved} of the
+        safety-relevant kinds above. Of the {L.flips} flips to destructive, {L.flipsFirstLabel} were
+        a tool declaring annotations for the first time and {L.flipsGuaranteeChange} changed an
+        annotation the tool already had. No single publisher accounts for the same-version share:
+        the largest supplied {C.topSameVersionPct}% of those changes ({C.topSameVersionPublisher} of{' '}
+        {n(L.sameVersion)}) and the top five together {C.topFiveSameVersionPct}%.
       </p>
 
       <h3 className="mt-8 text-[15px] font-medium text-[var(--color-ink)]">
@@ -234,8 +251,9 @@ export default function DriftDefinitionPage() {
         </table>
       </div>
       <p className={P}>
-        {R.neverChangedPct}% of eligible servers never changed their entry in the window, and the top
-        10% of changers account for {R.top10ChangerSharePct}% of all changes.
+        Of the {n(R.eligible)} servers seen in at least {R.eligibleMinObservations} observations,{' '}
+        {R.neverChangedPct}% never changed their entry in the window, and the tenth of them that
+        changed most account for {R.topTenthSharePct}% of all changes.
       </p>
       <p className={P}>
         These figures are frozen and will not move. The running count is on the{' '}
