@@ -4,9 +4,18 @@ import { catalogPageFile, paginateCatalog, parseCatalogPageFile, renderCatalogPa
 import type { CatalogPage } from '@/lib/llmsCatalog';
 
 // One file of the per-server catalog, e.g. /llms-full/other-3.txt. /llms-full.txt lists them.
-// Rendered on demand (no generateStaticParams, so no ISR writes per file); the edge cache comes
-// from the Cache-Control header below, the same hourly TTL plus long SWR as /llms-full.txt, so
-// a cold loadServers() parse stays off a fetcher's request path.
+// Prerendered with the same hourly ISR TTL as /llms-full.txt. Rendered on demand instead, Vercel
+// strips s-maxage and stale-while-revalidate from a function response and clients saw only
+// `Cache-Control: public`; a prerendered route keeps the header it sets.
+export const revalidate = 3600;
+// Unknown names get the site's static 404 without running this handler. Left at the default
+// (true), every well-formed unknown name (zzz-7.txt) was rendered and then written to the ISR
+// cache, so a sweep of made-up names turned into billed ISR writes.
+export const dynamicParams = false;
+
+export async function generateStaticParams(): Promise<{ file: string }[]> {
+  return paginateCatalog(await loadServers()).map((p) => ({ file: catalogPageFile(p) }));
+}
 
 // Pages are cut once per snapshot version, not per request. Keyed on the version so a data
 // refresh that lands in a warm isolate re-cuts instead of serving the old page boundaries.
@@ -20,8 +29,7 @@ function pagesFor(version: string, servers: IndexedServer[]): Map<string, Catalo
   return byFile;
 }
 
-// Short edge TTL on the 404 so a sweep of well-formed but unknown names does not put a cold
-// loadServers() parse behind every request.
+// Defensive only: with dynamicParams = false, Next answers unknown names before this runs.
 function notFound(): Response {
   return new Response('Not found. Catalog files are listed in https://mcpindex.ai/llms-full.txt\n', {
     status: 404,
@@ -29,18 +37,14 @@ function notFound(): Response {
   });
 }
 
+// The canonical-path 308 for percent-encoded spellings lives in proxy.ts: reading req.url here
+// would opt this route out of prerendering.
 export async function GET(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ file: string }> },
 ) {
   const parsed = parseCatalogPageFile((await params).file);
   if (!parsed) return notFound();
-  // Next hands over the decoded segment, so /llms-full/%6fther-1.txt parses as other-1.txt. One
-  // spelling per file keeps it one edge-cache entry: anything else redirects to the canonical path.
-  const canonical = `/llms-full/${catalogPageFile(parsed)}`;
-  if (new URL(req.url).pathname !== canonical) {
-    return Response.redirect(new URL(canonical, req.url), 308);
-  }
 
   // loadServers() first so loadSnapshotMeta() reads the populated registry cache.
   const servers = await loadServers();
