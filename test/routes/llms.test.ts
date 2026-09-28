@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GET as llms } from '../../app/llms.txt/route';
 import { GET as llmsFull } from '../../app/llms-full.txt/route';
-import { GET as llmsFullFile } from '../../app/llms-full/[file]/route';
+import { GET as llmsFullFile, generateStaticParams } from '../../app/llms-full/[file]/route';
 import { gateInstallLine } from '../../lib/install/manifest';
 import { loadServers, loadSnapshotMeta } from '../../lib/registry';
 import { SOURCE_LIVENESS_CENSUS } from '../../lib/sourceLiveness';
@@ -153,12 +153,14 @@ test('a full catalog pull, plus a retry per file, fits one rate-limit window', a
   );
 });
 
-test('/llms-full/<file>: a percent-encoded spelling redirects to the one canonical path', async () => {
-  const res = await llmsFullFile(new Request('https://mcpindex.ai/llms-full/%6fther-1.txt'), {
-    params: Promise.resolve({ file: 'other-1.txt' }),
-  });
-  assert.equal(res.status, 308);
-  assert.equal(res.headers.get('location'), 'https://mcpindex.ai/llms-full/other-1.txt');
+test('/llms-full/<file>: every listed file is prerendered, and nothing else is', async () => {
+  // generateStaticParams is what keeps these files prerendered, and a prerendered route is the
+  // only kind whose s-maxage/SWR header reaches clients on Vercel. A file the index lists but
+  // this misses would fall back to an on-demand render with the header stripped.
+  const index = await bodyOf(await llmsFull());
+  const listed = [...index.matchAll(/https:\/\/mcpindex\.ai\/llms-full\/(\S+\.txt)/g)].map((m) => m[1]).sort();
+  const prerendered = (await generateStaticParams()).map((p) => p.file).sort();
+  assert.deepEqual(prerendered, listed);
 });
 
 test('/llms-full/<file>: anything that is not a listed catalog file is a plain 404', async () => {

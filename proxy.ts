@@ -6,7 +6,7 @@ import {
   isGoneSlug,
 } from '@/lib/serverRemovals';
 import { recordAeoFetch } from '@/lib/aeoCounter';
-import { parseCatalogPageFile } from '@/lib/llmsCatalog';
+import { catalogPageFile, parseCatalogPageFile } from '@/lib/llmsCatalog';
 import { recordApiCall, usageRouteFor } from '@/lib/apiUsage';
 
 // Per-IP rate limit on /api/v1/*. Sliding window in-memory map (per-instance).
@@ -59,6 +59,20 @@ function sweepBuckets(now: number) {
 // their own class (see CATALOG_MAX_PER_WINDOW).
 function isCatalogPath(p: string): boolean {
   return p.startsWith('/llms-full/');
+}
+
+// The canonical path for a catalog request, or null when the name is not a catalog file at all
+// (the route 404s those). Decodes first, so every spelling of a real file maps to one path.
+function canonicalCatalogPath(p: string): string | null {
+  if (!isCatalogPath(p)) return null;
+  let name: string;
+  try {
+    name = decodeURIComponent(p.slice('/llms-full/'.length));
+  } catch {
+    return null;
+  }
+  const parsed = parseCatalogPageFile(name);
+  return parsed ? `/llms-full/${catalogPageFile(parsed)}` : null;
 }
 
 function isLlmsPath(p: string): boolean {
@@ -222,7 +236,16 @@ export function proxy(req: NextRequest, event: NextFetchEvent) {
   if (isLlmsPath(p) && req.nextUrl.search) {
     const clean = new URL(req.url);
     clean.search = '';
+    // Fold in the canonical-spelling fix below, so a query plus an encoded name is one hop.
+    clean.pathname = canonicalCatalogPath(p) ?? clean.pathname;
     return NextResponse.redirect(clean, 308);
+  }
+  // Same reason, for catalog files: the route decodes its segment, so /llms-full/%6fther-1.txt
+  // would serve other-1.txt under a second cache key. One spelling per file. This lives here
+  // because the route is prerendered and reading the raw URL there would make it dynamic.
+  const canonical = canonicalCatalogPath(p);
+  if (canonical && canonical !== p) {
+    return NextResponse.redirect(new URL(canonical, req.url), 308);
   }
 
   // AI-crawler counting. Deliberately LAST, so it records only requests that actually reach the

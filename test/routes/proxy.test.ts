@@ -43,6 +43,26 @@ test('proxy: query string on a catalog file → 308 to the canonical URL', () =>
   assert.equal(res.headers.get('location'), 'https://mcpindex.ai/llms-full/other-1.txt');
 });
 
+test('proxy: a percent-encoded catalog file name 308s to the one canonical path', () => {
+  for (const spelling of ['%6fther-1.txt', 'other%2D1.txt', 'other-1%2Etxt']) {
+    const res = proxy(new NextRequest(`https://mcpindex.ai/llms-full/${spelling}`));
+    assert.equal(res.status, 308, spelling);
+    assert.equal(res.headers.get('location'), 'https://mcpindex.ai/llms-full/other-1.txt', spelling);
+  }
+});
+
+test('proxy: a query string plus an encoded name is a single 308 to the canonical path', () => {
+  const res = proxy(new NextRequest('https://mcpindex.ai/llms-full/%6fther-1.txt?x=1'));
+  assert.equal(res.status, 308);
+  assert.equal(res.headers.get('location'), 'https://mcpindex.ai/llms-full/other-1.txt');
+});
+
+test('proxy: a canonical catalog name, or a name that is not a catalog file, passes through', () => {
+  for (const path of ['/llms-full/other-1.txt', '/llms-full/wp-login.php', '/llms-full/%E0%A4%A.txt']) {
+    assert.notEqual(proxy(new NextRequest(`https://mcpindex.ai${path}`)).status, 308, path);
+  }
+});
+
 test('proxy: catalog files have their own, larger bucket', () => {
   const headers = { 'x-vercel-forwarded-for': '9.9.9.103' };
   const get = (i: number) =>
