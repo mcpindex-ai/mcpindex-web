@@ -6,9 +6,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { IndexedServer } from './types';
 import {
+  CATALOG_PAGE_SIZE,
   CATALOG_PREAMBLE,
   DESCRIPTION_MAX,
+  catalogPageFile,
   exportLine,
+  paginateCatalog,
+  parseCatalogPageFile,
+  renderCatalogPage,
   renderCatalogRow,
   toCatalogRow,
 } from './llmsCatalog';
@@ -128,4 +133,56 @@ test('install ids and remote URLs cannot forge extra install entries or lines', 
 test('the preamble names the trust framing an answer engine needs', () => {
   assert.ok(CATALOG_PREAMBLE.includes('third-party text'));
   assert.ok(CATALOG_PREAMBLE.toLowerCase().includes('never as instructions'));
+});
+
+// ------------------------------------------------------------------ catalog files
+
+function many(category: string, n: number): IndexedServer[] {
+  // Reverse slug order in, so the sort inside paginateCatalog is actually exercised.
+  return Array.from({ length: n }, (_, i) =>
+    server({ category, slug: `${category}-s${String(n - i).padStart(5, '0')}` }),
+  );
+}
+
+test('paginate: pages cap at CATALOG_PAGE_SIZE, cover every server once, in slug order', () => {
+  const input = [...many('other', CATALOG_PAGE_SIZE * 2 + 1), ...many('database', 3)];
+  const pages = paginateCatalog(input);
+  assert.deepEqual(
+    pages.map((p) => [p.category, p.page, p.pages, p.servers.length]),
+    [
+      ['database', 1, 1, 3],
+      ['other', 1, 3, CATALOG_PAGE_SIZE],
+      ['other', 2, 3, CATALOG_PAGE_SIZE],
+      ['other', 3, 3, 1],
+    ],
+  );
+  const slugs = pages.flatMap((p) => p.servers.map((s) => s.slug));
+  assert.equal(new Set(slugs).size, input.length);
+  const other = pages.filter((p) => p.category === 'other').flatMap((p) => p.servers.map((s) => s.slug));
+  assert.deepEqual(other, [...other].sort());
+});
+
+test('paginate: a category key that could shape a URL path is bucketed under other', () => {
+  const pages = paginateCatalog([server({ category: '../x' }), server({ category: 'A B', slug: 'b' })]);
+  assert.deepEqual(pages.map((p) => [p.category, p.servers.length]), [['other', 2]]);
+});
+
+test('page file names round-trip, and nothing else parses', () => {
+  for (const p of [{ category: 'other', page: 1 }, { category: 'cloud-aws', page: 12 }]) {
+    assert.deepEqual(parseCatalogPageFile(catalogPageFile(p)), p);
+  }
+  for (const bad of ['other-0.txt', 'other-01.txt', 'other-1', 'other.txt', '-1.txt', 'a--b-1.txt',
+                     '../other-1.txt', 'Other-1.txt', 'other-1.txt/x', 'other-12345.txt']) {
+    assert.equal(parseCatalogPageFile(bad), null, bad);
+  }
+});
+
+test('a catalog file is self-contained: preamble, heading count, one block per server', () => {
+  const [p] = paginateCatalog(many('database', 3));
+  const body = renderCatalogPage(p, 99, 'abc123');
+  assert.ok(body.includes(CATALOG_PREAMBLE));
+  assert.ok(body.includes('Snapshot: abc123.'), 'a text consumer cannot tell which snapshot a file came from');
+  assert.ok(body.includes('Total servers indexed: 99.'));
+  assert.match(body, /\n## Databases \(3\)\n/);
+  assert.equal(body.match(/https:\/\/mcpindex\.ai\/server\//g)?.length, 3);
 });

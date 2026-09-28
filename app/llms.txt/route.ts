@@ -7,6 +7,7 @@ import { VERDICT_CONTRACT_VERSION } from '@/lib/verdictContract';
 import { gateInstallLine } from '@/lib/install/manifest';
 import { SOURCE_LIVENESS_CENSUS } from '@/lib/sourceLiveness';
 import { DIAGRAMS, renderTwin } from '@/lib/diagrams';
+import { CATALOG_PAGE_SIZE } from '@/lib/llmsCatalog';
 
 // Rendering this body costs a cold isolate a full loadServers() — a ~25MB snapshot parse — so the
 // origin render must never sit in a crawler's request path. An hourly ISR TTL plus a long
@@ -136,7 +137,8 @@ ${allFilms().map(({ id, film }) => {
 - GET /api/v1/trust/tool/<server_id>/<tool_name>                 Per-tool advisory screen verdict (v1: REVIEW when screened, else UNVERIFIED fail-closed; ALLOW/DENY reserved, not produced).
 - GET /api/v1/trust/server/<server_id>                           Server-level advisory screen verdict (same honesty as per-tool).
 - GET /api/registry-count                                        Live server + category count.
-- GET /llms-full.txt                                             Full per-server index in one document.
+- GET /llms-full.txt                                             Full index; lists the per-server catalog files.
+- GET /llms-full/<category>-<n>.txt                              One catalog file: up to ${CATALOG_PAGE_SIZE} servers from one category.
 - GET /openapi.json                                              OpenAPI 3.1 description of the public REST endpoints above.
 - GET /.well-known/mcp-index.json                                Machine-readable site + gate + advisory-screen capability descriptor.
 

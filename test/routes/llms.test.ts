@@ -2,18 +2,20 @@
 // mcpindex's load-bearing honest claims to answer engines. Neither had test coverage, so a
 // refactor could silently (a) drift the install commands away from their source constant, or
 // (b) inflate a v1 honesty caveat into a false capability claim. These tests fail closed on both.
-// The size tripwire converts the unbounded-growth concern on /llms-full.txt into a deferred,
-// data-triggered decision: it goes red only if the catalog dump grows into genuinely harmful
-// territory — that, not design taste, is when we revisit slimming it.
+// The size tripwire converts the unbounded-growth concern on the catalog into a deferred,
+// data-triggered decision: it goes red only if a file grows into genuinely harmful territory.
+// It fired once, on 2026-09-28 at 10.1MB, and the catalog was split into files.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GET as llms } from '../../app/llms.txt/route';
 import { GET as llmsFull } from '../../app/llms-full.txt/route';
+import { GET as llmsFullFile } from '../../app/llms-full/[file]/route';
 import { gateInstallLine } from '../../lib/install/manifest';
 import { loadServers, loadSnapshotMeta } from '../../lib/registry';
 import { SOURCE_LIVENESS_CENSUS } from '../../lib/sourceLiveness';
 import { VERDICT_CONTRACT_VERSION } from '../../lib/verdictContract';
-import { CATALOG_PREAMBLE } from '../../lib/llmsCatalog';
+import { CATALOG_PREAMBLE, paginateCatalog } from '../../lib/llmsCatalog';
+import { CATALOG_MAX_PER_WINDOW } from '../../proxy';
 
 async function bodyOf(res: Response): Promise<string> {
   return res.text();
@@ -79,68 +81,124 @@ test('/llms-full.txt: load-bearing honest claims are intact', async () => {
   }
 });
 
-test('/llms-full.txt: catalog present, content-type, and runaway size tripwire', async () => {
+// Every catalog file the index lists, fetched through the real route handler.
+async function catalogFiles(index: string): Promise<{ url: string; res: Response; body: string }[]> {
+  const urls = [...index.matchAll(/https:\/\/mcpindex\.ai\/llms-full\/([^\s]+\.txt)/g)];
+  return Promise.all(
+    urls.map(async ([url, file]) => {
+      const res = await llmsFullFile(new Request(url), { params: Promise.resolve({ file }) });
+      return { url, res, body: await res.text() };
+    }),
+  );
+}
+
+test('/llms-full.txt: index lists catalog files that together hold every server once', async () => {
   const res = await llmsFull();
-  const body = await bodyOf(res);
+  const index = await bodyOf(res);
   assert.equal(res.headers.get('content-type'), 'text/plain; charset=utf-8');
-  // Same contract as llms.txt, and it matters more here: this body is ~4MB, so an uncached origin
-  // render is both a slow path and an egress cost.
+  // Same contract as llms.txt: an uncached origin render is a slow path and an egress cost.
   const cc = res.headers.get('cache-control') ?? '';
   assert.match(cc, /s-maxage=3600\b/, 'llms-full.txt must be edge-cached for an hour');
   assert.match(cc, /stale-while-revalidate=86400\b/, 'llms-full.txt must keep SWR so a cold render never blocks a fetcher');
-  assert.ok(body.includes('Total servers:'), 'llms-full.txt must state the catalog total');
-  // One detail link per indexed server — tie to the source of truth so a RENDER-side partial collapse
-  // is caught. (A source-side collapse would move both sides together; the coarse absolute floor below
-  // guards that: the real registry is ~16k, so <10k means the snapshot itself shrank.)
-  // Tied to loadServers(), NOT getServerCount(): the latter is deliberately registry-only
-  // because /stats publishes it under an explicit "official registry" claim, while this
-  // catalog lists everything mcpindex indexes, editorially admitted servers included.
-  const serverLinks = body.match(/https:\/\/mcpindex\.ai\/server\//g)?.length ?? 0;
-  assert.equal(serverLinks, (await loadServers()).length, 'one detail link per indexed server');
-  assert.ok(serverLinks > 10000, `catalog collapsed to ${serverLinks} (expected ~16k) — snapshot shrank?`);
+  assert.ok(index.includes('Total servers:'), 'llms-full.txt must state the catalog total');
 
-  const bytes = Buffer.byteLength(body, 'utf8');
-  const TEN_MB = 10 * 1024 * 1024;
+  const files = await catalogFiles(index);
+  assert.ok(files.length > 1, 'llms-full.txt lists no catalog files');
+  const version = (await loadSnapshotMeta()).version;
+  for (const f of files) {
+    assert.equal(f.res.headers.get('x-snapshot-version'), version, `${f.url} serves a different snapshot`);
+    assert.equal(f.res.status, 200, `${f.url} is listed but does not resolve`);
+    assert.equal(f.res.headers.get('content-type'), 'text/plain; charset=utf-8');
+    assert.match(f.res.headers.get('cache-control') ?? '', /s-maxage=3600\b.*stale-while-revalidate=86400\b/);
+  }
+  // One detail link per indexed server across all files, and no server in two files. Tied to
+  // loadServers(), NOT getServerCount(): the latter is deliberately registry-only because /stats
+  // publishes it under an explicit "official registry" claim, while this catalog lists everything
+  // mcpindex indexes, editorially admitted servers included.
+  const links = files.flatMap((f) => f.body.match(/https:\/\/mcpindex\.ai\/server\/\S+/g) ?? []);
+  const servers = await loadServers();
+  assert.equal(links.length, servers.length, 'one detail link per indexed server');
+  assert.equal(new Set(links).size, links.length, 'a server appears in more than one catalog file');
+  // Source-side collapse moves both sides together; this coarse floor catches that.
+  assert.ok(links.length > 10000, `catalog collapsed to ${links.length} servers - snapshot shrank?`);
+  // The index no longer inlines server blocks.
+  assert.ok(!index.includes('https://mcpindex.ai/server/'), 'llms-full.txt inlines server blocks again');
+});
+
+test('/llms-full.txt and every catalog file stay under the size tripwire', async () => {
+  // Deferred-decision tripwire, per file. A red here means one file outgrew a one-pass read:
+  // lower CATALOG_PAGE_SIZE, or look at what bloated the rows.
+  const ONE_MB = 1024 * 1024;
   const HUNDRED_KB = 100 * 1024;
-  // Lower bound: a regression that guts the doc fails here.
-  assert.ok(bytes > HUNDRED_KB, `llms-full.txt implausibly small (${bytes} bytes)`);
-  // Upper bound (deferred-decision tripwire): if the catalog dump ever crosses this, the file
-  // has grown past one-shot ingestibility for most consumers — revisit slimming it THEN.
+  const index = await bodyOf(await llmsFull());
+  const indexBytes = Buffer.byteLength(index, 'utf8');
+  assert.ok(indexBytes < ONE_MB, `llms-full.txt index is ${indexBytes} bytes (>1MB tripwire)`);
+  let total = 0;
+  for (const f of await catalogFiles(index)) {
+    const bytes = Buffer.byteLength(f.body, 'utf8');
+    total += bytes;
+    assert.ok(bytes < ONE_MB, `${f.url} is ${(bytes / ONE_MB).toFixed(2)}MB (>1MB tripwire)`);
+  }
+  // Lower bound: a regression that guts the catalog fails here.
+  assert.ok(total > HUNDRED_KB, `catalog implausibly small (${total} bytes)`);
+});
+
+test('a full catalog pull, plus a retry per file, fits one rate-limit window', async () => {
+  // proxy.ts counts edge-cache hits too, so a crawler walking every listed file spends one
+  // request per file. The catalog grows daily; this goes red before production 429s a pull.
+  const files = paginateCatalog(await loadServers()).length;
   assert.ok(
-    bytes < TEN_MB,
-    `llms-full.txt is ${(bytes / 1024 / 1024).toFixed(1)}MB (>10MB tripwire) — revisit slimming the 16k catalog dump vs. pointing at sitemap/API`,
+    files * 2 < CATALOG_MAX_PER_WINDOW,
+    `${files} catalog files leaves no retry headroom under CATALOG_MAX_PER_WINDOW=${CATALOG_MAX_PER_WINDOW}`,
   );
+});
+
+test('/llms-full/<file>: a percent-encoded spelling redirects to the one canonical path', async () => {
+  const res = await llmsFullFile(new Request('https://mcpindex.ai/llms-full/%6fther-1.txt'), {
+    params: Promise.resolve({ file: 'other-1.txt' }),
+  });
+  assert.equal(res.status, 308);
+  assert.equal(res.headers.get('location'), 'https://mcpindex.ai/llms-full/other-1.txt');
+});
+
+test('/llms-full/<file>: anything that is not a listed catalog file is a plain 404', async () => {
+  for (const file of ['other-0.txt', 'other-9999.txt', 'nope-1.txt', 'other-1', '../llms.txt', 'Other-1.txt', 'other-01.txt']) {
+    const res = await llmsFullFile(new Request(`https://mcpindex.ai/llms-full/${file}`), {
+      params: Promise.resolve({ file }),
+    });
+    assert.equal(res.status, 404, `${file} should 404`);
+    assert.equal(res.headers.get('content-type'), 'text/plain; charset=utf-8');
+    assert.match(res.headers.get('cache-control') ?? '', /s-maxage=\d+/, 'a 404 must be edge-cacheable');
+  }
 });
 
 // ------------------------------------------------------------ injection-relay boundary
 //
-// /llms-full.txt inlines third-party server text into a file built to be fed to LLMs.
+// The catalog files inline third-party server text into files built to be fed to LLMs.
 // The catalog boundary (lib/llmsCatalog.ts) holds the hostile fixtures in its own unit
-// tests; these assertions check the boundary is actually WIRED on the live corpus: the
-// preamble ships, no control character reaches the export, and no third-party value
-// escaped to an unprefixed line inside the catalog.
-test('/llms-full.txt: third-party text is framed and line-disciplined', async () => {
-  const body = await bodyOf(await llmsFull());
-  assert.ok(body.includes(CATALOG_PREAMBLE), 'llms-full.txt lost the third-party-text preamble');
-  // Newline is the only permitted control anywhere in the body - including the first-party
-  // guide sections, which do not pass through exportLine.
-  assert.ok(
-    !/[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(body),
-    'a control character reached the export',
-  );
-  // Inside the catalog (everything from the first CATEGORY heading - the only headings
-  // that end with a server count), every indented line must carry a first-party prefix.
-  // A bare indented line would mean a third-party value escaped the CatalogRow boundary.
-  // The earlier first-party sections (Drift Gate, Guides) have their own indented shapes
-  // and are out of scope here.
-  const catStart = body.search(/\n## [^\n]* \(\d+\)\n/);
-  assert.ok(catStart > 0, 'no category heading found in llms-full.txt');
-  const catalog = body.slice(catStart);
-  const escaped = catalog
-    .split('\n')
-    .filter((l) => l.startsWith('  ') && l.trim() !== '')
-    .filter((l) => !/^ {2}(description|installs|provenance|detail): /.test(l));
-  assert.deepEqual(escaped.slice(0, 3), [], 'unprefixed third-party line escaped the boundary');
+// tests; these assertions check the boundary is actually WIRED on the live corpus: every
+// file ships the preamble, no control character reaches any export, and no third-party
+// value escaped to an unprefixed line inside the catalog.
+test('/llms-full: third-party text is framed and line-disciplined in every catalog file', async () => {
+  const index = await bodyOf(await llmsFull());
+  // Newline is the only permitted control anywhere - including the first-party guide
+  // sections of the index, which do not pass through exportLine.
+  const controls = /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/;
+  assert.ok(!controls.test(index), 'a control character reached llms-full.txt');
+  for (const f of await catalogFiles(index)) {
+    assert.ok(f.body.includes(CATALOG_PREAMBLE), `${f.url} lost the third-party-text preamble`);
+    assert.ok(!controls.test(f.body), `a control character reached ${f.url}`);
+    // Everything from the category heading (the only heading ending in a count) is catalog:
+    // every indented line there must carry a first-party prefix.
+    const catStart = f.body.search(/\n## [^\n]* \(\d+\)\n/);
+    assert.ok(catStart > 0, `no category heading in ${f.url}`);
+    const escaped = f.body
+      .slice(catStart)
+      .split('\n')
+      .filter((l) => l.startsWith('  ') && l.trim() !== '')
+      .filter((l) => !/^ {2}(description|installs|provenance|detail): /.test(l));
+    assert.deepEqual(escaped.slice(0, 3), [], `unprefixed third-party line escaped the boundary in ${f.url}`);
+  }
 });
 
 test('/llms-full.txt: X-Snapshot-Version equals the current snapshot version', async () => {

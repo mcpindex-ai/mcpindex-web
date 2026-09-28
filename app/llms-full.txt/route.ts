@@ -1,7 +1,6 @@
 import { loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { loadGuides } from '@/lib/guides-content';
 import type { Guide } from '@/lib/guides-content';
-import { CATEGORY_LABELS } from '@/lib/categorize';
 import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
 // Same single declaration the trust/screen/preflight emitters read; see the note in
 // lib/verdictContract.ts on why a second copy of this number is a bug, not a convenience.
@@ -9,9 +8,9 @@ import { VERDICT_CONTRACT_VERSION } from '@/lib/verdictContract';
 import { gateInstallLine } from '@/lib/install/manifest';
 import type { IndexedServer } from '@/lib/types';
 import { createVersionedBodyCache } from '@/lib/llmsFullCache';
-import { CATALOG_PREAMBLE, exportLine, renderCatalogRow, toCatalogRow } from '@/lib/llmsCatalog';
+import { CATALOG_PAGE_SIZE, catalogPageUrl, categoryLabel, paginateCatalog } from '@/lib/llmsCatalog';
 
-// This body is ~4MB and a cold render also pays a full loadServers() snapshot parse, so an hourly
+// A cold render also pays a full loadServers() snapshot parse, so an hourly
 // TTL plus a long stale-while-revalidate keeps the origin render off the request path entirely and
 // bounds egress: the edge serves every fetcher from cache and refreshes in the background.
 export const revalidate = 3600;
@@ -19,19 +18,12 @@ export const revalidate = 3600;
 // Process-lifetime, version-keyed body cache with concurrent-build de-dup (see lib/llmsFullCache.ts).
 const bodyCacheStore = createVersionedBodyCache();
 
-function buildBody(servers: IndexedServer[], guides: Guide[]): string {
-  const byCategory = new Map<string, IndexedServer[]>();
-  for (const s of servers) {
-    const bucket = byCategory.get(s.category);
-    if (bucket) bucket.push(s);
-    else byCategory.set(s.category, [s]);
-  }
+function buildBody(servers: IndexedServer[], guides: Guide[], snapshot: string): string {
+  const categories = new Set(servers.map((s) => s.category)).size;
   const parts: string[] = [
     '# mcpindex.ai - Full Index',
     '',
-    `Total servers: ${servers.length}. Categories: ${byCategory.size}.`,
-    'Format: one server per block, grouped by category.',
-    CATALOG_PREAMBLE,
+    `Total servers: ${servers.length}. Categories: ${categories}. Snapshot: ${snapshot}.`,
     '',
     '## Drift Gate (in-path; tier-0 live, tiers 1-3 held off by default)',
     '',
@@ -87,16 +79,19 @@ function buildBody(servers: IndexedServer[], guides: Guide[]): string {
     }
   }
 
-  for (const [cat, list] of [...byCategory.entries()].sort()) {
-    // Category keys come from the categorizer, but the fallback branch echoes the raw key -
-    // and it lands at a line start, so it goes through the same single-line boundary.
-    parts.push(`\n## ${CATEGORY_LABELS[cat] ?? exportLine(cat, 64)} (${list.length})\n`);
-    // Third-party text (title, description, install ids) is emitted ONLY through the
-    // CatalogRow boundary in lib/llmsCatalog.ts: typed field allowlist, one line per value,
-    // controls/bidi stripped, length-capped. Captured server instructions and prompt text
-    // never enter CatalogRow - excluded by construction, not by remembering to filter.
-    for (const s of list) parts.push(...renderCatalogRow(toCatalogRow(s)));
+  // The per-server catalog lives in /llms-full/<category>-<n>.txt. Only first-party text below:
+  // labels, counts, URLs.
+  const pages = paginateCatalog(servers);
+  parts.push(
+    `## Server catalog (${servers.length} servers in ${pages.length} files)`,
+    '',
+    `Each file holds at most ${CATALOG_PAGE_SIZE} servers from one category, ordered by slug, and is self-contained: every server block carries title, name@version, description, install ids and its detail URL. Fetch only the categories you need.`,
+    '',
+  );
+  for (const p of pages) {
+    parts.push(`- ${categoryLabel(p.category)} (file ${p.page} of ${p.pages}, ${p.servers.length} servers): ${catalogPageUrl(p)}`);
   }
+  parts.push('');
   return parts.join('\n');
 }
 
@@ -108,7 +103,7 @@ export async function GET() {
 
   const cached = await bodyCacheStore.resolve(meta.version, async () => {
     const guides = await loadGuides();
-    return buildBody(servers, guides);
+    return buildBody(servers, guides, meta.version);
   });
 
   return new Response(cached.body, {
