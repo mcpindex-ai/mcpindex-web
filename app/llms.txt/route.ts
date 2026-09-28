@@ -8,6 +8,7 @@ import { gateInstallLine } from '@/lib/install/manifest';
 import { SOURCE_LIVENESS_CENSUS } from '@/lib/sourceLiveness';
 import { DIAGRAMS, renderTwin } from '@/lib/diagrams';
 import { CATALOG_PAGE_SIZE } from '@/lib/llmsCatalog';
+import { DRIFT_DEFINITION } from '@/lib/driftDefinition';
 
 // Rendering this body costs a cold isolate a full loadServers() — a ~25MB snapshot parse — so the
 // origin render must never sit in a crawler's request path. An hourly ISR TTL plus a long
@@ -45,6 +46,7 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 ## Scale
 
 - How many MCP servers are there? ${servers} active, latest-version entries in the official registry (methodology + live count: [mcpindex.ai/stats](https://mcpindex.ai/stats)).
+- What is MCP tool drift? ${DRIFT_DEFINITION} Definition, the change kinds that count, method and measured rates with DOIs: [mcpindex.ai/drift](https://mcpindex.ai/drift).
 - Categories: ${categories}
 - Source: registry.modelcontextprotocol.io (canonical), enriched with quality scoring, semantic search, and advisory screen verdicts. Delisted and superseded versions are excluded so the same server never counts twice.
 
@@ -174,6 +176,7 @@ This is the advisory directory client - not the in-path gate (\`mcpindex-gate\` 
 - [How many MCP servers change their tool definitions after publishing?](https://mcpindex.ai/guides/how-many-mcp-servers-change-their-tools-after-publishing): The measured answer - 89-day panel rates across 18,748 registry servers, change concentration, and the 62.4% no-version-bump share on live contracts, with CC-BY DOIs.
 - [Best by category](https://mcpindex.ai/best): Curated picks per category, at /best/<category>.
 - [Leaderboard](https://mcpindex.ai/leaderboard): Top 50 by MCP Quality Score.
+- [MCP tool drift](https://mcpindex.ai/drift): The citable definition of tool drift, what counts as drift, how it is measured, and the frozen rates with DOIs.
 - [Drift ledger](https://mcpindex.ai/ledger): Public drift ledger: contract changes the crawler observed across public MCP servers.
 - [Dashboard](https://mcpindex.ai/dashboard): Drift network coverage + opt-in telemetry adoption (honest: opt-in counts are not all users).
 - [Changelog](https://mcpindex.ai/changelog): Daily diff of registry changes.
