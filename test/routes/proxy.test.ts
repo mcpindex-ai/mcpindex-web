@@ -2,7 +2,7 @@ import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { NextRequest } from 'next/server';
 import type { NextFetchEvent } from 'next/server';
-import { proxy as rawProxy } from '../../proxy';
+import { CATALOG_MAX_PER_WINDOW, proxy as rawProxy } from '../../proxy';
 import { __setAeoRedisForTest, __resetAeoDedupForTest } from '../../lib/aeoCounter';
 
 // The real signature is proxy(req, event). Every test below calls proxy(req) and this wrapper
@@ -35,6 +35,24 @@ test('proxy: query string on /llms-full.txt → 308 to the canonical URL (cache-
   const res = proxy(new NextRequest('https://mcpindex.ai/llms-full.txt?_=1'));
   assert.equal(res.status, 308);
   assert.equal(res.headers.get('location'), 'https://mcpindex.ai/llms-full.txt');
+});
+
+test('proxy: query string on a catalog file → 308 to the canonical URL', () => {
+  const res = proxy(new NextRequest('https://mcpindex.ai/llms-full/other-1.txt?_=1'));
+  assert.equal(res.status, 308);
+  assert.equal(res.headers.get('location'), 'https://mcpindex.ai/llms-full/other-1.txt');
+});
+
+test('proxy: catalog files have their own, larger bucket', () => {
+  const headers = { 'x-vercel-forwarded-for': '9.9.9.103' };
+  const get = (i: number) =>
+    proxy(new NextRequest(`https://mcpindex.ai/llms-full/other-${(i % 20) + 1}.txt`, { headers }));
+  for (let i = 0; i < CATALOG_MAX_PER_WINDOW; i++) {
+    assert.notEqual(get(i).status, 429, `catalog request ${i + 1} was limited`);
+  }
+  assert.equal(get(0).status, 429);
+  // ...and spending it does not touch the llms bucket.
+  assert.notEqual(proxy(new NextRequest('https://mcpindex.ai/llms-full.txt', { headers })).status, 429);
 });
 
 test('proxy: query string on /llms.txt → 308 to the canonical URL', () => {
@@ -152,6 +170,21 @@ test('proxy: a bot GET on /llms-full.txt records under the llms-full route key',
   );
   assert.equal(keys.length, 1);
   assert.match(keys[0]!, /^aeo:llms-full:anthropic:\d{8}$/);
+});
+
+test('proxy: a bot GET on a catalog file records under the llms-full route key', async () => {
+  const keys = await recordedKeys(
+    new NextRequest('https://mcpindex.ai/llms-full/search-2.txt', { headers: bot('GPTBot/1.2') }),
+  );
+  assert.equal(keys.length, 1);
+  assert.match(keys[0]!, /^aeo:llms-full:openai:\d{8}$/);
+});
+
+test('proxy: a bot probing a non-catalog name under /llms-full/ records nothing', async () => {
+  for (const path of ['/llms-full/wp-login.php', '/llms-full/other-0.txt']) {
+    const keys = await recordedKeys(new NextRequest(`https://mcpindex.ai${path}`, { headers: bot('GPTBot/1.2') }));
+    assert.deepEqual(keys, [], `${path} was counted as a catalog pull`);
+  }
 });
 
 test('proxy: a non-bot UA records nothing', async () => {

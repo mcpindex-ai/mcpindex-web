@@ -145,7 +145,7 @@ test('robots: training crawlers lose the two bulk-corpus surfaces, nothing else'
   // /llms-full.txt open.
   const training = ['GPTBot', 'anthropic-ai', 'ClaudeBot', 'cohere-ai', 'Google-Extended'];
   for (const rule of groups().filter((r) => training.includes(r.userAgent as string))) {
-    for (const path of ['/llms-full.txt', '/api/v1/ledger']) {
+    for (const path of ['/llms-full.txt', '/llms-full/other-1.txt', '/api/v1/ledger']) {
       assert.equal(allows(rule, path), false, `${rule.userAgent} can still bulk-fetch ${path}`);
     }
     for (const path of ['/guides/how-to-trust-an-mcp-server', '/whitepaper', '/methodology', '/docs', '/llms.txt']) {
@@ -161,7 +161,7 @@ test('robots: retrieval crawlers keep everything, including bulk', () => {
   const seen = groups().filter((r) => retrieval.includes(r.userAgent as string));
   assert.equal(seen.length, retrieval.length, 'a retrieval crawler group went missing');
   for (const rule of seen) {
-    for (const path of ['/llms-full.txt', '/api/v1/ledger', '/guides/x']) {
+    for (const path of ['/llms-full.txt', '/llms-full/other-1.txt', '/api/v1/ledger', '/guides/x']) {
       assert.equal(allows(rule, path), true, `${rule.userAgent} is blocked from ${path}`);
     }
   }

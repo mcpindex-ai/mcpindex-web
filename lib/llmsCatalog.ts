@@ -14,6 +14,7 @@
 // This module is pure (no IO) so the hostile-fixture tests run in plain node.
 
 import type { IndexedServer } from './types';
+import { CATEGORY_LABELS } from './categorize';
 
 // One sentence of spotlighting at the top of the catalog. Framing third-party text as data
 // is the mitigation the indirect-prompt-injection literature actually names; it costs a line.
@@ -115,4 +116,96 @@ export function renderCatalogRow(r: CatalogRow): string[] {
     `  detail: https://mcpindex.ai/server/${r.slug}`,
     '',
   ];
+}
+
+// ------------------------------------------------------------------ catalog files
+//
+// The per-server catalog ships as fixed-size files grouped by category; /llms-full.txt carries
+// the first-party sections plus a list of these files.
+// Pages cap by server count, not by category, because one category ("other") holds 59% of the
+// corpus on its own: splitting by category alone would leave a 5.9MB file that keeps growing.
+
+export const CATALOG_PAGE_SIZE = 1000;
+
+export type CatalogPage = {
+  category: string;
+  page: number; // 1-based
+  pages: number; // pages in this category
+  categoryTotal: number;
+  servers: IndexedServer[];
+};
+
+// Category keys land in a URL path. The categorizer only emits kebab-case keys, but a key that
+// is not one is bucketed under "other" so a malformed key can never shape a path.
+const CATEGORY_KEY = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const PAGE_FILE = /^([a-z0-9]+(?:-[a-z0-9]+)*)-([1-9][0-9]{0,3})\.txt$/;
+
+/** Group by category (sorted key order), order each category by slug so page membership is
+ * deterministic for a given snapshot, then cut into CATALOG_PAGE_SIZE chunks. */
+export function paginateCatalog(servers: IndexedServer[]): CatalogPage[] {
+  const byCategory = new Map<string, IndexedServer[]>();
+  for (const s of servers) {
+    const key = CATEGORY_KEY.test(s.category) ? s.category : 'other';
+    const bucket = byCategory.get(key);
+    if (bucket) bucket.push(s);
+    else byCategory.set(key, [s]);
+  }
+  const out: CatalogPage[] = [];
+  for (const [category, list] of [...byCategory.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+    list.sort((a, b) => (a.slug < b.slug ? -1 : a.slug > b.slug ? 1 : 0));
+    const pages = Math.ceil(list.length / CATALOG_PAGE_SIZE);
+    for (let i = 0; i < pages; i++) {
+      out.push({
+        category,
+        page: i + 1,
+        pages,
+        categoryTotal: list.length,
+        servers: list.slice(i * CATALOG_PAGE_SIZE, (i + 1) * CATALOG_PAGE_SIZE),
+      });
+    }
+  }
+  return out;
+}
+
+export function catalogPageFile(p: Pick<CatalogPage, 'category' | 'page'>): string {
+  return `${p.category}-${p.page}.txt`;
+}
+
+export function catalogPageUrl(p: Pick<CatalogPage, 'category' | 'page'>): string {
+  return `https://mcpindex.ai/llms-full/${catalogPageFile(p)}`;
+}
+
+/** Inverse of catalogPageFile. Null for anything that is not exactly `<key>-<n>.txt`. */
+export function parseCatalogPageFile(file: string): { category: string; page: number } | null {
+  const m = PAGE_FILE.exec(file);
+  return m ? { category: m[1], page: Number(m[2]) } : null;
+}
+
+export function categoryLabel(key: string): string {
+  // The fallback echoes the key, and it lands at a line start, so it goes through the same
+  // single-line boundary as third-party text.
+  return CATEGORY_LABELS[key] ?? exportLine(key, 64);
+}
+
+/** One catalog file. Self-contained: it repeats the third-party-text preamble, because a
+ * consumer may fetch this file without ever reading /llms-full.txt. */
+export function renderCatalogPage(p: CatalogPage, totalServers: number, snapshot: string): string {
+  const label = categoryLabel(p.category);
+  const parts: string[] = [
+    `# mcpindex.ai - Server Catalog: ${label} (file ${p.page} of ${p.pages})`,
+    '',
+    `Servers in this file: ${p.servers.length} of ${p.categoryTotal} in ${label}. Total servers indexed: ${totalServers}.`,
+    // Page boundaries move when servers are added, and each file is cached on its own, so two
+    // files can come from different snapshots. The version in the body is what lets a text
+    // consumer, who never sees headers, tell.
+    `Snapshot: ${exportLine(snapshot, 64)}. Files from different snapshots can drop or repeat servers at page boundaries; do not merge them.`,
+    'All catalog files are listed in https://mcpindex.ai/llms-full.txt',
+    'Format: one server per block, ordered by slug.',
+    CATALOG_PREAMBLE,
+    '',
+    `## ${label} (${p.servers.length})`,
+    '',
+  ];
+  for (const s of p.servers) parts.push(...renderCatalogRow(toCatalogRow(s)));
+  return parts.join('\n');
 }

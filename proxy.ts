@@ -6,6 +6,7 @@ import {
   isGoneSlug,
 } from '@/lib/serverRemovals';
 import { recordAeoFetch } from '@/lib/aeoCounter';
+import { parseCatalogPageFile } from '@/lib/llmsCatalog';
 import { recordApiCall, usageRouteFor } from '@/lib/apiUsage';
 
 // Per-IP rate limit on /api/v1/*. Sliding window in-memory map (per-instance).
@@ -19,6 +20,10 @@ import { recordApiCall, usageRouteFor } from '@/lib/apiUsage';
 
 const WINDOW_MS = 60_000;
 const MAX_PER_WINDOW = 60;
+// Catalog files get their own, larger budget: one full pull is every file listed in
+// /llms-full.txt (55 on 2026-09-28), which alone nearly fills a 60/min window. The route test
+// keeps the file count at under half of this, so a pull plus a retry per file still fits.
+export const CATALOG_MAX_PER_WINDOW = 200;
 const MAX_BUCKETS = 10_000;
 const SWEEP_INTERVAL_MS = 10_000;
 const STALE_MS = 2 * WINDOW_MS;
@@ -47,6 +52,17 @@ function sweepBuckets(now: number) {
       buckets.delete(k);
     }
   }
+}
+
+// The llms surfaces: /llms.txt, the /llms-full.txt index, and its catalog files under
+// /llms-full/. All of them get the cache-bust guard; rate limiting splits catalog files into
+// their own class (see CATALOG_MAX_PER_WINDOW).
+function isCatalogPath(p: string): boolean {
+  return p.startsWith('/llms-full/');
+}
+
+function isLlmsPath(p: string): boolean {
+  return p === '/llms.txt' || p === '/llms-full.txt' || isCatalogPath(p);
 }
 
 function serverSlugFromPath(pathname: string): string | null {
@@ -129,15 +145,14 @@ export function proxy(req: NextRequest, event: NextFetchEvent) {
     p !== '/.well-known/mcpindex-challenge' &&
     p !== '/api/mcp' &&
     // PERMANENT, not tied to any measurement window, and load-bearing for TWO reasons:
-    //   1. DoS. /llms.txt and /llms-full.txt are edge-cached, but a cache-busting query forces an
-    //      origin render of a ~5MB body. Keep them under the per-IP limit so a cache-MISS flood
+    //   1. DoS. The llms surfaces are edge-cached, but a cache-busting query forces an
+    //      origin render (and a cold loadServers() parse). Keep them under the per-IP limit so a cache-MISS flood
     //      stays capped; the query-strip 308 below is the other half of that defense.
-    //   2. AEO counting. These two exceptions are the ONLY reason the llms paths fall through to
-    //      the bottom of this function, where the crawler counter lives. Delete either line and the
+    //   2. AEO counting. These exceptions are the ONLY reason the llms paths fall through to
+    //      the bottom of this function, where the crawler counter lives. Drop this line and the
     //      early return below fires and counting silently stops.
-    // Removing either one re-opens the origin to a bandwidth-DoS tail AND blinds the counter.
-    p !== '/llms.txt' &&
-    p !== '/llms-full.txt'
+    // Removing it re-opens the origin to a bandwidth-DoS tail AND blinds the counter.
+    !isLlmsPath(p)
   ) {
     return NextResponse.next();
   }
@@ -161,8 +176,9 @@ export function proxy(req: NextRequest, event: NextFetchEvent) {
   // would be an evasion hole (spoof the UA, get a private bucket), so the real fix is to call
   // the libs in-process instead of over HTTP - a refactor of the 5 `api()` call sites, out of
   // scope for a rate-limit change on a live public endpoint. Tracked in the audit doc.
-  const routeClass =
-    p === '/llms.txt' || p === '/llms-full.txt'
+  const routeClass = isCatalogPath(p)
+    ? 'llms-catalog'
+    : isLlmsPath(p)
       ? 'llms'
       : p === '/.well-known/mcpindex-challenge'
         ? 'wellknown'
@@ -170,6 +186,7 @@ export function proxy(req: NextRequest, event: NextFetchEvent) {
           ? 'mcp'
           : 'api';
   const bucketKey = `${routeClass}:${ip}`;
+  const limit = routeClass === 'llms-catalog' ? CATALOG_MAX_PER_WINDOW : MAX_PER_WINDOW;
 
   const now = Date.now();
   sweepBuckets(now);
@@ -178,12 +195,12 @@ export function proxy(req: NextRequest, event: NextFetchEvent) {
     buckets.set(bucketKey, { count: 1, windowStart: now });
   } else {
     b.count++;
-    if (b.count > MAX_PER_WINDOW) {
+    if (b.count > limit) {
       const retry = Math.max(1, Math.ceil((WINDOW_MS - (now - b.windowStart)) / 1000));
       return new NextResponse(
         JSON.stringify({
           error: 'rate_limited',
-          message: `60 req/min/IP. Email hello@mcpindex.ai for higher limits.`,
+          message: `${limit} req/min/IP. Email hello@mcpindex.ai for higher limits.`,
         }),
         {
           status: 429,
@@ -196,13 +213,13 @@ export function proxy(req: NextRequest, event: NextFetchEvent) {
     }
   }
 
-  // Cache-bust guard (after the per-IP limit, so a ?_=N flood is also rate-capped): /llms-full.txt
-  // is a ~4MB body edge-cached, but a distinct query string is a distinct CDN cache key -> forces a
-  // MISS + full 4MB origin render every request, defeating s-maxage. Collapse any query on the llms
-  // routes to the canonical (cacheable) URL with a tiny 308 so s-maxage actually bounds origin egress.
+  // Cache-bust guard (after the per-IP limit, so a ?_=N flood is also rate-capped): the llms routes
+  // are edge-cached, but a distinct query string is a distinct CDN cache key -> forces a MISS and a
+  // full origin render every request, defeating s-maxage. Collapse any query on the llms routes to
+  // the canonical (cacheable) URL with a tiny 308 so s-maxage actually bounds origin egress.
   // Legit crawlers fetch the bare URL and never see this. PERMANENT (not part of the AEO-window
-  // revert): it protects the re-cached 4MB route from `?_=N` busting even at s-maxage=3600.
-  if ((p === '/llms.txt' || p === '/llms-full.txt') && req.nextUrl.search) {
+  // revert): it protects the edge-cached routes from `?_=N` busting even at s-maxage=3600.
+  if (isLlmsPath(p) && req.nextUrl.search) {
     const clean = new URL(req.url);
     clean.search = '';
     return NextResponse.redirect(clean, 308);
@@ -221,7 +238,14 @@ export function proxy(req: NextRequest, event: NextFetchEvent) {
   // that HEADs-then-GETs. waitUntil keeps the isolate alive for the write without delaying the
   // response. recordAeoFetch does not reject today; the catch logs rather than swallows so that if
   // one is ever introduced it surfaces instead of vanishing into an ignored promise.
-  if (req.method === 'GET' && (p === '/llms.txt' || p === '/llms-full.txt')) {
+  // Catalog files count under the `llms-full` key, since the question that key answers is whether
+  // any crawler pulls the bulk catalog, and after the split that pull is a catalog file. Only
+  // well-formed file names count, so a scanner probing /llms-full/wp-login.php is not a pull.
+  const countable =
+    p === '/llms.txt' ||
+    p === '/llms-full.txt' ||
+    (isCatalogPath(p) && parseCatalogPageFile(p.slice('/llms-full/'.length)) !== null);
+  if (req.method === 'GET' && countable) {
     const route = p === '/llms.txt' ? 'llms' : 'llms-full';
     event.waitUntil(
       recordAeoFetch(route, req.headers.get('user-agent'))
@@ -242,6 +266,7 @@ export const config = {
     '/api/health/:path*',
     '/llms.txt',
     '/llms-full.txt',
+    '/llms-full/:path*',
     '/.well-known/mcpindex-challenge',
     '/api/mcp',
     // NOT rate-limited — /ledger is here purely so proxy runs for it and lib/apiUsage can count

@@ -103,7 +103,7 @@ const RULE = { allow: ['/'], disallow: GET_ANSWERS_4XX };
 //
 // Advisory, and worth being honest that it is: a crawler that ignores robots.txt takes the
 // corpus anyway. This sets posture and intent. Enforcement is rate limiting (spec P6).
-const BULK_CORPUS = ['/llms-full.txt', '/api/v1/ledger'];
+const BULK_CORPUS = ['/llms-full.txt', '/llms-full/', '/api/v1/ledger'];
 
 export default function robots(): MetadataRoute.Robots {
   return {

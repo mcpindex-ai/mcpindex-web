@@ -192,6 +192,9 @@ export async function GET() {
       detail: 'https://mcpindex.ai/server/{slug}',
       llmsTxt: 'https://mcpindex.ai/llms.txt',
       llmsFullTxt: 'https://mcpindex.ai/llms-full.txt',
+      // Per-server catalog, split into files of at most CATALOG_PAGE_SIZE servers; llms-full.txt
+      // lists them.
+      llmsFullCatalogFile: 'https://mcpindex.ai/llms-full/{category}-{n}.txt',
       // Trust verdict endpoints. A screened server returns REVIEW (semantic-only)
       // at v1; an unscreened server returns UNVERIFIED (fail-closed). ALLOW/DENY
       // are reserved in the contract, not produced at v1. Advisory + semantic-only.
