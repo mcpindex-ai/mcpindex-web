@@ -25,6 +25,18 @@ export const CITATION_PAPER: Citation = {
 }`,
 };
 
+/** The /drift definition page itself, for writing that uses the term rather than the data. */
+export const CITATION_DRIFT_DEFINITION: Citation = {
+  label: 'Definition',
+  bibtex: `@misc{bharti2026tooldrift,
+  author       = {Bharti, Gautam},
+  title        = {{MCP} Tool Drift: Definition, Kinds and Measured Rates},
+  year         = {2026},
+  howpublished = {mcpindex.ai},
+  url          = {https://mcpindex.ai/drift}
+}`,
+};
+
 export const CITATION_PANEL: Citation = {
   label: 'Panel dataset',
   bibtex: `@dataset{bharti2026panel,
