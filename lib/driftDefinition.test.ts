@@ -101,14 +101,20 @@ test('registry panel figures match the guide that already cites the panel', () =
   for (const needle of [
     `${p.descriptionPct.d30}% within 30 days, ${p.descriptionPct.d60}% within 60, ${p.descriptionPct.d89}% within 89`,
     `${p.descriptorPct.d30}% of servers changed it within 30 days, ${p.descriptorPct.d60}% within 60, ${p.descriptorPct.d89}% within 89`,
-    `${p.neverChangedPct}% of eligible servers never changed`,
+    `Of the ${p.eligible.toLocaleString('en-US')} servers seen in at least ten observations, ${p.neverChangedPct}% never changed`,
     `the 10% of eligible servers that changed most account for ${p.topTenthSharePct}%`,
-    `covering the ${p.eligible.toLocaleString('en-US')} servers`,
+    `${p.cohorts.d30} of them for 30 days, ${p.cohorts.d60} for 60 and ${p.cohorts.d89} for 89, where the 89-day windows run at least ${p.minWindowDaysAt89} days`,
     `observed the official MCP registry ${p.observations} times over ${p.spanDays} days`,
     `data cutoff ${p.cutoff}`,
     p.conceptDoi,
   ]) {
     assert.ok(body.includes(needle), `guide no longer says: ${needle}`);
   }
-  assert.ok(!body.includes('top 10% of changers'), 'the wrong concentration wording is back');
+  // Both past errors, checked across every field a reader or a crawler sees.
+  const everything = JSON.stringify(guide);
+  assert.ok(!everything.includes('top 10% of changers'), 'the wrong concentration wording is back');
+  assert.ok(
+    !everything.includes(`% of ${p.eligible.toLocaleString('en-US')}`),
+    'a survival rate is quoted as a share of the eligible servers; its denominator is each cohort',
+  );
 });
