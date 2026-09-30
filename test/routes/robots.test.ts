@@ -46,7 +46,7 @@ const groups = () => robots().rules as Rule[];
 
 // Bots refused outright (app/robots.ts REFUSED_CRAWLERS). Every "stays reachable" assertion
 // below is about crawlers that are allowed in at all; a refused bot is meant to fail them.
-const refused = ['SemrushBot'];
+const refused = ['SemrushBot', 'SERankingBacklinksBot'];
 const admitted = () => groups().filter((r) => !refused.includes(r.userAgent as string));
 
 test('robots: every user-agent group blocks the three handlers that 4xx on GET', () => {
@@ -172,11 +172,11 @@ test('robots: every named AI crawler is classified exactly once', () => {
   // duplicated into both — where the last-wins group silently decides its posture.
   const named = groups().map((r) => r.userAgent as string).filter((u) => u !== '*');
   assert.equal(new Set(named).size, named.length, `duplicate user-agent group: ${named.join(', ')}`);
-  assert.equal(named.length, 9, 'expected 9 named crawlers: 3 retrieval + 5 training + 1 refused');
+  assert.equal(named.length, 10, 'expected 10 named crawlers: 3 retrieval + 5 training + 2 refused');
 });
 
-test('robots: the refused SEO crawler gets nothing, and only it', () => {
-  // SemrushBot renders pages for its own database and nothing comes back: no reader, no
+test('robots: the refused SEO crawlers get nothing, and only they do', () => {
+  // SemrushBot and SERankingBacklinksBot render pages for its own database and nothing comes back: no reader, no
   // citation, no answer engine, no SERP to strand a URL in. Measured 2026-09-05..07 it was
   // 17.7% of fresh renders on /server/[slug], each a billed ISR write. Both directions:
   // it must be shut out of the page surface, and the block must not leak into `*`.
