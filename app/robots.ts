@@ -29,7 +29,7 @@ const RETRIEVAL_CRAWLERS = ['ChatGPT-User', 'OAI-SearchBot', 'PerplexityBot'];
 // is the only thing that needs editing, not the rules.
 const TRAINING_CRAWLERS = ['GPTBot', 'anthropic-ai', 'ClaudeBot', 'cohere-ai', 'Google-Extended'];
 
-// REFUSED bots are the third class, and it has one member on purpose. SemrushBot crawls
+// REFUSED bots are the third class, and it stays small on purpose. SemrushBot crawls
 // to fill Semrush's own SEO database: it is not a reader, it does not cite, it sends no
 // traffic, and it feeds no answer engine - so neither of the postures above applies, and
 // there is no SERP for a blocked URL to be stranded in (the hazard the long note below
@@ -43,7 +43,13 @@ const TRAINING_CRAWLERS = ['GPTBot', 'anthropic-ai', 'ClaudeBot', 'cohere-ai', '
 // Vercel's semrush bucket over those three days was 99.5% SemrushBot/7~bl and 0.5%
 // SemrushBot-BA (grouped by client_user_agent), so the one prefix token covers it.
 // Rank tracking still comes from Ahrefs and GSC; nothing on our side reads Semrush.
-const REFUSED_CRAWLERS = ['SemrushBot'];
+//
+// SERankingBacklinksBot joined 2026-09-29 on the same grounds. Cache MISSes on
+// /server/[slug] went from 75,624 (Sep 13-17) to 148,944 (Sep 20-24), and SE Ranking's
+// backlink crawler went from 313 to 28,311 of them. Its whole bucket in that window was one
+// user agent, `SERankingBacklinksBot/1.0` (35,182 requests), so the one token covers it.
+// Ahrefs stays allowed: it is the rank tracker we do read.
+const REFUSED_CRAWLERS = ['SemrushBot', 'SERankingBacklinksBot'];
 
 // Blocking is the LAST resort here, and the block is deliberately three paths wide rather
 // than the whole API. Everything under /api/ already carries X-Robots-Tag: noindex from
