@@ -50,7 +50,7 @@ const SURFACES: Surface[] = [
   },
   {
     name: 'Ambient notice + drift telemetry',
-    path: 'Ambient notice writes one line to stderr, first touch per tool - never stdout, never the agent channel, no argument values. Telemetry is off by default (zero egress) until MCPINDEX_DRIFT_TELEMETRY is set.',
+    path: 'Ambient notice writes one line to stderr, first touch per tool - never stdout, never the agent channel, no argument values. Drift telemetry is off by default until MCPINDEX_DRIFT_TELEMETRY is set. Call receipts are a separate channel and are on by default in the Python SDK wrap() path (MCPINDEX_RECEIPT_INGEST_ENABLED=0 stops them); a config-wire proxy install sends nothing. See /privacy.',
     onFailure:
       'Nothing to fail: neither can alter a gate decision, and neither sends anything you did not turn on.',
   },
