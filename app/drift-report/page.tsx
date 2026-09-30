@@ -15,7 +15,7 @@ import { CITATION_DRIFT_REPORT_EDITION_V1, CITATION_PAPER } from '@/lib/citation
 import edition from '@/data/report-edition-v1.json';
 
 // The MCP Drift Report (build plan #11): the citable full-findings page. Aggregates only -
-// fingerprint-anonymized corpus, no server names anywhere on this page. Frozen Edition header
+// fingerprinted corpus (recomputable keyed hashes, not anonymity), no server names on this page. Frozen Edition header
 // (matches the DOI snapshot exactly) + live auto-derived counters, visually separated and
 // labeled "live since Edition v1", so the live surface can never contradict the citation.
 //
@@ -452,10 +452,12 @@ export default async function DriftReportPage() {
             above.
           </li>
           <li>
-            <strong className="text-[var(--color-ink)]">Anonymization:</strong> tools and
-            servers are salted fingerprints on every public surface of this dataset. This page
-            names no server; per-server context lives on the named server pages with their own
-            fairness labels.
+            <strong className="text-[var(--color-ink)]">Fingerprints, not anonymity:</strong>{' '}
+            tools and servers appear as fingerprints on every public surface of this dataset.
+            They are keyed hashes of public registry names under a constant salt, so anyone can
+            recompute them; they keep names off this page and do not make the dataset anonymous.
+            This page names no server; per-server context lives on the named server pages with
+            their own fairness labels.
           </li>
         </ul>
         <p className="mt-4 text-[14px] leading-[1.55] text-[var(--color-cite)]">

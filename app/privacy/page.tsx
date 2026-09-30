@@ -74,7 +74,11 @@ export default function PrivacyPage() {
           makes a read-only query to <span className="inline-code">/api/v1/drift/any</span> to ask
           whether a tool&rsquo;s contract already drifted, so it can warn you on the first call;
           that query sends only a salted fingerprint. It <strong>never</strong> sends tool schemas,
-          arguments, descriptions, URLs, or server/tool names. There are three on settings, each
+          arguments, descriptions, URLs, or server/tool names. A fingerprint is still{' '}
+          <strong>not anonymity</strong>: the salt is a constant in the open client and the
+          registry is public, so anyone can recompute the fingerprint of a registry name and
+          match it. It keeps the name out of the payload; it does not hide which public server
+          it refers to. There are three on settings, each
           a superset of the one before: <span className="inline-code">lookup</span> is{' '}
           <strong>read-only</strong> - it makes the{' '}
           <span className="inline-code">/api/v1/drift/any</span> query above and reports{' '}
@@ -136,8 +140,11 @@ export default function PrivacyPage() {
           reported server count is a floor and the tool says so.
         </p>
         <p>
-          Call receipts (the <span className="inline-code">mcpindex-gate</span> client):{' '}
-          <strong>on by default</strong>. After each gated tool call the gate emits a compact,
+          Call receipts (the <span className="inline-code">mcpindex-gate</span> Python SDK{' '}
+          <span className="inline-code">wrap()</span> path): <strong>on by default</strong>. The{' '}
+          <span className="inline-code">mcpindex-config-wire</span> install wires a stdio proxy
+          that does not emit receipts today, so that path sends nothing. After each tool call
+          gated through <span className="inline-code">wrap()</span>, the gate emits a compact,
           credential-blind receipt. Here is the complete list of what a receipt contains: a
           random receipt id; the tool contract hash (a sha256 of the tool&rsquo;s public
           contract); the gate verdict; a closed-vocabulary action classification (read / write
