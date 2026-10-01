@@ -754,20 +754,42 @@ try {
       (a) => (a?.bitcoin?.block_heights?.length ?? 0) > 0,
     );
   }
-  if (!anchorConfirmed) {
-    const surfaces = [];
-    const walk = (dir) => {
-      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-        if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
-        const full = path.join(dir, e.name);
-        if (e.isDirectory()) walk(full);
-        else if (/\.(tsx|ts|md|json)$/.test(e.name)) surfaces.push(full);
-      }
-    };
-    for (const d of ['app', 'components', 'content']) {
-      const full = path.join(root, d);
-      if (fs.existsSync(full)) walk(full);
+  // The inverse drift. Once an anchor carries a block height, a hardcoded "not yet
+  // confirmed" is the same false statement pointed the other way: llms.txt, llms-full.txt
+  // and /about all said it after every anchor in the ledger had confirmed, because the
+  // forward check below only ever looked for the claim, never for a stale disclaimer.
+  const STALE_DISCLAIMER = /not yet confirmed|anchoring (?:is )?built and committed/i;
+  const surfaces = [];
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) walk(full);
+      else if (/\.(tsx|ts|md|json)$/.test(e.name)) surfaces.push(full);
     }
+  };
+  for (const d of ['app', 'components', 'content']) {
+    const full = path.join(root, d);
+    if (fs.existsSync(full)) walk(full);
+  }
+  if (anchorConfirmed) {
+    for (const f of surfaces) {
+      const lines = fs.readFileSync(f, 'utf8').split('\n');
+      for (const [i, line] of lines.entries()) {
+        if (!STALE_DISCLAIMER.test(line) || !/anchor|bitcoin|opentimestamps|\bots\b/i.test(line)) continue;
+        const window = lines.slice(Math.max(0, i - ANCHOR_GUARD_LOOKBEHIND), i + 1).join('\n');
+        if (ANCHOR_DERIVED.test(window)) continue;
+        if (/^\s*(\/\/|\*|\{\/\*)/.test(line)) continue;
+        errors.push(
+          `${path.relative(root, f)}: says Bitcoin anchoring is unconfirmed while ` +
+          `data/verdict-anchors.json holds a confirmed anchor. Derive the sentence from ` +
+          `lib/verdictAnchor.ts: "${line.trim().slice(0, 80)}"`,
+        );
+        break;
+      }
+    }
+  }
+  if (!anchorConfirmed) {
     for (const f of surfaces) {
       const body = fs.readFileSync(f, 'utf8');
       // Skip the comment that documents this very guard.

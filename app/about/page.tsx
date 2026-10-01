@@ -4,6 +4,7 @@ import { renderDiagram } from '@/components/diagrams';
 import type { Metadata } from 'next';
 import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
 import { AUTHOR_NAME, AUTHOR_ORCID, AUTHOR_ORCID_URL } from '@/lib/author';
+import { anchorClaim, anchorState } from '@/lib/verdictAnchor';
 
 // Dated on purpose: the commercial-status statement is a point-in-time claim, so a
 // reader can tell whether it is current. Bump it only when the status actually changes.
@@ -64,14 +65,15 @@ export default function AboutPage() {
           instructions. The deterministic conformance probe - which checks
           whether observed behavior matches the declared schema - is built
           but has not yet run on the public corpus, so no published screen verdict
-          carries a conformance result yet. History is hash-chained (OTS Bitcoin anchoring is built and committed, not yet confirmed per verdict), so
-          once a block confirms, the trust record for a tool cannot be quietly
-          rewritten.
+          carries a conformance result yet. {anchorClaim()}{' '}
+          {anchorState().kind === 'confirmed'
+            ? 'The trust record for a tool cannot be quietly rewritten behind a confirmed anchor.'
+            : 'Once a block confirms, the trust record for a tool cannot be quietly rewritten.'}
         </p>
         <p>
           v1 is honest about its edges. Conformance is built but not yet run on
           the screen; when it runs it is monitored, not enforced.
-          hash-chained history; OTS Bitcoin anchoring is built and committed, with a cadence bound of confirmation latency
+          History is hash-chained with OTS Bitcoin anchoring, with a cadence bound of confirmation latency
           (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized);
           sub-window precision asserted, not proven. Confidences are reported but not yet calibrated
           (calibrated=false). Deployment posture is advisory: we publish the

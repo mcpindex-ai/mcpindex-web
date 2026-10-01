@@ -9,6 +9,8 @@ import { gateInstallLine } from '@/lib/install/manifest';
 import type { IndexedServer } from '@/lib/types';
 import { createVersionedBodyCache } from '@/lib/llmsFullCache';
 import { CATALOG_PAGE_SIZE, catalogPageUrl, categoryLabel, paginateCatalog } from '@/lib/llmsCatalog';
+// Derived, not hardcoded: see the note in app/llms.txt/route.ts.
+import { anchorClaim } from '@/lib/verdictAnchor';
 
 // A cold render also pays a full loadServers() snapshot parse, so an hourly
 // TTL plus a long stale-while-revalidate keeps the origin render off the request path entirely and
@@ -48,7 +50,7 @@ function buildBody(servers: IndexedServer[], guides: Guide[], snapshot: string):
     `Verdict contract version: ${VERDICT_CONTRACT_VERSION}. Capability: check_tool_trust (via the npm MCP server - directory client, not the in-path gate).`,
     'Framework bindings: @mcp-index/mastra wires check_tool_trust into Mastra as a beforeToolCall hook (warn or enforce; fail-closed, no credentials). A client of the advisory screen, not the in-path gate; npm i @mcp-index/mastra.',
     'Pipeline (screen): today the screen is semantic-only - an LLM judge reads each tool description for hidden instructions. The deterministic conformance probe (drives the tool against its declared schema) is built but has NOT yet run on the public corpus, so no published screen verdict carries a conformance result; a clearing ALLOW (which the probe would earn) is not produced at v1. When the probe runs it is monitored, not enforced. Confidence is reported but not yet calibrated (calibrated=false).',
-    'History: hash-chained; OTS Bitcoin anchoring built and committed, not yet confirmed per verdict. Cadence bound = confirmation latency (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized). Sub-window precision asserted, not proven. In-process verify proves the proof carries a Bitcoin BlockHeaderAttestation; confirmation-depth check requires the relying party run their own Bitcoin node.',
+    `History: ${anchorClaim()} Cadence bound = confirmation latency (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized). Sub-window precision asserted, not proven. In-process verify proves the proof carries a Bitcoin BlockHeaderAttestation; confirmation-depth check requires the relying party run their own Bitcoin node.`,
     `Calibration: calibrated=false at v1. D3 graduation gate: >=${D3_REQUIRED_LABELS} conforming labels with FP upper-95 <=2%. Current: ${D3_PROGRESS}. Terminal-v1 trigger 2026-09-01: under 50 conforming = ships calibrated=false as terminal v1 (v2 graduation, not v1).`,
     'Posture: advisory. The agent or IDE decides whether to act on the verdict.',
     'Endpoints:',
