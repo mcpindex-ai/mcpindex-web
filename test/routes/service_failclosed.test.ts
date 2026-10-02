@@ -8,7 +8,7 @@ import { callRoute, FIX, snapshotEnv } from './_harness';
 import { POST as screen } from '../../app/api/v1/screen/route';
 import { POST as waitlist } from '../../app/api/waitlist/route';
 import { GET as healthBrevo } from '../../app/api/health/brevo/route';
-import { GET as healthGroq } from '../../app/api/health/groq/route';
+import { GET as healthGroq, __resetGroqHealthForTest } from '../../app/api/health/groq/route';
 import { GET as cron } from '../../app/api/cron/sync-registry/route';
 import { POST as driftRegister, DELETE as driftUnregister } from '../../app/api/v1/drift/register/route';
 import { GET as oauthStart } from '../../app/api/v1/drift/oauth/start/route';
@@ -19,7 +19,10 @@ import { GET as loginStart } from '../../app/api/auth/login/start/route';
 import { GET as loginCallback } from '../../app/api/auth/login/callback/route';
 
 let restore: () => void;
-beforeEach(() => { restore = snapshotEnv(); }); // deletes all gate flags + Groq/Brevo keys below
+beforeEach(() => {
+  restore = snapshotEnv(); // deletes all gate flags + Groq/Brevo keys below
+  __resetGroqHealthForTest();
+});
 afterEach(() => {
   restore();
   delete process.env.MCPINDEX_GROQ_API_KEY;
