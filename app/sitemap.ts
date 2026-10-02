@@ -3,7 +3,7 @@ import { allFilms, thumbnailFor, FILM_UPLOAD_DATE } from '@/lib/films';
 import { sitemapVideo } from '@/lib/video';
 import { loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { ALL_CATEGORIES } from '@/lib/categorize';
-import { browseTotalPages } from '@/lib/serversBrowse';
+import { indexablePredicate } from '@/lib/indexable';
 import { eligibleTopics } from '@/lib/topics';
 import { loadGuides } from '@/lib/guides-content';
 import { DIAGRAMS } from '@/lib/diagrams';
@@ -48,7 +48,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // `baseCache` here and `_cache` in lib/registry are both module-scope, so they are warm
   // and cold together, and on a warm isolate loadServers() returns from `_cache` without
   // touching disk.
-  const [meta, servers] = await Promise.all([loadSnapshotMeta(), loadServers()]);
+  const [meta, servers, indexable] = await Promise.all([
+    loadSnapshotMeta(),
+    loadServers(),
+    indexablePredicate(),
+  ]);
 
   let baseEntries: MetadataRoute.Sitemap;
   if (baseCache && baseCache.version === meta.version) {
@@ -134,18 +138,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
       changeFrequency: 'weekly',
     }));
-    // The A-Z browse hub: page 1 at /servers, the rest under /servers/page/n.
-    // These give every server page a crawlable incoming internal link.
-    const browsePages = browseTotalPages(servers.length);
+    // The A-Z hub's page 1 stays listed; pages 2+ are noindex (Google was refusing them, and
+    // they mostly link pages that are themselves noindex now). /servers/drift-observed is the
+    // crawl path to the server pages that are offered to search.
     const browseRoutes: MetadataRoute.Sitemap = [
       { url: `${base}/servers`, priority: 0.6, changeFrequency: 'daily' },
-      ...Array.from({ length: Math.max(0, browsePages - 1) }, (_, i) => ({
-        url: `${base}/servers/page/${i + 2}`,
-        priority: 0.3,
-        changeFrequency: 'weekly' as const,
-      })),
+      { url: `${base}/servers/drift-observed`, priority: 0.7, changeFrequency: 'daily' },
     ];
-    const serverRoutes: MetadataRoute.Sitemap = servers.map((s) => ({
+    // Only servers with drift of their own (lib/indexable.ts); the rest are noindex.
+    const serverRoutes: MetadataRoute.Sitemap = servers.filter((s) => indexable(s.name)).map((s) => ({
       url: `${base}/server/${s.slug}`,
       lastModified: new Date(s.updatedAt),
       priority: 0.6,

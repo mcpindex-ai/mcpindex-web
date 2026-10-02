@@ -15,7 +15,7 @@ export interface BrowsePage {
   readonly totalServers: number;
 }
 
-function browseSort(servers: readonly IndexedServer[]): IndexedServer[] {
+export function browseSort(servers: readonly IndexedServer[]): IndexedServer[] {
   // slug is the tiebreaker so the order is total and deterministic even when
   // two registry entries share a display name.
   return [...servers].sort((a, b) => {

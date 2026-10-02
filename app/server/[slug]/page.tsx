@@ -22,6 +22,8 @@ import {
 } from '@/lib/verdicts';
 import { splitFlags } from '@/lib/badge';
 import { ContractDrift } from '@/components/ContractDrift';
+import { indexablePredicate } from '@/lib/indexable';
+import { loadServerDrift } from '@/lib/serverDriftServer';
 import { GateInstallBridge } from '@/components/GateInstallBridge';
 import { ServerVerdictCta } from '@/components/ServerVerdictCta';
 import { jsonLdSafe } from '@/lib/jsonLd';
@@ -103,8 +105,13 @@ export const revalidate = 3600;
 const PRERENDER_TOP_N = 1500;
 
 export async function generateStaticParams() {
-  const [servers, livenessOf] = await Promise.all([loadServers(), livenessLookup()]);
-  return rankByQuality(servers, livenessOf)
+  const [servers, livenessOf, indexable] = await Promise.all([
+    loadServers(),
+    livenessLookup(),
+    indexablePredicate(),
+  ]);
+  // Prerender pages meant to rank (lib/indexable.ts), best first; the rest render on demand.
+  return rankByQuality(servers.filter((s) => indexable(s.name)), livenessOf)
     .slice(0, PRERENDER_TOP_N)
     .map(({ server }) => ({ slug: server.slug }));
 }
@@ -134,6 +141,9 @@ export async function generateMetadata(
     return { title: 'Server not found', robots: { index: false, follow: false } };
   }
   const deprecated = server.status === 'deprecated';
+  // Only servers with drift of their own are offered to search (lib/indexable.ts). The rest stay
+  // live for people and agents; follow:true keeps their links counting.
+  const indexed = !deprecated && (await indexablePredicate())(server.name);
   // Every registry-mirroring directory renders this same blurb, so our search snippet was
   // byte-identical to five competitors' and earned a 0.24% CTR at positions 6-12. When the
   // liveness sweep has flagged the source, lead with that instead: it is the one fact on
@@ -163,9 +173,9 @@ export async function generateMetadata(
     // template still appends "· mcpindex.ai").
     title: server.title === server.name ? server.name : `${server.title} - ${server.name}`,
     description,
-    // Deprecated subjects stay addressable (no soft-404) but leave the index so
-    // they do not compete with active listings after the registry retires them.
-    ...(deprecated ? { robots: { index: false, follow: true } } : {}),
+    // Deprecated subjects and servers with no drift of their own stay addressable (no
+    // soft-404) but leave the index; see `indexed` above.
+    ...(indexed ? {} : { robots: { index: false, follow: true } }),
     alternates: { canonical: `https://mcpindex.ai/server/${server.slug}` },
     openGraph: {
       title: server.title,
@@ -206,6 +216,10 @@ export default async function ServerPage(
   }
 
   const all = await loadServers();
+  // Indexable pages get their drift in the server HTML: it is the crawler-observed fact on the page,
+  // and Google indexes what the first response carries. Other pages keep
+  // the client fetch. null (ledger off or down) also falls back to the client fetch.
+  const driftInitial = (await indexablePredicate())(server.name) ? await loadServerDrift(server.name) : null;
   // One bulk load serves this page's own liveness, the peer ranking below, and the
   // JSON-LD. Absent => nothing publishable, NOT 'verified healthy'.
   const livenessOf = await livenessLookup();
@@ -420,7 +434,7 @@ export default async function ServerPage(
 
             <ServerVerdictCta serverTitle={server.title} snapshotDay={snapshotDay} />
 
-            <ContractDrift serverId={server.name} />
+            <ContractDrift serverId={server.name} initial={driftInitial} />
 
             {/* Cite + embed. The cite line leads: a text link on the owner's own
                 site or docs is the one surface that both reassures their users and

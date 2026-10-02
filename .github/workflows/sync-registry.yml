@@ -138,9 +138,16 @@ jobs:
             fi
           fi
 
+      # Which /server pages are offered to search (lib/indexable.ts). Computed against the server
+      # index this run just wrote and the PUBLIC ledger, so the runner needs no secret. FAIL-SOFT
+      # inside the script: a ledger blip, or a set under half the previous one, keeps the last
+      # committed file and exits 0.
+      - name: Export indexable-server set
+        run: npx tsx --conditions=react-server scripts/build-indexable-servers.ts
+
       - name: Stage snapshot + removals + slug map + server index
         run: |
-          git add data/snapshot.json data/server-removals.json data/slugmap.json data/server-index.json data/era-census.json
+          git add data/snapshot.json data/server-removals.json data/slugmap.json data/server-index.json data/era-census.json data/indexable-servers.json
           git status --short
 
       - name: Commit and push if changed, or if skipped data commits are waiting
@@ -222,7 +229,7 @@ jobs:
             # derived from snapshot.json by this run, so taking any of them from a different
             # commit than the snapshot is what would break the binding the step above checks.
             if [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; then
-              for f in data/snapshot.json data/server-removals.json data/slugmap.json data/server-index.json data/deploy-stamp.txt; do
+              for f in data/snapshot.json data/server-removals.json data/slugmap.json data/server-index.json data/indexable-servers.json data/deploy-stamp.txt; do
                 if [ -f "$f" ]; then
                   git checkout --theirs -- "$f"
                   git add "$f"
