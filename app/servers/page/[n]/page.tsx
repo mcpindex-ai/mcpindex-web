@@ -25,6 +25,9 @@ export async function generateMetadata(
     title: `All MCP servers · page ${n}`,
     description: `Alphabetized index of MCP servers indexed by mcpindex (registry snapshot plus a small editorially admitted set), page ${n}.`,
     alternates: { canonical: `https://mcpindex.ai/servers/page/${n}` },
+    // Kept for people browsing A-Z, out of the index: Google was refusing these pages, and most
+    // of what they link is noindex now (lib/indexable.ts). follow:true keeps the links counting.
+    robots: { index: false, follow: true },
   };
 }
 

@@ -22,6 +22,8 @@ import {
 } from '@/lib/verdicts';
 import { splitFlags } from '@/lib/badge';
 import { ContractDrift } from '@/components/ContractDrift';
+import { indexablePredicate, serverSearchRobots } from '@/lib/indexable';
+import { loadServerDrift } from '@/lib/serverDriftServer';
 import { GateInstallBridge } from '@/components/GateInstallBridge';
 import { ServerVerdictCta } from '@/components/ServerVerdictCta';
 import { jsonLdSafe } from '@/lib/jsonLd';
@@ -103,8 +105,13 @@ export const revalidate = 3600;
 const PRERENDER_TOP_N = 1500;
 
 export async function generateStaticParams() {
-  const [servers, livenessOf] = await Promise.all([loadServers(), livenessLookup()]);
-  return rankByQuality(servers, livenessOf)
+  const [servers, livenessOf, indexable] = await Promise.all([
+    loadServers(),
+    livenessLookup(),
+    indexablePredicate(),
+  ]);
+  // Prerender pages meant to rank (lib/indexable.ts), best first; the rest render on demand.
+  return rankByQuality(servers.filter((s) => indexable(s.name)), livenessOf)
     .slice(0, PRERENDER_TOP_N)
     .map(({ server }) => ({ slug: server.slug }));
 }
@@ -134,6 +141,9 @@ export async function generateMetadata(
     return { title: 'Server not found', robots: { index: false, follow: false } };
   }
   const deprecated = server.status === 'deprecated';
+  // Only servers with drift of their own are offered to search (lib/indexable.ts). The rest stay
+  // live for people and agents; follow:true keeps their links counting.
+  const indexed = !deprecated && (await indexablePredicate())(server.name);
   // Every registry-mirroring directory renders this same blurb, so our search snippet was
   // byte-identical to five competitors' and earned a 0.24% CTR at positions 6-12. When the
   // liveness sweep has flagged the source, lead with that instead: it is the one fact on
@@ -163,9 +173,9 @@ export async function generateMetadata(
     // template still appends "· mcpindex.ai").
     title: server.title === server.name ? server.name : `${server.title} - ${server.name}`,
     description,
-    // Deprecated subjects stay addressable (no soft-404) but leave the index so
-    // they do not compete with active listings after the registry retires them.
-    ...(deprecated ? { robots: { index: false, follow: true } } : {}),
+    // Deprecated subjects and servers with no drift of their own stay addressable (no
+    // soft-404) but leave the index; see `indexed` above.
+    ...serverSearchRobots(indexed),
     alternates: { canonical: `https://mcpindex.ai/server/${server.slug}` },
     openGraph: {
       title: server.title,
@@ -205,16 +215,29 @@ export default async function ServerPage(
     notFound();
   }
 
-  const all = await loadServers();
+  // Indexable pages get their drift in the server HTML: it is the crawler-observed fact on the page,
+  // and Google indexes what the first response carries. Other pages keep
+  // the client fetch. null (ledger off or down) also falls back to the client fetch.
+  // The ledger blob is one GET of several MB. It runs alongside the other page reads, not
+  // in front of them. loadServerDrift memoizes that blob for 5 minutes, so a crawl wave
+  // pays the GET once per isolate. Non-indexable pages do not start it.
+  const [all, driftInitial, livenessOf, verdictState, snapshotMeta] = await Promise.all([
+    loadServers(),
+    indexablePredicate().then((indexable) =>
+      // A ledger parse error must cost the drift section, never the page Google is offered.
+      indexable(server.name) ? loadServerDrift(server.name).catch(() => null) : Promise.resolve(null),
+    ),
+    livenessLookup(),
+    loadVerdictForServer(server.slug),
+    loadSnapshotMeta(),
+  ]);
   // One bulk load serves this page's own liveness, the peer ranking below, and the
   // JSON-LD. Absent => nothing publishable, NOT 'verified healthy'.
-  const livenessOf = await livenessLookup();
   const liveness = livenessOf(server);
   const { score, breakdown } = computeQuality(server, liveness);
   const installs = buildInstalls(server);
-  const verdictState = await loadVerdictForServer(server.slug);
   // Crawl-date framing for the post-verdict CTA; memoized snapshot, no extra fetch.
-  const snapshotDay = (await loadSnapshotMeta()).fetchedAt?.slice(0, 10) ?? '';
+  const snapshotDay = snapshotMeta.fetchedAt?.slice(0, 10) ?? '';
   // Titles land verbatim inside the owner's markdown/HTML, so neutralize what
   // would break each syntax - losslessly where the syntax allows it. Markdown:
   // backslash-escape the link-text brackets (CommonMark), drop raw angle
@@ -420,7 +443,7 @@ export default async function ServerPage(
 
             <ServerVerdictCta serverTitle={server.title} snapshotDay={snapshotDay} />
 
-            <ContractDrift serverId={server.name} />
+            <ContractDrift serverId={server.name} initial={driftInitial} />
 
             {/* Cite + embed. The cite line leads: a text link on the owner's own
                 site or docs is the one surface that both reassures their users and

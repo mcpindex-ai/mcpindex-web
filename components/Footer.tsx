@@ -43,6 +43,9 @@ export function Footer() {
             <Link href="/leaderboard" className={LINK}>Maturity Rankings</Link>
             <Link href="/best" className={LINK}>Best of</Link>
             <Link href="/servers" className={LINK}>All servers</Link>
+            {/* Inbound link for /servers/drift-observed. That page is the crawl path to the
+                server pages offered to search; a sitemap entry alone leaves it unlinked. */}
+            <Link href="/servers/drift-observed" className={LINK}>Servers with drift</Link>
             <Link href="/changelog" className={LINK}>Changelog</Link>
             <Link href="/diagrams" className={LINK}>Diagrams</Link>
           </div>

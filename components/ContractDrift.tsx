@@ -7,7 +7,7 @@ import { fmtUtc, fmtDay } from '@/lib/dates';
 import type { ServerDrift as LibServerDrift } from '@/lib/serverDrift';
 
 // Server-level contract-drift section, fetched at RUNTIME from /api/v1/server-drift (the build can't
-// reach Upstash; this is always current). Server-level only - individual tools are not named.
+// reach Upstash; this is always current) unless the page passes it in server-rendered. Server-level only - individual tools are not named.
 // Renders nothing while loading or when drift is unavailable (flag off / ledger down) - never a
 // false "clean". Neutral contract-diff framing, mirrors /ledger.
 
@@ -29,11 +29,14 @@ type LaterKeys =
   | 'publisherWideMore';
 type ServerDrift = Omit<LibServerDrift, LaterKeys> & Partial<Pick<LibServerDrift, LaterKeys>>;
 
-export function ContractDrift({ serverId }: { serverId: string }) {
-  const [drift, setDrift] = useState<ServerDrift | null>(null);
-  const [show, setShow] = useState(false);
+// `initial` is the server-rendered answer for pages offered to search, so the drift facts are in
+// the first HTML response; when present the client fetch is skipped. Absent or null -> fetch.
+export function ContractDrift({ serverId, initial = null }: { serverId: string; initial?: ServerDrift | null }) {
+  const [drift, setDrift] = useState<ServerDrift | null>(initial);
+  const [show, setShow] = useState(initial !== null);
 
   useEffect(() => {
+    if (initial !== null) return;
     let alive = true;
     fetch(`/api/v1/server-drift?server=${encodeURIComponent(serverId)}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
@@ -49,7 +52,7 @@ export function ContractDrift({ serverId }: { serverId: string }) {
     return () => {
       alive = false;
     };
-  }, [serverId]);
+  }, [serverId, initial]);
 
   if (!show || !drift) return null;
   const generated = fmtDay(drift.ledgerGeneratedAt);
