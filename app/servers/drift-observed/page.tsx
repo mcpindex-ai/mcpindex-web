@@ -14,9 +14,10 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://mcpindex.ai/servers/drift-observed' },
 };
 
-// The crawl path to the server pages offered to search (lib/indexable.ts). One page, no
-// pagination: a few thousand links is within what a crawler reads, and a paginated hub over this
-// set would churn page membership on every sync the way /servers/page/n does.
+// The crawl path to the server pages offered to search (lib/indexable.ts). Linked from the
+// footer; a sitemap entry alone does not put it in the crawl graph. One page, no pagination:
+// a few thousand links is within what a crawler reads, and a paginated hub over this set would
+// churn page membership on every sync the way /servers/page/n does.
 export default async function DriftObservedServers() {
   const [servers, indexable] = await Promise.all([loadServers(), indexablePredicate()]);
   const items = browseSort(servers.filter((s) => s.status !== 'deprecated' && indexable(s.name)));
