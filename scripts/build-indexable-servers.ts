@@ -57,7 +57,10 @@ async function main(): Promise<void> {
     .readFile(OUT, 'utf8')
     .then((t) => coerceIndexable(JSON.parse(t)))
     .catch(() => null);
-  if (!indexableCountAcceptable(servers.length, prev ? prev.servers.length : null)) {
+  // INDEXABLE_ACCEPT_COUNT=1 (workflow_dispatch input accept_indexable_count) lets a reviewed
+  // jump through once; without it a legitimate shift outside the ratio would freeze the set.
+  const acceptAnyCount = process.env.INDEXABLE_ACCEPT_COUNT === '1' && servers.length > 0;
+  if (!acceptAnyCount && !indexableCountAcceptable(servers.length, prev ? prev.servers.length : null)) {
     keep(
       `new set has ${servers.length} servers, previous had ${prev ? prev.servers.length : 0}`,
     );
@@ -70,7 +73,9 @@ async function main(): Promise<void> {
     criterion: INDEXABLE_CRITERION,
     servers,
   };
-  await fs.writeFile(OUT, `${JSON.stringify(doc, null, 1)}\n`);
+  // Write then rename: a truncated file would coerce to null and re-open every page to search.
+  await fs.writeFile(`${OUT}.tmp`, `${JSON.stringify(doc, null, 1)}\n`);
+  await fs.rename(`${OUT}.tmp`, OUT);
   console.log(`indexable-servers.json: ${servers.length} of ${names.length} registry servers`);
 }
 

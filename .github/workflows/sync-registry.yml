@@ -17,7 +17,12 @@ on:
     # its own Vercel build (vercel.json ignoreCommand), and THIS sync's build ships
     # it. Keep the ordering if either schedule moves.
     - cron: '15 10,22 * * *'
-  workflow_dispatch: {}  # allow manual triggers from the Actions UI
+  workflow_dispatch:  # allow manual triggers from the Actions UI
+    inputs:
+      accept_indexable_count:
+        description: 'Accept an indexable-server count outside 0.5x-2x of the last one (after review)'
+        type: boolean
+        default: false
 
 concurrency:
   # Never run two syncs at once; if a slow run is still going when the next 4h trigger
@@ -143,6 +148,8 @@ jobs:
       # inside the script: a ledger blip, a blob that is not schema /3, or a set under half
       # or over double the previous one, keeps the last committed file and exits 0.
       - name: Export indexable-server set
+        env:
+          INDEXABLE_ACCEPT_COUNT: ${{ inputs.accept_indexable_count && '1' || '0' }}
         run: npx tsx --conditions=react-server scripts/build-indexable-servers.ts
 
       - name: Stage snapshot + removals + slug map + server index

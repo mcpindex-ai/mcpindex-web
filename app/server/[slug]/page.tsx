@@ -224,7 +224,8 @@ export default async function ServerPage(
   const [all, driftInitial, livenessOf, verdictState, snapshotMeta] = await Promise.all([
     loadServers(),
     indexablePredicate().then((indexable) =>
-      indexable(server.name) ? loadServerDrift(server.name) : Promise.resolve(null),
+      // A ledger parse error must cost the drift section, never the page Google is offered.
+      indexable(server.name) ? loadServerDrift(server.name).catch(() => null) : Promise.resolve(null),
     ),
     livenessLookup(),
     loadVerdictForServer(server.slug),

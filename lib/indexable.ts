@@ -96,7 +96,12 @@ export async function loadIndexable(): Promise<ReadonlySet<string> | null> {
       .readFile(path.join(process.cwd(), 'data', 'indexable-servers.json'), 'utf8')
       .then((txt) => coerceIndexable(JSON.parse(txt)))
       .then((doc) => (doc ? new Set(doc.servers) : null))
-      .catch(() => null);
+      .catch(() => null)
+      .then((set) => {
+        // Loud on purpose: a null here re-opens every server page to search.
+        if (!set) console.error('[indexable] data/indexable-servers.json missing or malformed; every server page is indexable');
+        return set;
+      });
   }
   return cached;
 }
