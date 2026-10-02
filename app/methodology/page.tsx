@@ -87,7 +87,7 @@ export default function MethodologyPage() {
           <Dim
             label="Contract-diff"
             kind="deterministic"
-            body="On a call, the gate re-derives the live contract and compares it to the pin. A mismatch is classified into a fixed taxonomy (ChangeKind): added-required-param, required-set-expanded, constraint-narrowed, type-changed, enum-values-removed, removed-param, annotation-flip-to-destructive, output-schema-added, output-schema-changed, tool-added/removed. It also scans for injection/exfil markers in the input AND output schema and the description. No LLM, no scoring you cannot trace; a structural surprise it cannot classify fails closed (deep-schema-undiffable), never open."
+            body="On a call, the gate re-derives the live contract and compares it to the pin. A mismatch is classified into a fixed taxonomy (ChangeKind): added-required-param, required-set-expanded, constraint-narrowed, type-changed, enum-values-removed, removed-param, annotation-flip-to-destructive, param-mirrored-to-header, output-schema-added, output-schema-changed, tool-added/removed. It also scans for injection/exfil markers in the input AND output schema and the description. No LLM, no scoring you cannot trace; a structural surprise it cannot classify fails closed (deep-schema-undiffable), never open."
           />
           <Dim
             label="Postures"

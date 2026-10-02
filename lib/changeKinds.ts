@@ -134,11 +134,15 @@ export type PostureOutcome = 'PROCEED' | 'PROCEED_NOTIFY' | 'INCONCLUSIVE' | 'HO
  *
  * The guard column was verified by DRIVING the gate (2026-07-27), not by set identity:
  * gate.py `_GUARD_DANGEROUS_KINDS` is a smaller set than schema_diff.py `_SAFETY_RELEVANT`
- * (it lacks param-mirrored-to-header and the server-scoped context kinds, which the gate
- * does not detect), and guard ALSO blocks on reason markers - a risk escalation, an
+ * (it lacks the server-scoped context kinds, which the gate does not detect), and guard ALSO blocks on reason markers - a risk escalation, an
  * injection/exfil marker, a description change, a fail-closed error - which are not
  * ChangeKinds. The observed HOLD behaviour for every surfaced row is what the parity
  * test pins (clients/ts crossLangParity drives PMH under guard).
+ *
+ * Correction 2026-10-02: the guard column was wrong for param-mirrored-to-header until
+ * mcpindex-gate 0.16.0 and @mcp-index/sdk 0.14.0. Earlier releases left the kind out of the
+ * guard set and forwarded it under guard; a third-party run caught it. The parity test now
+ * also compares the TS and Python guard sets.
  */
 export function postureOutcome(kind: string, posture: Posture): PostureOutcome {
   if (BENIGN_AUTOACCEPT_CHANGE_KINDS.has(kind)) return 'PROCEED';

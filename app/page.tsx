@@ -103,8 +103,9 @@ export default async function Home() {
         description:
           'An in-path trust gate that pins the contract of every tool you wire through it and HOLDs a call the moment that contract silently changes, and grades the blast radius of every call it sees (read, write, delete, send; reversible or not) before your agent acts. Deterministic and advisory - a contract-diff and a blast-radius label, not a safety verdict.',
         url: 'https://mcpindex.ai',
-        codeRepository: 'https://github.com/mcpindex-ai/mcpindex-web',
-        runtimePlatform: 'Node.js',
+        codeRepository: 'https://github.com/mcpindex-ai/mcpindex-sdk-ts',
+        runtimePlatform: ['Python', 'Node.js'],
+        sameAs: ['https://pypi.org/project/mcpindex-gate/', 'https://www.npmjs.com/package/@mcp-index/sdk'],
         isAccessibleForFree: true,
         author: { '@id': 'https://mcpindex.ai/#org' },
       },
