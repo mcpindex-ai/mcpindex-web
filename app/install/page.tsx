@@ -40,8 +40,9 @@ const JSON_LD = {
       '@type': 'SoftwareSourceCode',
       name: 'mcpindex gate',
       url: 'https://mcpindex.ai/install',
-      codeRepository: 'https://github.com/mcpindex-ai/mcpindex-web',
-      runtimePlatform: 'Node.js',
+      codeRepository: 'https://github.com/mcpindex-ai/mcpindex-sdk-ts',
+      runtimePlatform: ['Python', 'Node.js'],
+      sameAs: ['https://pypi.org/project/mcpindex-gate/', 'https://www.npmjs.com/package/@mcp-index/sdk'],
       isAccessibleForFree: true,
       description:
         'An in-path gate that runs a deterministic contract-diff on every MCP tool call and flags changes since you last approved a server. It reports changes; it is not a safety verdict.',
