@@ -1,18 +1,19 @@
-// Groq key-pool liveness for the external healthcheck (tools/healthcheck).
+// Groq key-pool liveness plus the screen model's chat path.
 //
-// The live /screen endpoint fails over primary -> fallback silently; a revoked
-// or expired primary key would otherwise degrade the pool to one key with no
-// alert until the backup ALSO dies. This endpoint lets the healthcheck probe
-// detect a dead key proactively (every 5 min) instead of waiting for /screen
-// traffic to surface it in the logs.
+// The live /screen endpoint fails over primary then fallback. A revoked
+// primary would otherwise degrade the pool to one key with no alert until
+// the backup also dies. GET /openai/v1/models costs no tokens and catches a
+// dead key. It stays green when the key is live but the screen model is
+// gone (llama-3.3-70b-versatile returned 404 while this check stayed 200).
+// One extra chat completion, same model and JSON request shape as
+// lib/screen.ts, capped at PROBE_MAX_TOKENS, runs at most once per TTL per
+// warm instance. A retired model or a rejected request shape turns this
+// red. A 429, 5xx, or timeout stays unknown so a Groq blip does not page.
 //
-// Liveness check = GET https://api.groq.com/openai/v1/models with each key.
-// That endpoint costs NO tokens: 200 => key live, 401/403 => key dead/revoked,
-// anything else => unknown (not a hard fail). Key VALUES are never returned or
-// logged - only slot name + boolean.
-//
-// Abuse-safe: a module-level memo throttles the real Groq calls to at most once
-// per TTL per warm instance, so hammering this URL cannot fan out to Groq.
+// Key values are never returned or logged. Only slot name, model id, and
+// the probe status.
+
+import { GROQ_CHAT_URL, MODEL, buildScreenChatBody } from '@/lib/screen';
 
 // Pin the render contract the memo throttle assumes: this GET must run at
 // request time (it reads env + calls Groq), never be statically cached, so the
@@ -22,15 +23,47 @@ export const dynamic = 'force-dynamic';
 
 const MODELS_URL = 'https://api.groq.com/openai/v1/models';
 const TTL_MS = 300_000; // 5 min - matches the healthcheck cadence
+// Floor on 2026-10-02 was 64 completion tokens for this ping (reasoning
+// before the JSON). 32 came back json_validate_failed. 128 leaves headroom
+// so a slightly longer trace does not page while the uncapped screen still works.
+const PROBE_MAX_TOKENS = 128;
+const PROBE_SYSTEM = 'Reply ONLY compact JSON.';
+const PROBE_USER = 'Reply {"ok":true}';
 
 type Slot = { slot: 'primary' | 'fallback'; ok: boolean | null };
-type Health = { healthy: boolean; pool: Slot[]; checked_at: string };
+type Health = {
+  healthy: boolean;
+  pool: Slot[];
+  model: { id: string; ok: boolean | null };
+  checked_at: string;
+};
 
 let memo: { at: number; body: Health } | null = null;
+let _fetch: typeof fetch | undefined;
+let _modelForTest: string | undefined;
+
+export function __setGroqHealthFetchForTest(f: typeof fetch | undefined): void {
+  _fetch = f;
+}
+export function __setGroqHealthModelForTest(id: string | undefined): void {
+  _modelForTest = id;
+}
+export function __resetGroqHealthForTest(): void {
+  memo = null;
+}
+
+// 200: the screen shape works. 429 and 5xx: transient, not a dead model.
+// Any other status (404 retired, 400 bad shape, 401/403 chat rejected)
+// means /screen would fail closed, so the probe is red.
+export function screenProbeOk(status: number): boolean | null {
+  if (status === 200) return true;
+  if (status === 429 || status >= 500) return null;
+  return false;
+}
 
 async function keyLive(key: string): Promise<boolean | null> {
   try {
-    const res = await fetch(MODELS_URL, {
+    const res = await (_fetch ?? fetch)(MODELS_URL, {
       headers: { Authorization: `Bearer ${key}` },
       signal: AbortSignal.timeout(8_000),
     });
@@ -42,7 +75,32 @@ async function keyLive(key: string): Promise<boolean | null> {
   }
 }
 
+async function modelServes(key: string, modelId: string): Promise<boolean | null> {
+  try {
+    const res = await (_fetch ?? fetch)(GROQ_CHAT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      body: JSON.stringify(
+        buildScreenChatBody(PROBE_USER, {
+          maxTokens: PROBE_MAX_TOKENS,
+          system: PROBE_SYSTEM,
+          model: modelId,
+        }),
+      ),
+      signal: AbortSignal.timeout(8_000),
+    });
+    const ok = screenProbeOk(res.status);
+    if (ok === false) {
+      console.error(`[groq-health] screen model ${modelId} probe failed status=${res.status}`);
+    }
+    return ok;
+  } catch {
+    return null;
+  }
+}
+
 async function compute(): Promise<Health> {
+  const modelId = _modelForTest ?? MODEL;
   const slots: Array<['primary' | 'fallback', string | undefined]> = [
     ['primary', process.env.MCPINDEX_GROQ_API_KEY],
     ['fallback', process.env.MCPINDEX_GROQ_API_KEY_FALLBACK],
@@ -51,11 +109,19 @@ async function compute(): Promise<Health> {
   const pool: Slot[] = await Promise.all(
     configured.map(async ([slot, k]) => ({ slot, ok: await keyLive(k as string) })),
   );
-  // healthy = at least one key configured AND no configured key is KNOWN-dead.
-  // A known-dead key (ok === false) is the alert condition - whether it's the
-  // primary (running on backup) or the fallback (redundancy already lost).
-  const healthy = configured.length > 0 && !pool.some((p) => p.ok === false);
-  return { healthy, pool, checked_at: new Date().toISOString() };
+  // One chat probe per TTL, on the first key that listed models. A known-dead
+  // key is already an alert; do not spend a completion on it.
+  const live = pool.find((p) => p.ok === true);
+  const liveKey = live
+    ? (configured.find(([slot]) => slot === live.slot)?.[1] as string)
+    : undefined;
+  const modelOk = liveKey ? await modelServes(liveKey, modelId) : null;
+  // healthy = at least one key configured AND no configured key is KNOWN-dead
+  // AND the screen model was not KNOWN-unreachable. A null model probe
+  // (no live key yet, or a transient chat error) does not by itself go red.
+  const keysHealthy = configured.length > 0 && !pool.some((p) => p.ok === false);
+  const healthy = keysHealthy && modelOk !== false;
+  return { healthy, pool, model: { id: modelId, ok: modelOk }, checked_at: new Date().toISOString() };
 }
 
 export async function GET() {
