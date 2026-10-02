@@ -140,8 +140,8 @@ jobs:
 
       # Which /server pages are offered to search (lib/indexable.ts). Computed against the server
       # index this run just wrote and the PUBLIC ledger, so the runner needs no secret. FAIL-SOFT
-      # inside the script: a ledger blip, or a set under half the previous one, keeps the last
-      # committed file and exits 0.
+      # inside the script: a ledger blip, a blob that is not schema /3, or a set under half
+      # or over double the previous one, keeps the last committed file and exits 0.
       - name: Export indexable-server set
         run: npx tsx --conditions=react-server scripts/build-indexable-servers.ts
 

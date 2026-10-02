@@ -9,18 +9,26 @@
 //
 // FAIL-SOFT, like the era-census export in the same workflow. Any failure keeps the last
 // committed file and exits 0, because a ledger blip must not take the registry sync down, and an
-// old set is an honest set. A result under half the previous one is refused the same way: that
-// is a broken ledger read, not a week in which half of all drift vanished.
+// old set is an honest set. A result under half the previous one, or over double, is refused
+// the same way: that is a broken ledger read, not a week in which half of all drift vanished
+// or the corpus suddenly all qualified. A /2 blob is refused too: its events still list
+// fleet-collapsed tools, so it cannot answer "drift of its own".
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { computeIndexable, coerceIndexable, INDEXABLE_CRITERION, INDEXABLE_SCHEMA } from '../lib/indexable';
+import {
+  computeIndexable,
+  coerceIndexable,
+  indexableCountAcceptable,
+  INDEXABLE_CRITERION,
+  INDEXABLE_SCHEMA,
+  ledgerAnswersIndexableCriterion,
+} from '../lib/indexable';
 import { parseLedgerBlob } from '../lib/ledger';
 import { loadServersFromSnapshot } from '../lib/registry';
 
 const OUT = path.join(process.cwd(), 'data', 'indexable-servers.json');
 const LEDGER_URL = process.env.INDEXABLE_LEDGER_URL ?? 'https://mcpindex.ai/api/v1/ledger';
-const MIN_KEEP_RATIO = 0.5;
 
 function keep(reason: string): never {
   console.log(`::warning::indexable-servers.json keeps its last reading: ${reason}`);
@@ -38,6 +46,9 @@ async function main(): Promise<void> {
   }
   const ledger = parseLedgerBlob(raw);
   if (!ledger) keep('ledger blob failed validation');
+  if (!ledgerAnswersIndexableCriterion(ledger.schema)) {
+    keep(`ledger schema ${ledger.schema} cannot separate fleet-only events`);
+  }
 
   const names = (await loadServersFromSnapshot()).map((s) => s.name);
   const servers = computeIndexable(names, ledger.events, ledger.context_events);
@@ -46,10 +57,11 @@ async function main(): Promise<void> {
     .readFile(OUT, 'utf8')
     .then((t) => coerceIndexable(JSON.parse(t)))
     .catch(() => null);
-  if (prev && servers.length < prev.servers.length * MIN_KEEP_RATIO) {
-    keep(`new set has ${servers.length} servers, previous had ${prev.servers.length}`);
+  if (!indexableCountAcceptable(servers.length, prev ? prev.servers.length : null)) {
+    keep(
+      `new set has ${servers.length} servers, previous had ${prev ? prev.servers.length : 0}`,
+    );
   }
-  if (servers.length === 0) keep('new set is empty');
 
   const doc = {
     schema: INDEXABLE_SCHEMA,

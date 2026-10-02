@@ -2,7 +2,7 @@ import 'server-only';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { serverFp } from './driftFingerprint';
-import type { ContextEvent, LedgerEvent } from './ledger';
+import { LEDGER_SCHEMA_V3, type ContextEvent, type LedgerEvent } from './ledger';
 
 /**
  * Which /server pages are offered to search engines.
@@ -34,6 +34,27 @@ export interface IndexableDoc {
   readonly ledger_generated_at: string;
   readonly criterion: string;
   readonly servers: readonly string[];
+}
+
+/** Below this fraction of the previous count, or above its reciprocal, the new set is refused.
+ * Half the drift does not vanish between syncs, and it does not quadruple either. */
+export const INDEXABLE_KEEP_RATIO = 0.5;
+
+/** A /3 ledger lists fleet-collapsed tools outside `events`. A /2 blob puts them back in
+ * `events`, so every fleet-only server would qualify and the sitemap would re-expand.
+ * Only /3 can answer the criterion. Callers keep the last file on anything else. */
+export function ledgerAnswersIndexableCriterion(schema: string): boolean {
+  return schema === LEDGER_SCHEMA_V3;
+}
+
+/** Whether a freshly computed count may replace the previous one. Zero is never written.
+ * With no previous count the first file is accepted. */
+export function indexableCountAcceptable(next: number, previous: number | null): boolean {
+  if (next <= 0) return false;
+  if (previous === null || previous <= 0) return true;
+  if (next < previous * INDEXABLE_KEEP_RATIO) return false;
+  if (next > previous / INDEXABLE_KEEP_RATIO) return false;
+  return true;
 }
 
 /** Registry names whose drift fingerprint appears in the ledger's own tool or context events.
@@ -78,6 +99,15 @@ export async function loadIndexable(): Promise<ReadonlySet<string> | null> {
       .catch(() => null);
   }
   return cached;
+}
+
+/** Robots for one server page. Omitted when the page is offered to search, so the layout
+ * default (index, follow) stands. Otherwise noindex, follow: the page stays addressable
+ * and its links still count. */
+export function serverSearchRobots(
+  offer: boolean,
+): { robots: { index: false; follow: true } } | Record<string, never> {
+  return offer ? {} : { robots: { index: false, follow: true } };
 }
 
 /** Predicate over registry names. Without an artifact every page stays indexable. */

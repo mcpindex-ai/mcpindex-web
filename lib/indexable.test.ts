@@ -3,7 +3,15 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { serverFp } from './driftFingerprint';
-import { coerceIndexable, computeIndexable, INDEXABLE_SCHEMA } from './indexable';
+import { LEDGER_SCHEMA, LEDGER_SCHEMA_V3 } from './ledger';
+import {
+  coerceIndexable,
+  computeIndexable,
+  INDEXABLE_KEEP_RATIO,
+  INDEXABLE_SCHEMA,
+  indexableCountAcceptable,
+  ledgerAnswersIndexableCriterion,
+} from './indexable';
 
 const DOC = {
   schema: INDEXABLE_SCHEMA,
@@ -37,6 +45,24 @@ test('coerce: wrong schema, empty set and junk all read as NO artifact (everythi
   assert.equal(coerceIndexable({ ...DOC, servers: [1, ''] }), null);
   assert.equal(coerceIndexable(null), null);
   assert.equal(coerceIndexable([]), null);
+});
+
+test('only a /3 ledger can select the set', () => {
+  assert.equal(ledgerAnswersIndexableCriterion(LEDGER_SCHEMA_V3), true);
+  // /2 lists fleet-collapsed tools inside events, so a fleet-only server would qualify.
+  assert.equal(ledgerAnswersIndexableCriterion(LEDGER_SCHEMA), false);
+  assert.equal(ledgerAnswersIndexableCriterion('mcpindex.drift.ledger/9'), false);
+});
+
+test('a new count may not shrink below half or grow past double', () => {
+  const prev = 1000;
+  assert.equal(indexableCountAcceptable(prev, prev), true);
+  assert.equal(indexableCountAcceptable(prev * INDEXABLE_KEEP_RATIO, prev), true);
+  assert.equal(indexableCountAcceptable(prev * INDEXABLE_KEEP_RATIO - 1, prev), false);
+  assert.equal(indexableCountAcceptable(prev / INDEXABLE_KEEP_RATIO, prev), true);
+  assert.equal(indexableCountAcceptable(prev / INDEXABLE_KEEP_RATIO + 1, prev), false);
+  assert.equal(indexableCountAcceptable(0, prev), false);
+  assert.equal(indexableCountAcceptable(10, null), true);
 });
 
 test('committed artifact parses and is sorted', async () => {

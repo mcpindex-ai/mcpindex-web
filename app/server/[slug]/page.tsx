@@ -22,7 +22,7 @@ import {
 } from '@/lib/verdicts';
 import { splitFlags } from '@/lib/badge';
 import { ContractDrift } from '@/components/ContractDrift';
-import { indexablePredicate } from '@/lib/indexable';
+import { indexablePredicate, serverSearchRobots } from '@/lib/indexable';
 import { loadServerDrift } from '@/lib/serverDriftServer';
 import { GateInstallBridge } from '@/components/GateInstallBridge';
 import { ServerVerdictCta } from '@/components/ServerVerdictCta';
@@ -175,7 +175,7 @@ export async function generateMetadata(
     description,
     // Deprecated subjects and servers with no drift of their own stay addressable (no
     // soft-404) but leave the index; see `indexed` above.
-    ...(indexed ? {} : { robots: { index: false, follow: true } }),
+    ...serverSearchRobots(indexed),
     alternates: { canonical: `https://mcpindex.ai/server/${server.slug}` },
     openGraph: {
       title: server.title,
@@ -215,20 +215,28 @@ export default async function ServerPage(
     notFound();
   }
 
-  const all = await loadServers();
   // Indexable pages get their drift in the server HTML: it is the crawler-observed fact on the page,
   // and Google indexes what the first response carries. Other pages keep
   // the client fetch. null (ledger off or down) also falls back to the client fetch.
-  const driftInitial = (await indexablePredicate())(server.name) ? await loadServerDrift(server.name) : null;
+  // The ledger blob is one GET of several MB. It runs alongside the other page reads, not
+  // in front of them. loadServerDrift memoizes that blob for 5 minutes, so a crawl wave
+  // pays the GET once per isolate. Non-indexable pages do not start it.
+  const [all, driftInitial, livenessOf, verdictState, snapshotMeta] = await Promise.all([
+    loadServers(),
+    indexablePredicate().then((indexable) =>
+      indexable(server.name) ? loadServerDrift(server.name) : Promise.resolve(null),
+    ),
+    livenessLookup(),
+    loadVerdictForServer(server.slug),
+    loadSnapshotMeta(),
+  ]);
   // One bulk load serves this page's own liveness, the peer ranking below, and the
   // JSON-LD. Absent => nothing publishable, NOT 'verified healthy'.
-  const livenessOf = await livenessLookup();
   const liveness = livenessOf(server);
   const { score, breakdown } = computeQuality(server, liveness);
   const installs = buildInstalls(server);
-  const verdictState = await loadVerdictForServer(server.slug);
   // Crawl-date framing for the post-verdict CTA; memoized snapshot, no extra fetch.
-  const snapshotDay = (await loadSnapshotMeta()).fetchedAt?.slice(0, 10) ?? '';
+  const snapshotDay = snapshotMeta.fetchedAt?.slice(0, 10) ?? '';
   // Titles land verbatim inside the owner's markdown/HTML, so neutralize what
   // would break each syntax - losslessly where the syntax allows it. Markdown:
   // backslash-escape the link-text brackets (CommonMark), drop raw angle
