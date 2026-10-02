@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { loadServers } from '@/lib/registry';
 import { browseSort } from '@/lib/serversBrowse';
-import { indexablePredicate } from '@/lib/indexable';
+import { indexablePredicate, loadIndexableDoc } from '@/lib/indexable';
 import { CATEGORY_LABELS } from '@/lib/categorize';
 
 export const revalidate = 3600;
@@ -19,11 +19,14 @@ export const metadata: Metadata = {
 // a few thousand links is within what a crawler reads, and a paginated hub over this set would
 // churn page membership on every sync the way /servers/page/n does.
 export default async function DriftObservedServers() {
-  const [servers, indexable] = await Promise.all([loadServers(), indexablePredicate()]);
+  const [servers, indexable, doc] = await Promise.all([loadServers(), indexablePredicate(), loadIndexableDoc()]);
   const items = browseSort(servers.filter((s) => s.status !== 'deprecated' && indexable(s.name)));
   return (
     <article className="site-container pt-16 pb-24">
-      <header>
+      {/* data-indexable-generated-at is read by the GBCode healthcheck probe
+          mcpindex-indexable-freshness: a refused or failed nightly write leaves it old, and the
+          sync job stays green either way. Absent means production has no artifact at all. */}
+      <header data-indexable-generated-at={doc?.generated_at}>
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)]">
           Drift observed · {items.length.toLocaleString('en-US')} servers
         </div>
@@ -43,6 +46,11 @@ export default async function DriftObservedServers() {
           </Link>
           .
         </p>
+        {doc && (
+          <p className="mt-3 font-mono text-[11px] text-[var(--color-mute)]">
+            List as of {doc.generated_at.slice(0, 16).replace('T', ' ')} UTC.
+          </p>
+        )}
       </header>
 
       <ul className="mt-12 rule-t sm:columns-2 lg:columns-3 gap-x-8">

@@ -87,21 +87,29 @@ export function coerceIndexable(raw: unknown): IndexableDoc | null {
   };
 }
 
+let cachedDoc: Promise<IndexableDoc | null> | null = null;
 let cached: Promise<ReadonlySet<string> | null> | null = null;
+
+/** The committed artifact, or null when it is missing or malformed. */
+export async function loadIndexableDoc(): Promise<IndexableDoc | null> {
+  if (!cachedDoc) {
+    cachedDoc = fs
+      .readFile(path.join(process.cwd(), 'data', 'indexable-servers.json'), 'utf8')
+      .then((txt) => coerceIndexable(JSON.parse(txt)))
+      .catch(() => null)
+      .then((doc) => {
+        // Loud on purpose: a null here re-opens every server page to search.
+        if (!doc) console.error('[indexable] data/indexable-servers.json missing or malformed; every server page is indexable');
+        return doc;
+      });
+  }
+  return cachedDoc;
+}
 
 /** The indexable name set, or null when the artifact is missing or malformed. */
 export async function loadIndexable(): Promise<ReadonlySet<string> | null> {
   if (!cached) {
-    cached = fs
-      .readFile(path.join(process.cwd(), 'data', 'indexable-servers.json'), 'utf8')
-      .then((txt) => coerceIndexable(JSON.parse(txt)))
-      .then((doc) => (doc ? new Set(doc.servers) : null))
-      .catch(() => null)
-      .then((set) => {
-        // Loud on purpose: a null here re-opens every server page to search.
-        if (!set) console.error('[indexable] data/indexable-servers.json missing or malformed; every server page is indexable');
-        return set;
-      });
+    cached = loadIndexableDoc().then((doc) => (doc ? new Set(doc.servers) : null));
   }
   return cached;
 }
