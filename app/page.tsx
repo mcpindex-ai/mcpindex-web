@@ -83,8 +83,19 @@ export default async function Home() {
         '@type': 'Organization',
         '@id': 'https://mcpindex.ai/#org',
         name: 'mcpindex.ai',
+        alternateName: 'mcpindex',
         url: 'https://mcpindex.ai',
+        logo: 'https://mcpindex.ai/apple-icon.png',
         description: 'The in-path trust gate for MCP servers and agent tool calls.',
+        // Ties our distribution profiles to this domain as one entity. A separate
+        // "MCPIndex" project (DevHunt, PulseMCP) shares the name, and Google's AI
+        // Overview blended its pricing into ours on 2026-10-02.
+        sameAs: [
+          'https://github.com/mcpindex-ai',
+          'https://www.npmjs.com/~mcp-index',
+          'https://pypi.org/project/mcpindex-gate/',
+          'https://www.youtube.com/@mcpindex-ai',
+        ],
       },
       {
         '@type': 'WebSite',
