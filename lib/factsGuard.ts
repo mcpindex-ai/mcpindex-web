@@ -215,3 +215,23 @@ export function checkAnchorStatement(body: string, label: string, ledger: Anchor
   }
   return null;
 }
+
+/**
+ * Checks the D3 sentence in a rendered llms body. v1 is terminal (exercised 2026-10-12): the body
+ * must state calibrated=false and that conformance does not block or fail a tool, and it may not
+ * print a progress count against the bar. "15/150" shipped for months after mcpindex-trust had
+ * corrected the real-server count to 0. Returns an error message, or null when the body is right.
+ */
+export function checkD3Statement(body: string, label: string, required: number): string | null {
+  const counter = new RegExp(`\\b\\d{1,4}\\s*(?:/|of)\\s*${required}\\b`);
+  const hit = body.match(counter);
+  if (hit) {
+    return `${label}: prints a D3 progress count "${hit[0]}". v1 is terminal and publishes no count against the ${required}-label bar.`;
+  }
+  const line = body.split('\n').find((l) => /\bD3\b/.test(l));
+  if (!line) return `${label}: no line names the D3 gate; the terminal-v1 statement is missing`;
+  if (!line.includes('calibrated=false') || !/does not block or fail a tool/.test(line)) {
+    return `${label}: the D3 line does not state the terminal-v1 state (calibrated=false, does not block or fail a tool): "${line.trim().slice(0, 160)}"`;
+  }
+  return null;
+}

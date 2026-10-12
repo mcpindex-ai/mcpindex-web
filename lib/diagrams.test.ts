@@ -130,8 +130,9 @@ test('the posture twin quotes the same counts the rows produce', () => {
 test('renderTwin interpolates tokens and leaves unknown ones visible', () => {
   assert.equal(renderTwin('a {servers} b', { servers: '42' }), 'a 42 b');
   assert.equal(renderTwin('{nope}'), '{nope}');
-  // d3progress is always available: the verdict figure quotes it.
-  assert.match(renderTwin('{d3progress}'), /^\d+\/\d+$/);
+  // d3state is always available: the verdict figure quotes it. No progress count survives.
+  assert.equal(renderTwin('{d3state}'), 'calibrated=false');
+  assert.equal(renderTwin('{d3progress}'), '{d3progress}');
 });
 
 test('no twin ships an uninterpolated token', () => {

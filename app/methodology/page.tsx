@@ -3,7 +3,7 @@ import { Figure } from '@/components/Figure';
 import { renderDiagram } from '@/components/diagrams';
 import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/seo';
-import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
+import { D3_V1_STATEMENT } from '@/lib/honest-limits';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Methodology',
@@ -177,7 +177,7 @@ export default function MethodologyPage() {
           <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">OTS cadence bound = confirmation latency.</strong> The OTS anchor proves the verdict existed by some Bitcoin block; it does not prove minute-level ordering inside the confirmation window.</li>
           <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">calibrated = false at v1.</strong> Confidence scores are reported but not calibrated against a held-out adversarial corpus yet.</li>
           <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">Advisory, not blocking.</strong> mcpindex publishes the verdict. The agent or IDE decides whether to act.</li>
-          <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">D3 graduation gate.</strong> &gt;={D3_REQUIRED_LABELS} conforming labels with FP upper-95 &lt;=2%. Current: {D3_PROGRESS}.</li>
+          <li><span className="text-[var(--color-accent-strong)] font-mono">·</span> <strong className="text-[var(--color-ink)] font-medium">D3 conformance gate: terminal v1.</strong> {D3_V1_STATEMENT}</li>
         </ul>
         <p className="mt-6 text-[14px] text-[var(--color-cite)] leading-[1.6]">
           The honest-limits list is a contract. If any of these stops being

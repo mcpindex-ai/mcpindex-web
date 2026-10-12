@@ -30,7 +30,7 @@ export async function GET() {
       // UPPERCASE per the AD-B contract (contract-schema.md S3). At v1 a screened
       // server returns REVIEW (semantic-only); a server not on file returns
       // UNVERIFIED (fail-closed). ALLOW/DENY are reserved in the contract.
-      // Coverage is advisory + semantic-only (labels to D3 graduation).
+      // Coverage is advisory + semantic-only; it never moves the D3 gate.
       verdict_states: ['ALLOW', 'DENY', 'REVIEW', 'UNVERIFIED'],
       verdict_coverage: {
         screened_servers: screenedCount,
@@ -63,17 +63,18 @@ export async function GET() {
         'https://mcpindex.ai/api/v1/trust/tool/{server_id}/{tool_name}',
         'https://mcpindex.ai/api/v1/trust/server/{server_id}',
       ],
-      // INVARIANT: these are LABELED-conforming-corpus gate values (mirror of
-      // mcpindex-trust/corpus_eval/GATES.json). They change ONLY when human-
-      // labeled conforming tools + a probed FP upper-95 exist. Registry-screening
-      // COVERAGE (data/verdicts.json) is a different axis and must NEVER raise
-      // them. scripts/check-graduation-honesty.mjs fails the build if violated.
+      // INVARIANT: mirror of mcpindex-trust/corpus_eval/GATES.json. v1 is
+      // terminal: the pre-registered bar was not met by 2026-09-01, so v1 ships
+      // calibrated=false (exercised 2026-10-12). No progress count is published.
+      // Registry-screening COVERAGE (data/verdicts.json) is a different axis and
+      // never moves this. scripts/check-graduation-honesty.mjs fails the build
+      // if the status claims graduation.
       d3_graduation: {
         criterion: 'conforming_labels >= 150 AND fp_upper_95 <= 0.02',
-        current_conforming_labels: 15,
-        current_fp_upper_95: null,
-        status: 'pre_graduation',
+        status: 'terminal_v1_calibrated_false',
         terminal_v1_trigger_date: '2026-09-01',
+        terminal_v1_exercised: '2026-10-12',
+        conformance_blocks_or_fails_tools: false,
       },
     },
 

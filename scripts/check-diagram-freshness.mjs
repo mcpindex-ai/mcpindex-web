@@ -160,13 +160,18 @@ const TRIPWIRES = {
       ? null
       : 'the default build no longer declares zero egress. The trust-boundary figure still says nothing crosses by default: redraw it.',
 
-  'd3-not-graduated': () => {
-    const cur = factValue('d3.conforming_labels');
-    const req = factValue('d3.required_labels');
-    if (!Number.isFinite(cur) || !Number.isFinite(req)) return 'could not read the D3 gate from lib/facts.json';
-    return cur < req
-      ? null
-      : `D3 has reached its gate (${cur}/${req}). ALLOW becomes producible, so the two-verdict-surfaces figure must stop drawing ALLOW and DENY as reserved.`;
+  // v1 is terminal (exercised 2026-10-12): conformance ships advisory and uncalibrated, so the
+  // figure draws ALLOW and DENY as reserved and prints no progress count. Either a state change
+  // or a progress fact coming back means the figure needs a redraw.
+  'd3-terminal-v1': () => {
+    const state = factValue('d3.v1_state');
+    if (state !== 'calibrated=false') {
+      return `d3.v1_state is ${JSON.stringify(state)}, not "calibrated=false". The two-verdict-surfaces figure still says conformance is advisory and uncalibrated in v1 and draws ALLOW and DENY as reserved: redraw it.`;
+    }
+    if (factValue('d3.conforming_labels') !== undefined) {
+      return 'lib/facts.json carries d3.conforming_labels again. v1 publishes no D3 progress count; the figure prints the terminal state only.';
+    }
+    return null;
   },
 
   'surface-taxonomy-size': () => {

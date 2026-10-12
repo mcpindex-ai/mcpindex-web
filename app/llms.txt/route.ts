@@ -1,5 +1,5 @@
 import { getServerCount, getCategoryCount } from '@/lib/registry';
-import { D3_REQUIRED_LABELS, D3_PROGRESS, D3_FP_UPPER95_MAX_PCT, D3_TERMINAL_V1_FLOOR } from '@/lib/honest-limits';
+import { D3_V1_STATEMENT } from '@/lib/honest-limits';
 // Every corpus or drift figure below renders from lib/facts.json or a data file;
 // scripts/check-public-facts.mts fails CI on a literal one.
 import { BINDING_GAP as BG } from '@/lib/bindingGap';
@@ -82,7 +82,7 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 - History: ${anchorClaim()} Cadence bound = confirmation latency (~10 minutes for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized). Sub-window precision asserted, not proven. In-process verify proves the proof carries a Bitcoin BlockHeaderAttestation; confirmation-depth check is the relying party's job against their own Bitcoin node.
 - Calibration: calibrated=false at v1. Confidences are reported, not yet calibrated against a held-out adversarial corpus.
 - Exposure: anonymous calls return the current verdict (directive, status, dimension verdicts, severity, expires_at). Free, no key required - nothing on this API is paid-tier.
-- Graduation gate (D3): >=${D3_REQUIRED_LABELS} conforming labels with FP upper-95 <=${D3_FP_UPPER95_MAX_PCT}%. Current: ${D3_PROGRESS}. Terminal-v1 trigger 2026-09-01: under ${D3_TERMINAL_V1_FLOOR} conforming = ships calibrated=false as terminal (v2 graduation, not v1).
+- Conformance gate (D3), terminal v1: ${D3_V1_STATEMENT}
 - Deployment posture: advisory. mcpindex publishes the verdict; the agent or IDE decides whether to act on it.
 - Full method: [mcpindex.ai/methodology](https://mcpindex.ai/methodology)
 

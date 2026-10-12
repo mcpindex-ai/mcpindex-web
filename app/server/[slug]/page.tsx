@@ -8,7 +8,6 @@ import { escapeHtml } from '@/lib/escapeHtml';
 import { getSourceLiveness, livenessLookup, livenessSentence } from '@/lib/sourceLiveness';
 import { anchorClaim } from '@/lib/verdictAnchor';
 import { CATEGORY_LABELS } from '@/lib/categorize';
-import { D3_PROGRESS } from '@/lib/honest-limits';
 import { CopyField } from '@/components/CopyField';
 import {
   CONTENT_DRIFT_LIMIT,
@@ -917,8 +916,8 @@ function TrustVerdictPanel({ state }: { state: VerdictState }) {
         </div>
         <p className="mt-3 text-[14px] leading-[1.6] text-[var(--color-cite)]">
           Verdict not yet evaluated for this tool. The semantic screen takes
-          adversarial cases first; coverage rolls out as the corpus expands ({D3_PROGRESS} labels
-          to graduation). The deterministic conformance probe is built
+          adversarial cases first; coverage rolls out as the corpus expands.
+          The deterministic conformance probe is built
           but has not yet run on the public corpus, so a recorded verdict here is
           REVIEW or UNVERIFIED, never a clearing ALLOW. Until a verdict is
           recorded, an agent should treat this tool as not-yet-cleared and fall

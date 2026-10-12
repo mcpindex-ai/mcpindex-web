@@ -3,12 +3,12 @@
   "query_cwd": "Every query runs from the directory that holds both checkouts (mcpindex-web and mcpindex-trust side by side). Run them all with: npm run check:facts -- --reproduce",
   "facts": [
     {
-      "id": "d3.conforming_labels",
-      "value": 15,
-      "unit": "labels",
-      "query": "git -C mcpindex-trust show 58f876d:corpus_eval/GATES.json | jq -r '.banners[] | select(.id==\"d3-deferred\").text' | grep -oE 'Current [0-9]+/' | grep -oE '[0-9]+'",
-      "observed_at": "2026-06-01",
-      "note": "CONTRADICTED. mcpindex-trust 3760492 (2026-07-13) replaced 'Current 15/150' in GATES.json with '0 real-server conforming (NOT YET MEASURABLE)'; the 8 corpus conforming labels are own fixtures. The query pins the last commit that still said 15. Needs a decision before this number is quoted again."
+      "id": "d3.v1_state",
+      "value": "calibrated=false",
+      "unit": "state",
+      "query": "git -C mcpindex-trust show main:corpus_eval/GATES.json | jq -r '.banners[] | select(.id==\"d3-deferred\").text | (capture(\"denominator = (?<n>[0-9]+) real-server\").n | tonumber) as $n | (capture(\"under (?<f>[0-9]+) conforming\").f | tonumber) as $f | if $n < $f then \"calibrated=false\" else \"trigger not met\" end'",
+      "observed_at": "2026-10-12",
+      "note": "Terminal v1, exercised 2026-10-12 by GB under the pre-registered trigger in GATES.json: fewer than 50 real-server conforming labels by 2026-09-01 ships v1 as calibrated=false. The gate denominator was 0 real-server conforming labels (the 8 corpus labels are own fixtures, excluded since mcpindex-trust 3760492, 2026-07-13). Replaces d3.conforming_labels, which published 15 from a superseded GATES.json; no progress count is published any more."
     },
     {
       "id": "d3.required_labels",

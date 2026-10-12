@@ -5,6 +5,7 @@ import { FACTS, validateFacts, type Fact } from './facts';
 import {
   GUARDED_FILES,
   checkAnchorStatement,
+  checkD3Statement,
   roundsTo,
   scanFile,
   staleFacts,
@@ -89,4 +90,17 @@ test('anchoring: an unconfirmed ledger may not be called anchored, and a missing
   const body = '- History: Verdict history is hash-chained and anchored to Bitcoin via OpenTimestamps.';
   assert.match(checkAnchorStatement(body, '/llms.txt', pending) ?? '', /claims anchored/);
   assert.match(checkAnchorStatement('no such line', '/llms.txt', pending) ?? '', /no "History:" line/);
+});
+
+test('d3: the terminal-v1 statement passes; a planted progress count fails', () => {
+  const ok = '- Conformance gate (D3), terminal v1: Conformance is advisory and uncalibrated in v1 (calibrated=false). The pre-registered bar was 150 human-labeled conforming tools ... A conformance result does not block or fail a tool.';
+  assert.equal(checkD3Statement(ok, '/llms.txt', 150), null);
+  assert.match(checkD3Statement(`${ok}\n- Current: 15/150.`, '/llms.txt', 150) ?? '', /progress count "15\/150"/);
+  assert.match(checkD3Statement(ok.replace('.', '. 15 of 150 labels.'), '/llms.txt', 150) ?? '', /progress count/);
+});
+
+test('d3: a missing or pending-sounding D3 line fails', () => {
+  assert.match(checkD3Statement('no gate here', '/llms.txt', 150) ?? '', /no line names the D3 gate/);
+  const pending = '- Graduation gate (D3): >=150 conforming labels with FP upper-95 <=2%.';
+  assert.match(checkD3Statement(pending, '/llms.txt', 150) ?? '', /terminal-v1 state/);
 });

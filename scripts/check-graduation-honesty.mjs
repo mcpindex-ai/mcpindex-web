@@ -4,12 +4,15 @@
 // WHY THIS EXISTS
 // Registry-screening COVERAGE (data/verdicts.json) is advisory, semantic-only,
 // REVIEW/PARTIAL - it grows how many servers have *a* verdict on file. It does
-// NOT count toward the D3 graduation gate, which requires
+// NOT count toward the D3 gate, which requires
 //   >= 150 HUMAN-LABELED conforming tools AND a probed FP upper-95 <= 2%
-// (see mcpindex-trust/corpus_eval/GATES.json, "Current 15/150"). Conformance is
-// advisory until that gate closes. An automated coverage run must never be able
-// to flip the site into claiming graduation or enforcement - that would be a
-// false trust claim, the one fatal failure mode for a trust product.
+// (see mcpindex-trust/corpus_eval/GATES.json). That bar was not met by the
+// pre-registered date 2026-09-01, so v1 is terminal: conformance ships advisory
+// and uncalibrated (calibrated=false), exercised 2026-10-12. An automated
+// coverage run must never be able to flip the site into claiming graduation or
+// enforcement - that would be a false trust claim, the one fatal failure mode
+// for a trust product. Nor may a D3 progress count come back ("15/150" was
+// published from a GATES.json copy that mcpindex-trust had already corrected).
 //
 // This guard fails the build if any of those false claims appear. Growing
 // coverage (more advisory REVIEW verdicts) passes cleanly, as designed.
@@ -43,8 +46,11 @@ try {
 // 2) The machine-readable surface must stay pre-graduation + advisory.
 try {
   const wk = fs.readFileSync(path.join(root, 'app/.well-known/mcp-index.json/route.ts'), 'utf8');
-  if (!/status:\s*'pre_graduation'/.test(wk)) {
-    errors.push("/.well-known/mcp-index.json: d3_graduation.status is no longer 'pre_graduation'. Graduation needs a LABELED conforming corpus + probed FP upper-95, not registry coverage.");
+  if (!/status:\s*'terminal_v1_calibrated_false'/.test(wk)) {
+    errors.push("/.well-known/mcp-index.json: d3_graduation.status is no longer 'terminal_v1_calibrated_false'. v1 is terminal and uncalibrated; graduation needs a LABELED conforming corpus + probed FP upper-95, not registry coverage.");
+  }
+  if (!/conformance_blocks_or_fails_tools:\s*false/.test(wk)) {
+    errors.push('/.well-known/mcp-index.json: d3_graduation no longer says conformance_blocks_or_fails_tools: false. In v1 conformance is advisory.');
   }
   if (!wk.includes('conformance_monitored_not_enforced')) {
     errors.push("/.well-known/mcp-index.json: dropped 'conformance_monitored_not_enforced'. Conformance is advisory until D3 graduation.");
@@ -55,7 +61,8 @@ try {
 
 // 3) No user-facing surface may claim enforcement or graduation. The forbidden
 //    claims are taken verbatim from GATES.json (G-probe-runner) plus coverage-
-//    as-graduation phrasings. "15 of 150" / "15/150" (honest) are NOT matched.
+//    as-graduation phrasings. Since the terminal-v1 decision (2026-10-12) any
+//    D3 progress count ("15/150", "15 of 150 labels") is forbidden too.
 const FORBIDDEN = [
   /enforced hybrid/i,
   /conformance (is )?enforced/i,
@@ -63,8 +70,10 @@ const FORBIDDEN = [
   /now enforcing/i,
   /\bgate cleared\b/i,
   /status:\s*'(post_graduation|graduated)'/,
-  /\b1[05][0-9]\s*of\s*150\b/, // "150 of 150" / "157 of 150" (but not "15 of 150")
-  /\b1[05][0-9]\s*\/\s*150\b/, // "150/150" / "157/150" (but not "15/150")
+  /status:\s*'pre_graduation'/, // v1 is terminal, not pending
+  /\b\d{1,3}\s*of\s*150 (?:conforming )?labels\b/, // "15 of 150 labels"
+  /\b\d{1,3}\s*\/\s*150\b/, // "15/150", "150/150"
+  /\{D3_(?:PROGRESS|CONFORMING_LABELS)\}/, // the retired counter, interpolated
 ];
 
 function walk(dir) {
@@ -824,4 +833,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`[graduation-guard] OK - ${globalThis.__verdictCount ?? '?'} advisory coverage verdicts; gate stays pre_graduation (labeled-conforming gate unaffected).`);
+console.log(`[graduation-guard] OK - ${globalThis.__verdictCount ?? '?'} advisory coverage verdicts; D3 stays terminal v1, calibrated=false (labeled-conforming gate unaffected).`);

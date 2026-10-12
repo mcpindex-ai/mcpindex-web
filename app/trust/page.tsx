@@ -6,7 +6,7 @@ import { pageMetadata } from '@/lib/seo';
 import { ProvenanceBadge } from '@/components/ProvenanceBadge';
 import { PriorityGuides } from '@/components/PriorityGuides';
 import { Seal } from '@/components/Seal';
-import { D3_CONFORMING_LABELS, D3_REQUIRED_LABELS } from '@/lib/honest-limits';
+import { D3_V1_STATEMENT } from '@/lib/honest-limits';
 import { anchorClaim, anchorState } from '@/lib/verdictAnchor';
 
 export const metadata: Metadata = pageMetadata({
@@ -300,9 +300,8 @@ export default function TrustPage() {
           the screen is semantic (the conformance probe is built but has not run
           on the public corpus; when it runs it is monitored, not enforced);
           confidences are reported but not yet calibrated (calibrated=false at
-          v1); coverage expands continuously as the backfill scanner runs
-          ({D3_CONFORMING_LABELS} of {D3_REQUIRED_LABELS} labels to graduation, adversarial cases
-          first). The full contract lives on{' '}
+          v1); coverage expands continuously as the backfill scanner runs,
+          adversarial cases first. {D3_V1_STATEMENT} The full contract lives on{' '}
           <TLink href="/methodology">/methodology</TLink> - and it changes there
           first, before the verdict surface does.
         </p>

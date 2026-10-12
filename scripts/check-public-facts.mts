@@ -9,6 +9,8 @@
 //   4. the anchoring sentence in /llms.txt or /llms-full.txt disagrees with
 //      data/verdict-anchors.json. On 2026-10-01 llms.txt said "not yet confirmed" while the
 //      ledger held 66 confirmed anchors.
+//   5. /llms.txt or /llms-full.txt prints a D3 progress count ("15/150") or drops the terminal-v1
+//      statement. v1 shipped calibrated=false on 2026-10-12; the count it replaced was wrong.
 //
 // --reproduce additionally runs every fact's query and compares the output to the stored value.
 // It needs the private mcpindex-trust checkout beside this one, so it is a local step, not CI:
@@ -18,11 +20,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
-import { FACTS } from '../lib/facts';
+import { FACTS, factNumber } from '../lib/facts';
 import {
   ALLOW,
   GUARDED_FILES,
   checkAnchorStatement,
+  checkD3Statement,
   roundsTo,
   scanFile,
   staleFacts,
@@ -81,6 +84,8 @@ for (const [label, get] of [
   const body = await (await get()).text();
   const err = checkAnchorStatement(body, label, ledger);
   if (err) errors.push(err);
+  const d3 = checkD3Statement(body, label, factNumber('d3.required_labels'));
+  if (d3) errors.push(d3);
 }
 
 // --- 5) optional: reproduce every query ------------------------------------------------------
@@ -110,7 +115,8 @@ if (errors.length) {
 }
 console.log(
   `public facts guard OK - ${FACTS.length} facts, ${GUARDED_FILES.length} guarded files, ` +
-    `anchoring statement matches ledger (${ledger.confirmed}/${ledger.total} confirmed).`,
+    `anchoring statement matches ledger (${ledger.confirmed}/${ledger.total} confirmed), ` +
+    `D3 terminal-v1 statement present with no progress count.`,
 );
 // The llms routes start module-level caches; do not wait on them.
 process.exit(0);

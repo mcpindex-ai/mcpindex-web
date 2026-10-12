@@ -8,7 +8,7 @@ import {
 } from './changeKinds';
 import { KIND_LABEL } from './kindLabels';
 import { SOURCE_LIVENESS_CENSUS } from './sourceLiveness';
-import { D3_CONFORMING_LABELS, D3_REQUIRED_LABELS } from './honest-limits';
+import { D3_V1_STATE } from './honest-limits';
 
 /**
  * The diagram registry: one entry per published figure.
@@ -341,11 +341,11 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
     fig: '09',
     title: 'Two verdict surfaces',
     claim: 'The screen verdict and the gate verdict are different axes. Neither overrides the other.',
-    alt: 'Two surfaces emit verdicts and they are separate axes. The advisory screen, read before you wire a tool, is semantic-only and out of the call path: REVIEW and UNVERIFIED are produced today, while ALLOW and DENY are reserved in the contract and not produced at v1 because a clearing ALLOW requires the behavioural conformance probe that is gated to the D3 labelled-corpus milestone. The in-path gate emits HOLD when the live contract differs from your pin and PROCEED when it matches. The screen is a prior; the gate is the decision.',
+    alt: 'Two surfaces emit verdicts and they are separate axes. The advisory screen, read before you wire a tool, is semantic-only and out of the call path: REVIEW and UNVERIFIED are produced today, while ALLOW and DENY are reserved in the contract and not produced at v1, because the behavioural conformance probe a clearing ALLOW would need is advisory and uncalibrated in v1. The in-path gate emits HOLD when the live contract differs from your pin and PROCEED when it matches. The screen is a prior; the gate is the decision.',
     queries: ['mcp allow deny review unverified', 'mcpindex verdict states', 'mcp trust verdict meaning'],
     placements: ['/methodology', '/screen', '/diagrams/two-verdict-surfaces'],
-    derives: ['D3_CONFORMING_LABELS', 'D3_REQUIRED_LABELS'],
-    tripwire: 'd3-not-graduated',
+    derives: ['D3_V1_STATE'],
+    tripwire: 'd3-terminal-v1',
     reviewed: REVIEWED,
     twin: `  ADVISORY SCREEN (before you wire)      |  IN-PATH GATE (during the call)
   -------------------------------------  |  --------------------------------
@@ -362,9 +362,9 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
   -------------------------------------  |  --------------------------------
   semantic, advisory, out of path        |  in-path, can actually stop the call
 
-  ALLOW and DENY are reserved in the contract, not produced at v1: a clearing
-  ALLOW requires the behavioural conformance probe, gated to the D3 labelled
-  corpus ({d3progress} labels). neither surface overrides the other - the
+  ALLOW and DENY are reserved in the contract, not produced at v1. the
+  conformance probe is advisory and uncalibrated in v1 ({d3state}), so the
+  screen never clears a tool. neither surface overrides the other - the
   screen is a prior, the gate is the decision.`,
   },
   {
@@ -571,10 +571,10 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
   },
 ];
 
-/** Interpolate `{token}` placeholders in a twin (live counts, derived progress). */
+/** Interpolate `{token}` placeholders in a twin (live counts, the derived D3 state). */
 export function renderTwin(twin: string, vars: Record<string, string> = {}): string {
   const base: Record<string, string> = {
-    d3progress: `${D3_CONFORMING_LABELS}/${D3_REQUIRED_LABELS}`,
+    d3state: D3_V1_STATE,
     ...vars,
   };
   return twin.replace(/\{(\w+)\}/g, (m, k) => base[k] ?? m);

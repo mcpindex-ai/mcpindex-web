@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Figure } from '@/components/Figure';
 import { renderDiagram } from '@/components/diagrams';
 import type { Metadata } from 'next';
-import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
+import { D3_V1_STATEMENT } from '@/lib/honest-limits';
 import { AUTHOR_NAME, AUTHOR_ORCID, AUTHOR_ORCID_URL } from '@/lib/author';
 import { anchorClaim, anchorState } from '@/lib/verdictAnchor';
 
@@ -77,9 +77,8 @@ export default function AboutPage() {
           (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized);
           sub-window precision asserted, not proven. Confidences are reported but not yet calibrated
           (calibrated=false). Deployment posture is advisory: we publish the
-          verdict; the agent or IDE decides whether to act on it. The
-          graduation gate to D3 is &gt;={D3_REQUIRED_LABELS} conforming labels with FP upper-95
-          &lt;=2%; today the corpus stands at {D3_PROGRESS}.
+          verdict; the agent or IDE decides whether to act on it.{' '}
+          {D3_V1_STATEMENT}
         </p>
         <p>
           The trust call happens at two moments, and mcpindex answers the same
