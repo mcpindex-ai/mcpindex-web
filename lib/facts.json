@@ -8,98 +8,111 @@
       "unit": "state",
       "query": "git -C mcpindex-trust show main:corpus_eval/GATES.json | jq -r '.banners[] | select(.id==\"d3-deferred\").text | (capture(\"denominator = (?<n>[0-9]+) real-server\").n | tonumber) as $n | (capture(\"under (?<f>[0-9]+) conforming\").f | tonumber) as $f | if $n < $f then \"calibrated=false\" else \"trigger not met\" end'",
       "observed_at": "2026-10-12",
-      "note": "Terminal v1, exercised 2026-10-12 by GB under the pre-registered trigger in GATES.json: fewer than 50 real-server conforming labels by 2026-09-01 ships v1 as calibrated=false. The gate denominator was 0 real-server conforming labels (the 8 corpus labels are own fixtures, excluded since mcpindex-trust 3760492, 2026-07-13). Replaces d3.conforming_labels, which published 15 from a superseded GATES.json; no progress count is published any more."
+      "note": "Frozen: the terminal-v1 decision, exercised once on 2026-10-12 and not a rolling count. The query reads GATES.json at trust main so a reversal there shows up under --reproduce; no max age because nothing is expected to move it week to week. Terminal v1, exercised 2026-10-12 by GB under the pre-registered trigger in GATES.json: fewer than 50 real-server conforming labels by 2026-09-01 ships v1 as calibrated=false. The gate denominator was 0 real-server conforming labels (the 8 corpus labels are own fixtures, excluded since mcpindex-trust 3760492, 2026-07-13). Replaces d3.conforming_labels, which published 15 from a superseded GATES.json; no progress count is published any more."
     },
     {
       "id": "d3.required_labels",
       "value": 150,
       "unit": "labels",
       "query": "git -C mcpindex-trust show 690aaed:corpus_eval/GATES.json | jq -r '.banners[] | select(.id==\"d3-deferred\").text' | grep -oE 'need >=[0-9]+ labeled' | grep -oE '[0-9]+'",
-      "observed_at": "2026-10-11"
+      "observed_at": "2026-10-11",
+      "note": "Frozen: a pre-registered constant of the D3 bar in GATES.json, fixed since 2026-05-28 and pinned to trust 690aaed."
     },
     {
       "id": "d3.fp_upper95_max_pct",
       "value": 2,
       "unit": "percent",
       "query": "git -C mcpindex-trust show 690aaed:corpus_eval/GATES.json | jq -r '.banners[] | select(.id==\"d3-deferred\").text' | grep -oE 'upper-95 <= [0-9]+%' | grep -oE '[0-9]+' | tail -1",
-      "observed_at": "2026-10-11"
+      "observed_at": "2026-10-11",
+      "note": "Frozen: a pre-registered constant of the D3 bar in GATES.json, fixed since 2026-05-28 and pinned to trust 690aaed."
     },
     {
       "id": "d3.terminal_v1_floor",
       "value": 50,
       "unit": "labels",
       "query": "git -C mcpindex-trust show 690aaed:corpus_eval/GATES.json | jq -r '.banners[] | select(.id==\"d3-deferred\").text' | grep -oE 'under [0-9]+ conforming' | grep -oE '[0-9]+'",
-      "observed_at": "2026-10-11"
+      "observed_at": "2026-10-11",
+      "note": "Frozen: a pre-registered constant of the D3 bar in GATES.json, fixed since 2026-05-28 and pinned to trust 690aaed."
     },
     {
       "id": "source_liveness.servers_total",
       "value": 17673,
       "unit": "servers",
       "query": "git -C mcpindex-trust show 7baeaa8:corpus_eval/liveness_v11/aggregates.json | jq .population.registry_servers_total",
-      "observed_at": "2026-07-20"
+      "observed_at": "2026-07-20",
+      "note": "Frozen: the v1.1 source-liveness census deposit (single sweep 2026-07-20, SHA256SUMS + OTS, Zenodo DOI 10.5281/zenodo.21501868), committed once in trust 7baeaa8 and never changed since."
     },
     {
       "id": "source_liveness.repos_total",
       "value": 13105,
       "unit": "repositories",
       "query": "git -C mcpindex-trust show 7baeaa8:corpus_eval/liveness_v11/aggregates.json | jq .population.distinct_repository_urls",
-      "observed_at": "2026-07-20"
+      "observed_at": "2026-07-20",
+      "note": "Frozen: the v1.1 source-liveness census deposit (single sweep 2026-07-20, SHA256SUMS + OTS, Zenodo DOI 10.5281/zenodo.21501868), committed once in trust 7baeaa8 and never changed since."
     },
     {
       "id": "source_liveness.repos_unreachable",
       "value": 1830,
       "unit": "repositories",
       "query": "git -C mcpindex-trust show 7baeaa8:corpus_eval/liveness_v11/aggregates.json | jq .repositories.not_publicly_accessible",
-      "observed_at": "2026-07-20"
+      "observed_at": "2026-07-20",
+      "note": "Frozen: the v1.1 source-liveness census deposit (single sweep 2026-07-20, SHA256SUMS + OTS, Zenodo DOI 10.5281/zenodo.21501868), committed once in trust 7baeaa8 and never changed since."
     },
     {
       "id": "source_liveness.servers_affected",
       "value": 2069,
       "unit": "servers",
       "query": "git -C mcpindex-trust show 7baeaa8:corpus_eval/liveness_v11/aggregates.json | jq .repositories.servers_affected",
-      "observed_at": "2026-07-20"
+      "observed_at": "2026-07-20",
+      "note": "Frozen: the v1.1 source-liveness census deposit (single sweep 2026-07-20, SHA256SUMS + OTS, Zenodo DOI 10.5281/zenodo.21501868), committed once in trust 7baeaa8 and never changed since."
     },
     {
       "id": "source_liveness.sites_unreachable",
       "value": 304,
       "unit": "websites",
       "query": "git -C mcpindex-trust show 7baeaa8:corpus_eval/liveness_v11/aggregates.json | jq .websites.not_publicly_accessible_single_vantage",
-      "observed_at": "2026-07-20"
+      "observed_at": "2026-07-20",
+      "note": "Frozen: the v1.1 source-liveness census deposit (single sweep 2026-07-20, SHA256SUMS + OTS, Zenodo DOI 10.5281/zenodo.21501868), committed once in trust 7baeaa8 and never changed since."
     },
     {
       "id": "source_liveness.egress_blocked",
       "value": 176,
       "unit": "websites",
       "query": "git -C mcpindex-trust show 7baeaa8:corpus_eval/liveness_v11/aggregates.json | jq .websites.egress_blocked_from_datacenter",
-      "observed_at": "2026-07-20"
+      "observed_at": "2026-07-20",
+      "note": "Frozen: the v1.1 source-liveness census deposit (single sweep 2026-07-20, SHA256SUMS + OTS, Zenodo DOI 10.5281/zenodo.21501868), committed once in trust 7baeaa8 and never changed since."
     },
     {
       "id": "source_liveness.hand_sample",
       "value": 150,
       "unit": "repositories",
       "query": "git -C mcpindex-trust show 7baeaa8:corpus_eval/liveness_v11/aggregates.json | jq .corroboration.hand_verified_sample",
-      "observed_at": "2026-07-20"
+      "observed_at": "2026-07-20",
+      "note": "Frozen: the v1.1 source-liveness census deposit (single sweep 2026-07-20, SHA256SUMS + OTS, Zenodo DOI 10.5281/zenodo.21501868), committed once in trust 7baeaa8 and never changed since."
     },
     {
       "id": "source_liveness.cross_vantage_disagreements",
       "value": 0,
       "unit": "repositories",
       "query": "git -C mcpindex-trust show 7baeaa8:corpus_eval/liveness_v11/aggregates.json | jq .corroboration.cross_vantage_disagreements",
-      "observed_at": "2026-07-20"
+      "observed_at": "2026-07-20",
+      "note": "Frozen: the v1.1 source-liveness census deposit (single sweep 2026-07-20, SHA256SUMS + OTS, Zenodo DOI 10.5281/zenodo.21501868), committed once in trust 7baeaa8 and never changed since."
     },
     {
       "id": "source_liveness.sweep_date",
       "value": "2026-07-20",
       "unit": "date",
       "query": "git -C mcpindex-trust show 7baeaa8:corpus_eval/liveness_v11/aggregates.json | jq -r '.census_sweep.started_at[0:10]'",
-      "observed_at": "2026-07-20"
+      "observed_at": "2026-07-20",
+      "note": "Frozen: the v1.1 source-liveness census deposit (single sweep 2026-07-20, SHA256SUMS + OTS, Zenodo DOI 10.5281/zenodo.21501868), committed once in trust 7baeaa8 and never changed since."
     },
     {
       "id": "drift_panel.observations",
       "value": 120,
       "unit": "observations",
       "query": "git -C mcpindex-trust show 5e22333:corpus_eval/drift_panel/deposit/figures.json | jq .meta.observations",
-      "observed_at": "2026-07-28"
+      "observed_at": "2026-07-28",
+      "note": "Frozen: the drift-panel deposit figures.json with a pinned data cutoff of 2026-07-28, at trust 5e22333 (the file's last change, 2026-08-06)."
     },
     {
       "id": "drift_panel.span_days",
@@ -107,35 +120,40 @@
       "raw": 88.64,
       "unit": "days",
       "query": "git -C mcpindex-trust show 5e22333:corpus_eval/drift_panel/deposit/figures.json | jq .meta.span_days",
-      "observed_at": "2026-07-28"
+      "observed_at": "2026-07-28",
+      "note": "Frozen: the drift-panel deposit figures.json with a pinned data cutoff of 2026-07-28, at trust 5e22333 (the file's last change, 2026-08-06)."
     },
     {
       "id": "drift_panel.cutoff",
       "value": "2026-07-28",
       "unit": "date",
       "query": "git -C mcpindex-trust show 5e22333:corpus_eval/drift_panel/deposit/figures.json | jq -r '._pin.data_cutoff_ts[0:10]'",
-      "observed_at": "2026-07-28"
+      "observed_at": "2026-07-28",
+      "note": "Frozen: the drift-panel deposit figures.json with a pinned data cutoff of 2026-07-28, at trust 5e22333 (the file's last change, 2026-08-06)."
     },
     {
       "id": "drift_panel.cohorts_30d",
       "value": 60,
       "unit": "cohorts",
       "query": "git -C mcpindex-trust show 5e22333:corpus_eval/drift_panel/deposit/figures.json | jq '.descriptor_any.survival[\"30\"].cohorts'",
-      "observed_at": "2026-07-28"
+      "observed_at": "2026-07-28",
+      "note": "Frozen: the drift-panel deposit figures.json with a pinned data cutoff of 2026-07-28, at trust 5e22333 (the file's last change, 2026-08-06)."
     },
     {
       "id": "drift_panel.cohorts_60d",
       "value": 36,
       "unit": "cohorts",
       "query": "git -C mcpindex-trust show 5e22333:corpus_eval/drift_panel/deposit/figures.json | jq '.descriptor_any.survival[\"60\"].cohorts'",
-      "observed_at": "2026-07-28"
+      "observed_at": "2026-07-28",
+      "note": "Frozen: the drift-panel deposit figures.json with a pinned data cutoff of 2026-07-28, at trust 5e22333 (the file's last change, 2026-08-06)."
     },
     {
       "id": "drift_panel.cohorts_89d",
       "value": 9,
       "unit": "cohorts",
       "query": "git -C mcpindex-trust show 5e22333:corpus_eval/drift_panel/deposit/figures.json | jq '.descriptor_any.survival[\"89\"].cohorts'",
-      "observed_at": "2026-07-28"
+      "observed_at": "2026-07-28",
+      "note": "Frozen: the drift-panel deposit figures.json with a pinned data cutoff of 2026-07-28, at trust 5e22333 (the file's last change, 2026-08-06)."
     },
     {
       "id": "drift_panel.description_pct_30d",
@@ -143,7 +161,8 @@
       "raw": 3.32,
       "unit": "percent",
       "query": "git -C mcpindex-trust show 5e22333:corpus_eval/drift_panel/deposit/figures.json | jq '.description_only.survival[\"30\"].mean_pct'",
-      "observed_at": "2026-07-28"
+      "observed_at": "2026-07-28",
+      "note": "Frozen: the drift-panel deposit figures.json with a pinned data cutoff of 2026-07-28, at trust 5e22333 (the file's last change, 2026-08-06)."
     },
     {
       "id": "drift_panel.description_pct_60d",
@@ -151,7 +170,8 @@
       "raw": 5.52,
       "unit": "percent",
       "query": "git -C mcpindex-trust show 5e22333:corpus_eval/drift_panel/deposit/figures.json | jq '.description_only.survival[\"60\"].mean_pct'",
-      "observed_at": "2026-07-28"
+      "observed_at": "2026-07-28",
+      "note": "Frozen: the drift-panel deposit figures.json with a pinned data cutoff of 2026-07-28, at trust 5e22333 (the file's last change, 2026-08-06)."
     },
     {
       "id": "drift_panel.description_pct_89d",
@@ -159,7 +179,8 @@
       "raw": 6.85,
       "unit": "percent",
       "query": "git -C mcpindex-trust show 5e22333:corpus_eval/drift_panel/deposit/figures.json | jq '.description_only.survival[\"89\"].mean_pct'",
-      "observed_at": "2026-07-28"
+      "observed_at": "2026-07-28",
+      "note": "Frozen: the drift-panel deposit figures.json with a pinned data cutoff of 2026-07-28, at trust 5e22333 (the file's last change, 2026-08-06)."
     },
     {
       "id": "drift_panel.descriptor_pct_30d",
@@ -168,7 +189,7 @@
       "unit": "percent",
       "query": "git -C mcpindex-trust show 5e22333:corpus_eval/drift_panel/deposit/figures.json | jq '.descriptor_any.survival[\"30\"].mean_pct'",
       "observed_at": "2026-07-28",
-      "note": "descriptor_any moves on any field change including a bare version bump. Upper bound only; never 'the drift rate'."
+      "note": "Frozen: the drift-panel deposit figures.json with a pinned data cutoff of 2026-07-28, at trust 5e22333 (the file's last change, 2026-08-06). descriptor_any moves on any field change including a bare version bump. Upper bound only; never 'the drift rate'."
     },
     {
       "id": "drift_panel.descriptor_pct_60d",
@@ -176,7 +197,7 @@
       "unit": "percent",
       "query": "git -C mcpindex-trust show 5e22333:corpus_eval/drift_panel/deposit/figures.json | jq '.descriptor_any.survival[\"60\"].mean_pct'",
       "observed_at": "2026-07-28",
-      "note": "descriptor_any: includes bare version bumps."
+      "note": "Frozen: the drift-panel deposit figures.json with a pinned data cutoff of 2026-07-28, at trust 5e22333 (the file's last change, 2026-08-06). descriptor_any: includes bare version bumps."
     },
     {
       "id": "drift_panel.descriptor_pct_89d",
@@ -185,7 +206,7 @@
       "unit": "percent",
       "query": "git -C mcpindex-trust show 5e22333:corpus_eval/drift_panel/deposit/figures.json | jq '.descriptor_any.survival[\"89\"].mean_pct'",
       "observed_at": "2026-07-28",
-      "note": "descriptor_any: includes bare version bumps."
+      "note": "Frozen: the drift-panel deposit figures.json with a pinned data cutoff of 2026-07-28, at trust 5e22333 (the file's last change, 2026-08-06). descriptor_any: includes bare version bumps."
     },
     {
       "id": "drift_panel.eligible_servers",
@@ -193,7 +214,7 @@
       "unit": "servers",
       "query": "git -C mcpindex-trust show 5e22333:corpus_eval/drift_panel/deposit/figures.json | jq .descriptor_any.concentration.eligible",
       "observed_at": "2026-07-28",
-      "note": "Servers seen in at least 10 observations. The denominator of the concentration figures only; survival rates use each cohort's own snapshot."
+      "note": "Frozen: the drift-panel deposit figures.json with a pinned data cutoff of 2026-07-28, at trust 5e22333 (the file's last change, 2026-08-06). Servers seen in at least 10 observations. The denominator of the concentration figures only; survival rates use each cohort's own snapshot."
     },
     {
       "id": "drift_panel.never_changed_pct",
@@ -201,7 +222,8 @@
       "raw": 75.19,
       "unit": "percent",
       "query": "git -C mcpindex-trust show 5e22333:corpus_eval/drift_panel/deposit/figures.json | jq .descriptor_any.concentration.never_changed_pct",
-      "observed_at": "2026-07-28"
+      "observed_at": "2026-07-28",
+      "note": "Frozen: the drift-panel deposit figures.json with a pinned data cutoff of 2026-07-28, at trust 5e22333 (the file's last change, 2026-08-06)."
     },
     {
       "id": "drift_panel.top_tenth_share_pct",
@@ -210,7 +232,7 @@
       "unit": "percent",
       "query": "git -C mcpindex-trust show 5e22333:corpus_eval/drift_panel/deposit/figures.json | jq .descriptor_any.concentration.shares.top10pct",
       "observed_at": "2026-07-28",
-      "note": "Top 10% of the ELIGIBLE servers ranked by change count, not the top 10% of servers that changed (the 2026-09-28 error)."
+      "note": "Frozen: the drift-panel deposit figures.json with a pinned data cutoff of 2026-07-28, at trust 5e22333 (the file's last change, 2026-08-06). Top 10% of the ELIGIBLE servers ranked by change count, not the top 10% of servers that changed (the 2026-09-28 error)."
     },
     {
       "id": "live_edition.concentration.servers",
@@ -218,7 +240,7 @@
       "unit": "servers",
       "query": "python3 -c \"import csv,collections as c;r=list(csv.DictReader(open('mcpindex-web/data/report-edition-v1-per-server.csv')));print(len(r))\"",
       "observed_at": "2026-07-19",
-      "note": "Also recomputed on every test run by lib/driftDefinition.test.ts ('concentration figures recompute from the per-server CSV')."
+      "note": "Frozen: the drift-report edition v1 per-server CSV in this repo, a released edition last changed 2026-09-28 (2e9ba0a). Also recomputed on every test run by lib/driftDefinition.test.ts ('concentration figures recompute from the per-server CSV')."
     },
     {
       "id": "live_edition.concentration.flip_servers",
@@ -226,7 +248,7 @@
       "unit": "servers",
       "query": "python3 -c \"import csv,collections as c;r=list(csv.DictReader(open('mcpindex-web/data/report-edition-v1-per-server.csv')));print(sum('annotation-flip-to-destructive:' in x['kinds'] for x in r))\"",
       "observed_at": "2026-07-19",
-      "note": "Also recomputed on every test run by lib/driftDefinition.test.ts ('concentration figures recompute from the per-server CSV')."
+      "note": "Frozen: the drift-report edition v1 per-server CSV in this repo, a released edition last changed 2026-09-28 (2e9ba0a). Also recomputed on every test run by lib/driftDefinition.test.ts ('concentration figures recompute from the per-server CSV')."
     },
     {
       "id": "live_edition.concentration.top_same_version_publisher",
@@ -234,7 +256,7 @@
       "unit": "incidents",
       "query": "python3 -c \"import csv,collections as c;r=list(csv.DictReader(open('mcpindex-web/data/report-edition-v1-per-server.csv')));p=c.Counter();[p.update({x['server'].split('/')[0]:int(x['version_same'])}) for x in r];s=sorted(p.values(),reverse=True);print(s[0])\"",
       "observed_at": "2026-07-19",
-      "note": "Also recomputed on every test run by lib/driftDefinition.test.ts ('concentration figures recompute from the per-server CSV')."
+      "note": "Frozen: the drift-report edition v1 per-server CSV in this repo, a released edition last changed 2026-09-28 (2e9ba0a). Also recomputed on every test run by lib/driftDefinition.test.ts ('concentration figures recompute from the per-server CSV')."
     },
     {
       "id": "live_edition.concentration.top_same_version_pct",
@@ -242,7 +264,7 @@
       "unit": "percent",
       "query": "python3 -c \"import csv,collections as c;r=list(csv.DictReader(open('mcpindex-web/data/report-edition-v1-per-server.csv')));p=c.Counter();[p.update({x['server'].split('/')[0]:int(x['version_same'])}) for x in r];s=sorted(p.values(),reverse=True);print(round(s[0]*100/sum(s),1))\"",
       "observed_at": "2026-07-19",
-      "note": "Also recomputed on every test run by lib/driftDefinition.test.ts ('concentration figures recompute from the per-server CSV')."
+      "note": "Frozen: the drift-report edition v1 per-server CSV in this repo, a released edition last changed 2026-09-28 (2e9ba0a). Also recomputed on every test run by lib/driftDefinition.test.ts ('concentration figures recompute from the per-server CSV')."
     },
     {
       "id": "live_edition.concentration.top_five_same_version_pct",
@@ -250,42 +272,47 @@
       "unit": "percent",
       "query": "python3 -c \"import csv,collections as c;r=list(csv.DictReader(open('mcpindex-web/data/report-edition-v1-per-server.csv')));p=c.Counter();[p.update({x['server'].split('/')[0]:int(x['version_same'])}) for x in r];s=sorted(p.values(),reverse=True);print(round(sum(s[:5])*100/sum(s),1))\"",
       "observed_at": "2026-07-19",
-      "note": "Also recomputed on every test run by lib/driftDefinition.test.ts ('concentration figures recompute from the per-server CSV')."
+      "note": "Frozen: the drift-report edition v1 per-server CSV in this repo, a released edition last changed 2026-09-28 (2e9ba0a). Also recomputed on every test run by lib/driftDefinition.test.ts ('concentration figures recompute from the per-server CSV')."
     },
     {
       "id": "binding_gap.crawls",
       "value": 35,
       "unit": "crawls",
       "query": "git -C mcpindex-trust show d645e85:corpus_eval/binding_baseline/deposit/results.json | jq .params.observations",
-      "observed_at": "2026-08-01"
+      "observed_at": "2026-08-01",
+      "note": "Frozen: the binding-gap baseline deposit results.json, committed once at trust d645e85 (2026-08-24)."
     },
     {
       "id": "binding_gap.entries_attempted",
       "value": 4909,
       "unit": "registry entries",
       "query": "git -C mcpindex-trust show d645e85:corpus_eval/binding_baseline/deposit/REPORT.md | grep -oE '[0-9,]+ registry entries attempted' | tr -d , | cut -d' ' -f1",
-      "observed_at": "2026-08-01"
+      "observed_at": "2026-08-01",
+      "note": "Frozen: the binding-gap baseline deposit results.json, committed once at trust d645e85 (2026-08-24)."
     },
     {
       "id": "binding_gap.servers_serving",
       "value": 2043,
       "unit": "servers",
       "query": "git -C mcpindex-trust show d645e85:corpus_eval/binding_baseline/deposit/results.json | jq .server_level.servers_final",
-      "observed_at": "2026-08-01"
+      "observed_at": "2026-08-01",
+      "note": "Frozen: the binding-gap baseline deposit results.json, committed once at trust d645e85 (2026-08-24)."
     },
     {
       "id": "binding_gap.tools",
       "value": 44172,
       "unit": "tools",
       "query": "git -C mcpindex-trust show d645e85:corpus_eval/binding_baseline/deposit/results.json | jq .rq1_final.tools_final",
-      "observed_at": "2026-08-01"
+      "observed_at": "2026-08-01",
+      "note": "Frozen: the binding-gap baseline deposit results.json, committed once at trust d645e85 (2026-08-24)."
     },
     {
       "id": "binding_gap.declaring_tools",
       "value": 37001,
       "unit": "tools",
       "query": "git -C mcpindex-trust show d645e85:corpus_eval/binding_baseline/deposit/results.json | jq .rq1_final.declaring",
-      "observed_at": "2026-08-01"
+      "observed_at": "2026-08-01",
+      "note": "Frozen: the binding-gap baseline deposit results.json, committed once at trust d645e85 (2026-08-24)."
     },
     {
       "id": "binding_gap.declared_pct",
@@ -293,7 +320,8 @@
       "raw": 83.77,
       "unit": "percent",
       "query": "git -C mcpindex-trust show d645e85:corpus_eval/binding_baseline/deposit/results.json | jq '.rq4.declared_coverage * 100'",
-      "observed_at": "2026-08-01"
+      "observed_at": "2026-08-01",
+      "note": "Frozen: the binding-gap baseline deposit results.json, committed once at trust d645e85 (2026-08-24)."
     },
     {
       "id": "binding_gap.bound_pct",
@@ -301,7 +329,8 @@
       "raw": 59.31,
       "unit": "percent",
       "query": "git -C mcpindex-trust show d645e85:corpus_eval/binding_baseline/deposit/results.json | jq '.rq4.verified_coverage * 100'",
-      "observed_at": "2026-08-01"
+      "observed_at": "2026-08-01",
+      "note": "Frozen: the binding-gap baseline deposit results.json, committed once at trust d645e85 (2026-08-24)."
     },
     {
       "id": "binding_gap.gap_points",
@@ -309,7 +338,8 @@
       "raw": 24.46,
       "unit": "percentage points",
       "query": "git -C mcpindex-trust show d645e85:corpus_eval/binding_baseline/deposit/results.json | jq .rq4.binding_gap_pp",
-      "observed_at": "2026-08-01"
+      "observed_at": "2026-08-01",
+      "note": "Frozen: the binding-gap baseline deposit results.json, committed once at trust d645e85 (2026-08-24)."
     },
     {
       "id": "binding_gap.gap_low",
@@ -317,7 +347,8 @@
       "raw": 21.61,
       "unit": "percentage points",
       "query": "git -C mcpindex-trust show d645e85:corpus_eval/binding_baseline/deposit/results.json | jq '[.sensitivity[].binding_gap_pp] | min'",
-      "observed_at": "2026-08-01"
+      "observed_at": "2026-08-01",
+      "note": "Frozen: the binding-gap baseline deposit results.json, committed once at trust d645e85 (2026-08-24)."
     },
     {
       "id": "binding_gap.gap_high",
@@ -325,7 +356,8 @@
       "raw": 24.74,
       "unit": "percentage points",
       "query": "git -C mcpindex-trust show d645e85:corpus_eval/binding_baseline/deposit/results.json | jq '[.sensitivity[].binding_gap_pp] | max'",
-      "observed_at": "2026-08-01"
+      "observed_at": "2026-08-01",
+      "note": "Frozen: the binding-gap baseline deposit results.json, committed once at trust d645e85 (2026-08-24)."
     }
   ]
 }
