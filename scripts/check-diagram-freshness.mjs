@@ -144,7 +144,9 @@ for (const e of entries) {
 // Each assertion below is the thing a figure BAKED IN. When the product changes underneath a
 // figure, the matching assertion fails and names the figure that now lies.
 const wellKnown = read('app/.well-known/mcp-index.json/route.ts');
-const honestLimits = read('lib/honest-limits.ts');
+// The D3 gate values moved out of lib/honest-limits.ts into the facts registry (2026-10-12).
+const facts = JSON.parse(read('lib/facts.json')).facts;
+const factValue = (id) => facts.find((f) => f.id === id)?.value;
 const changeKinds = read('lib/changeKinds.ts');
 
 const TRIPWIRES = {
@@ -159,9 +161,9 @@ const TRIPWIRES = {
       : 'the default build no longer declares zero egress. The trust-boundary figure still says nothing crosses by default: redraw it.',
 
   'd3-not-graduated': () => {
-    const cur = Number((honestLimits.match(/D3_CONFORMING_LABELS = (\d+)/) ?? [])[1]);
-    const req = Number((honestLimits.match(/D3_REQUIRED_LABELS = (\d+)/) ?? [])[1]);
-    if (!Number.isFinite(cur) || !Number.isFinite(req)) return 'could not read the D3 gate from lib/honest-limits.ts';
+    const cur = factValue('d3.conforming_labels');
+    const req = factValue('d3.required_labels');
+    if (!Number.isFinite(cur) || !Number.isFinite(req)) return 'could not read the D3 gate from lib/facts.json';
     return cur < req
       ? null
       : `D3 has reached its gate (${cur}/${req}). ALLOW becomes producible, so the two-verdict-surfaces figure must stop drawing ALLOW and DENY as reserved.`;

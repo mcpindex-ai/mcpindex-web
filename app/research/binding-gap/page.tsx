@@ -3,24 +3,10 @@ import { CiteBibtex } from '@/components/CiteBibtex';
 import type { Metadata } from 'next';
 import { CITATION_BINDING_GAP_PAPER, CITATION_DECLARED_EFFECT } from '@/lib/citations';
 import { pageMetadata } from '@/lib/seo';
+import { BINDING_GAP } from '@/lib/bindingGap';
 
-// Every figure below is the one printed in the talk, read from the paper's section 3 and
-// the v1 deposit (version DOI 10.5281/zenodo.21778282). They are frozen with the deck:
-// a later deposit version does not update this page, it gets its own edition.
-const FIG = {
-  crawls: 35,
-  windowStart: '2026-06-09',
-  windowEnd: '2026-08-01',
-  entriesAttempted: '4,909',
-  serversServing: '2,043',
-  tools: '44,172',
-  declaringTools: '37,001',
-  declaredPct: '83.8%',
-  boundPct: '59.3%',
-  gapPoints: '24.5',
-  gapLow: '21.6',
-  gapHigh: '24.7',
-} as const;
+// Every figure is the one printed in the talk; see lib/bindingGap.ts for the source.
+const FIG = BINDING_GAP;
 
 export const metadata: Metadata = pageMetadata({
   title: 'The Binding Gap: MCP tool contracts that change after you approve them',
