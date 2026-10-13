@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { pageMetadata } from '@/lib/seo';
 import { notFound } from 'next/navigation';
 import { ledgerEnabled, type FleetEvent } from '@/lib/ledger';
-import { loadLedger } from '@/lib/ledgerServer';
+import { loadLedgerView } from '@/lib/ledgerServer';
 import { DriftReport } from '@/components/DriftReport';
 import { jsonLdSafe } from '@/lib/jsonLd';
 import { fmtUtc } from '@/lib/dates';
@@ -128,9 +128,12 @@ function PublisherWideChanges({ fleets, maxRows }: { fleets: readonly FleetEvent
 export default async function LedgerPage() {
   if (!ledgerEnabled()) notFound();
 
-  const ledger = await loadLedger();
+  // The split summary carries only the newest rows, so every total below comes from the view,
+  // never from an array length. Without a summary this is the full blob and the two agree.
+  const view = await loadLedgerView();
+  const ledger = view?.ledger;
 
-  if (!ledger) {
+  if (!view || !ledger) {
     return (
       <article className="site-container pt-16 pb-24">
         <header>
@@ -165,7 +168,7 @@ export default async function LedgerPage() {
   // above and the machine-readable /api/v1/ledger; the table shows the most-recently
   // observed changes (the useful view), newest first.
   const MAX_ROWS = 300;
-  const truncated = events.length > MAX_ROWS;
+  const truncated = view.eventsTotal > MAX_ROWS;
   const rows = truncated
     ? [...events].sort((a, b) => (b.last_seen ?? '').localeCompare(a.last_seen ?? '')).slice(0, MAX_ROWS)
     : events;
@@ -296,7 +299,7 @@ export default async function LedgerPage() {
         </dl>
       </section>
 
-      <DriftReport ledger={ledger} />
+      <DriftReport ledger={ledger} kindCounts={view.kindCounts} />
 
       <section className="mt-12">
         <h2 className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-mute)]">
@@ -444,7 +447,7 @@ export default async function LedgerPage() {
         {truncated && (
           <p className="mt-4 text-[13px] leading-[1.55] text-[var(--color-mute)]">
             Showing the {MAX_ROWS} most recently-observed of{' '}
-            {events.length.toLocaleString()} contract changes
+            {view.eventsTotal.toLocaleString()} contract changes
             {isV3 ? ' outside publisher-wide changes' : ''}. The complete, machine-readable
             ledger is at{' '}
             <Link href="/api/v1/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
@@ -533,10 +536,10 @@ export default async function LedgerPage() {
               </tbody>
             </table>
           </div>
-          {ledger.context_events.length > MAX_ROWS && (
+          {view.contextEventsTotal > MAX_ROWS && (
             <p className="mt-4 text-[13px] leading-[1.55] text-[var(--color-mute)]">
               Showing the {MAX_ROWS} most recently-observed of{' '}
-              {ledger.context_events.length.toLocaleString()} context-surface changes; the full
+              {view.contextEventsTotal.toLocaleString()} context-surface changes; the full
               list is in{' '}
               <Link href="/api/v1/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
                 /api/v1/ledger

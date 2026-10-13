@@ -6,6 +6,12 @@ import 'server-only';
 import { gunzipSync } from 'node:zlib';
 import { Redis } from '@upstash/redis';
 import { ledgerEnabled, parseLedgerBlob, type Ledger } from './ledger';
+import {
+  parseLedgerSummary,
+  viewOfFullLedger,
+  type LedgerSummary,
+  type LedgerView,
+} from './ledgerSplit';
 import { redisUrl, redisToken } from './env';
 
 const LEDGER_KEY = 'drift:ledger';
@@ -95,4 +101,56 @@ export async function loadLedger(): Promise<Ledger | null> {
     return null; // cache hiccup => "not published right now", never a stale lie
   }
   return parseLedgerBlob(decodeLedgerRaw(raw));
+}
+
+const LEDGER_SUMMARY_KEY = 'drift:ledger:summary';
+const LEDGER_SERVERS_KEY = 'drift:ledger:servers';
+
+/** The split summary (see ./ledgerSplit), or null when it is absent, stale or malformed. Never
+ * throws; null means "read the full blob". */
+export async function loadLedgerSummary(): Promise<LedgerSummary | null> {
+  if (!ledgerEnabled()) return null;
+  let raw: unknown;
+  try {
+    const r = redis();
+    if (!r) return null;
+    raw = await r.get(LEDGER_SUMMARY_KEY);
+  } catch {
+    return null;
+  }
+  return parseLedgerSummary(decodeLedgerRaw(raw), Date.now());
+}
+
+/** What /ledger, /scan, /dashboard and the Drift Report render: the summary when the drain is
+ * writing one, else the full blob. Null only when neither is published. */
+export async function loadLedgerView(): Promise<LedgerView | null> {
+  const summary = await loadLedgerSummary();
+  if (summary) return summary;
+  const ledger = await loadLedger();
+  return ledger ? viewOfFullLedger(ledger) : null;
+}
+
+/** HLEN of the per-server hash, or null on any failure. */
+export async function loadLedgerServersCount(): Promise<number | null> {
+  try {
+    const r = redis();
+    if (!r) return null;
+    const n = await r.hlen(LEDGER_SERVERS_KEY);
+    return typeof n === 'number' ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+/** One server's field: the decoded value, `null` when the server has no field (no drift), or
+ * `undefined` when the read failed (the caller falls back to the full blob). */
+export async function loadLedgerServerField(serverFp: string): Promise<unknown> {
+  try {
+    const r = redis();
+    if (!r) return undefined;
+    const raw = await r.hget(LEDGER_SERVERS_KEY, serverFp);
+    return raw === null || raw === undefined ? null : decodeLedgerRaw(raw) ?? undefined;
+  } catch {
+    return undefined;
+  }
 }

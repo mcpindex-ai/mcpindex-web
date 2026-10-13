@@ -29,14 +29,20 @@ export interface DriftDigest {
 
 /** Aggregate ChangeKinds across events into the digest. Total, deterministic. */
 export function buildDigest(events: readonly LedgerEvent[]): DriftDigest {
-  const counts = new Map<string, number>();
+  const counts: Record<string, number> = {};
   for (const e of events) {
-    for (const k of e.change_kinds) counts.set(k, (counts.get(k) ?? 0) + 1);
+    for (const k of e.change_kinds) counts[k] = (counts[k] ?? 0) + 1;
   }
+  return digestFromCounts(counts);
+}
+
+/** The same digest from per-kind event counts (the ledger split summary ships them, because its
+ * `events` is only the newest rows). Kinds the copy does not name are ignored either way. */
+export function digestFromCounts(counts: Readonly<Record<string, number>>): DriftDigest {
   const standouts: DriftStandout[] = [];
   for (const [kind, label] of CHANGEKIND_COPY) {
-    const count = counts.get(kind) ?? 0;
+    const count = Object.hasOwn(counts, kind) ? counts[kind] : 0;
     if (count > 0) standouts.push({ kind, count, label });
   }
-  return { standouts, benign: counts.get('added-optional-param') ?? 0 };
+  return { standouts, benign: Object.hasOwn(counts, 'added-optional-param') ? counts['added-optional-param'] : 0 };
 }

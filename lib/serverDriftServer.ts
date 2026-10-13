@@ -4,7 +4,13 @@
 
 import 'server-only';
 import { ledgerEnabled, type Ledger } from './ledger';
-import { loadLedger } from './ledgerServer';
+import {
+  loadLedger,
+  loadLedgerServerField,
+  loadLedgerServersCount,
+  loadLedgerSummary,
+} from './ledgerServer';
+import { EMPTY_SLICE, parseServerSlice, type LedgerSummary } from './ledgerSplit';
 import { serverFp } from './driftFingerprint';
 import { aggregateServerDrift, type ServerDrift } from './serverDrift';
 import { loadServers } from './registry';
@@ -16,9 +22,15 @@ import { loadServers } from './registry';
 // In-flight dedup avoids a stampede; null IS cached (a build/Upstash hiccup must not re-fetch 11.6k
 // times); a 5min TTL bounds staleness well inside the page's 1h ISR.
 type LedgerMemo = { at: number; ledger: Ledger | null };
+// The split summary plus HLEN of the per-server hash, same memo rules. `usable` is false when the
+// summary is missing or stale, or the hash holds fewer fields than the summary says it wrote: a
+// server with no drift has no field, so a lost hash would otherwise read as clean everywhere.
+type SplitMemo = { at: number; summary: LedgerSummary | null; usable: boolean };
 const G = globalThis as unknown as {
   __mcpiLedgerMemo?: LedgerMemo;
   __mcpiLedgerInflight?: Promise<Ledger | null>;
+  __mcpiSplitMemo?: SplitMemo;
+  __mcpiSplitInflight?: Promise<SplitMemo>;
   __mcpiRegistryNames?: Promise<ReadonlySet<string>>;
 };
 
@@ -58,20 +70,70 @@ async function cachedLedger(): Promise<Ledger | null> {
   return G.__mcpiLedgerInflight;
 }
 
+async function cachedSplit(): Promise<SplitMemo> {
+  const m = G.__mcpiSplitMemo;
+  if (m && Date.now() - m.at < 300_000) return m;
+  if (G.__mcpiSplitInflight) return G.__mcpiSplitInflight;
+  G.__mcpiSplitInflight = (async (): Promise<SplitMemo> => {
+    // Summary BEFORE the hash reads: the drain writes the hash first and the summary last.
+    const summary = await loadLedgerSummary();
+    const fields = summary ? await loadLedgerServersCount() : null;
+    const memo = { at: Date.now(), summary, usable: !!summary && fields !== null && fields >= summary.servers };
+    G.__mcpiSplitMemo = memo;
+    return memo;
+  })().finally(() => {
+    G.__mcpiSplitInflight = undefined;
+  });
+  return G.__mcpiSplitInflight;
+}
+
+/** One server's answer from the split, or undefined when the split cannot answer and the caller
+ * reads the full blob: the split is unusable, a read failed, or the field is malformed. */
+async function serverDriftFromSplit(fp: string, known: boolean): Promise<ServerDrift | null | undefined> {
+  const split = await cachedSplit();
+  if (!split.usable || !split.summary) return undefined;
+  const field = await loadLedgerServerField(fp);
+  if (field === undefined) return undefined;
+  if (field === null) {
+    // No field reads as clean, so re-check the hash now instead of trusting the memo's HLEN: a
+    // hash evicted or deleted inside the memo window would otherwise read clean everywhere. One
+    // extra command, only for servers with no drift.
+    const fields = await loadLedgerServersCount();
+    if (fields === null || fields < split.summary.servers) return undefined;
+  }
+  const slice = field === null ? EMPTY_SLICE : parseServerSlice(field, fp);
+  if (!slice) return undefined;
+  const drift = aggregateServerDrift(
+    slice.events,
+    fp,
+    split.summary.ledger.generated_at,
+    slice.context_events,
+    known,
+    slice.fleet_events,
+  );
+  // aggregateServerDrift reads versionEvidence off the rows it is given, but it is a property of
+  // the whole blob: a clean server's empty slice would otherwise say 'unavailable'.
+  return drift && { ...drift, versionEvidence: split.summary.versionEvidence ? 'recorded' : 'unavailable' };
+}
+
 /** Drift summary for one named registry server. Returns null only when the ledger surface is off or
  * unavailable (page renders nothing / "unavailable", never a false "clean"). A reachable-but-clean
  * server returns changes:0 with known:true; a name we do not crawl returns the same zeros with
  * known:false, and the two must never be read alike. `serverId` is the registry `server.name`. */
 export async function loadServerDrift(serverId: string): Promise<ServerDrift | null> {
   if (!ledgerEnabled()) return null;
+  const fp = serverFp(serverId);
+  const known = (await registryNames()).has(serverId);
+  const fromSplit = await serverDriftFromSplit(fp, known);
+  if (fromSplit !== undefined) return fromSplit;
   const ledger = await cachedLedger();
   if (!ledger) return null;
   return aggregateServerDrift(
     ledger.events,
-    serverFp(serverId),
+    fp,
     ledger.generated_at,
     ledger.context_events,
-    (await registryNames()).has(serverId),
+    known,
     ledger.fleet_events ?? [],
   );
 }

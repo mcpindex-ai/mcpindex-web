@@ -1,16 +1,24 @@
 import Link from 'next/link';
 import type { Ledger } from '@/lib/ledger';
-import { buildDigest } from '@/lib/driftDigest';
+import { digestFromCounts } from '@/lib/driftDigest';
 
 // The on-site Drift Report: a live, auto-publishing digest of this week's contract
 // changes, computed server-side from the ledger the /ledger page already loads.
 // Contract-diff, not a safety verdict. Fingerprinted: recomputable keyed hashes of registry names.
 
-export function DriftReport({ ledger }: { ledger: Ledger }) {
-  const { stat, events } = ledger;
+// `kindCounts` is per-kind event counts over EVERY event: `ledger.events` may be only the newest
+// rows when the page reads the split summary.
+export function DriftReport({
+  ledger,
+  kindCounts,
+}: {
+  ledger: Ledger;
+  kindCounts: Readonly<Record<string, number>>;
+}) {
+  const { stat } = ledger;
   // On a /3 ledger `events` holds only tools that changed outside publisher-wide changes, so the
   // digest below describes that set, and the lede says so.
-  const { standouts, benign } = buildDigest(events);
+  const { standouts, benign } = digestFromCounts(kindCounts);
   const asOf = ledger.generated_at?.slice(0, 10) || '';
   const ind = stat.independent;
   const isV3 = ledger.fleet_events !== undefined;

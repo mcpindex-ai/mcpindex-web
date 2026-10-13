@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ledgerEnabled } from '@/lib/ledger';
 import { loadDriftStats } from '@/lib/driftStatsServer';
-import { loadLedger } from '@/lib/ledgerServer';
+import { loadLedgerView } from '@/lib/ledgerServer';
 
 // 300s (see app/ledger/page.tsx): bounds how long a transient Redis-null empty state can be
 // ISR-cached on a public surface.
@@ -18,7 +18,11 @@ export const metadata: Metadata = {
 export default async function DashboardPage() {
   if (!ledgerEnabled()) notFound();
 
-  const [stats, ledger] = await Promise.all([loadDriftStats(), loadLedger()]);
+  // Stat only, so the split summary is enough; loadLedgerView reads the full blob without it.
+  const [stats, ledger] = await Promise.all([
+    loadDriftStats(),
+    loadLedgerView().then((v) => v?.ledger ?? null),
+  ]);
 
   const adoptionRows: Array<{ label: string; value: number }> = stats
     ? [
