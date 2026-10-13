@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Weekly facts job, Sunday 18:30 local time. TEMPLATE: not installed by anything in this repo.
+  Replace __REPO__ with the absolute path of the canonical mcpindex-web checkout and __HOME__
+  with the home directory, copy to ~/Library/LaunchAgents/ai.mcpindex.workforce-weekly.plist,
+  then: launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/ai.mcpindex.workforce-weekly.plist
+  No API keys belong in this file; weekly.sh refuses to start if one is in its environment.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>ai.mcpindex.workforce-weekly</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>__REPO__/scripts/workforce/weekly.sh</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>__REPO__</string>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>0</integer>
+    <key>Hour</key>
+    <integer>18</integer>
+    <key>Minute</key>
+    <integer>30</integer>
+  </dict>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <key>WORKFORCE_STATE_DIR</key>
+    <string>__HOME__/.mcpindex-workforce</string>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>__HOME__/.mcpindex-workforce/weekly.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/.mcpindex-workforce/weekly.log</string>
+  <key>ProcessType</key>
+  <string>Background</string>
+</dict>
+</plist>
