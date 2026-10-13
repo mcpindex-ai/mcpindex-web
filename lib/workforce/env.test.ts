@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { assertLocalOnly, refusedEnv, REFUSED_ENV } from './env';
 import { rule0Hits } from './rule0';
 
@@ -19,7 +20,8 @@ test('env refusal: the model endpoint must be loopback', () => {
   assert.throws(() => assertLocalOnly({}, 'https://api.openai.com/v1'), /loopback/);
 });
 
-test('env refusal: weekly.sh refuses before any work when a credential is set', () => {
+// weekly.sh is a zsh launchd job on the Studio; the CI runner (ubuntu-latest) has no zsh.
+test('env refusal: weekly.sh refuses before any work when a credential is set', { skip: !existsSync('/bin/zsh') }, () => {
   const clean = { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: process.env.HOME ?? '/tmp' } as unknown as NodeJS.ProcessEnv;
   const r = spawnSync('/bin/zsh', ['scripts/workforce/weekly.sh', '--check-env'], { env: { ...clean, GROQ_API_KEY: 'gsk-do-not-print' } as NodeJS.ProcessEnv, encoding: 'utf8' });
   assert.equal(r.status, 2);
