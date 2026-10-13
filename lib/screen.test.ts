@@ -5,6 +5,7 @@
 // are the ones the old hand-rolled class missed.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import {
   canonicalize,
   quoteIsGrounded,
@@ -54,6 +55,24 @@ test('chat body uses the screen model and json object mode', () => {
   assert.equal(body.response_format.type, 'json_object');
   assert.equal(body.max_tokens, undefined);
   assert.equal(body.messages[1].content, 'Tool description:\nhello');
+});
+
+// The base text (everything but the `quote` field) must hash to the judge prompt
+// published in mcpindex-gate 0.7.0 through 0.16.1 (trust/providers.py). A new
+// registry-screener prompt is private and must never be mirrored into this
+// public repo, so a swapped prompt fails here; changing the hash is changing
+// the prompt.
+test('system prompt is the published public prompt plus the quote field', () => {
+  const system = buildScreenChatBody('x').messages[0].content;
+  const quoteField =
+    ', "quote": "the exact offending sentence copied verbatim from the description, ' +
+    'or empty string if benign"}';
+  assert.ok(system.endsWith(quoteField));
+  const base = system.slice(0, -quoteField.length) + '}';
+  assert.equal(
+    createHash('sha256').update(base).digest('hex'),
+    'ac4d0253ad4f9504a12bc8c7ac7af601a04f93f8bab3f2642e11135f09a5ab78',
+  );
 });
 
 test('pool exhaustion logs why and not the description', async () => {
