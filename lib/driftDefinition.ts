@@ -7,8 +7,9 @@
 //
 // Registry figures are the MCP Registry Drift Panel (concept DOI 10.5281/zenodo.21709945), copied
 // from mcpindex-trust corpus_eval/drift_panel/deposit/survival.csv and figures.json, panel pin
-// d4579dbf, data cutoff 2026-07-28T21:13:35Z. That file is not in this repo, so the values are
-// literal here. Two estimands, and the page must not blur them:
+// d4579dbf, data cutoff 2026-07-28T21:13:35Z. That file is not in this repo, so the values live in
+// lib/facts.json, each with the jq query against figures.json that produced it.
+// Two estimands, and the page must not blur them:
 //   - survival rates: for each starting observation, the share of servers listed then whose
 //     entry differed from its starting value at any observation within N days (a revert still
 //     counts), averaged over starting observations. The denominator is each cohort's own
@@ -16,6 +17,7 @@
 //   - concentration: over the 18,748 servers seen in at least 10 observations. "top10pct" is the
 //     top 10% of THOSE servers ranked by change count, not the top 10% of servers that changed.
 import edition from '@/data/report-edition-v1.json';
+import { factNumber, factString } from '@/lib/facts';
 
 export const DRIFT_TERM = 'MCP tool drift';
 
@@ -57,25 +59,30 @@ export const LIVE_EDITION = {
 // Zenodo copy). driftDefinition.test.ts recomputes every value below from that CSV. Publisher =
 // the server id up to the first "/"; four rows are keyed by display name and count as their own
 // publisher, so publisher shares here are an upper bound on dispersion, not a lower one.
+const lc = (k: string) => factNumber(`live_edition.concentration.${k}`);
 export const LIVE_CONCENTRATION = {
-  servers: 291,
-  flipServers: 24,
-  topSameVersionPublisher: 156,
-  topSameVersionPct: 10.0,
-  topFiveSameVersionPct: 37.1,
+  servers: lc('servers'),
+  flipServers: lc('flip_servers'),
+  topSameVersionPublisher: lc('top_same_version_publisher'),
+  topSameVersionPct: lc('top_same_version_pct'),
+  topFiveSameVersionPct: lc('top_five_same_version_pct'),
 } as const;
 
+const rp = (k: string) => factNumber(`drift_panel.${k}`);
 export const REGISTRY_PANEL = {
-  observations: 120,
-  spanDays: 88.6,
-  cutoff: '2026-07-28',
-  cohorts: { d30: 60, d60: 36, d89: 9 },
+  observations: rp('observations'),
+  spanDays: rp('span_days'),
+  cutoff: factString('drift_panel.cutoff'),
+  cohorts: { d30: rp('cohorts_30d'), d60: rp('cohorts_60d'), d89: rp('cohorts_89d') },
+  // NOT in lib/facts.json: no query against the deposit reproduces 80 (survival.csv and
+  // figures.json carry no window-length field). Kept literal until one is found.
   minWindowDaysAt89: 80,
-  descriptionPct: { d30: 3.3, d60: 5.5, d89: 6.9 },
-  descriptorPct: { d30: 11.9, d60: 16.3, d89: 19.1 },
-  eligible: 18748,
+  descriptionPct: { d30: rp('description_pct_30d'), d60: rp('description_pct_60d'), d89: rp('description_pct_89d') },
+  descriptorPct: { d30: rp('descriptor_pct_30d'), d60: rp('descriptor_pct_60d'), d89: rp('descriptor_pct_89d') },
+  eligible: rp('eligible_servers'),
+  // The eligibility RULE (seen in at least 10 observations), a method parameter, not a measurement.
   eligibleMinObservations: 10,
-  neverChangedPct: 75.2,
-  topTenthSharePct: 78.7,
+  neverChangedPct: rp('never_changed_pct'),
+  topTenthSharePct: rp('top_tenth_share_pct'),
   conceptDoi: '10.5281/zenodo.21709945',
 } as const;

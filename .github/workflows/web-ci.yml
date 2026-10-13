@@ -167,6 +167,16 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: npx tsx scripts/check-guide-seo.mts
 
+      # Fails the PR that prints a corpus or drift metric as a literal on llms.txt or a research
+      # page, lets a live fact outlive its max_age_days, or leaves the llms anchoring sentence out
+      # of step with data/verdict-anchors.json. Every public number then comes from lib/facts.json
+      # (with the query that produced it) or a data file. Two incidents it would have caught:
+      # llms.txt saying "not yet confirmed" beside 66 confirmed anchors (2026-10-01), and a
+      # concentration figure quoted against the wrong denominator (2026-09-28).
+      # Not in `npm run build`: a stale fact should block review, not a production deploy.
+      - name: Public facts
+        run: npm run check:facts
+
       - name: Lint
         run: npm run lint
 

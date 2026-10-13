@@ -1,5 +1,8 @@
 import { getServerCount, getCategoryCount } from '@/lib/registry';
-import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
+import { D3_V1_STATEMENT } from '@/lib/honest-limits';
+// Every corpus or drift figure below renders from lib/facts.json or a data file;
+// scripts/check-public-facts.mts fails CI on a literal one.
+import { BINDING_GAP as BG } from '@/lib/bindingGap';
 // llms.txt is the agent-readable spec, so a hardcoded version here is the same
 // half-landed bump lib/verdictContract.ts exists to prevent - and the worst copy
 // to get wrong, because it is the one an integrator reads INSTEAD of the API.
@@ -8,7 +11,7 @@ import { gateInstallLine } from '@/lib/install/manifest';
 import { SOURCE_LIVENESS_CENSUS } from '@/lib/sourceLiveness';
 import { DIAGRAMS, renderTwin } from '@/lib/diagrams';
 import { CATALOG_PAGE_SIZE } from '@/lib/llmsCatalog';
-import { DRIFT_DEFINITION } from '@/lib/driftDefinition';
+import { DRIFT_DEFINITION, LIVE_EDITION, REGISTRY_PANEL } from '@/lib/driftDefinition';
 // The anchoring sentence is derived from data/verdict-anchors.json; a hardcoded copy here
 // said "not yet confirmed" for weeks after every anchor carried a block height.
 import { anchorClaim } from '@/lib/verdictAnchor';
@@ -79,7 +82,7 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 - History: ${anchorClaim()} Cadence bound = confirmation latency (~10 minutes for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized). Sub-window precision asserted, not proven. In-process verify proves the proof carries a Bitcoin BlockHeaderAttestation; confirmation-depth check is the relying party's job against their own Bitcoin node.
 - Calibration: calibrated=false at v1. Confidences are reported, not yet calibrated against a held-out adversarial corpus.
 - Exposure: anonymous calls return the current verdict (directive, status, dimension verdicts, severity, expires_at). Free, no key required - nothing on this API is paid-tier.
-- Graduation gate (D3): >=${D3_REQUIRED_LABELS} conforming labels with FP upper-95 <=2%. Current: ${D3_PROGRESS}. Terminal-v1 trigger 2026-09-01: under 50 conforming = ships calibrated=false as terminal (v2 graduation, not v1).
+- Conformance gate (D3), terminal v1: ${D3_V1_STATEMENT}
 - Deployment posture: advisory. mcpindex publishes the verdict; the agent or IDE decides whether to act on it.
 - Full method: [mcpindex.ai/methodology](https://mcpindex.ai/methodology)
 
@@ -98,9 +101,9 @@ Secondary: a public directory of MCP servers with advisory screening verdicts (R
 
 ## Research / datasets (archived, citable)
 
-- Source Liveness - Baseline v1: a corroborated, timestamp-anchored census of whether the source behind every registry server is still publicly reachable. Finding: ${SOURCE_LIVENESS_CENSUS.reposUnreachable} of ${SOURCE_LIVENESS_CENSUS.reposTotal} referenced GitHub repositories (${SOURCE_LIVENESS_CENSUS.pctUnreachable}) were not publicly accessible as of the ${SOURCE_LIVENESS_CENSUS.sweepDate} census, affecting ${SOURCE_LIVENESS_CENSUS.serversAffected} listed servers. Two independent vantages, 0 cross-vantage disagreements; census digest anchored to Bitcoin via OpenTimestamps. Live: [mcpindex.ai/research/source-liveness](https://mcpindex.ai/research/source-liveness). Archived, CC-BY-4.0: DOI 10.5281/zenodo.21501867 (concept DOI - always resolves to the current version; v1.1 is 10.5281/zenodo.21778894).
+- Source Liveness - Baseline v1: a corroborated, timestamp-anchored census of whether the source behind every registry server is still publicly reachable. Finding: ${SOURCE_LIVENESS_CENSUS.reposUnreachable} of ${SOURCE_LIVENESS_CENSUS.reposTotal} referenced GitHub repositories (${SOURCE_LIVENESS_CENSUS.pctUnreachable}) were not publicly accessible as of the ${SOURCE_LIVENESS_CENSUS.sweepDate} census, affecting ${SOURCE_LIVENESS_CENSUS.serversAffected} listed servers. Two independent vantages, ${SOURCE_LIVENESS_CENSUS.crossVantageDisagreements} cross-vantage disagreements; census digest anchored to Bitcoin via OpenTimestamps. Live: [mcpindex.ai/research/source-liveness](https://mcpindex.ai/research/source-liveness). Archived, CC-BY-4.0: DOI 10.5281/zenodo.21501867 (concept DOI - always resolves to the current version; v1.1 is 10.5281/zenodo.21778894).
 - Drift Report - Edition v1: aggregate + per-server statistics of silent tool-contract changes across the reachable remote population. Live: [mcpindex.ai/drift-report](https://mcpindex.ai/drift-report). Archived, CC-BY-4.0: DOI 10.5281/zenodo.21449149 (concept DOI - always resolves to the current version; v1.1 is 10.5281/zenodo.21778727). Peer-reviewable write-up: "Registry Descriptions Go Stale Unevenly: An 89-Day Measurement of Model Context Protocol Drift, and Why Drift-Ranked Re-Auditing Under-Covers It", arXiv:2608.00997 (https://arxiv.org/abs/2608.00997); longitudinal panel dataset concept DOI 10.5281/zenodo.21709945.
-- The Binding Gap (talk, AI Context San Jose, 2026-09-23): across 44,172 tool contracts on 2,043 registry-listed MCP servers in 35 crawls (2026-06-09 to 2026-08-01), 83.8% declare an effect annotation and 59.3% still carry a declaration bound to the contract the server returns, a 24.5-point binding gap. Slides, method limits and citations: [mcpindex.ai/research/binding-gap](https://mcpindex.ai/research/binding-gap). Paper: "Declared vs. Observed: Measuring the Binding Gap in MCP Tool Declarations", Bharti and Agnihotri, DOI 10.5281/zenodo.22649163 (concept; v1.0 is 10.5281/zenodo.22649164); dataset DOI 10.5281/zenodo.21778281 (concept; figures from v1 10.5281/zenodo.21778282).
+- The Binding Gap (talk, AI Context San Jose, 2026-09-23): across ${BG.tools} tool contracts on ${BG.serversServing} registry-listed MCP servers in ${BG.crawls} crawls (${BG.windowStart} to ${BG.windowEnd}), ${BG.declaredPct} declare an effect annotation and ${BG.boundPct} still carry a declaration bound to the contract the server returns, a ${BG.gapPoints}-point binding gap. Slides, method limits and citations: [mcpindex.ai/research/binding-gap](https://mcpindex.ai/research/binding-gap). Paper: "Declared vs. Observed: Measuring the Binding Gap in MCP Tool Declarations", Bharti and Agnihotri, DOI 10.5281/zenodo.22649163 (concept; v1.0 is 10.5281/zenodo.22649164); dataset DOI 10.5281/zenodo.21778281 (concept; figures from v1 10.5281/zenodo.21778282).
 
 ## Diagrams (CC BY 4.0, free to reuse with attribution)
 
@@ -176,7 +179,7 @@ This is the advisory directory client - not the in-path gate (\`mcpindex-gate\` 
 - [Servers](https://mcpindex.ai/servers): A-Z browse hub over all ${servers} per-server detail pages (JSON-LD typed, verdict surfaced when available); individual pages live at /server/<slug>.
 - [Guides](https://mcpindex.ai/guides): Practical guides: trust/security reviews, comparisons, integration how-tos; individual guides at /guides/<slug>.
 - [What is MCP 2.0?](https://mcpindex.ai/guides/what-is-mcp-2-0): The 2026-07-28 revision explained - what changed on the wire, the one-curl probe to check any server's protocol era, dual-era migration notes, measured-adoption stance.
-- [How many MCP servers change their tool definitions after publishing?](https://mcpindex.ai/guides/how-many-mcp-servers-change-their-tools-after-publishing): The measured answer - 89-day panel rates on the official registry, change concentration across 18,748 servers, and the 62.4% no-version-bump share on live contracts, with CC-BY DOIs.
+- [How many MCP servers change their tool definitions after publishing?](https://mcpindex.ai/guides/how-many-mcp-servers-change-their-tools-after-publishing): The measured answer - 89-day panel rates on the official registry, change concentration across ${REGISTRY_PANEL.eligible.toLocaleString('en-US')} servers, and the ${LIVE_EDITION.silentPct}% no-version-bump share on live contracts, with CC-BY DOIs.
 - [Best by category](https://mcpindex.ai/best): Curated picks per category, at /best/<category>.
 - [Leaderboard](https://mcpindex.ai/leaderboard): Top 50 by MCP Quality Score.
 - [MCP tool drift](https://mcpindex.ai/drift): The citable definition of tool drift, what counts as drift, how it is measured, and the frozen rates with DOIs.

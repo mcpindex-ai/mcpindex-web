@@ -14,8 +14,8 @@ it does NOT go live on mcpindex.ai until GB's explicit go.
   code-complete and described as LIVE.
 - **(B) MATURITY-HELD → kept honest.** Deploying does NOT make these true:
   the verdict is a contract-diff, not a safety oracle; `calibrated=false` until
-  calibrated; D3 graduation stays `pre_graduation` (15/150); conformance is
-  monitored, not enforced; the directory screen stays advisory/semantic-only;
+  calibrated; D3 is terminal v1 (`terminal_v1_calibrated_false`, exercised
+  2026-10-12; no progress count); conformance is monitored, not enforced; the directory screen stays advisory/semantic-only;
   the behavioral tier CLEARS or REFUTES a change, it never proves a tool safe.
 
 ## Honesty guard

@@ -1,5 +1,5 @@
 import { SOURCE_LIVENESS_CENSUS } from '@/lib/sourceLiveness';
-import { D3_CONFORMING_LABELS, D3_REQUIRED_LABELS } from '@/lib/honest-limits';
+import { D3_V1_STATE } from '@/lib/honest-limits';
 import {
   Canvas,
   Box,
@@ -212,11 +212,10 @@ export function DTwoVerdictSurfaces() {
 
       <Rule x1={20} x2={980} y={288} />
       <S x={20} y={306} size={12} fill={CITE}>
-        ALLOW and DENY are reserved in the contract, not produced at v1: a clearing ALLOW
+        ALLOW and DENY are reserved in the contract, not produced at v1. The conformance probe
       </S>
       <S x={20} y={323} size={12} fill={CITE}>
-        requires the behavioural conformance probe, gated to the D3 labelled corpus (
-        {D3_CONFORMING_LABELS}/{D3_REQUIRED_LABELS}).
+        is advisory and uncalibrated in v1 ({D3_V1_STATE}), so the screen never clears a tool.
       </S>
       <S x={20} y={343} size={12} fill={MUTE}>
         Neither surface overrides the other. The screen is a prior; the gate is the decision.

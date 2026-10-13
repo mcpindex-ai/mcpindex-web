@@ -1,6 +1,7 @@
 import 'server-only';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { factNumber, factString, fmtFact } from './facts';
 
 /**
  * Source liveness (Phase A): whether a server's upstream repository is
@@ -63,24 +64,31 @@ import path from 'node:path';
  * comment asserting they matched.
  *
  * `reposUnreachable` and `serversAffected` are now enforced against
- * data/source-liveness.json by lib/sourceLiveness.test.ts. The remaining figures come
- * from aggregates.json, which lives in the deposition repo and not here, so they stay
- * comment-guarded: if you edit them, diff against that file first.
+ * data/source-liveness.json by lib/sourceLiveness.test.ts. Every raw figure lives in
+ * lib/facts.json with the jq query against aggregates.json (mcpindex-trust
+ * corpus_eval/liveness_v11) that produced it; `npm run check:facts -- --reproduce` reruns them.
  */
+const sl = (k: string) => fmtFact(`source_liveness.${k}`);
+const reposPct = (factNumber('source_liveness.repos_unreachable') / factNumber('source_liveness.repos_total')) * 100;
+
 export const SOURCE_LIVENESS_CENSUS = {
-  serversTotal: '17,673',
-  reposTotal: '13,105',
-  reposUnreachable: '1,830',
-  serversAffected: '2,069',
-  sitesUnreachable: '304',
-  sampleSize: '150',
-  egressBlocked: '176',
-  sweepDate: '2026-07-20',
+  serversTotal: sl('servers_total'),
+  reposTotal: sl('repos_total'),
+  reposUnreachable: sl('repos_unreachable'),
+  serversAffected: sl('servers_affected'),
+  sitesUnreachable: sl('sites_unreachable'),
+  sampleSize: sl('hand_sample'),
+  egressBlocked: sl('egress_blocked'),
+  crossVantageDisagreements: sl('cross_vantage_disagreements'),
+  sweepDate: factString('source_liveness.sweep_date'),
   // DERIVED from reposUnreachable / reposTotal. They live here because they were being
   // hand-maintained inside the very sentences the raw figures are enforced in, so a v2
   // census would have shipped "2,400 of 13,500 (14.0%)" - self-contradicting in one clause.
-  pctUnreachable: '14.0%',
+  pctUnreachable: `${reposPct.toFixed(1)}%`,
   ratioPhrase: 'one in seven',
+  // Rule of three: zero disagreements in n hand checks bounds the false-positive rate at 3/n
+  // with 95% confidence. Derived so the bound cannot drift from the sample it describes.
+  fpUpper95Pct: `${(300 / factNumber('source_liveness.hand_sample')).toFixed(1)}%`,
 } as const;
 
 export type SourceLivenessState = 'unavailable';

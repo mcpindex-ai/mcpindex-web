@@ -116,10 +116,10 @@ export default function SourceLivenessPage() {
           counted against a project.
         </li>
         <li>
-          A random sample of 150 was re-checked by hand through a different
+          A random sample of {FIG.sampleSize} was re-checked by hand through a different
           method (unauthenticated web), a different network, and no
           credentials. All {FIG.sampleSize} agreed, which bounds the
-          false-positive rate at 2.0% (95% confidence).
+          false-positive rate at {FIG.fpUpper95Pct} (95% confidence).
         </li>
         <li>
           The sweep&rsquo;s result digest is stamped to Bitcoin via

@@ -1,7 +1,7 @@
 import { loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { loadGuides } from '@/lib/guides-content';
 import type { Guide } from '@/lib/guides-content';
-import { D3_REQUIRED_LABELS, D3_PROGRESS } from '@/lib/honest-limits';
+import { D3_V1_STATEMENT } from '@/lib/honest-limits';
 // Same single declaration the trust/screen/preflight emitters read; see the note in
 // lib/verdictContract.ts on why a second copy of this number is a bug, not a convenience.
 import { VERDICT_CONTRACT_VERSION } from '@/lib/verdictContract';
@@ -51,7 +51,7 @@ function buildBody(servers: IndexedServer[], guides: Guide[], snapshot: string):
     'Framework bindings: @mcp-index/mastra wires check_tool_trust into Mastra as a beforeToolCall hook (warn or enforce; fail-closed, no credentials). A client of the advisory screen, not the in-path gate; npm i @mcp-index/mastra.',
     'Pipeline (screen): today the screen is semantic-only - an LLM judge reads each tool description for hidden instructions. The deterministic conformance probe (drives the tool against its declared schema) is built but has NOT yet run on the public corpus, so no published screen verdict carries a conformance result; a clearing ALLOW (which the probe would earn) is not produced at v1. When the probe runs it is monitored, not enforced. Confidence is reported but not yet calibrated (calibrated=false).',
     `History: ${anchorClaim()} Cadence bound = confirmation latency (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized). Sub-window precision asserted, not proven. In-process verify proves the proof carries a Bitcoin BlockHeaderAttestation; confirmation-depth check requires the relying party run their own Bitcoin node.`,
-    `Calibration: calibrated=false at v1. D3 graduation gate: >=${D3_REQUIRED_LABELS} conforming labels with FP upper-95 <=2%. Current: ${D3_PROGRESS}. Terminal-v1 trigger 2026-09-01: under 50 conforming = ships calibrated=false as terminal v1 (v2 graduation, not v1).`,
+    `Calibration: calibrated=false at v1. Conformance gate (D3), terminal v1: ${D3_V1_STATEMENT}`,
     'Posture: advisory. The agent or IDE decides whether to act on the verdict.',
     'Endpoints:',
     '  - GET /api/v1/trust/tool/{server_id}/{tool_name}  per-tool advisory screen (v1: REVIEW when screened, else UNVERIFIED fail-closed; ALLOW/DENY reserved).',

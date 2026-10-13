@@ -1,0 +1,15 @@
+diff --git a/corpus_eval/GATES.json b/corpus_eval/GATES.json
+index c4387d9..f4b764d 100644
+--- a/corpus_eval/GATES.json
++++ b/corpus_eval/GATES.json
+@@ -8,6 +8,10 @@
+       "id": "d3-deferred",
+       "text": "D3 graduation deferred: need >=150 labeled conforming tools with probed FP upper-95 <= 2%. Current gate denominator = 0 real-server conforming (NOT YET MEASURABLE per evalstats 2026-07-13); the 8 conforming labels are own-fixtures/reference, excluded from the gate. conforming is a HUMAN label (the probe emits only inconclusive/violating). Terminal-v1 trigger 2026-09-01: under 50 conforming = ships calibrated=false as terminal v1 (D-ANCHOR-2a / whitepaper S7.5 2026-05-28)."
+     },
++    {
++      "id": "d3-terminal-v1",
++      "text": "Terminal v1 exercised 2026-10-12, calibrated=false. The d3-deferred trigger fired (0 real-server conforming labels by 2026-09-01, under 50); conformance ships advisory and uncalibrated in v1 and does not block or fail a tool. No D3 progress count is published."
++    },
+     {
+       "id": "ots-cadence",
+       "text": "OTS Bitcoin-anchored history. Cadence bound = confirmation latency (~10 min for pending; ~1 hour at N=6 confirmations for Bitcoin-finalized). In-process verify proves Bitcoin BlockHeaderAttestation presence; confirmation-depth check is the relying party's job (D-ANCHOR-2a 2026-05-28)."
