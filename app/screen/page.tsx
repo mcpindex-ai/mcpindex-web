@@ -30,9 +30,11 @@ export default function ScreenPage() {
       </p>
       <p className="mt-3 text-[15px] leading-[1.6] text-[var(--color-cite)]">
         <strong className="text-[var(--color-ink)]">Building an MCP server?</strong>{' '}
-        Run yours through it and see the verdict your users would see before
-        their agent calls your tool. Same screen, same output, whether you own
-        the tool or are deciding whether to trust it.
+        Run yours through it before you publish. It is the same screen whether
+        you own the tool or are deciding whether to trust it. The verdict on your
+        server page comes from the registry screener, which reads only the
+        registry&apos;s short description with a smaller model, so the two can
+        differ.
       </p>
 
       <div className="mt-8">

@@ -1,11 +1,17 @@
-// Live "screen a tool description" judge call. The canonical judge is the
-// internal Python harness; a serverless route can't import it, so this MIRRORS
-// the frozen system prompt + model and calls Groq directly.
+// Live "screen a tool description" judge call for the public /screen page and
+// POST /api/v1/screen. This is its own screen, separate from the registry
+// screener that produces stored verdicts: it reads up to MAX_DESCRIPTION chars
+// with its own framing, runs its own model (SCREEN_MODEL), and shares no
+// policy_hash. Advisory-only by design.
 //
-// IMPORTANT: keep SYSTEM_PROMPT in sync with the canonical judge prompt. It is
-// extended here with a `quote` field (the verbatim offending line) so the UI can
-// highlight it; that superset means this path does NOT share the canonical
-// policy_hash and is advisory-only by design.
+// SYSTEM_PROMPT is the judge prompt that shipped publicly in mcpindex-gate
+// 0.7.0 through 0.16.1 (trust/providers.py), extended with a `quote` field (the
+// verbatim offending line) so the UI can highlight it. The registry screener
+// still uses that prompt today. When it moves to a new prompt, that prompt is
+// private: do NOT copy it here, because this repo is public and a copy lets a
+// publisher tune a description against it offline. lib/screen.test.ts pins the
+// base text by sha256, so a different prompt fails the test; a change to that
+// hash is a change to the prompt and needs the same review.
 //
 // Fail-CLOSED everywhere: any missing key / non-200 / malformed output returns
 // `unavailable`, never a fake `clean`. We never assert a tool is safe on error.
