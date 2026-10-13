@@ -11,7 +11,10 @@ on:
     # mcpindex-snapshot-freshness probe pages past 30h (= 2 missed windows; GitHub
     # also drops scheduled runs outright sometimes - it did on 2026-08-26 - and one
     # dropped window must not page). If this cadence changes again, re-size that
-    # probe's THRESHOLD_HOURS in the same change.
+    # probe's THRESHOLD_HOURS in the same change, and mcpindex-web-deploy-lag's too.
+    # GitHub starts this cron late: 2-10h over 09-14..10-13, longest gap between two
+    # runs 18.5h. Data commits skip their own build (vercel.json) and wait for this one,
+    # so deploy-lag allows 24h (AI-workspace-configs tools/healthcheck, 2026-10-13).
     # These times sit AFTER the verdicts pushback on mini32 (01:45/13:45 US-Pacific,
     # = 08:45/20:45 UTC in PDT, 09:45/21:45 UTC in PST): the pushback commit skips
     # its own Vercel build (vercel.json ignoreCommand), and THIS sync's build ships
