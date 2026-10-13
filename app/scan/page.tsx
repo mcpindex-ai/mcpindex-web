@@ -4,7 +4,7 @@ import { renderDiagram } from '@/components/diagrams';
 import Link from 'next/link';
 import { ScanTool } from '@/components/ScanTool';
 import { jsonLdSafe } from '@/lib/jsonLd';
-import { loadLedger } from '@/lib/ledgerServer';
+import { loadLedgerView } from '@/lib/ledgerServer';
 
 // Matches /ledger. A transient Redis miss makes loadLedger() return null; at 300s
 // the drift line is absent for at most 5 minutes rather than a full ISR window.
@@ -38,11 +38,11 @@ const JSON_LD = {
 };
 
 export default async function ScanPage() {
-  // Read live so this line can never drift from the ledger it cites. loadLedger()
+  // Read live so this line can never drift from the ledger it cites. loadLedgerView()
   // already returns null when the ledger is disabled or a read fails, and on null the
   // sentence is omitted entirely rather than shown stale - a wrong number on a trust
   // surface costs more than a missing one.
-  const s = (await loadLedger())?.stat;
+  const s = (await loadLedgerView())?.ledger.stat;
 
   // `typeof === 'number'`, not truthiness: coerceStat documents that an absent stat is
   // NOT zero (lib/ledger.ts), and 0 is a legitimate published value.
