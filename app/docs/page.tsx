@@ -307,6 +307,68 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
             className="text-[16px] tracking-tight font-semibold"
             style={{ color: 'var(--color-ink)' }}
           >
+            What Guard and Strict hold in the tool list
+          </h3>
+          <p
+            className="mt-1 text-[14px] leading-[1.55]"
+            style={{ color: 'var(--color-mute)' }}
+          >
+            The gate checks the tool list as well as each call. Under Guard and Strict, a tool
+            that trips one of the checks below is left out of the list your agent sees, and a
+            call to it holds until you review it. Monitor still shows and forwards every tool.
+            Versions are <Mono>mcpindex-gate</Mono> / <Mono>@mcp-index/sdk</Mono>.
+          </p>
+          <ul className="mt-2 space-y-2 text-[14px] leading-[1.55]" style={{ color: 'var(--color-cite)' }}>
+            <li>
+              Changed description or input-schema text on a pinned tool (0.17.0 / 0.15.0).
+            </li>
+            <li>
+              A new tool on a server that is already pinned (0.18.0 / 0.16.0). Review it with{' '}
+              <Mono>mcpindex-report pending</Mono> and <Mono>approve</Mono>, or{' '}
+              <Mono>approvePending</Mono> in the SDK. To bring back first-sight trust for one
+              server, pass <Mono>--new-tools=tofu</Mono> to the proxy,{' '}
+              <Mono>new_tools=&quot;tofu&quot;</Mono> to the Python wrapper, or{' '}
+              <Mono>newTools: &quot;tofu&quot;</Mono> to <Mono>wrap()</Mono>.
+            </li>
+            <li>
+              A change to any other tool field: <Mono>title</Mono>, <Mono>icons</Mono>,{' '}
+              <Mono>_meta</Mono>, <Mono>execution</Mono>, and annotation text beyond the four hints
+              (0.19.0 / 0.17.0). Pins made by older versions record these fields once, from the
+              first list that matches the pin, and compare them after that.
+            </li>
+            <li>
+              An <Mono>outputSchema</Mono> added to a pinned tool, when the schema carries any text
+              (0.20.0 / 0.18.0). A property name counts as text, so expect one review per tool
+              when a server starts returning structured output. A bare{' '}
+              <Mono>{'{"type": "object"}'}</Mono> is still shown.
+            </li>
+            <li>
+              In the TypeScript SDK, the MCP client&rsquo;s own <Mono>listChanged</Mono> refresh goes
+              through the gate, so <Mono>onChanged</Mono> only receives tools the list would show
+              (0.17.0).
+            </li>
+          </ul>
+          <p
+            className="mt-2 text-[13px] leading-[1.5]"
+            style={{ color: 'var(--color-mute)' }}
+          >
+            Server instructions are watched too. The stdio proxy already pinned the{' '}
+            <Mono>instructions</Mono> text a server sends at <Mono>initialize</Mono>; from
+            0.20.0 / 0.18.0 the Python and TypeScript wrappers do the same, with a file pin store,
+            and report a first pin or a change through <Mono>on_context_drift</Mono> /{' '}
+            <Mono>onContextDrift</Mono> and one stderr line. This only reports. What the host
+            receives is unchanged.
+          </p>
+        </div>
+
+        <div
+          className="rule-t pt-5"
+          style={{ borderColor: 'var(--color-rule)' }}
+        >
+          <h3
+            className="text-[16px] tracking-tight font-semibold"
+            style={{ color: 'var(--color-ink)' }}
+          >
             Blast-radius grade (on by default)
           </h3>
           <p
