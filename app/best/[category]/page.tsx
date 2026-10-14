@@ -334,7 +334,8 @@ async function FilesystemEvidence() {
             <p className="mb-6 text-[14px] leading-[1.55] text-[var(--color-cite)]">
               These are <strong>synthetic, hand-authored</strong> poisoned tool
               descriptions - <strong>not real registry servers</strong> - run
-              through the same screen to show what it catches. They are excluded
+              through the registry screener that produces the verdicts above, to
+              show what it catches. They are excluded
               from the directory above and from search.
             </p>
             <div className="rule-t">

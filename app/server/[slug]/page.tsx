@@ -426,8 +426,9 @@ export default async function ServerPage(
               <p className="mt-3 font-mono text-[11px] text-[var(--color-mute)]">
                 Own this server?{' '}
                 <Link href="/screen" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
-                  Screen its description →
-                </Link>
+                  Test a description on the public screen →
+                </Link>{' '}
+                It is a separate check from the verdict above, so the two can differ.
                 {/* The "claim / verify ownership" funnel lives once, in the Listing
                     block of the right rail - the natural "is this your server?" spot,
                     next to the provenance disclosure. Not duplicated here. */}
