@@ -1,5 +1,6 @@
-// Public drift ledger (M4, read side). Reads the `drift:ledger` blob the mini32 drain maintains
-// and exposes it to the C9 page + /api/v1/ledger. The blob is what mcpindex's CRAWLER OBSERVED:
+// Public drift ledger (M4, read side): types and the per-row validation shared by the split
+// summary, the per-server hash and the /4 pages the drain publishes (the full `drift:ledger` blob
+// is retired). Every row is what mcpindex's CRAWLER OBSERVED:
 // contract changes between two daily registry snapshots - a contract diff, NOT a safety verdict
 // and NOT an in-path prevention (that's the gate). Every row is crawl-seen (public-registry
 // server); forgeable install reports never enter this surface.

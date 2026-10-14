@@ -163,9 +163,8 @@ test('parseLedgerBlob: drops malformed events and bounds the free strings', () =
   assert.equal(out?.events.length, 1);
 });
 
-// loadLedger lives in ledgerServer.ts (import 'server-only', not importable in plain node). Its
-// only logic beyond parseLedgerBlob (tested above) is `if (!ledgerEnabled()) return null` + a
-// guarded redis().get - both trivial and covered by the ledgerEnabled + parseLedgerBlob tests.
+// The Upstash reads live in ledgerServer.ts (import 'server-only', not importable in plain node);
+// test/routes/ledger_split_loader.test.ts and test/routes/ledger_v4_route.test.ts drive them.
 
 test('coerceEvent removal_scope: allowlist coercion, absent when invalid or missing (schema stays /2)', () => {
   const base = { tool_fp: FP, change_kinds: ['tool-removed'] };

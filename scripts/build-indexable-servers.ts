@@ -5,14 +5,16 @@
 //
 // Run by .github/workflows/sync-registry.yml after the registry fetch, so the set is computed
 // against the server index committed beside it. Reads the PUBLIC ledger over HTTPS: the runner
-// holds no Upstash token and does not need one.
+// holds no Upstash token and does not need one. The /4 API is paged, so this walks the events and
+// context_events sections page by page (computeIndexable reads only those two; fleet rows never
+// qualify a server on their own, see lib/indexable.ts).
 //
 // FAIL-SOFT, like the era-census export in the same workflow. Any failure keeps the last
 // committed file and exits 0, because a ledger blip must not take the registry sync down, and an
 // old set is an honest set. A result under half the previous one, or over double, is refused
 // the same way: that is a broken ledger read, not a week in which half of all drift vanished
-// or the corpus suddenly all qualified. A /2 blob is refused too: its events still list
-// fleet-collapsed tools, so it cannot answer "drift of its own".
+// or the corpus suddenly all qualified. A walk whose row total disagrees with the count the API
+// published for that section is refused too: it is a partial read.
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -24,7 +26,9 @@ import {
   INDEXABLE_SCHEMA,
   ledgerAnswersIndexableCriterion,
 } from '../lib/indexable';
-import { parseLedgerBlob } from '../lib/ledger';
+import { coerceContextEvent, coerceEvent, type ContextEvent, type LedgerEvent } from '../lib/ledger';
+import { walkLedgerSection, type SectionWalk } from '../lib/ledgerV4Client';
+import type { LedgerSection } from '../lib/ledgerV4';
 import { loadServersFromSnapshot } from '../lib/registry';
 
 const OUT = path.join(process.cwd(), 'data', 'indexable-servers.json');
@@ -35,23 +39,31 @@ function keep(reason: string): never {
   process.exit(0);
 }
 
-async function main(): Promise<void> {
-  let raw: unknown;
+async function walk(section: LedgerSection): Promise<SectionWalk> {
   try {
-    const res = await fetch(LEDGER_URL, { signal: AbortSignal.timeout(60_000) });
-    if (!res.ok) keep(`ledger HTTP ${res.status}`);
-    raw = await res.json();
+    const w = await walkLedgerSection(LEDGER_URL, section);
+    const published = w.counts[section];
+    if (typeof published === 'number' && published !== w.items.length) {
+      keep(`${section}: walked ${w.items.length} rows, the API says ${published}`);
+    }
+    return w;
   } catch (e) {
-    keep(`ledger fetch failed (${(e as Error).message})`);
+    keep(`ledger ${section} walk failed (${(e as Error).message})`);
   }
-  const ledger = parseLedgerBlob(raw);
-  if (!ledger) keep('ledger blob failed validation');
-  if (!ledgerAnswersIndexableCriterion(ledger.schema)) {
-    keep(`ledger schema ${ledger.schema} cannot separate fleet-only events`);
+}
+
+async function main(): Promise<void> {
+  const ev = await walk('events');
+  const ctx = await walk('context_events');
+  if (ev.generated_at !== ctx.generated_at) keep('events and context_events came from different generations');
+  if (!ledgerAnswersIndexableCriterion(ev.schema)) {
+    keep(`ledger schema ${ev.schema} cannot separate fleet-only events`);
   }
+  const events = ev.items.map(coerceEvent).filter((e): e is LedgerEvent => e !== null);
+  const contextEvents = ctx.items.map(coerceContextEvent).filter((e): e is ContextEvent => e !== null);
 
   const names = (await loadServersFromSnapshot()).map((s) => s.name);
-  const servers = computeIndexable(names, ledger.events, ledger.context_events);
+  const servers = computeIndexable(names, events, contextEvents);
 
   const prev = await fs
     .readFile(OUT, 'utf8')
@@ -69,7 +81,7 @@ async function main(): Promise<void> {
   const doc = {
     schema: INDEXABLE_SCHEMA,
     generated_at: new Date().toISOString(),
-    ledger_generated_at: ledger.generated_at,
+    ledger_generated_at: ev.generated_at,
     criterion: INDEXABLE_CRITERION,
     servers,
   };

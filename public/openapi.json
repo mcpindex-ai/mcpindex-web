@@ -82,9 +82,37 @@
     "/api/v1/ledger": {
       "get": {
         "operationId": "driftLedger",
-        "summary": "Public drift ledger: contract changes the crawler observed",
-        "description": "Contract diffs listed by fingerprint (keyed hashes of public registry names under a published key; recomputable, not anonymous) - a contract-diff record, not a safety verdict. Schema mcpindex.drift.ledger/2, or /3 once publisher-wide changes are counted once: /3 adds fleet_events and stat.independent, and its events omit tools whose only change was part of a publisher-wide change (look those up with /api/v1/drift/any).",
-        "responses": { "200": { "description": "Ledger entries.", "content": { "application/json": { "schema": { "type": "object" } } } } }
+        "summary": "Public drift ledger: contract changes the crawler observed, paged",
+        "description": "Contract diffs listed by fingerprint (keyed hashes of public registry names under a published key; recomputable, not anonymous) - a contract-diff record, not a safety verdict. Schema mcpindex.drift.ledger/4. One section per request: events (tool contract changes), context_events (server instructions and prompt metadata) or fleet_events (publisher-wide changes, counted once). events omits tools whose only change was part of a publisher-wide change; look those up with /api/v1/drift/any. events and context_events pages hold up to 1,000 rows, newest first; fleet_events pages are packed by size. With no parameters this returns page 0 of events. To read a whole section, request ?section=<name> and follow next_cursor until it is null. A cursor stays in the generation it was issued for, so every page of one walk comes from the same hourly publish; a superseded generation stays readable for at least an hour after the next publish, then its cursors answer 410. The /3 single-response dump is retired.",
+        "parameters": [
+          { "name": "section", "in": "query", "schema": { "type": "string", "enum": ["events", "context_events", "fleet_events"], "default": "events" }, "description": "Which list to page through. With a cursor it may be omitted; a value that differs from the cursor's section is 400." },
+          { "name": "cursor", "in": "query", "schema": { "type": "string" }, "description": "Opaque. Pass next_cursor from the previous page exactly as returned. A malformed cursor is 400." }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of one section.",
+            "content": { "application/json": { "schema": {
+              "type": "object",
+              "required": ["schema", "generated_at", "framing", "stat", "counts", "section", "page", "pages", "items", "next_cursor"],
+              "properties": {
+                "schema": { "type": "string", "const": "mcpindex.drift.ledger/4" },
+                "generated_at": { "type": "string", "description": "When the generation these items belong to was published." },
+                "framing": { "type": "string" },
+                "stat": { "type": "object", "description": "Headline counts from the latest published generation." },
+                "counts": { "type": "object", "additionalProperties": { "type": "integer" }, "description": "Row counts from the latest published generation." },
+                "section": { "type": "string", "enum": ["events", "context_events", "fleet_events"] },
+                "page": { "type": "integer", "description": "Zero-based page number." },
+                "pages": { "type": "integer", "description": "Page count for this section in this generation." },
+                "items": { "type": "array", "items": { "type": "object" }, "description": "/3 rows of the requested section, unchanged." },
+                "next_cursor": { "type": ["string", "null"], "description": "Pass as ?cursor= for the next page; null on the last page." }
+              }
+            } } }
+          },
+          "400": { "description": "invalid_section, invalid_cursor or section_cursor_mismatch." },
+          "410": { "description": "cursor_expired: that generation's pages are gone. restart is the path that starts the section again.", "content": { "application/json": { "schema": { "type": "object", "properties": { "error": { "type": "string", "const": "cursor_expired" }, "restart": { "type": "string" } } } } } },
+          "429": { "description": "Rate limited; see retry-after." },
+          "503": { "description": "The ledger is not published right now (missing, stale or malformed). No rows are served." }
+        }
       }
     },
     "/api/v1/diff": {

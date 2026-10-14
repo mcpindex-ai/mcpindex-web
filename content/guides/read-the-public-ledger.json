@@ -6,7 +6,7 @@
   "meta_description": "A walkthrough of the mcpindex drift ledger: open it, read a fingerprint-only event row, spot a safety-relevant change, and read the coverage dashboard.",
   "h1": "Read the public drift ledger and dashboard",
   "project": "mcpindex",
-  "updated": "2026-10-13",
+  "updated": "2026-10-14",
   "est_minutes": 3,
   "outcome": "You can read the public drift ledger and dashboard: what the crawler saw change, how to spot a safety-relevant diff, and what the coverage numbers do (and do not) mean.",
   "body": "The ledger is public proof of the problem the gate solves. mcpindex crawls the public MCP registry every day and records which tool contracts silently change between snapshots. No login, no per-user data, and no server pays to be listed. Here is how to read it. The deduped, citable analysis of the same corpus lives at [The MCP Drift Report](/drift-report).",
@@ -24,7 +24,7 @@
     {
       "id": "read-event",
       "heading": "Read an event row",
-      "body": "Each row in the Events table is one observed contract change, and it lists fingerprints rather than names:\n\n| Column | What it means |\n| --- | --- |\n| Tool fingerprint | A keyed hash of the server and tool names |\n| Server fingerprint | A keyed hash of the server's registry name (a dash if none was recorded) |\n| Last seen | When the crawler last saw this contract |\n| What changed | The change kinds: a new required param, an annotation flip, a narrowed constraint |\n| Safety | Tagged when the change touched a safety-relevant field |\n\nFingerprints keep names off the page, but they are not a privacy measure: the key is published, so anyone can recompute a fingerprint from a public registry name and match it."
+      "body": "Each row in the Events table is one observed contract change, and it lists fingerprints rather than names:\n\n| Column | What it means |\n| --- | --- |\n| Tool fingerprint | A keyed hash of the server and tool names |\n| Server fingerprint | A keyed hash of the server's registry name (a dash if none was recorded) |\n| Last seen | When the crawler last saw this contract |\n| What changed | The change kinds: a new required param, an annotation flip, a narrowed constraint |\n| Safety | Tagged when the change touched a safety-relevant field |\n\nFingerprints keep names off the page, but they are not a privacy measure: the key is published, so anyone can recompute a fingerprint from a public registry name and match it.\n\nThe page shows the newest rows. Every row is in the machine-readable ledger at [/api/v1/ledger](/api/v1/ledger), one section at a time and up to 1,000 rows a page: ask for `?section=events` (or `context_events`, or `fleet_events` for publisher-wide changes), then pass each response's `next_cursor` back as `?cursor=` until it comes back null. A cursor stays on the hourly publish it started from, and one that has aged out answers 410, which means start the section again."
     },
     {
       "id": "safety",

@@ -8,7 +8,6 @@ import {
   SUMMARY_MAX_AGE_MS,
   parseLedgerSummary,
   parseServerSlice,
-  viewOfFullLedger,
 } from './ledgerSplit';
 import { aggregateServerDrift } from './serverDrift';
 import { buildDigest, digestFromCounts } from './driftDigest';
@@ -103,14 +102,13 @@ test('every server answer from its slice equals the answer from the full blob', 
   }
 });
 
-test('the summary view matches what the pages read from the full blob', () => {
+test('the summary view matches what the pages used to read from the full blob', () => {
   const s = parseLedgerSummary(summaryOf(), NOW);
   assert.ok(s);
-  const f = viewOfFullLedger(full);
-  assert.equal(s.eventsTotal, f.eventsTotal);
-  assert.equal(s.contextEventsTotal, f.contextEventsTotal);
-  assert.deepEqual(s.ledger.stat, f.ledger.stat);
-  assert.deepEqual(s.ledger.events, f.ledger.events);
+  assert.equal(s.eventsTotal, full.events.length);
+  assert.equal(s.contextEventsTotal, full.context_events.length);
+  assert.deepEqual(s.ledger.stat, full.stat);
+  assert.deepEqual(s.ledger.events, full.events);
   assert.deepEqual(digestFromCounts(s.kindCounts), buildDigest(full.events));
   assert.equal(s.servers, 3);
   assert.ok(s.ledger.fleet_events, 'a /3 summary still reads as /3');

@@ -187,9 +187,10 @@ export async function GET() {
       // Fleet drift query (crawler-corroborated; powers "warns you on call 1").
       // Returns {drifted, sources, safety_relevant}; sources floors at 1 = the crawler.
       driftAny: 'https://mcpindex.ai/api/v1/drift/any?fp={tool_fingerprint}',
-      // Public drift ledger: contract changes the crawler observed (fingerprint-only;
-      // a contract-diff, not a safety verdict).
-      driftLedger: 'https://mcpindex.ai/api/v1/ledger',
+      // Public drift ledger, schema /4: contract changes the crawler observed (fingerprint-only;
+      // a contract-diff, not a safety verdict). section is events, context_events or
+      // fleet_events; paged, so follow next_cursor via ?cursor= until it is null.
+      driftLedger: 'https://mcpindex.ai/api/v1/ledger?section={section}',
       detail: 'https://mcpindex.ai/server/{slug}',
       llmsTxt: 'https://mcpindex.ai/llms.txt',
       llmsFullTxt: 'https://mcpindex.ai/llms-full.txt',

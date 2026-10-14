@@ -10,7 +10,7 @@ import { DriftReport } from '@/components/DriftReport';
 import { jsonLdSafe } from '@/lib/jsonLd';
 import { fmtUtc } from '@/lib/dates';
 
-// 300s, not 3600: a one-off Redis blip makes loadLedger() return null, and ISR would otherwise
+// 300s, not 3600: a one-off Redis blip makes loadLedgerView() return null, and ISR would otherwise
 // cache that "not published" empty state for the whole window. 5 min bounds how long a transient
 // miss can show stale-empty on a public trust surface (the API route is force-dynamic, so it
 // self-heals per-request; this keeps the page close behind it).
@@ -52,8 +52,8 @@ function PublisherWideChanges({ fleets, maxRows }: { fleets: readonly FleetEvent
         Each row is one publisher changing tools (or server context) of the same kind on at least 10
         of its servers in one UTC day, counted once. &ldquo;Of the same kind&rdquo; means the same
         change kinds, not necessarily the same field. Safety-relevant rows come first; their tool
-        fingerprints are listed in{' '}
-        <Link href="/api/v1/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
+        fingerprints are listed in the fleet_events section of{' '}
+        <Link href="/api/v1/ledger?section=fleet_events" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
           /api/v1/ledger
         </Link>
         .
@@ -129,7 +129,7 @@ export default async function LedgerPage() {
   if (!ledgerEnabled()) notFound();
 
   // The split summary carries only the newest rows, so every total below comes from the view,
-  // never from an array length. Without a summary this is the full blob and the two agree.
+  // never from an array length.
   const view = await loadLedgerView();
   const ledger = view?.ledger;
 
@@ -165,7 +165,7 @@ export default async function LedgerPage() {
 
   // Cap the rendered table: ~3.7k rows was ~38k DOM nodes / ~9MB of HTML, which taxes
   // low-end and mobile devices. The full corpus stays honest via the aggregate stats
-  // above and the machine-readable /api/v1/ledger; the table shows the most-recently
+  // above and the paged, machine-readable /api/v1/ledger; the table shows the most-recently
   // observed changes (the useful view), newest first.
   const MAX_ROWS = 300;
   const truncated = view.eventsTotal > MAX_ROWS;
@@ -449,7 +449,7 @@ export default async function LedgerPage() {
             Showing the {MAX_ROWS} most recently-observed of{' '}
             {view.eventsTotal.toLocaleString()} contract changes
             {isV3 ? ' outside publisher-wide changes' : ''}. The complete, machine-readable
-            ledger is at{' '}
+            ledger is paged at{' '}
             <Link href="/api/v1/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
               /api/v1/ledger
             </Link>
@@ -540,8 +540,8 @@ export default async function LedgerPage() {
             <p className="mt-4 text-[13px] leading-[1.55] text-[var(--color-mute)]">
               Showing the {MAX_ROWS} most recently-observed of{' '}
               {view.contextEventsTotal.toLocaleString()} context-surface changes; the full
-              list is in{' '}
-              <Link href="/api/v1/ledger" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
+              list is paged in the context_events section of{' '}
+              <Link href="/api/v1/ledger?section=context_events" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
                 /api/v1/ledger
               </Link>
               .

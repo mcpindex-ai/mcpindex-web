@@ -18,7 +18,8 @@ export const metadata: Metadata = {
 export default async function DashboardPage() {
   if (!ledgerEnabled()) notFound();
 
-  // Stat only, so the split summary is enough; loadLedgerView reads the full blob without it.
+  // Stat only, so the split summary is enough. Null (summary missing or stale) renders the
+  // section's unavailable state.
   const [stats, ledger] = await Promise.all([
     loadDriftStats(),
     loadLedgerView().then((v) => v?.ledger ?? null),

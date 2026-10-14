@@ -1,34 +1,27 @@
-// Server-only reader: server-level drift for a named server, joined from the public ledger blob.
+// Server-only reader: server-level drift for a named server, from the ledger split's per-server hash.
 // Touches the ledger read path (Upstash token lives behind ledgerServer), so it is guarded by
 // `import 'server-only'`. The fingerprint + aggregation are pure (driftFingerprint, serverDrift).
 
 import 'server-only';
-import { ledgerEnabled, type Ledger } from './ledger';
-import {
-  loadLedger,
-  loadLedgerServerField,
-  loadLedgerServersCount,
-  loadLedgerSummary,
-} from './ledgerServer';
+import { ledgerEnabled } from './ledger';
+import { loadLedgerServerField, loadLedgerServersCount, loadLedgerSummary } from './ledgerServer';
 import { EMPTY_SLICE, parseServerSlice, type LedgerSummary } from './ledgerSplit';
 import { serverFp } from './driftFingerprint';
 import { aggregateServerDrift, type ServerDrift } from './serverDrift';
 import { loadServers } from './registry';
 
-// The server page prerenders ~11.6k pages and each needs the SAME ledger blob. Memoize it so a full
-// build does a couple of Upstash GETs, not one per page. The memo lives on globalThis (NOT a module
-// `let`): Next's static generation renders pages in isolated module scopes that reset plain module
-// state, so a module-level memo silently re-fetches per page and turns a 12min build into hours.
-// In-flight dedup avoids a stampede; null IS cached (a build/Upstash hiccup must not re-fetch 11.6k
-// times); a 5min TTL bounds staleness well inside the page's 1h ISR.
-type LedgerMemo = { at: number; ledger: Ledger | null };
-// The split summary plus HLEN of the per-server hash, same memo rules. `usable` is false when the
-// summary is missing or stale, or the hash holds fewer fields than the summary says it wrote: a
-// server with no drift has no field, so a lost hash would otherwise read as clean everywhere.
+// The server page prerenders ~11.6k pages and each needs the SAME summary and HLEN. Memoize them so
+// a full build does a couple of Upstash reads for them, not one per page. The memo lives on
+// globalThis (NOT a module `let`): Next's static generation renders pages in isolated module scopes
+// that reset plain module state, so a module-level memo silently re-fetches per page. In-flight
+// dedup avoids a stampede; an unusable result IS cached (a build/Upstash hiccup must not re-fetch
+// 11.6k times); a 5min TTL bounds staleness well inside the page's 1h ISR.
+//
+// `usable` is false when the summary is missing or stale, or the hash holds fewer fields than the
+// summary says it wrote: a server with no drift has no field, so a lost hash would otherwise read
+// as clean everywhere.
 type SplitMemo = { at: number; summary: LedgerSummary | null; usable: boolean };
 const G = globalThis as unknown as {
-  __mcpiLedgerMemo?: LedgerMemo;
-  __mcpiLedgerInflight?: Promise<Ledger | null>;
   __mcpiSplitMemo?: SplitMemo;
   __mcpiSplitInflight?: Promise<SplitMemo>;
   __mcpiRegistryNames?: Promise<ReadonlySet<string>>;
@@ -40,7 +33,7 @@ const G = globalThis as unknown as {
  * contextChanges:0, which is byte-identical to a clean bill of health. `?server=test` answered
  * exactly that until 2026-08-24. On this surface a false clean is the worst possible failure.
  *
- * Memoized on globalThis for the same reason the ledger is: Next's static generation resets plain
+ * Memoized on globalThis for the same reason the split is: Next's static generation resets plain
  * module state per page, so a module-level memo silently rebuilds a ~13k-entry Set per render.
  * The promise itself is cached, which also dedups a cold-start stampede. `loadServers()` is
  * already on the server-page render path, so this adds no new data source.
@@ -55,21 +48,6 @@ async function registryNames(): Promise<ReadonlySet<string>> {
   }
   return G.__mcpiRegistryNames;
 }
-async function cachedLedger(): Promise<Ledger | null> {
-  const m = G.__mcpiLedgerMemo;
-  if (m && Date.now() - m.at < 300_000) return m.ledger;
-  if (G.__mcpiLedgerInflight) return G.__mcpiLedgerInflight;
-  G.__mcpiLedgerInflight = loadLedger()
-    .then((ledger) => {
-      G.__mcpiLedgerMemo = { at: Date.now(), ledger };
-      return ledger;
-    })
-    .finally(() => {
-      G.__mcpiLedgerInflight = undefined;
-    });
-  return G.__mcpiLedgerInflight;
-}
-
 async function cachedSplit(): Promise<SplitMemo> {
   const m = G.__mcpiSplitMemo;
   if (m && Date.now() - m.at < 300_000) return m;
@@ -87,22 +65,22 @@ async function cachedSplit(): Promise<SplitMemo> {
   return G.__mcpiSplitInflight;
 }
 
-/** One server's answer from the split, or undefined when the split cannot answer and the caller
- * reads the full blob: the split is unusable, a read failed, or the field is malformed. */
-async function serverDriftFromSplit(fp: string, known: boolean): Promise<ServerDrift | null | undefined> {
+/** One server's answer from the split, or null when the split cannot answer: it is unusable, a
+ * read failed, or the field is malformed. Null renders as "unavailable", never as clean. */
+async function serverDriftFromSplit(fp: string, known: boolean): Promise<ServerDrift | null> {
   const split = await cachedSplit();
-  if (!split.usable || !split.summary) return undefined;
+  if (!split.usable || !split.summary) return null;
   const field = await loadLedgerServerField(fp);
-  if (field === undefined) return undefined;
+  if (field === undefined) return null;
   if (field === null) {
     // No field reads as clean, so re-check the hash now instead of trusting the memo's HLEN: a
     // hash evicted or deleted inside the memo window would otherwise read clean everywhere. One
     // extra command, only for servers with no drift.
     const fields = await loadLedgerServersCount();
-    if (fields === null || fields < split.summary.servers) return undefined;
+    if (fields === null || fields < split.summary.servers) return null;
   }
   const slice = field === null ? EMPTY_SLICE : parseServerSlice(field, fp);
-  if (!slice) return undefined;
+  if (!slice) return null;
   const drift = aggregateServerDrift(
     slice.events,
     fp,
@@ -124,16 +102,5 @@ export async function loadServerDrift(serverId: string): Promise<ServerDrift | n
   if (!ledgerEnabled()) return null;
   const fp = serverFp(serverId);
   const known = (await registryNames()).has(serverId);
-  const fromSplit = await serverDriftFromSplit(fp, known);
-  if (fromSplit !== undefined) return fromSplit;
-  const ledger = await cachedLedger();
-  if (!ledger) return null;
-  return aggregateServerDrift(
-    ledger.events,
-    fp,
-    ledger.generated_at,
-    ledger.context_events,
-    known,
-    ledger.fleet_events ?? [],
-  );
+  return serverDriftFromSplit(fp, known);
 }

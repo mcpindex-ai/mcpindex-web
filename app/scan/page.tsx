@@ -6,7 +6,7 @@ import { ScanTool } from '@/components/ScanTool';
 import { jsonLdSafe } from '@/lib/jsonLd';
 import { loadLedgerView } from '@/lib/ledgerServer';
 
-// Matches /ledger. A transient Redis miss makes loadLedger() return null; at 300s
+// Matches /ledger. A transient Redis miss makes loadLedgerView() return null; at 300s
 // the drift line is absent for at most 5 minutes rather than a full ISR window.
 // The scan tool itself never depends on this - see the null handling below.
 export const revalidate = 300;

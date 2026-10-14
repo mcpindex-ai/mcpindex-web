@@ -1,17 +1,17 @@
-// Read side of the ledger split (mcpindex-trust PR 182). The drain, behind MCPINDEX_LEDGER_SPLIT,
-// writes two slivers next to the full `drift:ledger` blob, which only ever grows (10.6MB decoded
-// on 2026-10-13) and which every reader used to load whole:
+// Read side of the ledger split (mcpindex-trust PR 182). The drain writes two slivers that every
+// web reader now uses; the full `drift:ledger` blob is no longer published or read:
 //
 //   drift:ledger:summary   stat, the newest 300 events and context_events, fleet events without
 //                          members, all-time per-kind counts, row counts. For /ledger, /scan,
-//                          /dashboard and the Drift Report.
+//                          /dashboard, the Drift Report and the /4 API's stat.
 //   drift:ledger:servers   one field per server_fp: exactly the rows aggregateServerDrift filters
 //                          for that server. For server pages and /api/v1/server-drift.
 //
 // Both are validated through parseLedgerBlob, so they get the same coercion and the same /3
-// fail-closed rules as the full blob. Anything off (missing, stale, malformed, a hash shorter
-// than the summary says) makes the caller read the full blob, which stays the source of truth
-// and the only thing /api/v1/ledger serves. PURE: no Upstash token here (see ledgerServer.ts).
+// fail-closed rules the full blob had. Anything off (missing, stale, malformed, a hash shorter
+// than the summary says) makes the caller report the ledger unavailable. The summary may carry
+// `sizes` ({max_server_gz, max_page_gz}); nothing here needs it, so it is ignored. PURE: no
+// Upstash token here (see ledgerServer.ts).
 
 import {
   LEDGER_SCHEMA,
@@ -27,11 +27,19 @@ export const LEDGER_SUMMARY_SCHEMA = 'mcpindex.drift.ledger-summary/1';
 export const LEDGER_SERVER_SCHEMA = 'mcpindex.drift.ledger-server/1';
 
 // The drain writes hourly and deletes the summary on any run that does not write the split. This
-// bound covers a summary the drain could not delete: older than this, the full blob is read
-// instead. Never a reason to show nothing. A summary dated ahead of the clock by more than the
-// skew allowance is refused too, or it would never go stale.
+// bound covers a summary the drain could not delete: older than this, the ledger reads as
+// unavailable rather than serving numbers an hour and a half old. A summary dated ahead of the
+// clock by more than the skew allowance is refused too, or it would never go stale. The /4 index
+// is held to the same rule.
 export const SUMMARY_MAX_AGE_MS = 90 * 60_000;
 const SUMMARY_MAX_SKEW_MS = 5 * 60_000;
+
+/** True when an ISO timestamp is no older than SUMMARY_MAX_AGE_MS and not ahead of the clock by
+ * more than the skew allowance. */
+export function generatedAtIsFresh(generatedAt: string, nowMs: number): boolean {
+  const at = Date.parse(generatedAt);
+  return Number.isFinite(at) && nowMs - at <= SUMMARY_MAX_AGE_MS && at - nowMs <= SUMMARY_MAX_SKEW_MS;
+}
 
 /** What the ledger pages read. `ledger.events` and `ledger.context_events` may be only the newest
  * rows, so totals and kind counts come from here, never from the array lengths. */
@@ -72,29 +80,12 @@ function nonNegInt(v: unknown): number | undefined {
   return typeof v === 'number' && Number.isInteger(v) && v >= 0 ? v : undefined;
 }
 
-export function kindCountsOf(events: readonly LedgerEvent[]): Record<string, number> {
-  const counts: Record<string, number> = {};
-  for (const e of events) for (const k of e.change_kinds) counts[k] = (counts[k] ?? 0) + 1;
-  return counts;
-}
-
-/** The view over a full blob: every row is present, so totals are the lengths. */
-export function viewOfFullLedger(ledger: Ledger): LedgerView {
-  return {
-    ledger,
-    eventsTotal: ledger.events.length,
-    contextEventsTotal: ledger.context_events.length,
-    kindCounts: kindCountsOf(ledger.events),
-  };
-}
-
 /** Validate a decoded `drift:ledger:summary` value. Null when missing, malformed, or stale. */
 export function parseLedgerSummary(raw: unknown, nowMs: number): LedgerSummary | null {
   const s = asObject(raw);
   if (!s || s.schema !== LEDGER_SUMMARY_SCHEMA) return null;
   if (s.ledger_schema !== LEDGER_SCHEMA && s.ledger_schema !== LEDGER_SCHEMA_V3) return null;
-  const at = typeof s.generated_at === 'string' ? Date.parse(s.generated_at) : NaN;
-  if (!Number.isFinite(at) || nowMs - at > SUMMARY_MAX_AGE_MS || at - nowMs > SUMMARY_MAX_SKEW_MS) return null;
+  if (typeof s.generated_at !== 'string' || !generatedAtIsFresh(s.generated_at, nowMs)) return null;
   const c = asObject(s.counts);
   const eventsTotal = nonNegInt(c?.events);
   const contextEventsTotal = nonNegInt(c?.context_events);
@@ -137,9 +128,9 @@ export function parseLedgerSummary(raw: unknown, nowMs: number): LedgerSummary |
   };
 }
 
-/** Validate one decoded `drift:ledger:servers` field. Null when malformed; the caller then reads
- * the full blob, which drops a bad row and still answers. (A server with no field has no drift:
- * that is EMPTY_SLICE, decided by the caller after its HLEN check.) */
+/** Validate one decoded `drift:ledger:servers` field. Null when malformed; the caller then reports
+ * the server's drift unavailable. (A server with no field has no drift: that is EMPTY_SLICE,
+ * decided by the caller after its HLEN check.) */
 export function parseServerSlice(raw: unknown, serverFp: string): ServerSlice | null {
   const v = asObject(raw);
   if (!v || v.schema !== LEDGER_SERVER_SCHEMA) return null;

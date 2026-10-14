@@ -3,6 +3,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { serverFp } from './driftFingerprint';
 import { LEDGER_SCHEMA_V3, type ContextEvent, type LedgerEvent } from './ledger';
+import { LEDGER_SCHEMA_V4 } from './ledgerV4';
 
 /**
  * Which /server pages are offered to search engines.
@@ -42,9 +43,10 @@ export const INDEXABLE_KEEP_RATIO = 0.5;
 
 /** A /3 ledger lists fleet-collapsed tools outside `events`. A /2 blob puts them back in
  * `events`, so every fleet-only server would qualify and the sitemap would re-expand.
- * Only /3 can answer the criterion. Callers keep the last file on anything else. */
+ * /4 pages carry the /3 rows unchanged, so /3 and /4 can answer the criterion. Callers keep the
+ * last file on anything else. */
 export function ledgerAnswersIndexableCriterion(schema: string): boolean {
-  return schema === LEDGER_SCHEMA_V3;
+  return schema === LEDGER_SCHEMA_V3 || schema === LEDGER_SCHEMA_V4;
 }
 
 /** Whether a freshly computed count may replace the previous one. Zero is never written.

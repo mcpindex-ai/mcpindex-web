@@ -106,24 +106,28 @@ const DRIFT_READ_PER_IP_PER_MIN = 600;
 const DRIFT_READ_GLOBAL_PER_DAY = 5_000_000;
 
 // /api/v1/ledger gets its own tighter per-IP budget ON TOP of the shared one above, because it
-// is the only route on that budget that returns the WHOLE blob. The other two answer a question
-// (`drift/any` a SISMEMBER, `server-drift` one server's rollup); this one is a bulk export.
+// is the only route on that budget that pages out the whole corpus. The other two answer a
+// question (`drift/any` a SISMEMBER, `server-drift` one server's rollup).
 //
-// The numbers, measured 2026-09-08: the blob was 5,397,238B and the route is `force-dynamic`
-// with `cache-control: no-store`, so every request is a fresh Upstash GET of all of it. At 600
-// requests a minute one compliant client could pull 3.24GB/min. Nobody legitimate does that:
-// the drain rewrites the blob ONCE AN HOUR, so request 2 through 600 in any minute receive
-// bytes identical to request 1.
+// Under /3 every request was the whole blob (10,285,870B measured 2026-10-14) and the budget was
+// 10/min. Under /4 a request is one page. The drain's page builder, run on the live 2026-10-14
+// 16:01Z ledger, produced about 40 pages (events 34, context_events 3, fleet_events about 3),
+// 1,609,616B of gz1 in all, the largest page 123,932B gz1. At 10/min one client paging the whole
+// ledger needs four minutes and trips the limit doing exactly what the API asks of it. 60/min
+// lets it finish inside a minute. The worst case, 60 reads of the largest page, is about 7.4MB
+// of gz1 a minute out of Upstash, below the 10 whole /3 blobs a minute the old budget allowed
+// (each of those was the full ledger). The drain still rewrites hourly, so nothing legitimate
+// needs more.
 //
-// 10/min is 600x the useful rate and drops the worst case by 60x. It cannot go on the shared
-// counter: `drift/any` is the installed SDK's gate check, which bursts by design on a first
-// pin, and throttling that to fix a problem it does not have would starve real users.
+// It cannot go on the shared counter: `drift/any` is the installed SDK's gate check, which bursts
+// by design on a first pin, and throttling that to fix a problem it does not have would starve
+// real users.
 //
 // LIMIT OF THIS CONTROL, stated plainly: `clientIp()` falls back to `x-forwarded-for` and
 // `x-real-ip`, which a client controls on any request that does not arrive through Vercel's
 // proxy. This stops accidents, runaway scripts and casual scraping. It does not stop someone
 // who wants past it, and it was never going to.
-const LEDGER_READ_PER_IP_PER_MIN = 10;
+const LEDGER_READ_PER_IP_PER_MIN = 60;
 
 // Drift identity register limit (/api/v1/drift/register). Tighter than ingest - registration
 // is an abuse vector (identity minting). Fail-open on Redis error.
@@ -349,7 +353,7 @@ export async function checkOwnerBehaviorLimit(ip: string, now: Date): Promise<Dr
  * check runs on, and vice versa.
  *
  * Costs one extra INCR per ledger request against the same Upstash bill this exists to protect.
- * At the volumes involved that is noise next to a 5.4MB GET, and it only runs on this one route.
+ * Each request also reads the summary, the index and one page, so one INCR is a small share.
  *
  * Fail-open on a Redis error, matching every other limiter here: a cache hiccup must not 429 a
  * public read surface. */
