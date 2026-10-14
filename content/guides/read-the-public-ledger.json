@@ -47,6 +47,11 @@
       }
     },
     {
+      "id": "pull-every-row",
+      "heading": "Pull every row with the API",
+      "body": "/api/v1/ledger returns one section a page: events, context_events or fleet_events. Each page carries the same stat, counts and generated_at, plus a next_cursor; follow it until it is null. Until 2026-10-14 the endpoint returned the whole ledger in one response, so scripts written then read `d['events']` from a single call. That response is gone. This walks the events section and counts change kinds:\n\n```bash\npython3 - <<'EOF'\nimport collections, json, urllib.request\nBASE = \"https://mcpindex.ai/api/v1/ledger\"\ndef rows(section):\n    url = f\"{BASE}?section={section}\"\n    while url:\n        page = json.load(urllib.request.urlopen(url))\n        yield from page[\"items\"]\n        url = page[\"next_cursor\"] and f\"{BASE}?section={section}&cursor={page['next_cursor']}\"\nevents = list(rows(\"events\"))\nprint(len(events), collections.Counter(k for e in events for k in e[\"change_kinds\"]).most_common(5))\nEOF\n```\n\nA cursor stays valid for at least an hour after the ledger is regenerated. If it has expired the API answers 410; start again from the first page. Reading only the headline numbers still works in one call: `d['stat']` and `d['generated_at']` are on every page."
+    },
+    {
       "id": "limits",
       "heading": "What the ledger is not",
       "body": "It is a contract-diff, not a safety verdict, and not prevention, that is the in-path gate's job, holding the call. And absence is not a clean bill of health: a private or un-crawled tool never appears here at all."
@@ -73,6 +78,10 @@
     {
       "q": "Why do some ledger entries have no tool fingerprint?",
       "a": "Because they are not about a tool. Entries in the context-surface table are server-scoped: they record a change to the instructions or prompt metadata a server injects into an agent's context on connect. One entry covers the whole server, so it carries a server fingerprint and no tool fingerprint."
+    },
+    {
+      "q": "My script read d['events'] from /api/v1/ledger and now gets a KeyError. What changed?",
+      "a": "On 2026-10-14 the ledger API moved from one response holding every row to pages. Rows are now in `items`, one section at a time, with a `next_cursor` to follow until it is null. The stat block and generated_at are still on every page, so scripts that read only those keep working."
     }
   ]
 }
