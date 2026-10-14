@@ -1,7 +1,7 @@
 // Pure digest builder for the on-site Drift Report section. Aggregates the ledger's
 // per-event ChangeKinds into the human-readable "what changed this week" breakdown.
 // Deterministic, honest, no verdict language. Rendered server-side from the same
-// loadLedger() data the /ledger page already uses (auto-publishes on ISR).
+// ledger summary the /ledger page already uses (auto-publishes on ISR).
 
 import type { LedgerEvent } from './ledger';
 

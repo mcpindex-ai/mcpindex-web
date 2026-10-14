@@ -1,6 +1,7 @@
 // loadServerDrift with the ledger split: answers from the per-server hash when the split is
-// usable, and reads the full blob whenever it is not. The pure parsing is in lib/ledgerSplit.test.ts;
-// this covers the routing between the two sources, which is where a false clean would come from.
+// usable, and is unavailable (null) whenever it is not. The retired full blob is never read. The
+// pure parsing is in lib/ledgerSplit.test.ts; this covers when the split may answer, which is
+// where a false clean would come from.
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { gzipSync } from 'node:zlib';
@@ -18,12 +19,6 @@ const ev = (tool: string, kinds: string[]) => ({
   last_seen: '2026-10-13T03:00:00Z', change_kinds: kinds,
 });
 
-// The full blob says ONE change; the split says TWO. Which number comes back says which was read.
-const FULL = JSON.stringify({
-  schema: 'mcpindex.drift.ledger/3', generated_at: NOW_ISO, framing: 'observed',
-  stat: { tools_observed_drifting: 1, total_contract_drifts_observed: 1, servers: 1, safety_relevant: 0 },
-  events: [ev('1', ['type-changed'])], context_events: [], fleet_events: [],
-});
 const summary = (over: Record<string, unknown> = {}) => JSON.stringify({
   schema: LEDGER_SUMMARY_SCHEMA, ledger_schema: 'mcpindex.drift.ledger/3', generated_at: NOW_ISO,
   framing: 'observed', stat: { tools_observed_drifting: 2, servers: 1 }, events: [], context_events: [],
@@ -36,7 +31,7 @@ const SLICE = JSON.stringify({
 });
 const gz1 = (s: string) => 'gz1:' + gzipSync(Buffer.from(s)).toString('base64');
 
-interface Fake { summary?: string | null; hlen?: number | Error; field?: string | null | Error; full?: string }
+interface Fake { summary?: string | null; hlen?: number | Error; field?: string | null | Error }
 function fake(f: Fake) {
   const calls: string[] = [];
   return {
@@ -45,7 +40,7 @@ function fake(f: Fake) {
       async get(key: string) {
         calls.push(`get ${key}`);
         if (key === 'drift:ledger:summary') return f.summary ?? null;
-        if (key === 'drift:ledger') return f.full ?? FULL;
+        if (key === 'drift:ledger') throw new Error('the retired full blob was read');
         return null;
       },
       async hlen(key: string) {
@@ -68,7 +63,7 @@ let restore: () => void;
 beforeEach(() => {
   restore = snapshotEnv();
   process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
-  for (const k of ['__mcpiLedgerMemo', '__mcpiLedgerInflight', '__mcpiSplitMemo', '__mcpiSplitInflight']) delete G[k];
+  for (const k of ['__mcpiSplitMemo', '__mcpiSplitInflight']) delete G[k];
 });
 afterEach(() => {
   __setLedgerServerRedisForTest(undefined);
@@ -82,7 +77,7 @@ async function run(f: Fake) {
   return { drift: await loadServerDrift(NAME), calls: r.calls };
 }
 
-test('split usable: answers from the server field and never reads the full blob', async () => {
+test('split usable: answers from the server field', async () => {
   const { drift, calls } = await run({ summary: summary(), field: gz1(SLICE) });
   assert.equal(drift?.changes, 2);
   assert.ok(!calls.includes('get drift:ledger'), calls.join(','));
@@ -103,34 +98,32 @@ for (const [why, f] of [
   ['HGET fails', { summary: summary(), field: new Error('upstash 500') }],
   ['field does not decode', { summary: summary(), field: 'gz1:!!!!' }],
 ] as Array<[string, Fake]>) {
-  test(`${why}: reads the full blob`, async () => {
+  test(`${why}: unavailable (null), never clean, never the full blob`, async () => {
     const { drift, calls } = await run(f);
-    assert.equal(drift?.changes, 1, calls.join(','));
-    assert.ok(calls.includes('get drift:ledger'));
+    assert.equal(drift, null, calls.join(','));
+    assert.ok(!calls.includes('get drift:ledger'));
   });
 }
 
-test('a malformed field reads the full blob, which drops the bad row and still answers', async () => {
+test('a malformed field is unavailable, never a clean answer with the bad row dropped', async () => {
   const bad = JSON.stringify({ ...JSON.parse(SLICE), events: [{ tool_fp: 'zz' }] });
-  const { drift, calls } = await run({ summary: summary(), field: bad });
-  assert.equal(drift?.changes, 1);
-  assert.ok(calls.includes('get drift:ledger'));
+  const { drift } = await run({ summary: summary(), field: bad });
+  assert.equal(drift, null);
 });
 
-test('hash lost after the memo said usable: a missing field re-checks HLEN and reads the full blob', async () => {
+test('hash lost after the memo said usable: a missing field re-checks HLEN and is unavailable', async () => {
   const first = await run({ summary: summary(), field: gz1(SLICE) });
   assert.equal(first.drift?.changes, 2);
   // Same memo (not cleared): the hash is now gone.
   const { drift, calls } = await run({ summary: summary(), field: null, hlen: 0 });
-  assert.equal(drift?.changes, 1, calls.join(','));
+  assert.equal(drift, null, calls.join(','));
   assert.ok(calls.includes('hlen drift:ledger:servers'), 'fresh HLEN on a missing field');
 });
 
 test('a summary dated in the future is refused', async () => {
   const ahead = new Date(Date.now() + 3600_000).toISOString();
-  const { drift, calls } = await run({ summary: summary({ generated_at: ahead }) });
-  assert.equal(drift?.changes, 1);
-  assert.ok(calls.includes('get drift:ledger'));
+  const { drift } = await run({ summary: summary({ generated_at: ahead }) });
+  assert.equal(drift, null);
 });
 
 test('summary and field delivered as objects (the client auto-deserializes plain JSON) still work', async () => {

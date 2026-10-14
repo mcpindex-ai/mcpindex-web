@@ -217,9 +217,9 @@ export default async function ServerPage(
   // Indexable pages get their drift in the server HTML: it is the crawler-observed fact on the page,
   // and Google indexes what the first response carries. Other pages keep
   // the client fetch. null (ledger off or down) also falls back to the client fetch.
-  // The ledger blob is one GET of several MB. It runs alongside the other page reads, not
-  // in front of them. loadServerDrift memoizes that blob for 5 minutes, so a crawl wave
-  // pays the GET once per isolate. Non-indexable pages do not start it.
+  // It runs alongside the other page reads, not in front of them: one HGET of this server's
+  // field, plus the split summary and HLEN that loadServerDrift memoizes for 5 minutes per
+  // isolate. Non-indexable pages do not start it.
   const [all, driftInitial, livenessOf, verdictState, snapshotMeta] = await Promise.all([
     loadServers(),
     indexablePredicate().then((indexable) =>

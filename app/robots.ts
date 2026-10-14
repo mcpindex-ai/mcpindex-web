@@ -96,8 +96,9 @@ const GET_ANSWERS_4XX = ['/api/v1/screen$', '/api/v1/drift$', '/api/waitlist$'];
 // Shared body because a user-agent group inherits nothing from the `*` group.
 const RULE = { allow: ['/'], disallow: GET_ANSWERS_4XX };
 
-// The two surfaces where the whole corpus leaves in one request: the 5.5 MB agent index
-// and the drift ledger. Everything a reader or a retrieval bot actually navigates to is a
+// The two surfaces built for taking the whole corpus: the 5.5 MB agent index and the drift
+// ledger (paged since /4, so a walk of next_cursor rather than one request; the prefix rule
+// covers every page and cursor). Everything a reader or a retrieval bot actually navigates to is a
 // page, and pages stay open to everyone — this closes bulk EXTRACTION, not reading.
 //
 // Withheld only from TRAINING_CRAWLERS, which extends the 2026-05-15 "asymmetric exposure"
