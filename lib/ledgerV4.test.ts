@@ -102,20 +102,26 @@ test('parseLedgerIndex accepts the spec shape, as a string or an object', () => 
   assert.equal(broken.stat.independent, undefined, 'a twin that breaks an invariant is dropped, as /3 did');
 });
 
+test('parseLedgerIndex accepts a generation kept across unchanged hours (gen older than generated_at)', () => {
+  // The drain re-SETs the index each hour with a fresh generated_at and keeps gen while rows match.
+  const i = parseLedgerIndex(index({ gen: '20261014T110000Z-1a2b3c4d' }), NOW);
+  assert.ok(i);
+  assert.equal(i.gen, '20261014T110000Z-1a2b3c4d');
+  assert.equal(i.generated_at, AT);
+});
+
 test('parseLedgerIndex refuses missing, malformed, stale or inconsistent', () => {
   for (const [why, raw] of [
     ['null', null],
     ['not json', '{'],
     ['wrong schema', index({ schema: 'mcpindex.drift.ledger-index/2' })],
-    ['gen does not match generated_at', index({ gen: '20261014T160154Z-1a2b3c4d' })],
+    ['gen newer than generated_at', index({ gen: '20261014T160154Z-1a2b3c4d' })],
     ['gen without the suffix', index({ gen: STAMP })],
     ['gen not a gen', index({ gen: 'x:y' })],
     ['stale', index({ generated_at: '2026-10-14T13:00:00Z', gen: '20261014T130000Z-1a2b3c4d' })],
     ['in the future', index({ generated_at: '2026-10-14T18:00:00Z', gen: '20261014T180000Z-1a2b3c4d' })],
     ['unknown ledger_schema', index({ ledger_schema: 'mcpindex.drift.ledger/9' })],
     ['no stat', index({ stat: undefined })],
-    ['framing not a string', index({ framing: 7 })],
-    ['framing oversized', index({ framing: 'x'.repeat(281) })],
     ['a section missing', index({ pages: { events: 1, context_events: 1 } })],
     ['negative pages', index({ pages: { events: -1, context_events: 1, fleet_events: 1 } })],
     ['pages over the ceiling', index({ pages: { events: MAX_PAGES + 1, context_events: 1, fleet_events: 1 } })],
@@ -125,6 +131,8 @@ test('parseLedgerIndex refuses missing, malformed, stale or inconsistent', () =>
   ] as Array<[string, unknown]>) {
     assert.equal(parseLedgerIndex(raw, NOW), null, why);
   }
+  assert.equal(parseLedgerIndex(index({ framing: 'x'.repeat(281) }), NOW)?.framing, '', 'oversized framing is blanked, as the summary does');
+  assert.equal(parseLedgerIndex(index({ framing: 7 }), NOW)?.framing, '', 'so is a non-string one');
   // Exactly at the age bound is still fresh; one ms past it is not.
   assert.ok(parseLedgerIndex(index(), Date.parse(AT) + SUMMARY_MAX_AGE_MS));
   assert.equal(parseLedgerIndex(index(), Date.parse(AT) + SUMMARY_MAX_AGE_MS + 1), null);
@@ -180,7 +188,7 @@ test('parseLedgerPage refuses a page that is not the one asked for', () => {
 });
 
 // walkLedgerSection: the client the indexable build uses.
-function api(pagesBySection: Record<string, unknown[][]>, opts: { genAt?: (n: number) => string; status?: (n: number) => number } = {}) {
+function api(pagesBySection: Record<string, unknown[][]>, opts: { generation?: (n: number) => string; status?: (n: number) => number } = {}) {
   const urls: string[] = [];
   const f = (async (input: URL) => {
     const u = new URL(input);
@@ -193,7 +201,8 @@ function api(pagesBySection: Record<string, unknown[][]>, opts: { genAt?: (n: nu
     if (status !== 200) return new Response('{}', { status, headers: { 'retry-after': '1' } });
     const all = pagesBySection[section];
     return Response.json({
-      schema: LEDGER_SCHEMA_V4, generated_at: opts.genAt?.(n) ?? AT, counts: { [section]: all.flat().length },
+      schema: LEDGER_SCHEMA_V4, generated_at: AT, generation: opts.generation?.(n) ?? GEN, ledger_schema: 'mcpindex.drift.ledger/3',
+      counts: { [section]: all.flat().length },
       section, page: n, pages: all.length, items: all[n] ?? [],
       next_cursor: n + 1 < all.length ? encodeCursor({ gen: GEN, section: section as 'events', n: n + 1, pages: all.length }) : null,
     });
@@ -205,6 +214,8 @@ test('walkLedgerSection follows next_cursor to the last page', async () => {
   const { f, urls } = api({ events: [[1, 2], [3], [4]] });
   const w = await walkLedgerSection('https://x.test/api/v1/ledger', 'events', f, async () => {});
   assert.deepEqual(w.items, [1, 2, 3, 4]);
+  assert.equal(w.generation, GEN);
+  assert.equal(w.ledger_schema, 'mcpindex.drift.ledger/3');
   assert.equal(urls.length, 3);
   assert.equal(urls[0], '?section=events');
   assert.match(urls[1], /^\?cursor=/);
@@ -222,7 +233,7 @@ test('walkLedgerSection waits out a 429 and refuses a generation change mid-walk
   const w = await walkLedgerSection('https://x.test/l', 'events', limited.f, async (ms) => { slept.push(ms); });
   assert.deepEqual(w.items, [1, 2]);
   assert.deepEqual(slept, [1000]);
-  const moved = api({ events: [[1], [2]] }, { genAt: (n) => (n === 0 ? AT : '2026-10-14T17:01:53Z') });
+  const moved = api({ events: [[1], [2]] }, { generation: (n) => (n === 0 ? GEN : '20261014T170153Z-1a2b3c4d') });
   await assert.rejects(walkLedgerSection('https://x.test/l', 'events', moved.f, async () => {}), LedgerWalkError);
   const gone = api({ events: [[1], [2]] }, { status: (call) => (call === 2 ? 410 : 200) });
   await assert.rejects(walkLedgerSection('https://x.test/l', 'events', gone.f, async () => {}), /HTTP 410/);

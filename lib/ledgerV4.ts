@@ -18,6 +18,7 @@ import {
   coerceEvent,
   coerceFleetEvent,
   coerceIndependent,
+  clampStr,
   coerceStat,
   type ContextEvent,
   type FleetEvent,
@@ -132,9 +133,12 @@ export function parseLedgerIndex(raw: unknown, nowMs: number): LedgerIndex | nul
   if (!x || x.schema !== LEDGER_INDEX_SCHEMA) return null;
   if (typeof x.gen !== 'string' || !GEN_RE.test(x.gen)) return null;
   if (typeof x.generated_at !== 'string' || x.generated_at.length > 32) return null;
-  if (genStampOf(x.generated_at) !== x.gen.slice(0, 16) || !generatedAtIsFresh(x.generated_at, nowMs)) return null;
+  // The drain keeps a generation across hours whose rows did not change and re-SETs the index
+  // with each run's generated_at, so the gen's stamp is the generation's first publish and may be
+  // older than generated_at, never newer. Fixed-width stamps compare correctly as strings.
+  const stamp = genStampOf(x.generated_at);
+  if (stamp === null || x.gen.slice(0, 16) > stamp || !generatedAtIsFresh(x.generated_at, nowMs)) return null;
   if (x.ledger_schema !== LEDGER_SCHEMA && x.ledger_schema !== LEDGER_SCHEMA_V3) return null;
-  if (typeof x.framing !== 'string' || x.framing.length > 280) return null;
   if (!x.stat || typeof x.stat !== 'object' || Array.isArray(x.stat)) return null;
   const total = coerceStat(x.stat);
   const independent =
@@ -163,7 +167,7 @@ export function parseLedgerIndex(raw: unknown, nowMs: number): LedgerIndex | nul
     gen: x.gen,
     generated_at: x.generated_at,
     ledger_schema: x.ledger_schema,
-    framing: x.framing,
+    framing: clampStr(x.framing, 280), // bounded the way the summary's framing is
     stat,
     digest: x.digest,
     pages,

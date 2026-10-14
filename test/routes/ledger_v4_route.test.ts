@@ -69,6 +69,8 @@ test('no params: 200, page 0 of events, with stat, framing and generated_at from
   const b = body(r);
   assert.equal(b.schema, 'mcpindex.drift.ledger/4');
   assert.equal(b.generated_at, AT);
+  assert.equal(b.generation, GEN);
+  assert.equal(b.ledger_schema, 'mcpindex.drift.ledger/3');
   assert.equal(b.framing, 'observed');
   assert.equal(b.stat.tools_observed_drifting, 5);
   assert.deepEqual(b.counts, INDEX.counts);
@@ -90,6 +92,7 @@ test('next_cursor chains to the last page, every page carrying stat and generate
     const b = body(r);
     assert.equal(b.page, i);
     assert.equal(b.generated_at, AT);
+    assert.equal(b.generation, GEN);
     assert.equal(b.stat.tools_observed_drifting, 5);
     seen.push(...b.items.map((e: { tool_fp: string }) => parseInt(e.tool_fp, 16)));
     cursor = b.next_cursor;
@@ -116,7 +119,8 @@ test('a cursor into a superseded generation still reads while its pages live', a
   const r = await callRoute(ledger, '/api/v1/ledger', { query: { cursor } });
   assert.equal(r.status, 200);
   const b = body(r);
-  assert.equal(b.generated_at, '2026-01-01T00:00:00Z', 'the items generation, not the latest');
+  assert.equal(b.generated_at, AT, 'generated_at is the latest publish on every page');
+  assert.equal(b.generation, OLD_GEN, 'the items generation travels separately');
   assert.equal(b.page, 1);
   assert.equal(b.pages, 2);
   assert.equal(b.items.length, 1);
@@ -168,3 +172,15 @@ for (const [why, query] of [
     assert.ok(!calls.some((k) => k.startsWith('drift:ledger:v4:') && k !== 'drift:ledger:v4:index'), 'no page read');
   });
 }
+
+test('a generation kept across unchanged hours still serves (gen stamp older than generated_at)', async () => {
+  const kept = `20260101T000000Z-0123abcd`;
+  const pages = { [`drift:ledger:v4:${kept}:events:0`]: gz1({ schema: LEDGER_PAGE_SCHEMA, gen: kept, section: 'events', n: 0, items: [ev(1)] }) };
+  install({ index: gz1({ ...INDEX, gen: kept, pages: { events: 1, context_events: 0, fleet_events: 0 } }), pages });
+  const r = await callRoute(ledger, '/api/v1/ledger');
+  assert.equal(r.status, 200);
+  const b = body(r);
+  assert.equal(b.generation, kept);
+  assert.equal(b.generated_at, AT);
+  assert.equal(b.items.length, 1);
+});

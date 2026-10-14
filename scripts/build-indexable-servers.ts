@@ -13,7 +13,8 @@
 // committed file and exits 0, because a ledger blip must not take the registry sync down, and an
 // old set is an honest set. A result under half the previous one, or over double, is refused
 // the same way: that is a broken ledger read, not a week in which half of all drift vanished
-// or the corpus suddenly all qualified. A walk whose row total disagrees with the count the API
+// or the corpus suddenly all qualified. A /2 ledger_schema is refused too: its events still list
+// fleet-collapsed tools, so it cannot answer "drift of its own". A walk whose row total disagrees with the count the API
 // published for that section is refused too: it is a partial read.
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -55,9 +56,11 @@ async function walk(section: LedgerSection): Promise<SectionWalk> {
 async function main(): Promise<void> {
   const ev = await walk('events');
   const ctx = await walk('context_events');
-  if (ev.generated_at !== ctx.generated_at) keep('events and context_events came from different generations');
-  if (!ledgerAnswersIndexableCriterion(ev.schema)) {
-    keep(`ledger schema ${ev.schema} cannot separate fleet-only events`);
+  if (ev.generation !== ctx.generation) keep('events and context_events came from different generations');
+  // The /4 envelope carries whatever rows the drain built; ledger_schema says which. A /2 ledger
+  // lists fleet-collapsed tools in events, so it cannot answer "drift of its own".
+  if (!ledgerAnswersIndexableCriterion(ev.ledger_schema)) {
+    keep(`ledger schema ${ev.ledger_schema} cannot separate fleet-only events`);
   }
   const events = ev.items.map(coerceEvent).filter((e): e is LedgerEvent => e !== null);
   const contextEvents = ctx.items.map(coerceContextEvent).filter((e): e is ContextEvent => e !== null);

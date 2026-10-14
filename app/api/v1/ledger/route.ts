@@ -110,9 +110,12 @@ export async function GET(req: NextRequest) {
   return Response.json(
     {
       schema: LEDGER_SCHEMA_V4,
-      // items, page, pages and next_cursor belong to the generation in generated_at; stat and
-      // counts describe the latest published one (the same, unless this is an older cursor).
-      generated_at: gen === index.gen ? index.generated_at : genToIso(gen),
+      // generated_at, framing, stat, counts and ledger_schema describe the latest publish, on every
+      // page. items, page, pages and next_cursor belong to `generation`, which a cursor keeps, so
+      // a walk compares `generation` to know every page came from one set of rows.
+      generated_at: index.generated_at,
+      generation: gen,
+      ledger_schema: index.ledger_schema,
       framing: index.framing,
       stat: index.stat,
       counts: index.counts,
@@ -124,9 +127,4 @@ export async function GET(req: NextRequest) {
     },
     { headers: NO_STORE },
   );
-}
-
-/** 20261014T160153Z-1a2b3c4d -> 2026-10-14T16:01:53Z. `gen` already matched GEN_RE. */
-function genToIso(gen: string): string {
-  return `${gen.slice(0, 4)}-${gen.slice(4, 6)}-${gen.slice(6, 8)}T${gen.slice(9, 11)}:${gen.slice(11, 13)}:${gen.slice(13, 15)}Z`;
 }

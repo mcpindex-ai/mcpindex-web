@@ -353,7 +353,7 @@ export async function checkOwnerBehaviorLimit(ip: string, now: Date): Promise<Dr
  * check runs on, and vice versa.
  *
  * Costs one extra INCR per ledger request against the same Upstash bill this exists to protect.
- * Each request also reads the summary, the index and one page, so one INCR is a small share.
+ * Each request also reads the index and one page, so one INCR is a small share.
  *
  * Fail-open on a Redis error, matching every other limiter here: a cache hiccup must not 429 a
  * public read surface. */

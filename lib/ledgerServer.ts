@@ -32,8 +32,9 @@ const GZIP_PREFIX = 'gz1:';
 // decodeLedgerRaw turns into null (= "not published"), never a partial parse.
 const MAX_DECODED_BYTES = 64 * 1024 * 1024;
 // A /4 page: 1,000 events measured 245,721B decoded on 2026-10-14 and the largest fleet row
-// 489,700B, so 16MB is room for growth, not a target. The index is a handful of scalar fields.
-const MAX_PAGE_DECODED_BYTES = 16 * 1024 * 1024;
+// 489,700B. The bound sits under Vercel's 4.5MB function response cap, so a page too big to send
+// becomes this route's 503 instead of an opaque platform 5xx. The index is a handful of fields.
+const MAX_PAGE_DECODED_BYTES = 4 * 1024 * 1024;
 const MAX_INDEX_DECODED_BYTES = 1024 * 1024;
 
 let _redis: Redis | null | undefined;
@@ -99,7 +100,8 @@ export async function loadLedgerSummary(): Promise<LedgerSummary | null> {
 }
 
 /** What /ledger, /scan, /dashboard and the Drift Report render: the summary, or null when it is
- * missing, stale or malformed, which each page renders as its "not published" state. */
+ * missing, stale or malformed, which each page renders as its "not published" state. Kept as the
+ * page-facing name so the pages do not depend on how the summary is loaded. */
 export async function loadLedgerView(): Promise<LedgerView | null> {
   return loadLedgerSummary();
 }

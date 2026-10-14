@@ -83,7 +83,7 @@
       "get": {
         "operationId": "driftLedger",
         "summary": "Public drift ledger: contract changes the crawler observed, paged",
-        "description": "Contract diffs listed by fingerprint (keyed hashes of public registry names under a published key; recomputable, not anonymous) - a contract-diff record, not a safety verdict. Schema mcpindex.drift.ledger/4. One section per request: events (tool contract changes), context_events (server instructions and prompt metadata) or fleet_events (publisher-wide changes, counted once). events omits tools whose only change was part of a publisher-wide change; look those up with /api/v1/drift/any. events and context_events pages hold up to 1,000 rows, newest first; fleet_events pages are packed by size. With no parameters this returns page 0 of events. To read a whole section, request ?section=<name> and follow next_cursor until it is null. A cursor stays in the generation it was issued for, so every page of one walk comes from the same hourly publish; a superseded generation stays readable for at least an hour after the next publish, then its cursors answer 410. The /3 single-response dump is retired.",
+        "description": "Contract diffs listed by fingerprint (keyed hashes of public registry names under a published key; recomputable, not anonymous) - a contract-diff record, not a safety verdict. Schema mcpindex.drift.ledger/4. One section per request: events (tool contract changes), context_events (server instructions and prompt metadata) or fleet_events (publisher-wide changes, counted once). When ledger_schema is mcpindex.drift.ledger/3, events omits tools whose only change was part of a publisher-wide change; look those up with /api/v1/drift/any. events and context_events pages hold up to 1,000 rows, newest first; fleet_events pages are packed by size. With no parameters this returns page 0 of events. To read a whole section, request ?section=<name> and follow next_cursor until it is null. A cursor stays in the generation it was issued for, so every page of one walk comes from the same hourly publish; a superseded generation stays readable for at least an hour after the next publish, then its cursors answer 410. The /3 single-response dump is retired.",
         "parameters": [
           { "name": "section", "in": "query", "schema": { "type": "string", "enum": ["events", "context_events", "fleet_events"], "default": "events" }, "description": "Which list to page through. With a cursor it may be omitted; a value that differs from the cursor's section is 400." },
           { "name": "cursor", "in": "query", "schema": { "type": "string" }, "description": "Opaque. Pass next_cursor from the previous page exactly as returned. A malformed cursor is 400." }
@@ -93,17 +93,19 @@
             "description": "One page of one section.",
             "content": { "application/json": { "schema": {
               "type": "object",
-              "required": ["schema", "generated_at", "framing", "stat", "counts", "section", "page", "pages", "items", "next_cursor"],
+              "required": ["schema", "generated_at", "generation", "ledger_schema", "framing", "stat", "counts", "section", "page", "pages", "items", "next_cursor"],
               "properties": {
                 "schema": { "type": "string", "const": "mcpindex.drift.ledger/4" },
-                "generated_at": { "type": "string", "description": "When the generation these items belong to was published." },
+                "generated_at": { "type": "string", "description": "When the latest index was published. The same on every page." },
+                "generation": { "type": "string", "description": "The generation the items belong to. A cursor keeps it, so every page of one walk carries the same value." },
+                "ledger_schema": { "type": "string", "enum": ["mcpindex.drift.ledger/2", "mcpindex.drift.ledger/3"], "description": "The row semantics the drain built. Under /3, publisher-wide changes are counted once in fleet_events." },
                 "framing": { "type": "string" },
                 "stat": { "type": "object", "description": "Headline counts from the latest published generation." },
                 "counts": { "type": "object", "additionalProperties": { "type": "integer" }, "description": "Row counts from the latest published generation." },
                 "section": { "type": "string", "enum": ["events", "context_events", "fleet_events"] },
                 "page": { "type": "integer", "description": "Zero-based page number." },
                 "pages": { "type": "integer", "description": "Page count for this section in this generation." },
-                "items": { "type": "array", "items": { "type": "object" }, "description": "/3 rows of the requested section, unchanged." },
+                "items": { "type": "array", "items": { "type": "object" }, "description": "Rows of the requested section, validated: malformed event and context rows are dropped and free fields bounded, so a page can hold fewer rows than counts suggests." },
                 "next_cursor": { "type": ["string", "null"], "description": "Pass as ?cursor= for the next page; null on the last page." }
               }
             } } }

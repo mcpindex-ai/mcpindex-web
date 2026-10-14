@@ -11,7 +11,8 @@ const MAX_RATE_LIMIT_RETRIES = 3;
 const MAX_RETRY_WAIT_S = 60;
 
 export interface SectionWalk {
-  readonly schema: string;
+  readonly generation: string;
+  readonly ledger_schema: string;
   readonly generated_at: string;
   readonly counts: Readonly<Record<string, unknown>>;
   readonly items: readonly unknown[];
@@ -57,7 +58,9 @@ export async function walkLedgerSection(
     if (body.section !== section || body.page !== n) throw new LedgerWalkError(`page ${n} of ${section} came back out of order`);
     if (!Array.isArray(body.items)) throw new LedgerWalkError('items is not an array');
     first ??= body;
-    if (body.generated_at !== first.generated_at) throw new LedgerWalkError('generation changed mid-walk');
+    if (typeof body.generation !== 'string' || body.generation !== first.generation) {
+      throw new LedgerWalkError('generation changed mid-walk');
+    }
     items.push(...body.items);
     const next = body.next_cursor;
     if (next === null) {
@@ -65,7 +68,13 @@ export async function walkLedgerSection(
         throw new LedgerWalkError(`walk ended at page ${n} of ${String(body.pages)}`);
       }
       const counts = first.counts && typeof first.counts === 'object' ? (first.counts as Record<string, unknown>) : {};
-      return { schema: LEDGER_SCHEMA_V4, generated_at: String(first.generated_at ?? ''), counts, items };
+      return {
+        generation: String(first.generation),
+        ledger_schema: String(first.ledger_schema ?? ''),
+        generated_at: String(first.generated_at ?? ''),
+        counts,
+        items,
+      };
     }
     if (typeof next !== 'string' || next.length === 0) throw new LedgerWalkError('next_cursor is not a string');
     cursor = next;

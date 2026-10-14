@@ -148,8 +148,7 @@ export interface Ledger {
   readonly events: readonly LedgerEvent[];
   // ADDITIVE on schema /2: [] for a blob that predates the drain's context emit leg.
   readonly context_events: readonly ContextEvent[];
-  // /3 only. The key is ABSENT on a /2 ledger, so /api/v1/ledger serves a /2 blob byte for byte
-  // as it did before /3 existed.
+  // /3 only. The key is ABSENT on a /2 ledger.
   readonly fleet_events?: readonly FleetEvent[];
 }
 
@@ -161,7 +160,7 @@ const TS_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 
 /** Bound any free string from the blob so a hostile value can't bloat the page (React already
  * escapes, so this is about size/format, not XSS). */
-function clampStr(v: unknown, max: number): string {
+export function clampStr(v: unknown, max: number): string {
   return typeof v === 'string' && v.length <= max ? v : '';
 }
 
@@ -447,9 +446,8 @@ export function parseLedgerBlob(raw: unknown): Ledger | null {
     : [];
   const context_events = Array.isArray(blob.context_events)
     ? blob.context_events
-        // Honest worst case is one row per drifting server; a blob claiming far more is
-        // malformed or hostile, and /api/v1/ledger serializes whatever survives parsing,
-        // so cap before coercion rather than let a giant array through per request.
+        // Honest worst case is one row per drifting server; a value claiming far more is
+        // malformed or hostile, so cap before coercion rather than parse a giant array.
         .slice(0, 25_000)
         .map(coerceContextEvent)
         .filter((e): e is ContextEvent => e !== null)

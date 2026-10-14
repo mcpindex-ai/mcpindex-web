@@ -47,9 +47,8 @@ test('coerce: wrong schema, empty set and junk all read as NO artifact (everythi
   assert.equal(coerceIndexable([]), null);
 });
 
-test('only a /3 or /4 ledger can select the set', () => {
+test('only a /3 ledger can select the set', () => {
   assert.equal(ledgerAnswersIndexableCriterion(LEDGER_SCHEMA_V3), true);
-  assert.equal(ledgerAnswersIndexableCriterion('mcpindex.drift.ledger/4'), true);
   // /2 lists fleet-collapsed tools inside events, so a fleet-only server would qualify.
   assert.equal(ledgerAnswersIndexableCriterion(LEDGER_SCHEMA), false);
   assert.equal(ledgerAnswersIndexableCriterion('mcpindex.drift.ledger/9'), false);

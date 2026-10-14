@@ -3,7 +3,7 @@
 //
 //   drift:ledger:summary   stat, the newest 300 events and context_events, fleet events without
 //                          members, all-time per-kind counts, row counts. For /ledger, /scan,
-//                          /dashboard, the Drift Report and the /4 API's stat.
+//                          /dashboard and the Drift Report.
 //   drift:ledger:servers   one field per server_fp: exactly the rows aggregateServerDrift filters
 //                          for that server. For server pages and /api/v1/server-drift.
 //
