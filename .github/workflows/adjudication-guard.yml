@@ -50,7 +50,7 @@ jobs:
             echo "MCPINDEX_TRUST_RO_TOKEN secret (read-only) to activate the cross-repo parity gate." >&2
             exit 1
           fi
-          git -C _trust sparse-checkout set scripts/check-adjudication-diff.mjs >/dev/null
+          git -C _trust sparse-checkout set --no-cone /scripts/check-adjudication-diff.mjs >/dev/null
           if ! diff -q scripts/check-adjudication-diff.mjs _trust/scripts/check-adjudication-diff.mjs; then
             echo "DIVERGED: the vendored guard differs from the mcpindex-trust canonical." >&2
             echo "Re-vendor: copy mcpindex-trust/scripts/check-adjudication-diff.mjs here, then re-push." >&2
