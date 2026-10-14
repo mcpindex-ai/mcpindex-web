@@ -560,6 +560,7 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
             ``,
             `# drift ledger: contract changes the crawler observed (listed by fingerprint)`,
             `# paged: ?section=events|context_events|fleet_events, then ?cursor=<next_cursor> until null`,
+            `# (one call no longer returns every row: the single-response /3 dump was retired 2026-10-14)`,
             `curl "https://mcpindex.ai/api/v1/ledger?section=events"`,
           ]}
           notes="trust returns a stored verdict (REVIEW or UNVERIFIED today; ALLOW / DENY are reserved in the contract); screen runs the live LLM judge on a pasted description and returns a fresh PARTIAL verdict; recommend returns ranked picks; preflight composes the two - the top servers plus the rank-1 server's advisory verdict in one round trip (verdict is null when that server is not yet screened - treat as not-cleared); search and diff query the registry; server returns one full record; drift/any answers whether a tool's contract drifted (crawler-corroborated; powers warns-you-on-call-1) and ledger pages through the public drift record one section at a time (follow next_cursor). All JSON, same shapes an MCP client gets."
