@@ -39,7 +39,9 @@ const ZERO_WIDTH_RE = /[\uFEFF\u200B-\u200D\u2060]/g;
 // set_adjudication - the exact path this guard polices - so it must not be able to smuggle a
 // leaked personal name or an unsubstantiated accusation past the structural check. Keep these
 // in sync with OPERATORS / _CONFIRMED_MIN_WORDS on the Python side.
-const ALLOWED_BY = new Set(['gautamgb', 'gb', 'reviewer', 'unknown']); // OPERATORS ∪ {reviewer, unknown}
+const ALLOWED_BY = new Set(['gautamgb', 'gb', 'reviewer', 'unknown', 'two-judge']); // OPERATORS ∪ MACHINE ∪ {reviewer, unknown}
+// Machine handles (frontier_adjudication.MACHINE_ADJUDICATORS) may only clear, never accuse.
+const MACHINE_BY = new Set(['two-judge']);
 const CONFIRMED_MIN_WORDS = 4;
 const SHA256_RE = /^sha256:[0-9a-f]{64}$/;
 
@@ -66,6 +68,9 @@ function badEntry(line, i) {
   // _public_by matches OPERATORS case-insensitively, so "GB"/"GautamGB" are legitimate handles.
   if (!ALLOWED_BY.has(e.by.toLowerCase())) {
     return `added line ${i + 1} has non-pseudonymized "by":"${e.by}" (must be an operator handle, "reviewer", or "unknown")`;
+  }
+  if (MACHINE_BY.has(e.by.toLowerCase()) && e.decision !== 'cleared') {
+    return `added line ${i + 1} is a machine ("${e.by}") '${e.decision}'; a machine may only clear`;
   }
   const words = e.reason.replace(ZERO_WIDTH_RE, '').trim().split(/\s+/).filter(Boolean).length;
   if (e.decision === 'confirmed' && words < CONFIRMED_MIN_WORDS) {
@@ -215,6 +220,8 @@ function selftest() {
     ['added line bare-prefix hash', okOld, okOld + good({ content_hash: 'sha256:' }) + '\n', 1],
     ['added line leaked personal name in by', okOld, okOld + good({ by: 'Jane Q' }) + '\n', 1],
     ['added line by=reviewer pseudonym', okOld, okOld + good({ by: 'reviewer' }) + '\n', 0],
+    ['added line by=two-judge clear', okOld, okOld + good({ by: 'two-judge', reason: 'cleared by two-judge agreement' }) + '\n', 0],
+    ['added line by=two-judge confirm', okOld, okOld + good({ by: 'two-judge', decision: 'confirmed', reason: 'requests env secrets unrelated to file read' }) + '\n', 1],
     ['confirmed with thin (1-word) reason', okOld, okOld + good({ decision: 'confirmed', reason: 'scam' }) + '\n', 1],
     ['confirmed with substantiated reason', okOld, okOld + good({ decision: 'confirmed', reason: 'requests env secrets unrelated to file read' }) + '\n', 0],
     ['empty base, one good add', '', good({}) + '\n', 0],
