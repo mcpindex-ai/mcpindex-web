@@ -16,6 +16,7 @@
 // Default: https://owner.mcpindex.ai.
 import type { NextRequest } from 'next/server';
 import { checkOwnerLimit, checkOwnerBehaviorLimit } from '@/lib/ratelimit';
+import { afterResponse, recordActiveKey, upstreamAuthenticated } from '@/lib/activeKeys';
 
 const OWNER_API_BASE = process.env.MCPINDEX_OWNER_API_BASE ?? 'https://owner.mcpindex.ai';
 
@@ -219,6 +220,12 @@ export async function POST(
   }
   if (upstream.status >= 500) {
     return reply({ error: 'upstream unavailable' }, 502);
+  }
+
+  // North-star metric (lib/activeKeys.ts). Scheduled after the response and fail-open: it can
+  // neither fail nor slow this request. Only the key's sha256 leaves this handler.
+  if (upstreamAuthenticated(upstream.status)) {
+    afterResponse(() => recordActiveKey(apiKey));
   }
 
   // Re-parse + re-emit as JSON so a non-JSON upstream body never leaks.

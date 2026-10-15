@@ -1,0 +1,109 @@
+--- a/tools/niw-metrics/niw_metrics_snapshot.py
++++ b/tools/niw-metrics/niw_metrics_snapshot.py
+@@ -18,6 +18,7 @@
+               which owns the ORCID self-filter -- see zenodo_citations())
+   automated   public ledger stat block (mcpindex.ai/api/v1/ledger)
+   automated   API call counts (durable Upstash counters -- see api_usage())
++  automated   active API keys, the north-star (delegated to mcpindex-web -- see active_keys())
+ 
+   manual      GSC impressions/clicks (OAuth-gated; no service account wired)
+   manual      Ahrefs referring domains (free tier allows ONE session; scraping
+@@ -42,6 +43,7 @@
+ import datetime as dt
+ import json
+ import os
++import shutil
+ import subprocess
+ import sys
+ import time
+@@ -257,6 +259,53 @@
+             "coverage_complete": len(covered) >= days,
+         }
+     return out
++
++
++# The web checkout that owns the active-key definition (mcpindex-web/lib/activeKeys.ts).
++WEB_DIR = os.path.join(REPO, "mcpindex-web")
++# launchd's PATH does not include Homebrew, so look there explicitly before giving up.
++NPM_CANDIDATES = ("/opt/homebrew/bin/npm", "/usr/local/bin/npm")
++
++
++def _npm() -> str:
++    for c in NPM_CANDIDATES:
++        if os.path.exists(c):
++            return c
++    found = shutil.which("npm")
++    if not found:
++        raise RuntimeError("npm not found; active keys unread")
++    return found
++
++
++def active_keys(date: str) -> dict:
++    """North-star metric: api_keys that made authenticated calls on >= 2 distinct UTC days in
++    the 7 days ending on `date`. Delegated to `npm run metrics:active-keys` in mcpindex-web,
++    for the same reason zenodo_citations() delegates: the window and the 2-of-7 rule live in
++    lib/activeKeys.ts and nowhere else, so this file never carries a copy that can drift.
++
++    The Upstash creds are passed through the child's environment only, from the same
++    _upstash_creds() the usage counters use. Nothing here prints them.
++    """
++    creds = _upstash_creds()
++    if not creds:
++        raise RuntimeError("no Upstash REST credentials (env or mcpindex-trust/.env); active keys unread")
++    url, tok = creds
++    env = {**os.environ, "UPSTASH_REDIS_REST_URL": url, "UPSTASH_REDIS_REST_TOKEN": tok}
++    env["PATH"] = os.path.dirname(_npm()) + os.pathsep + env.get("PATH", "")
++    r = subprocess.run(
++        [_npm(), "run", "--silent", "metrics:active-keys", "--", "--date", date],
++        cwd=WEB_DIR, env=env, capture_output=True, text=True, timeout=120,
++    )
++    if r.returncode != 0:
++        raise RuntimeError(f"active-keys exited {r.returncode}: {r.stderr.strip()[:200]}")
++    d = json.loads(r.stdout.strip().splitlines()[-1])
++    # Refuse a shape this file did not expect rather than guess at a number's meaning: the
++    # snapshot never overwrites a month, so a wrong figure is expensive to retract.
++    for k in ("active_keys", "window_start", "window_end", "window_days", "min_days",
++              "distinct_keys_seen", "days_with_data"):
++        if k not in d:
++            raise RuntimeError(f"active-keys output missing {k!r}")
++    return d
+ 
+ 
+ def zenodo_citations() -> dict:
+@@ -398,6 +447,25 @@
+             "number would be a 24h number wearing a 30-day label.")
+         add("")
+ 
++    ak = data.get("active_keys")
++    add("**North-star: active API keys** - api_keys with authenticated calls on "
++        "2 or more distinct UTC days in the 7 days ending on the snapshot date "
++        "(`mcpindex-web/lib/activeKeys.ts`).")
++    add("")
++    if ak:
++        add(f"- active keys ({ak['window_start']} to {ak['window_end']}): **{_n(ak['active_keys'])}**")
++        add(f"- distinct keys with any authenticated call in the window: {_n(ak['distinct_keys_seen'])}")
++        add(f"- days in the window with recorded activity: {ak['days_with_data']}/{ak['window_days']}")
++        add("")
++        add("> Recorded only for calls that pass through the mcpindex.ai owner proxy "
++            "(`/api/owner/*`, the /claim wizard). Direct SDK or CLI calls to "
++            "owner.mcpindex.ai do not pass through it and are not counted, so this is a floor. "
++            "Operator-minted keys are not excluded from the count.")
++    else:
++        add("- active keys: **COUNTER UNREAD** (see probe errors below). Do not substitute a "
++            "log-derived figure.")
++    add("")
++
+     lg = data.get("ledger")
+     if lg:
+         add("Public drift ledger (`/api/v1/ledger`), which is the durable, "
+@@ -557,6 +625,10 @@
+     data["api"] = v
+     if e:
+         errors["api_usage"] = e
++    v, e = _try(active_keys, date)
++    data["active_keys"] = v
++    if e:
++        errors["active_keys"] = e
+     for key, fn in (("mcp_registry", mcp_registry), ("glama", glama),
+                     ("ledger", ledger), ("zenodo", zenodo_citations)):
+         v, e = _try(fn)
