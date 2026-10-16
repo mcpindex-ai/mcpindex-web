@@ -57,15 +57,29 @@ export default function ClaimPage() {
       <p className="mt-5 text-[16px] leading-[1.6] text-[var(--color-cite)]">
         If you operate an MCP server, you can prove you control it and request an
         owner-consented <strong className="text-[var(--color-ink)] font-medium">preview
-        conformance badge</strong> on its mcpindex page. The badge reports a single
+        conformance badge</strong>{' '}on its mcpindex page. The badge reports a single
         observation - &ldquo;no contract drift observed&rdquo; on a read-only probe of the
         tools you attest. You verify domain control, attest which tools are read-only-safe,
         let mcpindex run a read-only behavioral check, and explicitly consent to publish. A
         human operator reviews before anything appears.
       </p>
+      <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
+        <a
+          href="#verify"
+          className="font-mono text-[12.5px] uppercase tracking-[0.14em] text-white bg-[var(--color-accent-strong)] px-6 py-3.5 hover:bg-[var(--color-accent-deep)] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+        >
+          Sign in to start
+        </a>
+        <span className="font-mono text-[11.5px] text-[var(--color-mute)]">
+          Free, with GitHub or Google. Prefer a terminal?{' '}
+          <a href="#manual" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">
+            Use the CLI
+          </a>
+        </span>
+      </div>
 
       {/* PRIMARY PATH: the in-browser wizard ties sign-in + the owner API into one flow. */}
-      <section className="mt-12 rule-t pt-10">
+      <section id="verify" className="mt-12 rule-t pt-10 scroll-mt-20">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-4">
           Verify in your browser
         </div>
@@ -141,7 +155,7 @@ export default function ClaimPage() {
       </section>
 
       {/* The flow - numbered, copy-paste curl. */}
-      <section className="mt-12 rule-t pt-10">
+      <section id="manual" className="mt-12 rule-t pt-10 scroll-mt-20">
         <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--color-mute)] mb-2">
           Prefer the CLI / API? Manual steps
         </div>
