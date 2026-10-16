@@ -7,6 +7,7 @@ import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { callRoute } from './_harness';
 import { POST as owner } from '../../app/api/owner/[action]/route';
+import { __setActiveKeysRedisForTest } from '../../lib/activeKeys';
 
 const KEY = 'mcpk_' + 'A1b2C3d4E5f6G7h8';
 const SERVER = 'io.github.you/srv';
@@ -39,7 +40,8 @@ function captureConsole(): { logs: string[]; restore: () => void } {
 }
 
 let fx: ReturnType<typeof installFetch> | null = null;
-beforeEach(() => { fx = null; });
+// The route records active keys after a 2xx; null keeps that off live Upstash in this suite.
+beforeEach(() => { fx = null; __setActiveKeysRedisForTest(null); });
 afterEach(() => { fx?.restore(); });
 
 const obj = (r: { json: () => unknown }) => r.json() as Record<string, unknown>;
