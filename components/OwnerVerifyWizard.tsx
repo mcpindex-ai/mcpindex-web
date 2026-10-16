@@ -26,6 +26,12 @@ const BTN =
   'font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-ink)] border border-[var(--color-rule)] px-3 py-1.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors';
 const BTN_PRIMARY =
   'font-mono text-[12px] uppercase tracking-[0.16em] text-[var(--color-accent-strong)] border border-[var(--color-accent)] bg-[var(--color-accent-soft)] px-3 py-1.5 hover:border-[var(--color-accent-strong)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors';
+// The one filled button on the page: the sign-in that starts everything. The outlined BTN read as
+// secondary and owners missed it (10-16).
+const BTN_SOLID =
+  'font-mono text-[12.5px] uppercase tracking-[0.14em] text-white bg-[var(--color-accent-strong)] border border-[var(--color-accent-strong)] px-5 py-2.5 hover:bg-[var(--color-accent-deep)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors';
+const BTN_TALL =
+  'font-mono text-[12.5px] uppercase tracking-[0.14em] text-[var(--color-ink)] border border-[var(--color-ink)] px-5 py-2.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors';
 const CHIP =
   'font-mono text-[11px] text-[var(--color-cite)] border border-[var(--color-rule)] bg-white px-2 py-0.5 hover:border-[var(--color-accent)] hover:text-[var(--color-accent-strong)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors';
 const INPUT =
@@ -684,6 +690,10 @@ export default function OwnerVerifyWizard() {
                   clear key
                 </button>
               </div>
+              <div className="mt-4 max-w-xl">
+                <div className={`${LABEL} mb-2`}>your key, for the CLI or the curl steps below</div>
+                <TokenField value={apiKey} secret />
+              </div>
               <div className="mt-5">
                 <button type="button" onClick={() => setStep(1)} className={BTN_PRIMARY}>
                   Continue →
@@ -700,10 +710,10 @@ export default function OwnerVerifyWizard() {
                   straight to this page and never leaves your browser.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <button type="button" onClick={() => signIn('github')} disabled={awaitingKey} className={BTN}>
+                  <button type="button" onClick={() => signIn('github')} disabled={awaitingKey} className={BTN_SOLID}>
                     Sign in with GitHub
                   </button>
-                  <button type="button" onClick={() => signIn('google')} disabled={awaitingKey} className={BTN}>
+                  <button type="button" onClick={() => signIn('google')} disabled={awaitingKey} className={BTN_TALL}>
                     Sign in with Google
                   </button>
                 </div>
