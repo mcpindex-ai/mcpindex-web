@@ -202,31 +202,55 @@ export interface ActiveKeysReport {
   days_with_data: number;
 }
 
+/** Most days one series read may cover. With the 7-day window that is 36 buckets, inside the
+ *  40-day retention, so no day in a series reads an expired bucket as empty. */
+export const SERIES_MAX_DAYS = 30;
+
 /** The active-key count for `date` (YYYY-MM-DD, UTC). Throws when Redis is absent or errors:
  *  a read that fails must never look like a real zero. Seven SMEMBERS in one round trip. */
 export async function activeKeysOn(
   date: string,
   client: ActiveKeysRedis | null = redis(),
 ): Promise<ActiveKeysReport> {
+  const [report] = await activeKeysSeries(date, 1, client);
+  return report!;
+}
+
+/** One report per day for the `days` days ending on `end` (inclusive), oldest first. Every
+ *  bucket the windows touch is read once: days + 6 SMEMBERS in one round trip. Throws like
+ *  activeKeysOn, and on a `days` outside 1..SERIES_MAX_DAYS. */
+export async function activeKeysSeries(
+  end: string,
+  days: number,
+  client: ActiveKeysRedis | null = redis(),
+): Promise<ActiveKeysReport[]> {
+  if (!Number.isInteger(days) || days < 1 || days > SERIES_MAX_DAYS) {
+    throw new Error(`days must be 1..${SERIES_MAX_DAYS}`);
+  }
   if (!client) throw new Error('no Upstash REST credentials; active keys unread');
-  const stamps = windowStamps(date);
+  const stamps = windowStamps(end, days + ACTIVE_WINDOW_DAYS - 1);
   const p = client.pipeline();
   for (const s of stamps) p.smembers(bucketKey(s));
   const results = await p.exec();
   if (!Array.isArray(results) || results.length !== stamps.length) {
     throw new Error('active-keys read returned a malformed result');
   }
-  const perDay = results.map((v) => (Array.isArray(v) ? v.map((m) => String(m)) : []));
-  const daysWithData = perDay.filter((m) => m.length > 0).length;
+  const buckets = results.map((v) => (Array.isArray(v) ? v.map((m) => String(m)) : []));
   const iso = (s: string) => `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`;
-  return {
-    date,
-    window_start: iso(stamps[0]!),
-    window_end: iso(stamps[stamps.length - 1]!),
-    window_days: ACTIVE_WINDOW_DAYS,
-    min_days: ACTIVE_MIN_DAYS,
-    active_keys: countActive(perDay),
-    distinct_keys_seen: new Set(perDay.flat()).size,
-    days_with_data: daysWithData,
-  };
+  const out: ActiveKeysReport[] = [];
+  for (let i = 0; i < days; i++) {
+    const perDay = buckets.slice(i, i + ACTIVE_WINDOW_DAYS);
+    const win = stamps.slice(i, i + ACTIVE_WINDOW_DAYS);
+    out.push({
+      date: iso(win[win.length - 1]!),
+      window_start: iso(win[0]!),
+      window_end: iso(win[win.length - 1]!),
+      window_days: ACTIVE_WINDOW_DAYS,
+      min_days: ACTIVE_MIN_DAYS,
+      active_keys: countActive(perDay),
+      distinct_keys_seen: new Set(perDay.flat()).size,
+      days_with_data: perDay.filter((m) => m.length > 0).length,
+    });
+  }
+  return out;
 }

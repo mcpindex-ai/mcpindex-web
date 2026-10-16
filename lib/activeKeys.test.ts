@@ -6,6 +6,8 @@ import {
   ACTIVE_WINDOW_DAYS,
   BUCKET_TTL_SECONDS,
   activeKeysOn,
+  activeKeysSeries,
+  SERIES_MAX_DAYS,
   bucketKey,
   countActive,
   dayStamp,
@@ -245,9 +247,13 @@ test('fail-open: pipeline() throws synchronously -> recordActiveKey resolves', a
 test('fail-open: a hung Upstash call is cut off at the write timeout', async () => {
   __setActiveKeysRedisForTest(fakeRedis({ execImpl: () => new Promise<unknown[]>(() => {}) }).client);
   __setActiveKeysWriteTimeoutForTest(50);
+  // The write timer is unref'd, and the hung exec holds no handle, so without this ref'd timer
+  // Node 20's runner sees an empty event loop and cancels this test and every one after it.
+  const keepAlive = setTimeout(() => {}, 2_000);
   const t0 = Date.now();
   await recordActiveKey(RAW);
   const ms = Date.now() - t0;
+  clearTimeout(keepAlive);
   assert.ok(ms < 1_000, `took ${ms}ms`);
 });
 
@@ -261,4 +267,32 @@ test('no client configured -> no-op', async () => {
 test('upstreamAuthenticated: 2xx and post-auth 4xx count; 401 and 404 do not', () => {
   for (const s of [200, 201, 204, 400, 403, 409, 413, 429]) assert.equal(upstreamAuthenticated(s), true, String(s));
   for (const s of [401, 404, 301, 302, 500, 502, 504, 100]) assert.equal(upstreamAuthenticated(s), false, String(s));
+});
+
+// ---------------------------------------------------------------- series (factory reader)
+
+test('activeKeysSeries: each day matches activeKeysOn, in one round trip of days + 6 reads', async () => {
+  const f = fakeRedis();
+  __setActiveKeysRedisForTest(f.client);
+  await recordActiveKey('mcpk_A_aaaaaaaa', at('2026-10-06T01:00:00Z'));
+  await recordActiveKey('mcpk_A_aaaaaaaa', at('2026-10-12T23:00:00Z'));
+  await recordActiveKey('mcpk_B_bbbbbbbb', at('2026-10-12T12:00:00Z'));
+  await recordActiveKey('mcpk_B_bbbbbbbb', at('2026-10-13T12:00:00Z'));
+  const before = { p: f.pipelines(), c: f.commands() };
+  const series = await activeKeysSeries('2026-10-13', 3, f.client);
+  assert.equal(f.pipelines() - before.p, 1);
+  assert.equal(f.commands() - before.c, 3 + ACTIVE_WINDOW_DAYS - 1);
+  assert.deepEqual(series.map((r) => r.date), ['2026-10-11', '2026-10-12', '2026-10-13']);
+  for (const r of series) assert.deepEqual(r, await activeKeysOn(r.date, f.client));
+  assert.deepEqual(series.map((r) => r.active_keys), [0, 1, 1]);
+  assert.ok(!JSON.stringify(series).includes(keyId('mcpk_A_aaaaaaaa')));
+});
+
+test('activeKeysSeries: days outside 1..max and an absent client throw', async () => {
+  const f = fakeRedis();
+  for (const d of [0, -1, 1.5, SERIES_MAX_DAYS + 1]) {
+    await assert.rejects(() => activeKeysSeries('2026-10-13', d, f.client), /days must be/);
+  }
+  await assert.rejects(() => activeKeysSeries('2026-10-13', 2, null), /unread/);
+  assert.ok(SERIES_MAX_DAYS + ACTIVE_WINDOW_DAYS - 1 <= BUCKET_TTL_SECONDS / 86_400);
 });
