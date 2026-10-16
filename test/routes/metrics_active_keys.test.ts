@@ -2,6 +2,7 @@
 // and a store that cannot be read answers 503 rather than a count of zero.
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { NextRequest } from 'next/server';
 import { callRoute } from './_harness';
 import { GET } from '../../app/api/metrics/active-keys/route';
 import { __setActiveKeysRedisForTest, bucketKey, keyId, type ActiveKeysRedis } from '../../lib/activeKeys';
@@ -65,4 +66,17 @@ test('metrics/active-keys: bad parameters are 400 and a failed read is 503', asy
   assert.equal(down.status, 503);
   __setActiveKeysRedisForTest(null);
   assert.equal((await callRoute(GET, '/api/metrics/active-keys', { headers: auth })).status, 503);
+});
+
+test('metrics/active-keys: the proxy rate-limits it per IP like /api/v1', async () => {
+  const { proxy, config } = await import('../../proxy');
+  assert.ok(config.matcher.includes('/api/metrics/:path*'));
+  const event = { waitUntil: () => undefined } as never;
+  const headers = { 'x-vercel-forwarded-for': '203.0.113.91', authorization: 'Bearer nope' };
+  let last = 0;
+  for (let i = 0; i < 62; i++) {
+    const res = proxy(new NextRequest('https://mcpindex.ai/api/metrics/active-keys', { headers }), event);
+    last = (res as Response).status;
+  }
+  assert.equal(last, 429);
 });

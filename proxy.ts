@@ -156,6 +156,8 @@ export function proxy(req: NextRequest, event: NextFetchEvent) {
     p !== '/api/enterprise' &&
     p !== '/api/beacon' &&
     !p.startsWith('/api/health/') &&
+    // the factory's metrics reader: one call a day, but each authed call reads up to 36 buckets
+    !p.startsWith('/api/metrics/') &&
     p !== '/.well-known/mcpindex-challenge' &&
     p !== '/api/mcp' &&
     // PERMANENT, not tied to any measurement window, and load-bearing for TWO reasons:
@@ -287,6 +289,7 @@ export const config = {
     '/api/enterprise',
     '/api/beacon',
     '/api/health/:path*',
+    '/api/metrics/:path*',
     '/llms.txt',
     '/llms-full.txt',
     '/llms-full/:path*',
