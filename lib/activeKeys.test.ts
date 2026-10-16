@@ -247,9 +247,13 @@ test('fail-open: pipeline() throws synchronously -> recordActiveKey resolves', a
 test('fail-open: a hung Upstash call is cut off at the write timeout', async () => {
   __setActiveKeysRedisForTest(fakeRedis({ execImpl: () => new Promise<unknown[]>(() => {}) }).client);
   __setActiveKeysWriteTimeoutForTest(50);
+  // The write timer is unref'd, and the hung exec holds no handle, so without this ref'd timer
+  // Node 20's runner sees an empty event loop and cancels this test and every one after it.
+  const keepAlive = setTimeout(() => {}, 2_000);
   const t0 = Date.now();
   await recordActiveKey(RAW);
   const ms = Date.now() - t0;
+  clearTimeout(keepAlive);
   assert.ok(ms < 1_000, `took ${ms}ms`);
 });
 
