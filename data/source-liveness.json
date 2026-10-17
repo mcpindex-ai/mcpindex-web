@@ -1,7 +1,7 @@
 {
  "gate": "state=unavailable AND corroborated=1 AND kind=repo",
- "generated_at": "2026-10-16T03:51:26Z",
- "server_count": 2147,
+ "generated_at": "2026-10-17T03:51:41Z",
+ "server_count": 2148,
  "servers": {
   "agency.lona/trading": {
    "confirmed_unavailable": "2026-07-23",
@@ -25567,6 +25567,20 @@
    "state": "unavailable",
    "url": "https://github.com/ship24-official/ship24-tracking-mcp"
   },
+  "io.github.shittuay/devops-agent": {
+   "confirmed_unavailable": "2026-10-17",
+   "evidence": {
+    "http_status": 404,
+    "methods": [
+     "github-api-authenticated",
+     "github-web-unauthenticated"
+    ],
+    "vantages": 2
+   },
+   "last_verified_accessible": "2026-10-16",
+   "state": "unavailable",
+   "url": "https://github.com/shittuay/DevOps-Agent"
+  },
   "io.github.shoptera-ai/product-intelligence": {
    "confirmed_unavailable": "2026-07-23",
    "evidence": {
@@ -30062,5 +30076,5 @@
    "url": "https://github.com/ErikThiart/simcloud"
   }
  },
- "url_count": 1953
+ "url_count": 1954
 }
