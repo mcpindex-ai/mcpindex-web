@@ -218,6 +218,14 @@ function slugifyName(name) {
     .replace(/^-|-$/g, '');
   return slug || null;
 }
+function listedSlugSet(servers) {
+  const out = new Set();
+  for (const e of servers) {
+    const slug = slugifyName(e?.server?.name);
+    if (slug) out.add(slug);
+  }
+  return out;
+}
 function activeSlugSet(servers) {
   const out = new Set();
   for (const e of servers) {
@@ -228,10 +236,15 @@ function activeSlugSet(servers) {
   }
   return out;
 }
-let prevActive = new Set();
+// Diff against every slug the previous snapshot LISTED, not only the active ones. A server
+// the registry deprecates on one sync and deletes on the next was never active in the
+// snapshot before it vanished, so an active-only diff skipped it and its page stayed a
+// soft-404 instead of a 410. 25 slugs fell through that way between 06-04 and 10-17,
+// io-github-jedidiahcox-bit-agentreader among them.
+let prevListed = new Set();
 try {
   const prev = JSON.parse(await fs.readFile(SNAP_PATH, 'utf8'));
-  prevActive = activeSlugSet(prev.servers ?? []);
+  prevListed = listedSlugSet(prev.servers ?? []);
 } catch {
   // First run / missing previous snapshot — nothing to diff.
 }
@@ -248,7 +261,7 @@ try {
 }
 let goneAdded = 0;
 let goneCleared = 0;
-for (const slug of prevActive) {
+for (const slug of prevListed) {
   if (nextActive.has(slug)) continue;
   // Still present as deprecated (or other non-active) — keep addressable; do not 410.
   const stillListed = latest.some((e) => slugifyName(e?.server?.name) === slug);
