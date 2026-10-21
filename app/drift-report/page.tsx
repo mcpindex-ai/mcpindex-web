@@ -132,8 +132,8 @@ export default async function DriftReportPage() {
           every tool contract between snapshots. This report is the deduped, re-verified record
           of what changed: what kind of change, whether the server&apos;s declared version moved
           with it, and how often removal means replacement. A contract diff, not a safety
-          verdict. Every number below is computed from the corpus, and every tool is a salted
-          fingerprint - this page names no server.
+          verdict. Every number below is computed from the corpus, and every tool is a
+          fingerprint - this page names no server, though the fingerprint key is public.
         </p>
       </header>
 
