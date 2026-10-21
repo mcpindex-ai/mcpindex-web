@@ -54,10 +54,10 @@ export function DTrustBoundary() {
         DEFAULT
       </M>
       <S x={64} y={252} size={12.5}>
-        nothing crosses to mcpindex. the tier-0
+        the wire install sends mcpindex nothing.
       </S>
       <S x={64} y={269} size={12.5}>
-        contract-diff runs entirely in here.
+        the SDK wrapper posts one receipt a call.
       </S>
 
       {/* the one crossing that always happens: the call itself, untouched */}

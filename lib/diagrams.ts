@@ -135,7 +135,8 @@ function posturesTwin(): string {
   schema) is re-pinned and proceeds under strict too. strict holds everything it
   cannot prove benign.
 
-  MONITOR never blocks: every kind returns PROCEED-with-note.
+  MONITOR returns PROCEED-with-note for every kind. a tamper hold and an internal error
+  still stop the call.
 
   an injection / exfil MARKER found in a schema or description is a separate scan,
   not a ChangeKind, so it is not a row here - but guard blocks on it, as it does on
@@ -151,7 +152,7 @@ export const DIAGRAMS: readonly DiagramMeta[] = [
     fig: '01',
     title: 'Where the gate sits',
     claim: 'The gate is inside the call path, so a hold actually stops the call.',
-    alt: 'Without mcpindex an agent calls an MCP server directly with nothing in between. With mcpindex the gate sits in the call path: it pins the contract, diffs it, and either proceeds to the server when the live contract matches the pin, or holds the call and returns it to the agent when the contract has changed. The gate runs on your host, holds no credentials, and the default build egresses nothing.',
+    alt: 'Without mcpindex an agent calls an MCP server directly with nothing in between. With mcpindex the gate sits in the call path: it pins the contract, diffs it, and either proceeds to the server when the live contract matches the pin, or holds the call and returns it to the agent when the contract has changed. The gate runs on your host and stores no credentials: the host hands each server its environment through the gate process, which never logs or sends it. The wired proxy sends mcpindex nothing; the Python SDK wrapper posts a credential-blind receipt per call by default.',
     queries: ['mcp architecture diagram', 'how does mcp work diagram', 'mcp interceptor', 'in-path mcp gate'],
     placements: ['/', '/install', '/docs', '/diagrams/where-the-gate-sits'],
     derives: [],
@@ -166,7 +167,7 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
                                              the contract changed since you pinned it.
                                              the call never leaves your machine.
 
-               runs on your host - zero credential custody - default build egresses nothing`,
+               runs on your host - stores no credentials - the wire install sends nothing`,
   },
   {
     id: 'silent-contract-drift-timeline',
@@ -197,8 +198,8 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
     id: 'trust-boundary',
     fig: '03',
     title: 'Trust boundary',
-    claim: 'By default, nothing crosses the boundary to mcpindex.',
-    alt: 'Inside your host sit the agent, the mcpindex gate and a local pin store. By default nothing crosses to mcpindex because the tier-0 contract diff runs locally. The tool call and your credentials pass through untouched to the MCP server and the gate holds no keys. Two optional opt-in crossings exist: a contract hash to the mcpindex US edge, and a keyed HMAC fingerprint to the drift network, whose key is public, so it identifies a public server. Tokens, arguments, schema bodies, descriptions, URLs and your call data never cross.',
+    claim: 'With the one-command install, nothing crosses the boundary to mcpindex.',
+    alt: 'Inside your host sit the agent, the mcpindex gate and a local pin store. With the one-command install the wired proxy sends mcpindex nothing: the tier-0 contract diff runs locally and the proxy posts no receipts today. The Python SDK wrapper is the other path, and it posts one credential-blind receipt per call by default. The tool call and your credentials pass through untouched to the MCP server and the gate holds no keys. Two optional opt-in crossings exist: a contract hash to the mcpindex US edge, and a keyed HMAC fingerprint to the drift network, whose key is public, so it identifies a public server. Tokens, arguments, schema bodies, descriptions, URLs and your call data never cross.',
     queries: ['mcp security architecture', 'mcp trust boundary', 'does mcpindex phone home', 'mcp gate data flow'],
     placements: ['/trust', '/privacy', '/diagrams/trust-boundary'],
     derives: [],
@@ -210,9 +211,9 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
 |                                        local disk |
 +-----------+---------------------------+-----------+
             |                           |
-   DEFAULT  | nothing crosses to        | tools/call + your credentials
-            | mcpindex. the tier-0      +-------------> [ MCP server ]
-            | contract-diff runs here.  |  passed through untouched.
+   DEFAULT  | the wire install sends    | tools/call + your credentials
+            | mcpindex nothing. the SDK +-------------> [ MCP server ]
+            | wrapper posts a receipt.  |  passed through untouched.
             |                           |  the gate holds no keys.
     OPT-IN  | contract hash ------------------------> [ mcpindex edge - US ]
             | a deterministic hash of the public tool contract
@@ -301,7 +302,7 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
     fig: '07',
     title: 'Posture and ChangeKind',
     claim: 'The gate reads a fixed table, not a judgement call - and strict does not hold every drift.',
-    alt: 'A matrix of the thirteen surfaced ChangeKinds against the three postures, generated from the gate source. Monitor never blocks: every kind returns proceed-with-note. Guard, the default, holds the nine kinds that carry the safety bit, resolves annotation-flip-to-destructive and output-schema-changed to inconclusive because behaviour is the gate rather than a block, and lets the two provably benign kinds proceed. Strict matches guard except that it also holds the inconclusive pair; it does not hold every drift, because the benign auto-accept runs before the posture layer and re-pins a proven-benign change. An injection or exfiltration marker is a separate scan rather than a ChangeKind, so it is not a row, though guard blocks on it.',
+    alt: 'A matrix of the thirteen surfaced ChangeKinds against the three postures, generated from the gate source. Monitor returns proceed-with-note for every kind, though a tamper hold and an internal error still stop the call. Guard, the default, holds the nine kinds that carry the safety bit, resolves annotation-flip-to-destructive and output-schema-changed to inconclusive because behaviour is the gate rather than a block, and lets the two provably benign kinds proceed. Strict matches guard except that it also holds the inconclusive pair; it does not hold every drift, because the benign auto-accept runs before the posture layer and re-pins a proven-benign change. An injection or exfiltration marker is a separate scan rather than a ChangeKind, so it is not a row, though guard blocks on it.',
     queries: ['mcp changekind taxonomy', 'mcpindex postures', 'monitor guard strict mcp', 'mcp contract diff kinds'],
     placements: ['/guides/tune-postures', '/methodology', '/diagrams/posture-matrix'],
     derives: [

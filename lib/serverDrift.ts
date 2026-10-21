@@ -10,8 +10,8 @@ export interface PublisherWideChange {
 }
 
 // Server-level drift summary for ONE named server, derived purely from the public ledger blob by
-// matching each event's server_fp. Tool-level identities stay anonymized (we never de-anonymize a
-// tool_fp). This is the pure aggregation; the Redis-touching reader is in serverDriftServer.ts.
+// matching each event's server_fp. Tool-level identities stay as fingerprints (we never map a tool_fp
+// back to a name here, though the key is public and anyone can). This is the pure aggregation; the Redis-touching reader is in serverDriftServer.ts.
 
 export interface ServerDrift {
   readonly changes: number; // ledger events (drifting tools) attributed to this server in the window

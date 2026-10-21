@@ -108,7 +108,7 @@ export function DWhereTheGateSits() {
       </S>
 
       <FootNote x={120} y={284} w={880}>
-        RUNS ON YOUR HOST &middot; ZERO CREDENTIAL CUSTODY &middot; DEFAULT BUILD EGRESSES NOTHING
+        RUNS ON YOUR HOST &middot; STORES NO CREDENTIALS &middot; THE WIRE INSTALL SENDS NOTHING
       </FootNote>
     </Canvas>
   );
@@ -580,7 +580,7 @@ export function DPostureMatrix() {
         The benign auto-accept runs before the posture layer, so a
       </S>
       <S x={20} y={top + POSTURE_ROWS.length * ROW_H + 60} size={12} fill={MUTE}>
-        proven-benign change is re-pinned and proceeds under strict too. Monitor never blocks.
+        proven-benign change is re-pinned and proceeds under strict too. Monitor stops only tamper and internal errors.
       </S>
       <S x={20} y={top + POSTURE_ROWS.length * ROW_H + 84} size={12} fill={MUTE}>
         An injection / exfil marker is a separate scan, not a ChangeKind, so it is not a row &mdash;

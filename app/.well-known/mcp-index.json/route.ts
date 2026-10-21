@@ -82,7 +82,7 @@ export async function GET() {
     // contract-diff is LIVE (the deterministic leg). The tiers above it
     // (tier-1 cloud corpus, tier-2 LLM consult, tier-3 behavioral verifier) are
     // built as in-path seams but HELD OFF BY DEFAULT - each requires explicit
-    // opt-in; the default build egresses nothing and stays fail-closed. The
+    // opt-in, so none sends anything until enabled, and each fails closed. The
     // behavioral tier CLEARS or REFUTES a change - it is not a safety oracle, and
     // calibration is held (calibrated_false). honest_limits is literal (not
     // imported) so the build-time honesty guard can statically scan this file.

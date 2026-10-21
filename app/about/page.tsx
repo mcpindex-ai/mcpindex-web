@@ -96,8 +96,8 @@ export default function AboutPage() {
           host. Above that live tier-0, the ladder is built as in-path seams: a
           cloud tier-1 corpus lookup, a tier-2 LLM consult on the ambiguous, and a
           tier-3 behavioral verifier that exercises a changed tool. Each is held
-          off by default and requires explicit opt-in; the default build egresses
-          nothing and stays fail-closed. It is a contract-diff, not a safety
+          off by default and requires explicit opt-in, so none of them sends
+          anything until you enable it, and each fails closed. It is a contract-diff, not a safety
           verdict: when enabled, the behavioral tier clears or refutes a change,
           it does not prove a tool safe.
         </p>

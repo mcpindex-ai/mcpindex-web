@@ -142,8 +142,8 @@ export default function PrivacyPage() {
         <p>
           Call receipts (the <span className="inline-code">mcpindex-gate</span> Python SDK{' '}
           <span className="inline-code">wrap()</span> path): <strong>on by default</strong>. The{' '}
-          <span className="inline-code">mcpindex-config-wire</span> install wires a stdio proxy
-          that does not emit receipts today, so that path sends nothing. After each tool call
+          <span className="inline-code">mcpindex-config-wire</span> install wires a stdio proxy,
+          and the proxy posts no receipts today, so that path sends nothing. After each tool call
           gated through <span className="inline-code">wrap()</span>, the gate emits a compact,
           credential-blind receipt. Here is the complete list of what a receipt contains: a
           random receipt id; the tool contract hash (a sha256 of the tool&rsquo;s public

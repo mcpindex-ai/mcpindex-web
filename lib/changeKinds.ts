@@ -128,7 +128,7 @@ export type PostureOutcome = 'PROCEED' | 'PROCEED_NOTIFY' | 'INCONCLUSIVE' | 'HO
  *
  * Mirrors Gate.validate_drift -> Gate.apply_posture, in that order:
  *   1. proven-benign  -> PROCEED (re-pinned) in EVERY posture, posture never consulted;
- *   2. monitor        -> never blocks; any non-PROCEED verdict downgrades to PROCEED-with-note;
+ *   2. monitor        -> a drift verdict downgrades to PROCEED-with-note (tamper and internal errors still hold);
  *   3. behaviour-mandated -> INCONCLUSIVE (needs behaviour), not a HOLD;
  *   4. otherwise      -> HOLD under guard and strict.
  *

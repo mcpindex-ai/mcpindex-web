@@ -6,19 +6,19 @@
   "meta_description": "A start-to-finish walkthrough: install the mcpindex gate, see which MCP hosts it wires, then watch it HOLD a silently changed tool contract before your agent acts. Roughly 4 minutes.",
   "h1": "Install the gate and watch your first HOLD",
   "project": "mcpindex",
-  "updated": "2026-08-11",
+  "updated": "2026-10-20",
   "est_minutes": 4,
   "outcome": "The gate installed and wired into your MCP hosts, and a live contract change held right in front of you, so you know exactly what a HOLD looks like before it matters.",
   "impatient": {
     "label": "Skip ahead and watch a contract change get held first",
     "target_id": "watch"
   },
-  "body": "The tool your agent trusted on Monday can change on Tuesday, with no version bump your client notices. The gate installs locally, pins the declared contract of each tool you wire it in front of on first sight, and HOLDs a call when that contract silently changes, before your agent acts. It is a contract-diff, not a safety verdict, and it holds no credentials. Here is the whole path, start to finish.",
+  "body": "The tool your agent trusted on Monday can change on Tuesday, with no version bump your client notices. The gate installs locally, pins the declared contract of each tool you wire it in front of on first sight, and HOLDs a call when that contract silently changes, before your agent acts. It is a contract-diff, not a safety verdict, and it stores no credentials. Here is the whole path, start to finish.",
   "steps": [
     {
       "id": "install",
       "heading": "Install the gate",
-      "body": "Run this in your terminal. It installs the gate binary and rewrites each MCP host's config so that host's servers launch behind the gate. Free, no account, runs locally.",
+      "body": "Run this in your terminal. It installs the gate binary and rewrites each MCP host's config so that host's servers launch behind the gate. Free, no account, runs locally. It also registers a background watcher (a launchd LaunchAgent on macOS, a systemd user unit on Linux) that wires a newly added server within seconds; `uninstall.sh` removes it with the wiring.\n\nDrift telemetry stays off, and the one-liner does not ask about it. If you wire later with `mcpindex-config-wire wire` in a terminal, it asks whether to join the drift network, and the default answer is no.\n\nTo start log-only, where a drift is noted and the call proceeds while a tamper hold and an internal error still stop it, wire with:\n\n`mcpindex-config-wire wire --proxy-cmd \"uvx --from mcpindex-gate mcpindex-proxy --posture monitor\"`\n\n`mcpindex-config-wire status` then counts those servers as notify-only, because log-only is not protection.",
       "embed": "install-command"
     },
     {
@@ -53,8 +53,8 @@
     },
     {
       "id": "receipts",
-      "heading": "Bookmark your receipts page - the primary audit surface",
-      "body": "Each gated call is recorded to a private receipt log keyed to your install. It is credential-blind: the verdict and the action, never the arguments or content. On the receipt that decision is logged on the trust axis: a PROCEED shows as ALLOW, a HOLD as DENY, an inconclusive as REVIEW. This page is the primary place to check what the gate did for you - host clients often bury the gate's stderr lines in log files, but the receipts page is always one click away. Your install id is a random token at ~/.mcpindex/install_id (run: cat ~/.mcpindex/install_id), and your page lives at mcpindex.ai/receipts?id=<install-id>. Open it once and bookmark it. From gate v0.9.0 the gate also prints a local weekly summary line (calls gated, drift seen, holds) that links the same page; the counters are local-only and nothing about that line is sent anywhere.",
+      "heading": "If you use the SDK wrapper, bookmark your receipts page",
+      "body": "The one-command install wires the stdio proxy, and the proxy does not post receipts today, so a wire install sends nothing and this page stays empty for it; its record is the stderr trace above. If you gate calls through the Python SDK wrapper (wrap()), each gated call posts a credential-blind receipt by default: the verdict and the action, never the arguments or content. On the receipt that decision is logged on the trust axis: a PROCEED shows as ALLOW, a HOLD as DENY, an inconclusive as REVIEW. Your install id is a random token at ~/.mcpindex/install_id (run: cat ~/.mcpindex/install_id), and your page lives at mcpindex.ai/receipts?id=<install-id>. Anyone holding that id can open the page, so treat the link like one you would not post. Set MCPINDEX_RECEIPT_INGEST_ENABLED=0 to send no receipts at all. From gate v0.9.0 the gate also prints a local weekly summary line (calls gated, drift seen, holds) that links the same page; the counters are local-only and nothing about that line is sent anywhere.",
       "deep_link": {
         "href": "/receipts",
         "label": "Open your Gate Activity",
@@ -75,7 +75,7 @@
   "faq": [
     {
       "q": "Do I need an account to install the mcpindex gate?",
-      "a": "No. The gate installs locally with one command, needs no account, and holds no credentials. An account only matters later if you opt into cloud tiers or higher limits."
+      "a": "No. The gate installs locally with one command, needs no account, and stores none of your credentials: the host passes each server its environment through the gate's process, which never logs or sends it. An account only matters later if you opt into cloud tiers or higher limits."
     },
     {
       "q": "What does a HOLD from the gate actually mean?",

@@ -218,9 +218,15 @@ export default function TrustPage() {
             spoof-resistant identity and process/VM separation are roadmap, and it
             is not the default deployment.
           </Edge>
-          <Edge head="What leaves by default: nothing.">
-            The deterministic tier-0 contract-diff runs locally; the default build
-            egresses nothing and never holds your credentials. Tiers 1-3 (cloud
+          <Edge head="What leaves by default.">
+            It depends on how you installed. The one-command install wires a stdio proxy,
+            and the proxy posts no receipts today, so that path sends nothing: the
+            deterministic tier-0 contract-diff runs locally. The Python SDK wrapper
+            (<code className="font-mono">wrap()</code>) posts one credential-blind receipt per gated
+            call by default: the tool contract hash, the gate verdict and closed-vocabulary fields (action class, run context, outcome), linked by a random install id, never arguments, results, prompts, server names or URLs. Set 
+            <code className="font-mono">MCPINDEX_RECEIPT_INGEST_ENABLED=0</code> to turn it off. The
+            gate stores no credentials: the host hands each server its environment through the
+            gate&rsquo;s process, which never logs or sends it. Tiers 1-3 (cloud
             corpus lookup, LLM consult, behavioral verifier) are built in-path
             seams, each held off by default and gated behind explicit opt-in.
           </Edge>
@@ -244,8 +250,9 @@ export default function TrustPage() {
             <Link href="/privacy" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">privacy</Link>.
           </Edge>
           <Edge head="Sub-processors.">
-            None in the default local deployment - nothing leaves the host,
-            so there is nothing to sub-process. If you opt into the cloud tier-1
+            None for the one-command install, which sends nothing. Receipts from the
+            SDK wrapper are posted to mcpindex.ai, hosted on Vercel, and stored in our Upstash
+            Redis. If you opt into the cloud tier-1
             lookup, the request lands on our US-region edge (Vercel) and no other
             sub-processor sees it. A current sub-processor list is available on
             request.

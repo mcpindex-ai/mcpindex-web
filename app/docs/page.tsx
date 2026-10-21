@@ -155,10 +155,11 @@ curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
             Easier: let the one-click installer write this for you - it
             rewrites every server entry, which is fiddly to do by hand. The gate
             forwards to your original server and checks the contract on every
-            call. Zero credentials change hands: a stdio server&rsquo;s original{' '}
+            call. The gate stores no credentials: a stdio server&rsquo;s original{' '}
             <Mono>env</Mono> and an http server&rsquo;s original{' '}
-            <Mono>headers</Mono> ride through to your server untouched - the
-            gate reads only the public tool contracts, never your tokens. The
+            <Mono>headers</Mono> pass through the gate&rsquo;s process to your server
+            untouched and are never logged or sent anywhere, and the gate itself
+            reads only the public tool contracts. The
             one-click installer (<Mono>install.sh</Mono> /{' '}
             <Mono>install.ps1</Mono>) does this rewrite for you across every
             detected host.
