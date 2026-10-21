@@ -180,12 +180,12 @@ export default function TrustPage() {
           posture worth stating exactly.
         </p>
         <ul className="mt-4 space-y-3">
-          <Edge head="Zero credential custody.">
-            The gate never receives your tokens. It observes the session your
-            client already authenticated and reads only the public tool contracts;
-            the one-click wiring passes a server&rsquo;s original env / headers
-            through to that server untouched. There is no token field and no
-            second connection - structurally, not as a promise.
+          <Edge head="No stored credentials.">
+            The gate stores no credentials and opens no second connection. It does see
+            them in passing: the host launches the gate&rsquo;s proxy with the server&rsquo;s
+            env, and the proxy hands that env to the server it starts, without logging or
+            sending it. Wiring strips launcher keys (PATH, Python, uv and loader settings,
+            MCPINDEX_*) on the way. The gate itself reads only the public tool contracts.
           </Edge>
           <Edge head="Contract-diff, not a safety verdict.">
             A HOLD means the tool&rsquo;s contract changed versus what you pinned,
@@ -220,10 +220,10 @@ export default function TrustPage() {
           </Edge>
           <Edge head="What leaves by default.">
             It depends on how you installed. The one-command install wires a stdio proxy,
-            and the proxy posts no receipts today, so that path sends nothing: the
+            and the proxy posts no receipts today, so that path sends nothing unless you opt into drift telemetry: the
             deterministic tier-0 contract-diff runs locally. The Python SDK wrapper
             (<code className="font-mono">wrap()</code>) posts one credential-blind receipt per gated
-            call by default: the tool contract hash, the gate verdict and closed-vocabulary fields (action class, run context, outcome), linked by a random install id, never arguments, results, prompts, server names or URLs. Set 
+            call by default, from the second run (the first prints a notice and sends nothing): the tool contract hash, the gate verdict and closed-vocabulary fields (action class, run context, outcome), linked by a random install id, never arguments, results, prompts, server names or URLs. Set 
             <code className="font-mono">MCPINDEX_RECEIPT_INGEST_ENABLED=0</code> to turn it off. The
             gate stores no credentials: the host hands each server its environment through the
             gate&rsquo;s process, which never logs or sends it. Tiers 1-3 (cloud
@@ -251,8 +251,8 @@ export default function TrustPage() {
           </Edge>
           <Edge head="Sub-processors.">
             None for the one-command install, which sends nothing. Receipts from the
-            SDK wrapper are posted to mcpindex.ai, hosted on Vercel, and stored in our Upstash
-            Redis. If you opt into the cloud tier-1
+            SDK wrapper are posted to mcpindex.ai, hosted on Vercel, held in our Upstash Redis,
+            and copied by our ingest worker on a Hetzner VM into a Supabase Postgres database. If you opt into the cloud tier-1
             lookup, the request lands on our US-region edge (Vercel) and no other
             sub-processor sees it. A current sub-processor list is available on
             request.

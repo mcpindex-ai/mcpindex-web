@@ -146,7 +146,7 @@ export async function GET() {
       honest_limits: [
         'contract_diff_not_safety_verdict',
         'tiers1to3_held_off_by_default_opt_in',
-        'default_build_egresses_nothing_fail_closed',
+        'wire_install_egresses_nothing_sdk_wrapper_posts_receipts_fail_closed',
         'behavioral_tier_clears_or_refutes_not_safety_oracle',
         'calibrated_false_v1',
       ],

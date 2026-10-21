@@ -156,9 +156,9 @@ const TRIPWIRES = {
       : 'tiers 1-3 are no longer declared held-off in the machine descriptor. The tier-ladder figure still draws them dark: redraw it before shipping the capability.',
 
   'default-build-egresses-nothing': () =>
-    wellKnown.includes("'default_build_egresses_nothing_fail_closed'")
+    wellKnown.includes("'wire_install_egresses_nothing_sdk_wrapper_posts_receipts_fail_closed'")
       ? null
-      : 'the default build no longer declares zero egress. The trust-boundary figure still says nothing crosses by default: redraw it.',
+      : 'the machine descriptor no longer declares that the wire install sends nothing and the SDK wrapper posts receipts. The trust-boundary figure still draws that split: redraw it.',
 
   // v1 is terminal (exercised 2026-10-12): conformance ships advisory and uncalibrated, so the
   // figure draws ALLOW and DENY as reserved and prints no progress count. Either a state change

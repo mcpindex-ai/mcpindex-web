@@ -156,10 +156,11 @@ curl -fsSL https://mcpindex.ai/install.sh | sh     # then run it
             rewrites every server entry, which is fiddly to do by hand. The gate
             forwards to your original server and checks the contract on every
             call. The gate stores no credentials: a stdio server&rsquo;s original{' '}
-            <Mono>env</Mono> and an http server&rsquo;s original{' '}
-            <Mono>headers</Mono> pass through the gate&rsquo;s process to your server
-            untouched and are never logged or sent anywhere, and the gate itself
-            reads only the public tool contracts. The
+            <Mono>env</Mono> passes through the gate&rsquo;s process to your server and is
+            never logged or sent anywhere, minus the launcher keys wiring strips (PATH,
+            Python, uv and loader settings, <Mono>MCPINDEX_*</Mono>). The one-command install
+            leaves http servers unwired, so their headers never reach the gate. The gate
+            itself reads only the public tool contracts. The
             one-click installer (<Mono>install.sh</Mono> /{' '}
             <Mono>install.ps1</Mono>) does this rewrite for you across every
             detected host.
