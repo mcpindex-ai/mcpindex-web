@@ -180,7 +180,7 @@ test('server-drift: the daily ceiling refuses once spent, from any IP', async ()
   __setRatelimitRedisForTest({
     async incr(k: string) { return k.startsWith('server-drift:global:') ? 100_001 : 1; },
     async expire() { return 1; },
-  });
+  } as any);
   const r = await callRoute(serverDrift, '/api/v1/server-drift', { ...SD, ip: '6.6.6.6' });
   assert.equal(r.status, 429);
 });
@@ -194,7 +194,7 @@ test('server-drift: unconfigured Redis fails CLOSED with 503, never an unthrottl
 
 test('server-drift: a Redis error fails CLOSED with 503', async () => {
   process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
-  __setRatelimitRedisForTest({ async incr() { throw new Error('down'); }, async expire() { return 1; } });
+  __setRatelimitRedisForTest({ async incr() { throw new Error('down'); }, async expire() { return 1; } } as any);
   const r = await callRoute(serverDrift, '/api/v1/server-drift', { ...SD, ip: '7.7.7.7' });
   assert.equal(r.status, 503);
 });
