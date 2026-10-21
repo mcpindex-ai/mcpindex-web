@@ -3,7 +3,7 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { callRoute, FIX, snapshotEnv, overLimitRedis, mockRedis } from './_harness';
-import { __setRatelimitRedisForTest } from '../../lib/ratelimit';
+import { __setRatelimitRedisForTest, checkServerDriftLimit, ipBucket } from '../../lib/ratelimit';
 import { __setDriftIdentityRedisForTest } from '../../lib/driftIdentity';
 
 import { POST as screen } from '../../app/api/v1/screen/route';
@@ -185,18 +185,44 @@ test('server-drift: the daily ceiling refuses once spent, from any IP', async ()
   assert.equal(r.status, 429);
 });
 
-test('server-drift: unconfigured Redis fails CLOSED with 503, never an unthrottled window', async () => {
-  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
+// The route answers 503 either way when the ledger store is absent too, so these assert on the
+// limiter's own verdict; a route-level 503 alone would pass with a fail-open limiter.
+test('server-drift: unconfigured Redis fails CLOSED, never an unthrottled window', async () => {
   __setRatelimitRedisForTest(null);
-  const r = await callRoute(serverDrift, '/api/v1/server-drift', { ...SD, ip: '7.7.7.7' });
-  assert.equal(r.status, 503);
+  assert.deepEqual(await checkServerDriftLimit('7.7.7.7', new Date()), { ok: false, reason: 'unavailable' });
 });
 
-test('server-drift: a Redis error fails CLOSED with 503', async () => {
-  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
+test('server-drift: a Redis error fails CLOSED', async () => {
   __setRatelimitRedisForTest({ async incr() { throw new Error('down'); }, async expire() { return 1; } } as any);
-  const r = await callRoute(serverDrift, '/api/v1/server-drift', { ...SD, ip: '7.7.7.7' });
-  assert.equal(r.status, 503);
+  assert.deepEqual(await checkServerDriftLimit('7.7.7.7', new Date()), { ok: false, reason: 'unavailable' });
+});
+
+test('server-drift: the daily ceiling tells the client to come back at UTC midnight', async () => {
+  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
+  __setRatelimitRedisForTest({
+    async incr(k: string) { return k.startsWith('server-drift:global:') ? 100_001 : 1; },
+    async expire() { return 1; },
+  } as any);
+  const r = await callRoute(serverDrift, '/api/v1/server-drift', { ...SD, ip: '6.6.6.6' });
+  const retry = Number(r.headers.get('retry-after'));
+  assert.ok(retry > 60 || new Date().getUTCHours() === 23, `retry-after ${retry}`);
+  assert.ok(retry <= 86_400);
+});
+
+test('server-drift: IPv6 callers share one bucket per /64', async () => {
+  assert.equal(ipBucket('2001:db8:1:2:aaaa::1'), '2001:db8:1:2::/64');
+  assert.equal(ipBucket('2001:0DB8:0001:0002:ffff:ffff:ffff:ffff'), '2001:db8:1:2::/64');
+  assert.equal(ipBucket('2001:db8::1'), '2001:db8:0:0::/64');
+  assert.equal(ipBucket('::ffff:1.2.3.4'), '1.2.3.4');
+  assert.equal(ipBucket('1.2.3.4'), '1.2.3.4');
+  assert.equal(ipBucket('fe80::1%eth0'), 'fe80:0:0:0::/64');
+  assert.equal(ipBucket('not:an:ip::x:y::z'), 'not:an:ip::x:y::z');
+  assert.equal(ipBucket('unknown'), 'unknown');
+  const { client, hits } = countingRedis();
+  __setRatelimitRedisForTest(client);
+  for (let i = 1; i <= 31; i++) await checkServerDriftLimit(`2001:db8:1:2::${i.toString(16)}`, new Date());
+  assert.deepEqual(await checkServerDriftLimit('2001:db8:1:2::ff', new Date()), { ok: false, reason: 'ip' });
+  assert.equal(keysMatching(hits, 'server-drift:ip:').length, 1);
 });
 
 test('server-drift: a malformed request is 400 and spends no budget', async () => {

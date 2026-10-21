@@ -454,7 +454,7 @@ export default async function DriftReportPage() {
           <li>
             <strong className="text-[var(--color-ink)]">Fingerprints, not anonymity:</strong>{' '}
             tools and servers appear as fingerprints on every public surface of this dataset.
-            They are keyed hashes of public registry names under a constant salt, so anyone can
+            They are keyed hashes of public registry names under a constant key, so anyone can
             recompute them; they keep names off this page and do not make the dataset anonymous.
             This page names no server; per-server context lives on the named server pages with
             their own fairness labels.

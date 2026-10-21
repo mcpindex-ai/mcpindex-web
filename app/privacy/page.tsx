@@ -74,8 +74,8 @@ export default function PrivacyPage() {
           makes a read-only query to <span className="inline-code">/api/v1/drift/any</span> to ask
           whether a tool&rsquo;s contract already drifted, so it can warn you on the first call;
           that query sends only a keyed fingerprint. It <strong>never</strong> sends tool schemas,
-          arguments, descriptions, URLs, or server/tool names. A fingerprint is still{' '}
-          <strong>not anonymity</strong>: the salt is a constant in the open client and the
+          arguments, descriptions, or URLs. A fingerprint is still{' '}
+          <strong>not anonymity</strong>: the key is a constant in the open client and the
           registry is public, so anyone can recompute the fingerprint of a registry name and
           match it. It keeps the name out of the payload; it does not hide which public server
           it refers to. There are three on settings, each
