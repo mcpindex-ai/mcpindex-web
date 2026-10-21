@@ -12,6 +12,7 @@ import { GET as driftAnyGet } from '../../app/api/v1/drift/any/route';
 import { POST as driftRegister } from '../../app/api/v1/drift/register/route';
 import { POST as receiptsPost } from '../../app/api/v1/receipts/route';
 import { GET as ledger } from '../../app/api/v1/ledger/route';
+import { GET as serverDrift } from '../../app/api/v1/server-drift/route';
 import { GET as loginStart } from '../../app/api/auth/login/start/route';
 import { POST as waitlist } from '../../app/api/waitlist/route';
 
@@ -131,6 +132,80 @@ test('ledger: unconfigured Redis fails OPEN, never 429s a public read surface', 
     const r = await callRoute(ledger, '/api/v1/ledger', { ip: '7.7.7.7' });
     assert.notEqual(r.status, 429);
   }
+});
+
+// /api/v1/server-drift: open by name, closed to bulk pulls (GB 2026-10-20). Own budget, off the
+// shared drift-read counter, and fail-CLOSED where every sibling fails open.
+const SD = { query: { server: 'io.github.example/server' } };
+
+test('server-drift: enabled + over-limit → 429', async () => {
+  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
+  const r = await callRoute(serverDrift, '/api/v1/server-drift', { ...SD, ip: '9.9.9.9' });
+  assert.equal(r.status, 429);
+  assert.equal(r.headers.get('retry-after'), '60');
+});
+
+test('server-drift: the 31st request in a minute from one IP is 429, the 30th is not', async () => {
+  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
+  const { client } = countingRedis();
+  __setRatelimitRedisForTest(client);
+  // No ledger store is injected, so a request that passes the limiter lands on 503. 503 vs 429 is
+  // the assertion: the limiter let it through.
+  for (let i = 1; i <= 30; i++) {
+    const r = await callRoute(serverDrift, '/api/v1/server-drift', { ...SD, ip: '7.7.7.7' });
+    assert.notEqual(r.status, 429, `request ${i} must not be rate limited`);
+  }
+  const r = await callRoute(serverDrift, '/api/v1/server-drift', { ...SD, ip: '7.7.7.7' });
+  assert.equal(r.status, 429);
+  const other = await callRoute(serverDrift, '/api/v1/server-drift', { ...SD, ip: '8.8.8.8' });
+  assert.notEqual(other.status, 429, 'the budget is per IP');
+});
+
+test('server-drift: spends its own budget, never the shared drift-read one', async () => {
+  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
+  const { client, hits } = countingRedis();
+  __setRatelimitRedisForTest(client);
+  for (let i = 0; i < 40; i++) await callRoute(serverDrift, '/api/v1/server-drift', { ...SD, ip: '7.7.7.7' });
+  assert.equal(keysMatching(hits, 'drift:read:').length, 0, 'drift/any budget untouched');
+  const own = keysMatching(hits, 'server-drift:ip:');
+  assert.equal(own.length, 1);
+  assert.equal(hits.get(own[0]), 40);
+  // Refused requests do not count toward the daily ceiling.
+  const global = keysMatching(hits, 'server-drift:global:');
+  assert.equal(hits.get(global[0]), 30);
+});
+
+test('server-drift: the daily ceiling refuses once spent, from any IP', async () => {
+  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
+  __setRatelimitRedisForTest({
+    async incr(k: string) { return k.startsWith('server-drift:global:') ? 100_001 : 1; },
+    async expire() { return 1; },
+  });
+  const r = await callRoute(serverDrift, '/api/v1/server-drift', { ...SD, ip: '6.6.6.6' });
+  assert.equal(r.status, 429);
+});
+
+test('server-drift: unconfigured Redis fails CLOSED with 503, never an unthrottled window', async () => {
+  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
+  __setRatelimitRedisForTest(null);
+  const r = await callRoute(serverDrift, '/api/v1/server-drift', { ...SD, ip: '7.7.7.7' });
+  assert.equal(r.status, 503);
+});
+
+test('server-drift: a Redis error fails CLOSED with 503', async () => {
+  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
+  __setRatelimitRedisForTest({ async incr() { throw new Error('down'); }, async expire() { return 1; } });
+  const r = await callRoute(serverDrift, '/api/v1/server-drift', { ...SD, ip: '7.7.7.7' });
+  assert.equal(r.status, 503);
+});
+
+test('server-drift: a malformed request is 400 and spends no budget', async () => {
+  process.env.NEXT_PUBLIC_DRIFT_LEDGER = '1';
+  const { client, hits } = countingRedis();
+  __setRatelimitRedisForTest(client);
+  const r = await callRoute(serverDrift, '/api/v1/server-drift', { ip: '7.7.7.7' });
+  assert.equal(r.status, 400);
+  assert.equal(hits.size, 0);
 });
 
 test('login/start: enabled + over-limit → 429', async () => {

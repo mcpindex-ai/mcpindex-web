@@ -106,8 +106,9 @@ const DRIFT_READ_PER_IP_PER_MIN = 600;
 const DRIFT_READ_GLOBAL_PER_DAY = 5_000_000;
 
 // /api/v1/ledger gets its own tighter per-IP budget ON TOP of the shared one above, because it
-// is the only route on that budget that pages out the whole corpus. The other two answer a
-// question (`drift/any` a SISMEMBER, `server-drift` one server's rollup).
+// is the only route on that budget that pages out the whole corpus. The other answers a
+// question (`drift/any` a SISMEMBER). `server-drift` left this budget on 2026-10-20 for its own,
+// below `checkServerDriftLimit`.
 //
 // Under /3 every request was the whole blob (10,285,870B measured 2026-10-14) and the budget was
 // 10/min. Under /4 a request is one page. The drain's page builder, run on the live 2026-10-14
@@ -390,5 +391,46 @@ export async function checkDriftReadLimit(ip: string, now: Date): Promise<DriftL
     return g > DRIFT_READ_GLOBAL_PER_DAY ? { ok: false } : { ok: true };
   } catch {
     return { ok: true }; // fail-open on Redis error
+  }
+}
+
+// /api/v1/server-drift answers one server's drift record BY REGISTRY NAME, so a loop over the
+// public registry pulls every record. GB 2026-10-20: keep it public, stop bulk pulling. It has
+// its own `server-drift:*` counters, off the shared drift-read budget, so neither can starve the
+// other (`drift/any` is the installed SDK's first-pin check).
+//
+// A server page view is one call, and pages offered to search render the record server-side and
+// make none. 30/min per IP is well above a person browsing and makes a single-IP sweep of the
+// whole registry take more than a day. The daily ceiling is a chosen bound, not measured traffic
+// (the project has no request counts for this route): about two sweeps of the registry, the
+// backstop when IPs rotate. Read `server-drift:global:<day>` before tuning it.
+//
+// Fail-CLOSED, unlike its siblings. Without Redis the route cannot answer anyway (the record is
+// read from the same Upstash), so refusing costs nothing and an outage never becomes an
+// unthrottled window. Same IP limit of this control as the ledger budget above.
+const SERVER_DRIFT_PER_IP_PER_MIN = 30;
+const SERVER_DRIFT_GLOBAL_PER_DAY = 100_000;
+
+export type ServerDriftLimit = { ok: true } | { ok: false; reason: 'ip' | 'global' | 'unavailable' };
+
+export async function checkServerDriftLimit(ip: string, now: Date): Promise<ServerDriftLimit> {
+  const r = redis();
+  if (!r) return { ok: false, reason: 'unavailable' }; // fail-closed
+
+  const min = now.toISOString().slice(0, 16);
+  const day = now.toISOString().slice(0, 10);
+  try {
+    // Per-IP first; an IP-blocked request must NOT count toward the global ceiling.
+    const ipKey = `server-drift:ip:${ip}:${min}`;
+    const c = await r.incr(ipKey);
+    if (c === 1) await r.expire(ipKey, 70);
+    if (c > SERVER_DRIFT_PER_IP_PER_MIN) return { ok: false, reason: 'ip' };
+
+    const gKey = `server-drift:global:${day}`;
+    const g = await r.incr(gKey);
+    if (g === 1) await r.expire(gKey, 90_000); // ~25h
+    return g > SERVER_DRIFT_GLOBAL_PER_DAY ? { ok: false, reason: 'global' } : { ok: true };
+  } catch {
+    return { ok: false, reason: 'unavailable' }; // fail-closed on Redis error
   }
 }
