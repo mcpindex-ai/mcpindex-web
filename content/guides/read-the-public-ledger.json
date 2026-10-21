@@ -39,7 +39,7 @@
     {
       "id": "dashboard",
       "heading": "See coverage on the dashboard",
-      "body": "The dashboard pairs two different populations: opt-in telemetry (installs that chose to send salted-fingerprint signals) and the public-registry crawler ledger. They count different things, so the numbers will not match. Coverage is the network growing, because every covered server is one the gate can warn you about on call 1.",
+      "body": "The dashboard pairs two different populations: opt-in telemetry (installs that chose to send fingerprint signals) and the public-registry crawler ledger. They count different things, so the numbers will not match. Coverage is the network growing, because every covered server is one the gate can warn you about on call 1.",
       "deep_link": {
         "href": "/dashboard",
         "label": "Open the drift dashboard",
@@ -69,7 +69,7 @@
   "faq": [
     {
       "q": "Does the mcpindex drift ledger name the servers that changed?",
-      "a": "It shows fingerprints, not names, but they are not anonymous. Each fingerprint is a keyed hash of the public registry name under a published key, so anyone can recompute it and match it to a server. Treat them as stable IDs, not as privacy."
+      "a": "It shows fingerprints in place of names, but they are not anonymous. Each fingerprint is a keyed hash of the public registry name under a published key, so anyone can recompute it and match it to a server. Treat them as stable IDs, not as privacy."
     },
     {
       "q": "Is a safety-relevant change in the ledger a confirmed vulnerability?",

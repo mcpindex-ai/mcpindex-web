@@ -62,10 +62,10 @@ export default function PrivacyPage() {
           default</strong>. The SDK sends <strong>nothing</strong> unless you set{' '}
           <span className="inline-code">MCPINDEX_DRIFT_TELEMETRY</span> to one of the three on
           settings below - and note that all three, <em>including</em>{' '}
-          <span className="inline-code">lookup</span>, send at least a salted fingerprint. When
+          <span className="inline-code">lookup</span>, send at least a keyed fingerprint. When
           set to <span className="inline-code">detection</span>,
           a tool-pin or a contract drift sends one one-way signal to{' '}
-          <span className="inline-code">/api/v1/drift</span>: salted (HMAC) fingerprints of the
+          <span className="inline-code">/api/v1/drift</span>: keyed (HMAC) fingerprints of the
           server/tool id, the contract hashes, the change type, a safety flag, an
           hour-rounded time, and the client SDK tag (<span className="inline-code">py</span> or{' '}
           <span className="inline-code">ts</span>) - plus a random install id that links one
@@ -73,9 +73,9 @@ export default function PrivacyPage() {
           derived from you, and is never joined to your IP). Under the same flag, the gate also
           makes a read-only query to <span className="inline-code">/api/v1/drift/any</span> to ask
           whether a tool&rsquo;s contract already drifted, so it can warn you on the first call;
-          that query sends only a salted fingerprint. It <strong>never</strong> sends tool schemas,
-          arguments, descriptions, URLs, or server/tool names. A fingerprint is still{' '}
-          <strong>not anonymity</strong>: the salt is a constant in the open client and the
+          that query sends only a keyed fingerprint. It <strong>never</strong> sends tool schemas,
+          arguments, descriptions, or URLs. A fingerprint is still{' '}
+          <strong>not anonymity</strong>: the key is a constant in the open client and the
           registry is public, so anyone can recompute the fingerprint of a registry name and
           match it. It keeps the name out of the payload; it does not hide which public server
           it refers to. There are three on settings, each

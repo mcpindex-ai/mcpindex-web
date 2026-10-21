@@ -99,7 +99,7 @@ export function DTrustBoundary() {
 
       <ArrowR x1={460} x2={697} y={268} stroke={ACCENT} dashed />
       <M x={470} y={258} caps size={9.5} fill={ACCENT_TEXT}>
-        OPT-IN &middot; SALTED FINGERPRINT
+        OPT-IN &middot; KEYED FINGERPRINT
       </M>
       <S x={470} y={284} size={10.5} fill={MUTE}>
         + change type, safety flag,
@@ -122,8 +122,8 @@ export function DTrustBoundary() {
         NEVER CROSSES
       </M>
       <S x={94} y={367} size={12.5}>
-        tokens &middot; arguments &middot; schema bodies &middot; descriptions &middot; URLs &middot; server names
-        &middot; tool names &middot; your call data
+        tokens &middot; arguments &middot; schema bodies &middot; descriptions &middot; URLs
+        &middot; your call data
       </S>
     </Canvas>
   );

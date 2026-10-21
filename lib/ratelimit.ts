@@ -106,8 +106,9 @@ const DRIFT_READ_PER_IP_PER_MIN = 600;
 const DRIFT_READ_GLOBAL_PER_DAY = 5_000_000;
 
 // /api/v1/ledger gets its own tighter per-IP budget ON TOP of the shared one above, because it
-// is the only route on that budget that pages out the whole corpus. The other two answer a
-// question (`drift/any` a SISMEMBER, `server-drift` one server's rollup).
+// is the only route on that budget that pages out the whole corpus. The other answers a
+// question (`drift/any` a SISMEMBER). `server-drift` left this budget on 2026-10-20 for its own,
+// below `checkServerDriftLimit`.
 //
 // Under /3 every request was the whole blob (10,285,870B measured 2026-10-14) and the budget was
 // 10/min. Under /4 a request is one page. The drain's page builder, run on the live 2026-10-14
@@ -390,5 +391,73 @@ export async function checkDriftReadLimit(ip: string, now: Date): Promise<DriftL
     return g > DRIFT_READ_GLOBAL_PER_DAY ? { ok: false } : { ok: true };
   } catch {
     return { ok: true }; // fail-open on Redis error
+  }
+}
+
+// /api/v1/server-drift answers one server's drift record BY REGISTRY NAME. GB 2026-10-20: keep it
+// public, and bound what one caller can pull through it. It has its own `server-drift:*` counters,
+// off the shared drift-read budget, so neither can starve the other (`drift/any` is the installed
+// SDK's first-pin check).
+//
+// WHAT THIS DOES NOT COVER: pages offered to search render the record server-side through
+// `loadServerDrift` and never call this route, so the servers that HAVE drift are readable from
+// cached page HTML outside this budget, and the ledger is the bulk export by design. This limiter
+// bounds Upstash spend and per-caller pulls on the route; it is not an anti-scraping control for
+// the dataset.
+//
+// 30/min per bucket is well above a person browsing. IPv6 callers are bucketed by /64, the unit
+// one host is usually handed, so a single host cannot mint a fresh bucket per address. The daily
+// ceiling is a chosen bound, not measured traffic (the project has no request counts for this
+// route): about two sweeps of the registry. Spending it only hides the drift section on pages
+// outside the search set, which are the servers with no recorded drift; ContractDrift renders
+// nothing on an error, never a false clean. Read `server-drift:global:<day>` before tuning it.
+//
+// Fail-CLOSED, unlike its siblings. Without Redis the route cannot answer anyway (the record is
+// read from the same Upstash), so refusing costs nothing and an outage never becomes an
+// unthrottled window. The x-forwarded-for caveat under LIMIT OF THIS CONTROL above applies here
+// too.
+const SERVER_DRIFT_PER_IP_PER_MIN = 30;
+const SERVER_DRIFT_GLOBAL_PER_DAY = 100_000;
+
+export type ServerDriftLimit = { ok: true } | { ok: false; reason: 'ip' | 'global' | 'unavailable' };
+
+/** The rate-limit bucket for a client address: IPv4 as is, IPv6 by its /64. IPv4-mapped IPv6
+ * (`::ffff:1.2.3.4`) is treated as the IPv4 it carries. Anything that does not parse is returned
+ * unchanged, so a malformed header degrades to its own bucket and never to a shared one. */
+export function ipBucket(ip: string): string {
+  if (!ip.includes(':')) return ip;
+  const addr = ip.split('%')[0].toLowerCase();
+  const last = addr.slice(addr.lastIndexOf(':') + 1);
+  if (last.includes('.')) return last;
+  const halves = addr.split('::');
+  if (halves.length > 2) return ip;
+  const head = halves[0] ? halves[0].split(':') : [];
+  const tail = halves.length === 2 && halves[1] ? halves[1].split(':') : [];
+  const fill = halves.length === 2 ? 8 - head.length - tail.length : 0;
+  if (fill < 0 || (halves.length === 1 && head.length !== 8)) return ip;
+  const groups = [...head, ...Array(fill).fill('0'), ...tail];
+  if (groups.some((g) => !/^[0-9a-f]{1,4}$/.test(g))) return ip;
+  return `${groups.slice(0, 4).map((g) => g.replace(/^0+(?=.)/, '')).join(':')}::/64`;
+}
+
+export async function checkServerDriftLimit(ip: string, now: Date): Promise<ServerDriftLimit> {
+  const r = redis();
+  if (!r) return { ok: false, reason: 'unavailable' }; // fail-closed
+
+  const min = now.toISOString().slice(0, 16);
+  const day = now.toISOString().slice(0, 10);
+  try {
+    // Per-IP first; an IP-blocked request must NOT count toward the global ceiling.
+    const ipKey = `server-drift:ip:${ipBucket(ip)}:${min}`;
+    const c = await r.incr(ipKey);
+    if (c === 1) await r.expire(ipKey, 70);
+    if (c > SERVER_DRIFT_PER_IP_PER_MIN) return { ok: false, reason: 'ip' };
+
+    const gKey = `server-drift:global:${day}`;
+    const g = await r.incr(gKey);
+    if (g === 1) await r.expire(gKey, 90_000); // ~25h
+    return g > SERVER_DRIFT_GLOBAL_PER_DAY ? { ok: false, reason: 'global' } : { ok: true };
+  } catch {
+    return { ok: false, reason: 'unavailable' }; // fail-closed on Redis error
   }
 }

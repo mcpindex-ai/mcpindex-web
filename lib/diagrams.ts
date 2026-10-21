@@ -198,7 +198,7 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
     fig: '03',
     title: 'Trust boundary',
     claim: 'By default, nothing crosses the boundary to mcpindex.',
-    alt: 'Inside your host sit the agent, the mcpindex gate and a local pin store. By default nothing crosses to mcpindex because the tier-0 contract diff runs locally. The tool call and your credentials pass through untouched to the MCP server and the gate holds no keys. Two optional opt-in crossings exist: a contract hash to the mcpindex US edge, and a salted HMAC fingerprint to the drift network. Tokens, arguments, schema bodies, descriptions, URLs, server names, tool names and your call data never cross.',
+    alt: 'Inside your host sit the agent, the mcpindex gate and a local pin store. By default nothing crosses to mcpindex because the tier-0 contract diff runs locally. The tool call and your credentials pass through untouched to the MCP server and the gate holds no keys. Two optional opt-in crossings exist: a contract hash to the mcpindex US edge, and a keyed HMAC fingerprint to the drift network, whose key is public, so it identifies a public server. Tokens, arguments, schema bodies, descriptions, URLs and your call data never cross.',
     queries: ['mcp security architecture', 'mcp trust boundary', 'does mcpindex phone home', 'mcp gate data flow'],
     placements: ['/trust', '/privacy', '/diagrams/trust-boundary'],
     derives: [],
@@ -216,11 +216,11 @@ WITH THE GATE  [ your agent ] --> [ mcpindex gate ] --> [ MCP server ]
             |                           |  the gate holds no keys.
     OPT-IN  | contract hash ------------------------> [ mcpindex edge - US ]
             | a deterministic hash of the public tool contract
-    OPT-IN  | salted HMAC fingerprint --------------> [ drift network ]
+    OPT-IN  | keyed HMAC fingerprint ---------------> [ drift network ]
             | + change type, safety flag, hour-rounded time. fail-open.
             |
      NEVER  X tokens - arguments - schema bodies - descriptions
-            X URLs - server names - tool names - your call data`,
+            X URLs - your call data`,
   },
   {
     id: 'tier-ladder',

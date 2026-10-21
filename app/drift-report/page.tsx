@@ -132,8 +132,8 @@ export default async function DriftReportPage() {
           every tool contract between snapshots. This report is the deduped, re-verified record
           of what changed: what kind of change, whether the server&apos;s declared version moved
           with it, and how often removal means replacement. A contract diff, not a safety
-          verdict. Every number below is computed from the corpus, and every tool is a salted
-          fingerprint - this page names no server.
+          verdict. Every number below is computed from the corpus, and every tool is a
+          fingerprint - this page names no server, though the fingerprint key is public.
         </p>
       </header>
 
@@ -454,7 +454,7 @@ export default async function DriftReportPage() {
           <li>
             <strong className="text-[var(--color-ink)]">Fingerprints, not anonymity:</strong>{' '}
             tools and servers appear as fingerprints on every public surface of this dataset.
-            They are keyed hashes of public registry names under a constant salt, so anyone can
+            They are keyed hashes of public registry names under a constant key, so anyone can
             recompute them; they keep names off this page and do not make the dataset anonymous.
             This page names no server; per-server context lives on the named server pages with
             their own fairness labels.

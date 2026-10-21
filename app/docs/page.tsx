@@ -448,9 +448,10 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
             <Mono>fleetAdvisory</Mono> field on the verdict.
           </p>
           <p className="mt-2 text-[13px] leading-[1.5]" style={{ color: 'var(--color-mute)' }}>
-            Under the same flag the gate emits one one-way salted-fingerprint signal on a pin or a
+            Under the same flag the gate emits one one-way fingerprint signal on a pin or a
             drift and queries <Mono>/api/v1/drift/any</Mono>; it never sends a schema, argument,
-            description, URL, or server/tool name, and fails open (never blocks a call). Every drift
+            description, or URL (the fingerprint key is public, so a fingerprint still identifies a
+            public server), and fails open (never blocks a call). Every drift
             the crawler catches is public in the <Mono>/ledger</Mono>. Full disclosure on{' '}
             <Ext href="/privacy">privacy</Ext>.
           </p>
