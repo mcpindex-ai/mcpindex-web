@@ -549,7 +549,7 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
             `# search: full-text registry search (?q= required; &category= &limit= optional)`,
             `curl "https://mcpindex.ai/api/v1/search?q=postgres&limit=10"`,
             ``,
-            `# diff: what changed in the registry since a date`,
+            `# diff: servers first seen since a date (added) and existing servers with a new version since (updated)`,
             `curl "https://mcpindex.ai/api/v1/diff?since=2026-06-01"`,
             ``,
             `# server: the full record for one server by slug`,

@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { loadServers, loadSnapshotMeta } from '@/lib/registry';
 import { buildProvenance, CATALOG_BASIS } from '@/lib/provenance';
+import { classifyDiff, loadFirstSeen } from '@/lib/registryDiff';
 
 export const revalidate = 3600;
 
@@ -14,9 +15,9 @@ const PAGE_LIMIT = 100;
 const SinceZ = z.union([z.iso.date(), z.iso.datetime({ offset: true })]);
 
 // /api/v1/diff?since=YYYY-MM-DD
-// What's new / removed / version-changed since `since`.
-// v0: derives "added" from publishedAt + "version-changed" from updatedAt > since
-// against current snapshot. snapshot_version + snapshot_written_at let
+// added: server names first seen at or after `since`. updated: names seen before `since` whose
+// latest version was published (or record updated) at or after it. First-seen dates come from
+// data/first-seen.json; see lib/registryDiff.ts. snapshot_version + snapshot_written_at let
 // consumers detect staleness.
 
 export async function GET(req: NextRequest) {
@@ -36,13 +37,13 @@ export async function GET(req: NextRequest) {
   }
   const since = new Date(parsed.data);
 
-  const [servers, meta] = await Promise.all([loadServers(), loadSnapshotMeta()]);
+  const [servers, meta, firstSeen] = await Promise.all([
+    loadServers(),
+    loadSnapshotMeta(),
+    loadFirstSeen(),
+  ]);
 
-  const added = servers.filter((s) => new Date(s.publishedAt) > since);
-  const updated = servers.filter(
-    (s) =>
-      new Date(s.updatedAt) > since && new Date(s.publishedAt) <= since,
-  );
+  const { added, updated, limits } = classifyDiff(servers, firstSeen, since);
 
   return Response.json(
     {
@@ -62,9 +63,9 @@ export async function GET(req: NextRequest) {
       },
       provenance: buildProvenance({
         basis: CATALOG_BASIS,
-        // Specific to THIS endpoint: it reports registry churn, and derives "added" from
-        // publishedAt rather than from having watched the registry over time.
-        limits: ['derived_from_snapshot_timestamps_not_observed_events'],
+        // Specific to THIS endpoint: it reports registry churn from the publishedAt stamps of
+        // the snapshots it has kept, not from watching registry events as they happened.
+        limits: ['derived_from_snapshot_timestamps_not_observed_events', ...limits],
         snapshot: { version: meta.version, written_at: meta.writtenAt },
       }),
       added: added.slice(0, PAGE_LIMIT).map((s) => ({

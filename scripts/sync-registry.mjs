@@ -7,6 +7,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { mergeFirstSeen, readFirstSeen, serializeFirstSeen } from './first-seen.mjs';
 
 // Overridable so the stall/retry behaviour can be exercised against a stub upstream
 // (see the verification in tasks/lessons.md 2026-07-20). Production passes neither.
@@ -288,8 +289,15 @@ if (removalsChanged) {
   removals.updatedAt = new Date().toISOString();
 }
 
+// First-seen ledger for /api/v1/diff (scripts/first-seen.mjs). Read before the write below so a
+// malformed file fails the run here, with the previous snapshot still in place.
+const FIRST_SEEN_PATH = path.join(ROOT, 'data', 'first-seen.json');
+const firstSeen = await readFirstSeen(FIRST_SEEN_PATH);
+const firstSeenAdded = mergeFirstSeen(firstSeen, snapshot);
+
 await Promise.all([
   fs.writeFile(SNAP_PATH, JSON.stringify(snapshot, null, 2)),
+  fs.writeFile(FIRST_SEEN_PATH, serializeFirstSeen(firstSeen)),
   fs.writeFile(
     path.join(SNAP_DIR, `${day}.json`),
     JSON.stringify(snapshot, null, 2),
@@ -334,6 +342,7 @@ await Promise.all([
 
 console.log(`Wrote ${SNAP_PATH}`);
 console.log(`Wrote ${SNAP_DIR}/${day}.json`);
+console.log(`Wrote ${FIRST_SEEN_PATH} (+${firstSeenAdded} names, total ${Object.keys(firstSeen.servers).length})`);
 if (removalsChanged) {
   console.log(`Wrote ${REMOVALS_PATH} (gone +${goneAdded}/-${goneCleared}, total ${Object.keys(removals.gone).length})`);
 } else {

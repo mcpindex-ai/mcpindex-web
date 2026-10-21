@@ -122,7 +122,7 @@
         "operationId": "registryDiff",
         "summary": "What changed in the registry since a date",
         "parameters": [ { "name": "since", "in": "query", "required": true, "schema": { "type": "string", "format": "date" }, "description": "YYYY-MM-DD." } ],
-        "responses": { "200": { "description": "Registry changes since the date.", "content": { "application/json": { "schema": { "type": "object" } } } } }
+        "responses": { "200": { "description": "Registry changes since the date. counts.added and added[] are server names first seen at or after the date; counts.updated and updated[] are servers first seen before it whose latest version was published, or whose record was updated, at or after it. First-seen dates are the earliest publishedAt across the registry snapshots mcpindex has kept since 2026-05-01; a window starting before that carries the provenance limit since_precedes_first_seen_history.", "content": { "application/json": { "schema": { "type": "object" } } } } }
       }
     },
     "/api/v1/drift/any": {
