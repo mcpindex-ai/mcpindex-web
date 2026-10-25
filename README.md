@@ -12,7 +12,7 @@
 [![servers indexed](https://mcpindex.ai/api/v1/badge/meta/servers?v=1)](https://mcpindex.ai/stats)
 [![screened](https://mcpindex.ai/api/v1/badge/meta/screened?v=1)](https://mcpindex.ai/stats)
 [![last commit](https://img.shields.io/github/last-commit/mcpindex-ai/mcpindex-web)](https://github.com/mcpindex-ai/mcpindex-web/commits/main)
-[![Smithery](https://smithery.ai/badge/gautamgb/mcpindex)](https://smithery.ai/servers/gautamgb/mcpindex)
+[![LightNow capabilities](https://lightnow.ai/badge/io.github.gautamgb/mcp-server-mcpindex)](https://lightnow.ai/servers/io.github.gautamgb/mcp-server-mcpindex)
 [![Glama](https://glama.ai/mcp/servers/mcpindex-ai/mcp-server-mcpindex/badges/score.svg)](https://glama.ai/mcp/servers/mcpindex-ai/mcp-server-mcpindex)
 
 MCP tool contracts can change remotely with no version bump. mcpindex **pins each contract** and **HOLDs the call** when it drifts — before your agent acts. Deterministic contract-diff on your host. Zero credential custody. Not a safety oracle.
