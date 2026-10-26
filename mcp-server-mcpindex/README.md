@@ -89,10 +89,32 @@ Add to `.cursor/mcp.json`:
 
 ## Use it from Cline
 
-Add to your Cline settings:
+Add to `cline_mcp_settings.json`:
 
-```bash
-npx -y mcp-server-mcpindex@latest
+```json
+{
+  "mcpServers": {
+    "mcpindex": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-mcpindex@latest"]
+    }
+  }
+}
+```
+
+## Use it from Zed
+
+Zed reads MCP servers from `context_servers`, not `mcpServers`. Add to `~/.config/zed/settings.json`:
+
+```json
+{
+  "context_servers": {
+    "mcpindex": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-mcpindex@latest"]
+    }
+  }
+}
 ```
 
 ## Tools exposed
@@ -114,8 +136,11 @@ npx -y mcp-server-mcpindex@latest
 
 ### Verdict contract (v1)
 
+The tool returns the API's verdict as the API sent it (same fields and values the hosted endpoint at `/api/mcp` returns) plus four flat convenience fields this client adds at the end: `server_id`, `tool_name`, `source_url`, `fetched_at`.
+
 ```jsonc
 {
+  "subject": { "server_id": "github", "tool_name": "create_pull_request", "tool_verified": false },
   "directive": "ALLOW" | "DENY" | "REVIEW" | "UNVERIFIED",
   "status":    "EVALUATED" | "PARTIAL" | "STALE" | "ERROR",
   "granularity": "description-level" | null,  // scope of a PARTIAL screen
@@ -124,11 +149,13 @@ npx -y mcp-server-mcpindex@latest
   ],
   "expires_at": "2026-06-30T00:00:00Z",
   "honest_limits": [
-    "conformance_monitored_not_enforced",
+    "semantic_only_no_conformance",
     "calibrated_false_v1",
-    "advisory_deployment"
+    "description_level_screen",
+    "advisory",
+    "tool_name_not_independently_verified"
   ],
-  "verdict_contract_version": "1.0.0",
+  "verdict_contract_version": "1.1.0",
   "server_id": "github",
   "tool_name": "create_pull_request",
   "source_url": "https://mcpindex.ai/api/v1/trust/tool/github/create_pull_request",
@@ -136,15 +163,19 @@ npx -y mcp-server-mcpindex@latest
 }
 ```
 
+`verdict_contract_version` is the API's own version and is never rewritten by this client. `subject.tool_verified: false` means the API did not confirm the tool name exists on the server: today's screens are description-level, so any tool name on a screened server gets that server's verdict.
+
 The free-tier verdict ships directives + dimensions + freshness. Evidence quotes, LLM rationale, and chain history are paid-tier surfaces and intentionally omitted here.
 
 ### Honest limits (pin these to your gate UI)
 
-Every v1 verdict ships with these three caveats, and your gate SHOULD surface them on every dispatch decision:
+`honest_limits` is the API's list, relayed verbatim; your gate SHOULD surface it on every dispatch decision. A screened verdict carries the screen's own limits (for example `semantic_only_no_conformance`, `description_level_screen`, `tool_name_not_independently_verified`). When there is no verdict on file, or the client fails closed, the list is the v1 floor:
 
 1. `conformance_monitored_not_enforced` - publishers self-declare; mcpindex monitors drift but does not block at the network layer.
 2. `calibrated_false_v1` - dimension severities are not yet calibrated against real-world incident data.
 3. `advisory_deployment` - the verdict is advisory; the agent (or human reviewing the agent) is the decision-maker.
+
+The client never merges the floor into a list the API sent, since that could contradict it.
 
 History anchoring: OTS Bitcoin-anchored history; Bitcoin-finalized at N=6 confirmations (~1 hr); pending in ~10 min. Sub-window precision asserted, not proven.
 
@@ -206,7 +237,7 @@ async function gateToolCall({ serverId, toolName, invoke, askHuman }) {
 
 ### The load-bearing rule: never fail-open
 
-If the verdict endpoint is unreachable, returns 404, times out, returns malformed JSON, **or has no verdict on file yet for that server**, `check_tool_trust` returns `directive: "UNVERIFIED"` + `status: "ERROR"`. It never silently coerces to ALLOW. Your gate code SHOULD treat UNVERIFIED as "human review required", never as "looks fine, ship it."
+If the verdict endpoint is unreachable, returns a non-2xx status, times out, returns malformed JSON, gets a `server_id` / `tool_name` that would walk the API path (`..`, `/`, empty), **or has no verdict on file yet for that server**, `check_tool_trust` returns `directive: "UNVERIFIED"` + `status: "ERROR"`. It never silently coerces to ALLOW. Your gate code SHOULD treat UNVERIFIED as "human review required", never as "looks fine, ship it."
 
 `status` is telemetry about screen completeness, distinct from the `directive` trust decision: `EVALUATED` (full screen), `PARTIAL` (only part of the surface, e.g. description-level — see `granularity`), `STALE` (verdict past its freshness window), `ERROR` (unreachable / no verdict on file). A `PARTIAL` screen is never reported as `EVALUATED`.
 

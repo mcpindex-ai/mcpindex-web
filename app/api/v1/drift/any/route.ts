@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return Response.json({ error: 'invalid_json' }, { status: 400 });
   }
-  if (!Array.isArray(body.fps) || body.fps.length === 0 || body.fps.length > MAX_FPS) {
+  if (!body || typeof body !== 'object' || !Array.isArray(body.fps) || body.fps.length === 0 || body.fps.length > MAX_FPS) {
     return Response.json({ error: 'invalid_fps', max: MAX_FPS }, { status: 400 });
   }
   // Validate every fp; reject the whole batch on any malformed entry (fail-closed on shape,

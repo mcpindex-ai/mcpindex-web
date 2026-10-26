@@ -15,7 +15,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { routeV1, callV1, withTimeout, ROUTE_BASE } from '@/lib/v1Dispatch';
+import { routeV1, callV1, withTimeout, safeSeg, ROUTE_BASE } from '@/lib/v1Dispatch';
 
 const u = (p: string) => new URL(p, ROUTE_BASE);
 
@@ -129,4 +129,16 @@ test('a real dispatch still succeeds under the production ceiling', async () => 
     '/api/v1/trust/server/definitely-not-a-registered-server-xyz',
   );
   assert.ok(body.subject);
+});
+
+test('safeSeg: rejects traversal hidden behind one or two rounds of percent-encoding', () => {
+  for (const v of ['..', 'a/b', '%2e%2e', 'x%2fy', '%252e%252e', 'x%252fy', '%5c', '%00', '%E0%A4%A']) {
+    assert.throws(() => safeSeg(v, 'server_id'), /^Error: invalid server_id$/, v);
+  }
+});
+
+test('safeSeg: passes real slugs and tool names through unchanged', () => {
+  for (const v of ['io.github.owner.repo', 'get_file_contents', 'ai.smithery-foo', 'v1.2']) {
+    assert.equal(safeSeg(v, 'slug'), v);
+  }
 });

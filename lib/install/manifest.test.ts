@@ -7,6 +7,7 @@ import {
   DIRECTORY_CLIENTS,
   METHOD_MATRIX,
   DIRECTORY_CONFIG_JSON,
+  ZED_CONFIG_JSON,
   cursorDeepLink,
   vscodeDeepLink,
   gateInstallLine,
@@ -58,6 +59,19 @@ test('vscode deep link round-trips to a named server payload', () => {
 test('directory config JSON parses and points at the directory package', () => {
   const parsed = JSON.parse(DIRECTORY_CONFIG_JSON);
   assert.deepEqual(parsed.mcpServers.mcpindex.args, ['-y', `${PACKAGES.directoryServer}@latest`]);
+});
+
+test('Zed is handed a context_servers block; every other config host gets mcpServers', () => {
+  const zed = DIRECTORY_CLIENTS.find((c) => c.id === 'zed')!;
+  assert.equal(zed.value, ZED_CONFIG_JSON);
+  assert.equal(zed.configKey, 'context_servers');
+  const parsed = JSON.parse(zed.value);
+  assert.equal(parsed.mcpServers, undefined);
+  assert.deepEqual(parsed.context_servers.mcpindex.args, ['-y', `${PACKAGES.directoryServer}@latest`]);
+  for (const c of DIRECTORY_CLIENTS.filter((x) => x.kind === 'config' && x.id !== 'zed')) {
+    assert.equal(c.configKey, 'mcpServers', c.id);
+    assert.ok(JSON.parse(c.value).mcpServers, c.id);
+  }
 });
 
 test('gate one-liner leads the gate methods (auditable uv path, wired)', () => {

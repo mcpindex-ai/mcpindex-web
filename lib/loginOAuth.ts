@@ -22,7 +22,7 @@
 //   no network / no Redis.
 
 import 'server-only';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { issueApiKey } from './issueKey';
 import { flag, logFlagStates } from './flags';
 
@@ -97,6 +97,37 @@ export type IssueFn = (
 
 function sha256hex(s: string): string {
   return createHash('sha256').update(s, 'utf8').digest('hex');
+}
+
+/**
+ * Browser binding for the one-time state. login/start sets a cookie on the browser that began
+ * the login; the callback refuses a state that browser did not start. Without it, a callback
+ * URL carrying an attacker's own code and state could be opened by a victim, who would be shown
+ * the attacker's key and told to paste it into the /claim wizard. One cookie per state (named
+ * by its first 16 hex chars) so a CLI login and a /claim login running together do not
+ * overwrite each other. `__Host-` pins it to this host over https with Path=/.
+ */
+const LOGIN_COOKIE_PREFIX = '__Host-mcpindex_login_';
+
+export function loginCookieName(state: string): string | null {
+  return LOGIN_STATE.test(state) ? LOGIN_COOKIE_PREFIX + state.slice(0, 16) : null;
+}
+
+export function loginStateCookie(state: string): string {
+  return `${loginCookieName(state)}=${state}; Path=/; Max-Age=${STATE_TTL_SEC}; HttpOnly; Secure; SameSite=Lax`;
+}
+
+export function clearLoginStateCookie(state: string): string | null {
+  const name = loginCookieName(state);
+  return name ? `${name}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax` : null;
+}
+
+/** Constant-time: does the cookie the browser sent name this state? */
+export function stateMatchesCookie(state: string, cookie: string | undefined): boolean {
+  if (!cookie || !LOGIN_STATE.test(state)) return false;
+  const a = Buffer.from(cookie);
+  const b = Buffer.from(state);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 function genState(): string {

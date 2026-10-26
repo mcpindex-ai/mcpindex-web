@@ -17,6 +17,7 @@ import { GET as ledger } from '../../app/api/v1/ledger/route';
 import { GET as serverDrift } from '../../app/api/v1/server-drift/route';
 import { GET as loginStart } from '../../app/api/auth/login/start/route';
 import { GET as loginCallback } from '../../app/api/auth/login/callback/route';
+import { POST as driftAny } from '../../app/api/v1/drift/any/route';
 
 let restore: () => void;
 beforeEach(() => {
@@ -145,7 +146,52 @@ test('login/start: flag off → 404', async () => {
   const r = await callRoute(loginStart, '/api/auth/login/start');
   assert.equal(r.status, 404);
 });
+test('login/start: a cross-site navigation is refused before any state is written', async () => {
+  process.env.MCPINDEX_LOGIN_ENABLED = '1';
+  for (const site of ['cross-site', 'same-site']) {
+    const r = await callRoute(loginStart, '/api/auth/login/start', {
+      query: { mode: 'web' }, headers: { 'sec-fetch-site': site },
+    });
+    assert.equal(r.status, 403, site);
+    assert.equal(obj(r).error, 'cross_site_start');
+  }
+});
+test('login/start: CLI (none) and wizard (same-origin) starts get past the CSRF check', async () => {
+  process.env.MCPINDEX_LOGIN_ENABLED = '1';
+  for (const site of ['none', 'same-origin']) {
+    const r = await callRoute(loginStart, '/api/auth/login/start', {
+      query: { cli_callback: 'http://evil.invalid/' }, headers: { 'sec-fetch-site': site },
+    });
+    assert.notEqual(r.status, 403, site);
+  }
+});
 test('login/callback: flag off → 404', async () => {
   const r = await callRoute(loginCallback, '/api/auth/login/callback', { query: { code: 'x', state: FIX.STATE64_OK } });
   assert.equal(r.status, 404);
+});
+
+// JSON that parses to a non-object used to reach a field read and 500 with an empty body.
+test('screen, drift/any: null / number / array bodies are a 400, never a 500', async () => {
+  for (const raw of ['null', '42', '[]', '{"description":42}']) {
+    const r = await callRoute(screen, '/api/v1/screen', { method: 'POST', raw, headers: { 'content-type': 'application/json' } });
+    assert.equal(r.status, 400, `screen ${raw}`);
+  }
+  for (const raw of ['null', '42', '"x"']) {
+    const r = await callRoute(driftAny, '/api/v1/drift/any', { method: 'POST', raw, headers: { 'content-type': 'application/json' } });
+    assert.equal(r.status, 400, `drift/any ${raw}`);
+  }
+});
+test('waitlist: text/plain, no content-type and a null JSON body are a 400, never a 500', async () => {
+  for (const [raw, ct] of [['email=a@b.co', 'text/plain'], ['x', ''], ['null', 'application/json'], ['{"email":5}', 'application/json']]) {
+    const headers: Record<string, string> = ct ? { 'content-type': ct } : {};
+    const r = await callRoute(waitlist, '/api/waitlist', { method: 'POST', raw, headers });
+    assert.equal(r.status, 400, `${ct} ${raw}`);
+  }
+});
+
+test('drift/register: a null body is a 400, never a 500', async () => {
+  process.env.DRIFT_IDENTITY = '1';
+  const r = await callRoute(driftRegister, '/api/v1/drift/register', { method: 'POST', raw: 'null', headers: { 'content-type': 'application/json' } });
+  assert.equal(r.status, 400);
+  assert.equal(obj(r).error, 'invalid_json');
 });

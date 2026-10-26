@@ -21,7 +21,7 @@
           { "name": "category", "in": "query", "schema": { "type": "string" }, "description": "Filter by category." },
           { "name": "limit", "in": "query", "schema": { "type": "integer" }, "description": "Maximum results." }
         ],
-        "responses": { "200": { "description": "Matching servers, quality-ranked.", "content": { "application/json": { "schema": { "type": "object" } } } } }
+        "responses": { "200": { "description": "Matching servers, relevance-ranked with Quality Score as a tiebreak.", "content": { "application/json": { "schema": { "type": "object" } } } } }
       }
     },
     "/api/v1/servers": {
@@ -129,21 +129,21 @@
       "get": {
         "operationId": "driftAny",
         "summary": "Fleet drift query: has this tool contract drifted (crawler-corroborated)?",
-        "parameters": [ { "name": "fp", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Tool contract fingerprint." } ],
-        "responses": { "200": { "description": "Returns drifted, sources, safety_relevant.", "content": { "application/json": { "schema": { "type": "object", "properties": { "drifted": { "type": "boolean" }, "sources": { "type": "array", "items": { "type": "string" } }, "safety_relevant": { "type": "boolean" } } } } } } }
+        "parameters": [ { "name": "fp", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Tool contract fingerprint: 32 lowercase hex characters." } ],
+        "responses": { "200": { "description": "drifted:true carries the corroboration fields. drifted:false carries nothing else. drifted:null means the drift cache was unavailable: unknown, not clean.", "content": { "application/json": { "schema": { "type": "object", "required": ["fp", "drifted"], "properties": { "fp": { "type": "string" }, "drifted": { "type": ["boolean", "null"] }, "provenance": { "type": "string", "enum": ["crawl", "installs"] }, "sources": { "type": "integer", "description": "Independent sources that corroborate the drift; 1 is the crawler alone." }, "safety_relevant": { "type": "boolean" }, "last_seen": { "type": ["string", "null"], "format": "date-time" }, "change_kinds": { "type": "array", "items": { "type": "string" } }, "removal_scope": { "type": "string", "enum": ["single", "toolset-replaced"] } } } } } }, "400": { "description": "fp missing or malformed." } }
       },
       "post": {
         "operationId": "driftAnyBatch",
         "summary": "Batch fleet drift query for multiple fingerprints",
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "fps": { "type": "array", "items": { "type": "string" } } }, "required": ["fps"] } } } },
-        "responses": { "200": { "description": "Per-fingerprint drift results.", "content": { "application/json": { "schema": { "type": "object" } } } } }
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "fps": { "type": "array", "items": { "type": "string" }, "minItems": 1, "maxItems": 256 } }, "required": ["fps"] } } } },
+        "responses": { "200": { "description": "Per-fingerprint drift results, one per distinct fingerprint, each shaped like the GET response.", "content": { "application/json": { "schema": { "type": "object", "properties": { "results": { "type": "array", "items": { "type": "object" } } } } } } } }
       }
     },
     "/api/v1/screen": {
       "post": {
         "operationId": "screenTool",
         "summary": "Submit a tool description for an advisory screen",
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "description": { "type": "string", "description": "The tool description to screen." }, "contribute": { "type": "boolean", "description": "Whether the submission may be added to the corpus." } }, "required": ["description"] } } } },
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "description": { "type": "string", "description": "The tool description to screen." }, "contribute": { "type": "boolean", "description": "Opt-in: the description is kept in the request log for review. Nothing else is stored." } }, "required": ["description"] } } } },
         "responses": { "200": { "description": "Advisory screen result.", "content": { "application/json": { "schema": { "type": "object" } } } } }
       }
     },

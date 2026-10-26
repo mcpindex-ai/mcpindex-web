@@ -50,3 +50,21 @@ test('badge: sets a 300s cache-control', async () => {
   const r = await callRoute(GET, `/api/v1/badge/${slug}`, { params: { slug } });
   assert.match(r.headers.get('cache-control') ?? '', /max-age=300/);
 });
+
+test('badge: the registry name and a moved slug render the screened badge, not gray', async () => {
+  const { loadServers, legacySlugRedirects } = await import('../../lib/registry');
+  const servers = await loadServers();
+  const slug = await screenedSlug();
+  const name = servers.find((s) => s.slug === slug)!.name;
+  const byName = await callRoute(GET, `/api/v1/badge/x`, { params: { slug: name } });
+  svg(byName);
+  assert.match(byName.text, /drift-monitored/i);
+  // A legacy disambiguation slug renders the same badge as the listing the HTML page 308s it to.
+  const legacy = [...legacySlugRedirects(servers)];
+  assert.ok(legacy.length > 0, 'snapshot has no legacy slugs to exercise');
+  const [old, current] = legacy[0]!;
+  const viaOld = await callRoute(GET, `/api/v1/badge/x`, { params: { slug: old } });
+  const viaCurrent = await callRoute(GET, `/api/v1/badge/x`, { params: { slug: current } });
+  svg(viaOld);
+  assert.equal(viaOld.text, viaCurrent.text);
+});

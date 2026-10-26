@@ -57,6 +57,17 @@ test('unknown action → 404 closed-vocab (no upstream call)', async () => {
   assert.equal(r.headers.get('cache-control'), 'no-store');
 });
 
+test('Object.prototype member names are unknown actions, not a 500', async () => {
+  fx = installFetch();
+  for (const action of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) {
+    const r = await callRoute(owner, `/api/owner/${action}`, {
+      method: 'POST', params: { action }, body: { apiKey: KEY, serverId: SERVER },
+    });
+    assert.equal(r.status, 404, action);
+  }
+  assert.equal(fx.calls.length, 0);
+});
+
 test('missing apiKey → 400 (no upstream call)', async () => {
   fx = installFetch();
   const r = await callRoute(owner, '/api/owner/challenge', {

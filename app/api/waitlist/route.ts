@@ -53,20 +53,19 @@ export async function POST(req: NextRequest) {
 
   const ct = req.headers.get('content-type') ?? '';
   if (ct.includes('application/json')) {
-    const body = (await req.json().catch(() => ({}))) as {
-      email?: string;
-      company?: string;
-      message?: string;
-      source?: string;
-    };
-    email = body.email ?? '';
-    company = (body.company ?? '').trim().slice(0, 200);
-    message = (body.message ?? '').trim().slice(0, 2000);
+    const parsed: unknown = await req.json().catch(() => ({}));
+    const body = (parsed && typeof parsed === 'object' ? parsed : {}) as Record<string, unknown>;
+    const str = (v: unknown) => (typeof v === 'string' ? v : '');
+    email = str(body.email);
+    company = str(body.company).trim().slice(0, 200);
+    message = str(body.message).trim().slice(0, 2000);
     if (body.source === 'contact') {
       source = body.source;
     }
   } else {
-    const form = await req.formData();
+    // formData() throws on a body that is neither urlencoded nor multipart (text/plain, none).
+    const form = await req.formData().catch(() => null);
+    if (!form) return Response.json({ error: 'invalid_body' }, { status: 400 });
     email = String(form.get('email') ?? '');
   }
 

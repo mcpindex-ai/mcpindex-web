@@ -10,7 +10,7 @@
 // Cache: 5 minutes - the refresh window verdicts roll out on.
 
 import type { NextRequest } from 'next/server';
-import { getScreenedVerdict } from '@/lib/verdicts';
+import { getScreenedVerdict, resolveVerdictSlug } from '@/lib/verdicts';
 import { ADVISORY_FLOOR as FLOOR } from '@/lib/honest-limits';
 import { VERDICT_CONTRACT_VERSION } from '@/lib/verdictContract';
 
@@ -46,10 +46,11 @@ export async function GET(
 
   // getScreenedVerdict drops preview-only records (see lib/verdicts.ts) so a minted-but-
   // unscreened server reads as genuinely-absent on the wire, matching the /server page.
-  const screened = await getScreenedVerdict(server_id);
+  const slug = await resolveVerdictSlug(server_id);
+  const screened = slug ? await getScreenedVerdict(slug) : null;
   const body = screened
     ? {
-        subject: { server_id, tool_name: null },
+        subject: { server_id, slug, tool_name: null },
         status: screened.status,
         directive: screened.directive.decision,
         granularity: screened.granularity ?? null,
@@ -63,7 +64,7 @@ export async function GET(
         verdict_contract_version: VERDICT_CONTRACT_VERSION,
       }
     : {
-        subject: { server_id, tool_name: null },
+        subject: { server_id, slug, tool_name: null },
         status: 'ERROR',
         directive: 'UNVERIFIED',
         granularity: null,

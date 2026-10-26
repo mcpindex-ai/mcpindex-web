@@ -14,7 +14,7 @@ import { provenanceLine } from '@/lib/provenance';
 import { z } from 'zod';
 
 // In-process /api/v1 dispatch (no self-fetch); see lib/v1Dispatch.ts.
-import { callV1, withTimeout } from '@/lib/v1Dispatch';
+import { callV1, safeSeg, withTimeout } from '@/lib/v1Dispatch';
 import { inspectMcpBody } from '@/lib/mcpBodyGuard';
 import { armMcpWatchdog, contentLengthOf } from '@/lib/mcpWatchdog';
 
@@ -39,21 +39,11 @@ const tmeta = (name: string) => {
 
 const api = (path: string): Promise<any> => callV1<any>(path);
 
-// Defense-in-depth: the base host is fixed, but keep path-segment inputs from
-// walking the /api/v1 path (reject traversal / control chars). Block-list, not
-// allow-list, so we never reject a legitimate slug/tool name.
-function safeSeg(v: string, label: string): string {
-  if (!v || v === '.' || v.includes('/') || v.includes('\\') || v.includes('..') || /[\u0000-\u001f]/.test(v)) {
-    throw new Error(`invalid ${label}`);
-  }
-  return v;
-}
-
 const text = (t: string) => ({ content: [{ type: 'text' as const, text: t }] });
 // Messages we throw DELIBERATELY, and which are safe to hand an unauthenticated caller:
 //   `mcpindex API <status>`  - lib/v1Dispatch on a non-2xx (status only; it is explicitly
 //                              written not to leak the upstream body)
-//   `invalid <label>`        - safeSeg above, fixed labels
+//   `invalid <label>`        - safeSeg (lib/v1Dispatch), fixed labels
 // Anything else reaching this function is unexpected - a formatter TypeError such as
 // "Cannot read properties of undefined (reading 'recommendations')" describes our internal
 // shape to anyone who can POST. /api/mcp is unauthenticated, so that is a free structure
@@ -162,11 +152,42 @@ function formatInstall(server: any, client: string): string {
   return [
     `${server.title} (${server.name}) - ${shownClient}`,
     '',
-    target.json ? '```json\n' + target.json + '\n```' : '```bash\n' + target.command + '\n```',
+    installBlock(target),
     target.notes ? '\n' + target.notes : '',
     fallbackNote,
     `\n${server.url ?? `https://mcpindex.ai/server/${server.slug}`}`,
   ].join('\n');
+}
+
+// A remote target's `command` is a URL to paste into a client's config, not a shell
+// command, so it is not fenced as bash. Same as the stdio package.
+function installBlock(target: any): string {
+  if (target.json) return '```json\n' + target.json + '\n```';
+  if (target.client === 'remote') {
+    return 'Remote endpoint URL (add it to your client as a remote MCP server):\n```\n' + target.command + '\n```';
+  }
+  return '```bash\n' + target.command + '\n```';
+}
+
+// The install column used to print installs[0].label, the first client's label, whatever
+// the server ships. List the distinct install methods instead. Same as the stdio package.
+function installMethods(installs: any[] | undefined): string {
+  const kinds: string[] = [];
+  for (const t of installs ?? []) {
+    const body = `${t.json ?? ''} ${t.command ?? ''}`;
+    const kind =
+      t.client === 'remote'
+        ? 'remote'
+        : /\buvx\b/.test(body)
+          ? 'pypi'
+          : /\bdocker\b/.test(body)
+            ? 'docker'
+            : /\bnpx\b/.test(body)
+              ? 'npm'
+              : null;
+    if (kind && !kinds.includes(kind)) kinds.push(kind);
+  }
+  return kinds.length ? kinds.join('+') : 'manual';
 }
 
 function formatCompare(rows: any[]): string {
@@ -175,7 +196,7 @@ function formatCompare(rows: any[]): string {
     String(r.name ?? ''),
     String(r.category ?? ''),
     String(r.qualityScore ?? ''),
-    String(r.installs?.[0]?.label ?? 'manual'),
+    installMethods(r.installs),
     String(r.envVars?.length ?? 0),
   ]);
   const widths = header.map((h, i) => Math.max(h.length, ...data.map((row) => row[i].length)));
@@ -183,11 +204,10 @@ function formatCompare(rows: any[]): string {
   return [fmt(header), fmt(widths.map((w) => '-'.repeat(w))), ...data.map(fmt)].join('\n');
 }
 
-// Only clients that lib/installs.ts actually generates a config for. 'zed' was
-// advertised here but never produced (buildInstalls has no zed branch), so a
-// zed request silently fell back to another client's config; dropped until a real
-// zed generator exists. formatInstall also labels any fallback honestly as defense.
-const CLIENTS = ['claude-desktop', 'claude-code', 'cursor', 'gemini-cli', 'cline'] as const;
+// Only clients that lib/installs.ts actually generates a config for. 'zed' is back now
+// that buildInstalls emits a context_servers block for it. formatInstall also labels any
+// fallback honestly as defense. Keep in step with the stdio package's enum.
+const CLIENTS = ['claude-desktop', 'claude-code', 'cursor', 'gemini-cli', 'cline', 'zed'] as const;
 
 const handler = createMcpHandler(
   (server) => {
@@ -445,7 +465,7 @@ async function wrongTransport(ctx: unknown): Promise<Response | null> {
   const { transport } = await (ctx as { params: Promise<{ transport: string }> }).params;
   if (transport === CANONICAL_TRANSPORT) return null;
   // Echo the segment back so the operator can see what they asked for, but don't
-  // reflect unbounded caller-controlled input: same posture as safeSeg() above.
+  // reflect unbounded caller-controlled input: same posture as safeSeg().
   const echoed = transport.replace(/[^\w.-]/g, '').slice(0, 32) || 'unknown';
   return Response.json(
     {

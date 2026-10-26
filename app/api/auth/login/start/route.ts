@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { loginEnabled, normalizeProvider, startLogin, startLoginWeb } from '@/lib/loginOAuth';
+import { loginEnabled, loginStateCookie, normalizeProvider, startLogin, startLoginWeb } from '@/lib/loginOAuth';
 import { loginStore } from '@/lib/loginStore';
 import { checkLoginLimit } from '@/lib/ratelimit';
 
@@ -27,6 +27,15 @@ export async function GET(req: NextRequest) {
   if (!loginEnabled()) {
     return Response.json({ error: 'not_found' }, { status: 404 });
   }
+  // Login CSRF: a third-party page can navigate a victim's browser here, and a provider that
+  // was authorized before redirects back without a prompt, so the callback would mint a key and
+  // rotate the victim's existing one. Legitimate starts come from the CLI opening the browser
+  // (Sec-Fetch-Site: none) or the /claim wizard popup (same-origin). Absent header (curl, old
+  // browsers) is allowed: an attacker cannot strip it from a modern victim browser.
+  const site = req.headers.get('sec-fetch-site');
+  if (site === 'cross-site' || site === 'same-site') {
+    return Response.json({ error: 'cross_site_start' }, { status: 403 });
+  }
   // Rate-limit BEFORE the state-store write: bounds pre-auth cost/abuse on the shared Upstash.
   const limit = await checkLoginLimit(clientIp(req), new Date());
   if (!limit.ok) {
@@ -47,5 +56,6 @@ export async function GET(req: NextRequest) {
   if ('error' in r) {
     return Response.json({ error: r.error }, { status: r.error === 'bad_callback' ? 400 : 503 });
   }
-  return new Response(null, { status: 302, headers: { location: r.url } });
+  const state = new URL(r.url).searchParams.get('state') ?? '';
+  return new Response(null, { status: 302, headers: { location: r.url, 'set-cookie': loginStateCookie(state) } });
 }

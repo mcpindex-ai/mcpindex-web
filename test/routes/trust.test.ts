@@ -84,3 +84,54 @@ test('trust/tool: missing server_id → 400', async () => {
   const r = await callRoute(trustTool, '/api/v1/trust/tool//read_file', { params: { server_id: '', tool_name: 'read_file' } });
   assert.equal(r.status, 400);
 });
+
+// The docs and the contract name the param `server_id` and show a registry name. Before
+// resolveVerdictSlug the registry-name form answered UNVERIFIED for a server whose slug form
+// was screened, on both trust routes and the badge.
+test('trust: the registry name binds to the same verdict as the slug', async () => {
+  const { loadServers } = await import('../../lib/registry');
+  const servers = await loadServers();
+  const slug = await screenedSlug();
+  const name = servers.find((s) => s.slug === slug)!.name;
+  assert.equal(servers.filter((s) => s.name === name).length, 1, 'fixture needs a unique registry name');
+  const bySlug = asObj(await callRoute(trustServer, `/api/v1/trust/server/${slug}`, { params: { server_id: slug } }));
+  const byName = asObj(await callRoute(trustServer, `/api/v1/trust/server/x`, { params: { server_id: name } }));
+  assert.notEqual(bySlug.directive, 'UNVERIFIED');
+  assert.equal(byName.directive, bySlug.directive);
+  assert.equal(byName.subject.server_id, name);
+  const tool = asObj(await callRoute(trustTool, `/api/v1/trust/tool/x/y`, { params: { server_id: name, tool_name: 'y' } }));
+  assert.equal(tool.directive, bySlug.directive);
+});
+
+test('resolveVerdictSlugIn: a registry name shared by two listings binds to nothing', async () => {
+  const { resolveVerdictSlugIn } = await import('../../lib/verdicts');
+  const row = (slug: string, name: string) => ({ slug, name, baseSlug: slug.split('--')[0] }) as never;
+  const servers = [row('io-github-a-x--aaaa', 'io.github.a/x'), row('io-github-a-x--bbbb', 'io.github.a/x'), row('io-github-b-y', 'io.github.b/y')];
+  assert.equal(resolveVerdictSlugIn('io.github.a/x', servers), null);
+  assert.equal(resolveVerdictSlugIn('io.github.b/y', servers), 'io-github-b-y');
+  assert.equal(resolveVerdictSlugIn('io-github-b-y', servers), 'io-github-b-y');
+  assert.equal(resolveVerdictSlugIn('nothing-like-it', servers), null);
+});
+
+// The redirect heuristics (drop -mcp, unique prefix) are fine for a 308 a human watches land,
+// and not for a verdict returned under the caller's id: they mapped removed servers and bare
+// prefixes onto other servers' screens.
+test('resolveVerdictSlugIn: heuristic renames and gone slugs never bind', async () => {
+  const { resolveVerdictSlugIn, resolveVerdictSlug } = await import('../../lib/verdicts');
+  const row = (slug: string) => ({ slug, name: slug, baseSlug: slug }) as never;
+  const servers = [row('acme-status'), row('widget')];
+  assert.equal(resolveVerdictSlugIn('acme', servers), null, 'unique prefix');
+  assert.equal(resolveVerdictSlugIn('widget-mcp', servers), null, 'drop -mcp');
+  const removals = (await import('../../data/server-removals.json')).default as { gone: Record<string, unknown> };
+  const gone = Object.keys(removals.gone);
+  assert.ok(gone.length > 0);
+  for (const g of gone.slice(0, 50)) assert.equal(await resolveVerdictSlug(g), null, g);
+});
+
+test('resolveVerdictSlug: seeded SEO redirects never carry a verdict', async () => {
+  const { resolveVerdictSlug } = await import('../../lib/verdicts');
+  const removals = (await import('../../data/server-removals.json')).default as { redirects: Record<string, string> };
+  const seeded = Object.keys(removals.redirects);
+  assert.ok(seeded.length > 0);
+  for (const s of seeded) assert.equal(await resolveVerdictSlug(s), null, s);
+});

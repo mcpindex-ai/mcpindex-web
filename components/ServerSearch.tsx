@@ -18,6 +18,10 @@ interface Result {
 
 type State = 'idle' | 'loading' | 'done' | 'error';
 
+const RESULT_LIMIT = 20;
+// lib/search.ts drops these as stopwords, so a query made only of them matches nothing.
+const GENERIC_ONLY = /^(?:(?:mcp|servers?)[\s-]*)+$/i;
+
 export function ServerSearch({ initialQuery = '' }: { initialQuery?: string }) {
   const [q, setQ] = useState(initialQuery);
   const [results, setResults] = useState<Result[]>([]);
@@ -38,7 +42,7 @@ export function ServerSearch({ initialQuery = '' }: { initialQuery?: string }) {
       abortRef.current?.abort();
       const ctl = new AbortController();
       abortRef.current = ctl;
-      fetch(`/api/v1/search?q=${encodeURIComponent(query)}&limit=20`, { signal: ctl.signal })
+      fetch(`/api/v1/search?q=${encodeURIComponent(query)}&limit=${RESULT_LIMIT}`, { signal: ctl.signal })
         .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
         .then((data: { results?: Result[] }) => {
           setResults(Array.isArray(data.results) ? data.results : []);
@@ -78,10 +82,19 @@ export function ServerSearch({ initialQuery = '' }: { initialQuery?: string }) {
         {state === 'idle' && q.trim().length === 1 && 'Keep typing…'}
         {state === 'loading' && 'Searching…'}
         {state === 'error' && 'Search is unavailable right now - try again shortly.'}
-        {state === 'done' && `${results.length} result${results.length === 1 ? '' : 's'}`}
+        {state === 'done' &&
+          (results.length >= RESULT_LIMIT
+            ? `Top ${results.length} results`
+            : `${results.length} result${results.length === 1 ? '' : 's'}`)}
       </p>
 
-      {state === 'done' && results.length === 0 && (
+      {state === 'done' && results.length === 0 && GENERIC_ONLY.test(q.trim()) && (
+        <p className="mt-4 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
+          Every server here is an MCP server, so &ldquo;mcp&rdquo; and &ldquo;server&rdquo; are
+          ignored. Search for what it connects to or does, like github, postgres or slack.
+        </p>
+      )}
+      {state === 'done' && results.length === 0 && !GENERIC_ONLY.test(q.trim()) && (
         <p className="mt-4 text-[15.5px] leading-[1.55] text-[var(--color-cite)]">
           No servers matched. Try a broader term, or browse{' '}
           <Link href="/best" className="underline decoration-[var(--color-rule)] underline-offset-4 hover:text-[var(--color-accent-strong)]">

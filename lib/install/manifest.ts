@@ -92,11 +92,24 @@ export type DirectoryClient = {
   value: string;
   /** Config-file location for kind === 'config'. */
   path?: string;
+  /** Top-level key the config block merges into, for kind === 'config'. */
+  configKey?: 'mcpServers' | 'context_servers';
 };
 
-/** The mcpServers JSON block hosts share (Cursor, Zed, Claude Desktop, ...). */
+/** The mcpServers JSON block hosts share (Cursor, Claude Desktop, Cline, ...). */
 export const DIRECTORY_CONFIG_JSON = JSON.stringify(
   { mcpServers: { mcpindex: { command: DIRECTORY_COMMAND, args: [...DIRECTORY_ARGS] } } },
+  null,
+  2,
+);
+
+/**
+ * Zed's block. Zed reads MCP servers from `context_servers` in settings.json
+ * (https://zed.dev/docs/ai/mcp); an `mcpServers` block there is ignored, which is what
+ * this page used to hand Zed users.
+ */
+export const ZED_CONFIG_JSON = JSON.stringify(
+  { context_servers: { mcpindex: { command: DIRECTORY_COMMAND, args: [...DIRECTORY_ARGS] } } },
   null,
   2,
 );
@@ -119,6 +132,7 @@ export const DIRECTORY_CLIENTS: DirectoryClient[] = [
     label: 'Cursor',
     kind: 'config',
     path: '.cursor/mcp.json (project) or ~/.cursor/mcp.json (global)',
+    configKey: 'mcpServers',
     value: DIRECTORY_CONFIG_JSON,
   },
   {
@@ -126,6 +140,7 @@ export const DIRECTORY_CLIENTS: DirectoryClient[] = [
     label: 'Claude Desktop',
     kind: 'config',
     path: 'claude_desktop_config.json',
+    configKey: 'mcpServers',
     value: DIRECTORY_CONFIG_JSON,
   },
   {
@@ -133,13 +148,15 @@ export const DIRECTORY_CLIENTS: DirectoryClient[] = [
     label: 'Zed',
     kind: 'config',
     path: '~/.config/zed/settings.json',
-    value: DIRECTORY_CONFIG_JSON,
+    configKey: 'context_servers',
+    value: ZED_CONFIG_JSON,
   },
   {
     id: 'cline',
     label: 'Cline',
     kind: 'config',
     path: 'cline_mcp_settings.json',
+    configKey: 'mcpServers',
     value: DIRECTORY_CONFIG_JSON,
   },
   {

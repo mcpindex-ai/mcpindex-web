@@ -4,6 +4,19 @@ All notable changes to `mcp-server-mcpindex` are recorded here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **`check_tool_trust` / `assess_server` relay the API verdict instead of rewriting it.** The client stamped its own `verdict_contract_version` (1.0.0) over the API's (1.1.0), dropped `subject` and with it `tool_verified: false`, and merged a local `honest_limits` floor into the API's list, so a verdict could say `conformance_monitored_not_enforced` and `semantic_only_no_conformance` at once. The API's `subject`, `honest_limits` and contract version now pass through; the floor and the local version (now 1.1.0) are used only for verdicts the client builds itself when it fails closed. The flat `server_id` / `tool_name` / `source_url` / `fetched_at` fields stay, as additions.
+- **Path segments are checked before any fetch**, with the hosted endpoint's `safeSeg` rule (raw and decoded forms): an empty `server_slug` no longer fetches `/api/v1/server/`, and `..` no longer walks the API path. Trust tools fail closed with `unverified_reason:invalid_args`.
+- **Upstream error bodies stay out of tool output.** A non-2xx used to append the response body verbatim, which for an unrouted path is the site's full HTML 404 page. Errors now carry the status plus the API's short JSON `error` string when it sent one.
+- **`search_mcp_servers` `limit` is an integer 1-50**, matching the hosted endpoint. 0, negative and fractional values were accepted and silently clamped.
+- **Search and recommend print the same caveats as the hosted endpoint**: the source-repository-not-accessible line on flagged rows, and the provenance line (`Basis:` plus the anchor block when the API sends one, for recommend).
+- **`compare_servers` install column lists install methods** (`npm+docker`, `remote`, ...) instead of the first client's label, and a remote-only server's URL is no longer fenced as a bash command.
+- **`get_install_command` accepts `client: "zed"` again**, which the README always listed. The API now generates a Zed config (`context_servers`, the key Zed reads) for npm-published servers; other servers fall back with the existing honest label.
+- **README Cline section is the `cline_mcp_settings.json` JSON block** instead of a bare shell line, and a Zed section is added.
+
 ## [0.4.0] - 2026-08-17
 
 ### Changed

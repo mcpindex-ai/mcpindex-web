@@ -16,6 +16,7 @@ import { createRequire } from 'node:module';
 import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 export { checkToolTrust, assessServer, VERDICT_CONTRACT_VERSION, V1_HONEST_LIMITS } from './trust.mjs';
+import { isSafeSegment } from './trust.mjs';
 import { notifyUpdateIfAvailable } from './update-check.mjs';
 
 // `||` (not `??`) so an empty MCPINDEX_API_BASE - which some MCPB hosts substitute
@@ -57,8 +58,12 @@ const TOOLS = [
           description:
             'Optional category filter (e.g. database, browser, github, productivity).',
         },
+        // Same bounds as the hosted endpoint (z.number().int().min(1).max(50)). This was
+        // an unbounded number, so 0, -3 and 2.5 were accepted and silently clamped.
         limit: {
-          type: 'number',
+          type: 'integer',
+          minimum: 1,
+          maximum: 50,
           description: 'Max results (default 10, max 50).',
           default: 10,
         },
@@ -78,11 +83,10 @@ const TOOLS = [
         },
         client: {
           type: 'string',
-          // Only clients the API actually generates a config for. 'zed' was advertised
-          // but never produced (buildInstalls has no zed branch), so a zed request silently
-          // fell back to another client's config; dropped until a real zed generator exists.
-          // formatInstall also labels any fallback honestly as defense-in-depth.
-          enum: ['claude-desktop', 'claude-code', 'cursor', 'gemini-cli', 'cline'],
+          // Only clients the API generates a config for (mcpindex-web lib/installs.ts).
+          // 'zed' is back now that buildInstalls emits a context_servers block for it.
+          // formatInstall labels any fallback honestly as defense-in-depth.
+          enum: ['claude-desktop', 'claude-code', 'cursor', 'gemini-cli', 'cline', 'zed'],
           description: 'Target client.',
         },
       },
@@ -138,14 +142,41 @@ const TOOLS = [
   },
 ];
 
+// Upstream bodies never reach tool output verbatim. A miss on a path the API does not
+// route returns the site's full HTML 404 page (about 46 KB), which this used to append to
+// the error. On a non-2xx we keep only the API's own short JSON `error` string, if it sent
+// one; anything else is reduced to the status.
+const MAX_ERROR_REASON = 200;
+
 async function api(path) {
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'User-Agent': `mcp-server-mcpindex/${PKG_VERSION}` },
+    headers: { 'User-Agent': `mcp-server-mcpindex/${PKG_VERSION}`, Accept: 'application/json' },
   });
-  if (!res.ok) {
-    throw new Error(`mcpindex API ${res.status}: ${await res.text()}`);
+  const body = await res.text();
+  let data;
+  try {
+    data = JSON.parse(body);
+  } catch {
+    data = undefined;
   }
-  return res.json();
+  if (!res.ok) {
+    const reason =
+      data && typeof data.error === 'string' && data.error.length <= MAX_ERROR_REASON
+        ? `: ${data.error}`
+        : '';
+    throw new Error(`mcpindex API ${res.status}${reason}`);
+  }
+  if (data === undefined) {
+    throw new Error(`mcpindex API ${res.status}: response was not JSON`);
+  }
+  return data;
+}
+
+// Same input guard as the hosted endpoint's safeSeg: an empty slug used to fetch
+// /api/v1/server/ and '..' walked the API path.
+function seg(v, label) {
+  if (!isSafeSegment(v)) throw new Error(`invalid ${label}`);
+  return encodeURIComponent(v);
 }
 
 async function runTool(name, args) {
@@ -166,12 +197,12 @@ async function runTool(name, args) {
       return formatSearch(data);
     }
     case 'get_install_command': {
-      const data = await api(`/api/v1/server/${encodeURIComponent(args.server_slug)}`);
+      const data = await api(`/api/v1/server/${seg(args.server_slug, 'server_slug')}`);
       return formatInstall(data, args.client);
     }
     case 'compare_servers': {
       const rows = await Promise.all(
-        args.slugs.map((s) => api(`/api/v1/server/${encodeURIComponent(s)}`)),
+        args.slugs.map((s) => api(`/api/v1/server/${seg(s, 'slug')}`)),
       );
       return formatCompare(rows);
     }
@@ -243,40 +274,74 @@ export function buildServer() {
   return server;
 }
 
-function formatRecommend(data) {
+// Ported from the hosted endpoint's formatters (mcpindex-web app/api/[transport]/route.ts)
+// so both transports print the same caveats. The stdio copies predated two of them: the
+// source-liveness line and the provenance line.
+
+// The hosted endpoint builds this line in-process from lib/provenance.ts and appends the
+// Bitcoin anchor when one is confirmed. The anchor state is not in the search response, so
+// stdio prints the unanchored form rather than asserting an anchor it cannot see.
+const PROVENANCE_LINE =
+  'Source: mcpindex.ai - advisory, semantic-only screen; not a safety verdict.';
+
+function livenessLine(r, indent) {
+  // Observation plus hedge, never the inference: a 404 cannot tell a deleted repository
+  // from a deliberately private one.
+  if (!r.sourceLiveness) return null;
+  const seen = r.sourceLiveness.confirmed_unavailable
+    ? `, confirmed ${r.sourceLiveness.confirmed_unavailable}`
+    : '';
+  return (
+    `${indent}! Source repository not publicly accessible ` +
+    `(HTTP ${r.sourceLiveness.evidence?.http_status ?? 'unknown'}${seen}); may be private or relocated.`
+  );
+}
+
+export function formatRecommend(data) {
   const lines = [`Top ${data.recommendations.length} for: "${data.task}"`, ''];
   for (const r of data.recommendations) {
     lines.push(`[${r.rank}] ${r.title}  ·  QS ${r.qualityScore}/100  ·  ${r.category}`);
     lines.push(`    ${r.name}`);
     lines.push(`    ${r.reasoning}`);
-    const install = r.installs.npm
-      ? `npx -y ${r.installs.npm}`
-      : r.installs.pypi
-        ? `uvx ${r.installs.pypi}`
-        : r.installs.docker
-          ? `docker run --rm -i ${r.installs.docker}`
-          : r.installs.remote
-            ? `Remote: ${r.installs.remote}`
+    const live = livenessLine(r, '    ');
+    if (live) lines.push(live);
+    const i = r.installs ?? {};
+    const install = i.npm
+      ? `npx -y ${i.npm}`
+      : i.pypi
+        ? `uvx ${i.pypi}`
+        : i.docker
+          ? `docker run --rm -i ${i.docker}`
+          : i.remote
+            ? `Remote: ${i.remote}`
             : 'manual install - see detail page';
     lines.push(`    $ ${install}`);
     lines.push(`    ${r.url}`);
     lines.push('');
   }
-  lines.push(`Source: ${data.note ?? ''}`);
-  return lines.join('\n');
-}
-
-function formatSearch(data) {
-  const lines = [`${data.total} results for: "${data.query}"`, ''];
-  for (const r of data.results) {
-    lines.push(`- ${r.title}  (${r.name})  ·  QS ${r.qualityScore}/100  ·  ${r.category}`);
-    lines.push(`  ${r.description}`);
-    lines.push(`  ${r.url}`);
+  lines.push(data.provenance?.basis ? `Basis: ${data.provenance.basis}` : PROVENANCE_LINE);
+  if (data.provenance?.anchor?.bitcoin_block) {
+    lines.push(
+      `Corpus anchored to Bitcoin block ${data.provenance.anchor.bitcoin_block} - verify: ${data.provenance.anchor.verify}`,
+    );
   }
   return lines.join('\n');
 }
 
-function formatInstall(server, client) {
+export function formatSearch(data) {
+  const lines = [`${data.total} results for: "${data.query}"`, ''];
+  for (const r of data.results) {
+    lines.push(`- ${r.title}  (${r.name})  ·  QS ${r.qualityScore}/100  ·  ${r.category}`);
+    lines.push(`  ${r.description}`);
+    const live = livenessLine(r, '  ');
+    if (live) lines.push(live);
+    lines.push(`  ${r.url ?? `https://mcpindex.ai/server/${r.slug}`}`);
+  }
+  lines.push('', PROVENANCE_LINE);
+  return lines.join('\n');
+}
+
+export function formatInstall(server, client) {
   // server here is the per-server JSON we expose at /api/v1/server/<slug>.
   // Returns a code block with the appropriate install snippet.
   const exact = (server.installs ?? []).find((i) => i.client === client);
@@ -292,22 +357,50 @@ function formatInstall(server, client) {
   return [
     `${server.title} (${server.name}) - ${shownClient}`,
     '',
-    target.json
-      ? '```json\n' + target.json + '\n```'
-      : '```bash\n' + target.command + '\n```',
+    installBlock(target),
     target.notes ? '\n' + target.notes : '',
     fallbackNote,
     `\n${server.url ?? `https://mcpindex.ai/server/${server.slug}`}`,
   ].join('\n');
 }
 
-function formatCompare(rows) {
+// A remote target's `command` is a URL to paste into a client's config, not a shell
+// command, so it is not fenced as bash.
+function installBlock(target) {
+  if (target.json) return '```json\n' + target.json + '\n```';
+  if (target.client === 'remote') return 'Remote endpoint URL (add it to your client as a remote MCP server):\n```\n' + target.command + '\n```';
+  return '```bash\n' + target.command + '\n```';
+}
+
+// The install column used to print installs[0].label, which is the first client's label
+// (e.g. "Claude Desktop (claude_desktop_config.json)") whatever the server ships. List the
+// distinct install methods instead.
+export function installMethods(installs) {
+  const kinds = [];
+  for (const t of installs ?? []) {
+    const text = `${t.json ?? ''} ${t.command ?? ''}`;
+    const kind =
+      t.client === 'remote'
+        ? 'remote'
+        : /\buvx\b/.test(text)
+          ? 'pypi'
+          : /\bdocker\b/.test(text)
+            ? 'docker'
+            : /\bnpx\b/.test(text)
+              ? 'npm'
+              : null;
+    if (kind && !kinds.includes(kind)) kinds.push(kind);
+  }
+  return kinds.length ? kinds.join('+') : 'manual';
+}
+
+export function formatCompare(rows) {
   const header = ['name', 'category', 'quality', 'install', 'env vars'];
   const data = rows.map((r) => [
-    r.name,
-    r.category,
+    String(r.name ?? ''),
+    String(r.category ?? ''),
     String(r.qualityScore ?? ''),
-    r.installs?.[0]?.label ?? 'manual',
+    installMethods(r.installs),
     String(r.envVars?.length ?? 0),
   ]);
   const widths = header.map((h, i) =>

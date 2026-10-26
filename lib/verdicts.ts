@@ -8,7 +8,9 @@
 import path from 'node:path';
 import { promises as fsp } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { loadServers, loadSnapshotMeta } from './registry';
+import { legacySlugRedirects, loadServers, loadSnapshotMeta } from './registry';
+import type { IndexedServer } from './types';
+import { isGoneSlug } from './serverRemovals';
 
 export type Decision = 'ALLOW' | 'DENY' | 'REVIEW';
 export type VerdictStatus = 'EVALUATED' | 'PARTIAL' | 'STALE' | 'ERROR';
@@ -641,6 +643,42 @@ export function selectVerdictForSubject(
     ),
     subject.updatedAt ?? null,
   );
+}
+
+/**
+ * The slug a public trust/badge lookup should bind to, for an id an API caller supplied.
+ *
+ * Callers pass three kinds of id: the current slug, the registry name the docs and the
+ * contract call `server_id` (`io.github.owner/repo`), or a slug that has since moved (an entry
+ * in the legacy disambiguation map). The HTML page already 308s a moved slug, so
+ * without this the badge on an old README link went gray and the trust API answered
+ * UNVERIFIED for a server the page shows as screened.
+ * A registry name shared by more than one listing resolves to nothing: guessing between
+ * them is a wrong-subject verdict. getVerdict itself stays exact-slug.
+ */
+export async function resolveVerdictSlug(id: string): Promise<string | null> {
+  return resolveVerdictSlugIn(id, await loadServers());
+}
+
+/** Pure core of resolveVerdictSlug, exported for tests. */
+export function resolveVerdictSlugIn(
+  id: string,
+  servers: readonly IndexedServer[],
+): string | null {
+  if (servers.some((s) => s.slug === id)) return id;
+  const named = servers.filter((s) => s.name === id);
+  if (named.length === 1) return named[0]!.slug;
+  if (named.length > 1) return null;
+  // Same-subject mappings only. resolveServerRedirect also guesses (drop a trailing -mcp, take
+  // the one slug with this prefix) and follows the seeded SEO redirects in server-removals.json,
+  // several of which cross publisher namespaces. Both are tolerable for a 308 a human watches
+  // land on another page, and not for a verdict answered under the caller's id: a removed
+  // server's README badge would render a different server's screen. The legacy map is safe
+  // because each key hashes its destination's own registry name. A gone slug never binds.
+  if (isGoneSlug(id)) return null;
+  const active = new Set(servers.map((s) => s.slug));
+  const moved = legacySlugRedirects(servers).get(id);
+  return moved && active.has(moved) ? moved : null;
 }
 
 /**

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { notFound, redirect } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { loadServers } from '@/lib/registry';
 import { browsePage, browseTotalPages } from '@/lib/serversBrowse';
 import { ServersBrowse } from '@/components/ServersBrowse';
@@ -35,9 +35,10 @@ export default async function ServersPageN(
   ctx: { params: Promise<{ n: string }> },
 ) {
   const { n } = await ctx.params;
-  if (!/^\d{1,4}$/.test(n)) notFound();
+  // No leading zeros: /servers/page/02 would otherwise serve page 2 under its own canonical.
+  if (!/^[1-9]\d{0,3}$/.test(n)) notFound();
   const page = Number(n);
-  if (page === 1) redirect('/servers'); // one canonical home for page 1
+  if (page === 1) permanentRedirect('/servers'); // one canonical home for page 1
   const servers = await loadServers();
   const data = browsePage(servers, page);
   if (!data) notFound();
