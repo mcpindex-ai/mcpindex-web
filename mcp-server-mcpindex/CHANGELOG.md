@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-26
+
 ### Fixed
 
 - **`check_tool_trust` / `assess_server` relay the API verdict instead of rewriting it.** The client stamped its own `verdict_contract_version` (1.0.0) over the API's (1.1.0), dropped `subject` and with it `tool_verified: false`, and merged a local `honest_limits` floor into the API's list, so a verdict could say `conformance_monitored_not_enforced` and `semantic_only_no_conformance` at once. The API's `subject`, `honest_limits` and contract version now pass through; the floor and the local version (now 1.1.0) are used only for verdicts the client builds itself when it fails closed. The flat `server_id` / `tool_name` / `source_url` / `fetched_at` fields stay, as additions.
