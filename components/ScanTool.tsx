@@ -484,7 +484,7 @@ export function ScanTool() {
             <span className={notice.tone === 'error' ? 'text-rose-400' : 'text-[var(--color-accent)]'}>
               {notice.text}
             </span>
-          ) : stale ? (
+          ) : stale && preflight.state !== 'problem' ? (
             <>
               <Status tone="accent">input changed</Status> the report below is from what you scanned before
             </>

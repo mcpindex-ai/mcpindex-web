@@ -356,6 +356,9 @@ body {
 
 /* Markdown / HTML tables: edge scroll on mobile, optional min width on sm+ */
 .site-table-wrap {
+  /* Containing block for the .sr-only spans in table cells: without it they are positioned
+     against the page and widen it past the viewport on phones (/ledger at 390px). */
+  position: relative;
   margin-inline: -0.5rem;
   padding-inline: 0.5rem;
   overflow-x: auto;
