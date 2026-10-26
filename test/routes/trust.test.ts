@@ -127,3 +127,11 @@ test('resolveVerdictSlugIn: heuristic renames and gone slugs never bind', async 
   assert.ok(gone.length > 0);
   for (const g of gone.slice(0, 50)) assert.equal(await resolveVerdictSlug(g), null, g);
 });
+
+test('resolveVerdictSlug: seeded SEO redirects never carry a verdict', async () => {
+  const { resolveVerdictSlug } = await import('../../lib/verdicts');
+  const removals = (await import('../../data/server-removals.json')).default as { redirects: Record<string, string> };
+  const seeded = Object.keys(removals.redirects);
+  assert.ok(seeded.length > 0);
+  for (const s of seeded) assert.equal(await resolveVerdictSlug(s), null, s);
+});
