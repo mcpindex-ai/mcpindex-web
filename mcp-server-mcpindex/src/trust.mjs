@@ -1,28 +1,40 @@
 // trust.mjs - check_tool_trust / assess_server verdict client.
 //
-// Contract (v1 advisory, free tier):
+// Contract (v1 advisory, free tier). The API's verdict object is carried through
+// unchanged; the client only ADDS the flat convenience fields at the end:
 //   {
+//     subject: { server_id, tool_name, tool_verified? },  // as the API sent it
 //     directive: "ALLOW" | "DENY" | "REVIEW" | "UNVERIFIED",
 //     status: "EVALUATED" | "PARTIAL" | "STALE" | "ERROR",
 //     granularity: string | null,   // e.g. "description-level" for a PARTIAL screen
 //     dimensions: [{ id, verdict, severity }],
 //     expires_at: string | null,
-//     honest_limits: string[],
-//     verdict_contract_version: "1.0.0",
-//     server_id, tool_name?, source_url, fetched_at
+//     honest_limits: string[],      // the API's own list, verbatim
+//     verdict_contract_version: string,  // the API's own version
+//     server_id, tool_name?, source_url, fetched_at   // added by this client
 //   }
 //
-// Fail-CLOSED: if the upstream endpoint is unreachable, returns 404, or
+// Why pass-through: this client used to stamp its own contract version (1.0.0) over the
+// API's (1.1.0), drop subject.tool_verified:false, and prepend a local honest_limits floor
+// that contradicted the API's limits (conformance_monitored_not_enforced next to the API's
+// semantic_only_no_conformance). A trust client that rewrites the verdict it relays is
+// overstating what it knows. The local floor and version are used ONLY for verdicts this
+// client fabricates itself (fail-closed UNVERIFIED) or when the API sent no value.
+//
+// Fail-CLOSED: if the upstream endpoint is unreachable, returns non-2xx, or
 // returns malformed data, we return directive=UNVERIFIED, status=ERROR.
 // We NEVER fake an ALLOW. This is the load-bearing safety invariant.
 //
-// status is TELEMETRY about screen completeness (not the trust decision — that is
+// status is TELEMETRY about screen completeness (not the trust decision - that is
 // `directive`). PARTIAL means the screen only covered part of the surface (e.g.
 // description-level, not the live tool); it must NEVER be reported as EVALUATED. An
 // unexpected/unknown status is coerced DOWN to STALE (conservative), never up to
-// EVALUATED — overstating completeness is the one direction a trust tool must not drift.
+// EVALUATED - overstating completeness is the one direction a trust tool must not drift.
 
-export const VERDICT_CONTRACT_VERSION = '1.0.0';
+// Version stamped on verdicts this client builds itself (fail-closed UNVERIFIED) and the
+// fallback when the API omits one. Matches the API's current contract
+// (mcpindex-web lib/verdictContract.ts); an API-supplied version always wins.
+export const VERDICT_CONTRACT_VERSION = '1.1.0';
 
 export const V1_HONEST_LIMITS = Object.freeze([
   'conformance_monitored_not_enforced',
@@ -37,8 +49,44 @@ const VALID_SEVERITIES = new Set(['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
 
 const DEFAULT_TIMEOUT_MS = 5000;
 
+const SEMVER = /^\d+\.\d+\.\d+$/;
+
+// Path-segment guard, ported from the hosted endpoint's safeSeg (mcpindex-web
+// lib/v1Dispatch.ts) so both transports reject the same inputs. Block-list, so no
+// legitimate slug or tool name is rejected. Every decoded form is checked too: the API
+// decodes the segment again, so `%2e%2e` or `%252e%252e` would otherwise arrive as `..`.
+function unsafeSeg(v) {
+  return !v || v === '.' || v.includes('/') || v.includes('\\') || v.includes('..') || /[\u0000-\u001f]/.test(v);
+}
+
+export function isSafeSegment(v) {
+  if (typeof v !== 'string') return false;
+  let cur = v;
+  for (let i = 0; i < 3; i++) {
+    if (unsafeSeg(cur)) return false;
+    let next;
+    try {
+      next = decodeURIComponent(cur);
+    } catch {
+      return false;
+    }
+    if (next === cur) return true;
+    cur = next;
+  }
+  return false;
+}
+
+function subjectFor(serverId, toolName) {
+  // Same shape the API sends on its own UNVERIFIED branch: the tool endpoint never
+  // confirms the tool exists, so tool_verified is false; the server endpoint has no tool.
+  return toolName === undefined
+    ? { server_id: serverId, tool_name: null }
+    : { server_id: serverId, tool_name: toolName, tool_verified: false };
+}
+
 function unverifiedResponse({ serverId, toolName, sourceUrl, reason }) {
   return {
+    subject: subjectFor(serverId, toolName),
     directive: 'UNVERIFIED',
     status: 'ERROR',
     granularity: null,
@@ -88,21 +136,34 @@ function shapeVerdict({ raw, serverId, toolName, sourceUrl }) {
   const dimensions = normalizeDimensions(raw.dimensions);
   const expires_at = typeof raw.expires_at === 'string' ? raw.expires_at : null;
 
-  // honest_limits: always include the v1 defaults; merge in any extras the
-  // server sent. Never let the upstream remove the v1 floor.
-  const extra = Array.isArray(raw.honest_limits)
+  // honest_limits: the API's list, verbatim and in order. The local floor is used only
+  // when the API sent none, so a verdict is never relayed with no caveats at all - but it
+  // is never merged INTO the API's list, where it can contradict what the API said.
+  const sent = Array.isArray(raw.honest_limits)
     ? raw.honest_limits.filter((s) => typeof s === 'string')
     : [];
-  const honest_limits = Array.from(new Set([...V1_HONEST_LIMITS, ...extra]));
+  const honest_limits = sent.length ? Array.from(new Set(sent)) : [...V1_HONEST_LIMITS];
+
+  const verdict_contract_version =
+    typeof raw.verdict_contract_version === 'string' && SEMVER.test(raw.verdict_contract_version)
+      ? raw.verdict_contract_version
+      : VERDICT_CONTRACT_VERSION;
+
+  // subject (incl. tool_verified) as the API sent it; synthesized only when absent.
+  const subject =
+    raw.subject && typeof raw.subject === 'object' && !Array.isArray(raw.subject)
+      ? raw.subject
+      : subjectFor(serverId, toolName);
 
   return {
+    subject,
     directive,
     status,
     granularity,
     dimensions,
     expires_at,
     honest_limits,
-    verdict_contract_version: VERDICT_CONTRACT_VERSION,
+    verdict_contract_version,
     server_id: serverId,
     ...(toolName ? { tool_name: toolName } : {}),
     source_url: sourceUrl,
@@ -148,6 +209,9 @@ export async function checkToolTrust({
       reason: 'missing_args',
     });
   }
+  if (!isSafeSegment(serverId) || !isSafeSegment(toolName)) {
+    return unverifiedResponse({ serverId, toolName, sourceUrl: '', reason: 'invalid_args' });
+  }
   const url = `${apiBase}/api/v1/trust/tool/${encodeURIComponent(serverId)}/${encodeURIComponent(toolName)}`;
   const r = await fetchVerdict({ url, userAgent, fetchImpl, timeoutMs });
   if (!r.ok) {
@@ -169,6 +233,9 @@ export async function assessServer({
       sourceUrl: '',
       reason: 'missing_args',
     });
+  }
+  if (!isSafeSegment(serverId)) {
+    return unverifiedResponse({ serverId, sourceUrl: '', reason: 'invalid_args' });
   }
   const url = `${apiBase}/api/v1/trust/server/${encodeURIComponent(serverId)}`;
   const r = await fetchVerdict({ url, userAgent, fetchImpl, timeoutMs });

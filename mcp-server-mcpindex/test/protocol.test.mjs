@@ -210,5 +210,5 @@ test('importing the module has no side effects and exposes the library surface',
   assert.equal(typeof mod.buildServer, 'function');
   assert.equal(typeof mod.checkToolTrust, 'function');
   assert.equal(typeof mod.assessServer, 'function');
-  assert.equal(mod.VERDICT_CONTRACT_VERSION, '1.0.0');
+  assert.equal(mod.VERDICT_CONTRACT_VERSION, '1.1.0');
 });
