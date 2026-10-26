@@ -103,13 +103,12 @@ test('trust: the registry name binds to the same verdict as the slug', async () 
   assert.equal(tool.directive, bySlug.directive);
 });
 
-test('trust: a registry name shared by two listings stays UNVERIFIED', async () => {
-  const { loadServers } = await import('../../lib/registry');
-  const servers = await loadServers();
-  const counts = new Map<string, number>();
-  for (const s of servers) counts.set(s.name, (counts.get(s.name) ?? 0) + 1);
-  const shared = [...counts].find(([, n]) => n > 1)?.[0];
-  if (!shared) return; // no collision in this snapshot
-  const r = asObj(await callRoute(trustServer, `/api/v1/trust/server/x`, { params: { server_id: shared } }));
-  assert.equal(r.directive, 'UNVERIFIED');
+test('resolveVerdictSlugIn: a registry name shared by two listings binds to nothing', async () => {
+  const { resolveVerdictSlugIn } = await import('../../lib/verdicts');
+  const row = (slug: string, name: string) => ({ slug, name, baseSlug: slug.split('--')[0] }) as never;
+  const servers = [row('io-github-a-x--aaaa', 'io.github.a/x'), row('io-github-a-x--bbbb', 'io.github.a/x'), row('io-github-b-y', 'io.github.b/y')];
+  assert.equal(resolveVerdictSlugIn('io.github.a/x', servers), null);
+  assert.equal(resolveVerdictSlugIn('io.github.b/y', servers), 'io-github-b-y');
+  assert.equal(resolveVerdictSlugIn('io-github-b-y', servers), 'io-github-b-y');
+  assert.equal(resolveVerdictSlugIn('nothing-like-it', servers), null);
 });

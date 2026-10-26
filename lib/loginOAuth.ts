@@ -114,8 +114,10 @@ export function loginStateCookie(state: string): string {
 
 /** Constant-time: does the cookie the browser sent name this state? */
 export function stateMatchesCookie(state: string, cookie: string | undefined): boolean {
-  if (!cookie || cookie.length !== state.length) return false;
-  return timingSafeEqual(Buffer.from(cookie), Buffer.from(state));
+  if (!cookie) return false;
+  const a = Buffer.from(cookie);
+  const b = Buffer.from(state);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 function genState(): string {

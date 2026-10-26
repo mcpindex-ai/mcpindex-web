@@ -66,7 +66,6 @@ type ProxyResult = { ok: boolean; status: number; data: Record<string, unknown> 
 // know their exact `io.github.you/...` id or figure out where to serve the challenge.
 type ServerHit = { serverId: string; slug: string; title: string; remoteUrl: string; remoteOrigin: string };
 
-
 // Map a registry result to a ServerHit. Handles both shapes: the claimable finder returns a flat
 // `remote`; the /api/v1/search deep-link returns `installs.remote`. `name` is the registry id.
 function toServerHit(r: Record<string, unknown>): ServerHit | null {

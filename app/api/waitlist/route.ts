@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
   } else {
     // formData() throws on a body that is neither urlencoded nor multipart (text/plain, none).
     const form = await req.formData().catch(() => null);
-    if (!form) return Response.json({ error: 'invalid_email' }, { status: 400 });
+    if (!form) return Response.json({ error: 'invalid_body' }, { status: 400 });
     email = String(form.get('email') ?? '');
   }
 

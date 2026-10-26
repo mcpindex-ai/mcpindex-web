@@ -59,9 +59,12 @@ test('badge: the registry name and a moved slug render the screened badge, not g
   const byName = await callRoute(GET, `/api/v1/badge/x`, { params: { slug: name } });
   svg(byName);
   assert.match(byName.text, /drift-monitored/i);
-  // A legacy disambiguation slug resolves to its current listing, as the HTML page 308s it.
-  const [legacy, current] = [...legacySlugRedirects(servers)][0] ?? [];
-  if (!legacy) return;
-  const { resolveVerdictSlug } = await import('../../lib/verdicts');
-  assert.equal(await resolveVerdictSlug(legacy), current);
+  // A legacy disambiguation slug renders the same badge as the listing the HTML page 308s it to.
+  const legacy = [...legacySlugRedirects(servers)];
+  assert.ok(legacy.length > 0, 'snapshot has no legacy slugs to exercise');
+  const [old, current] = legacy[0]!;
+  const viaOld = await callRoute(GET, `/api/v1/badge/x`, { params: { slug: old } });
+  const viaCurrent = await callRoute(GET, `/api/v1/badge/x`, { params: { slug: current } });
+  svg(viaOld);
+  assert.equal(viaOld.text, viaCurrent.text);
 });
