@@ -27,8 +27,7 @@
 //   passed, and that gate now fires far less often. An integrator who wrote that rule is
 //   entitled to notice the change rather than discover it.
 //
-// The npm client (mcp-server-mcpindex) declares its OWN copy of this constant and stamps
-// it on its own output rather than validating ours, so it cannot break on a server-side
-// bump - but it will keep reporting 1.0.0 until it is republished. Its responses stay
-// shape-compatible, so that lag is cosmetic, not a correctness problem.
+// The npm client (mcp-server-mcpindex) relays this value from the API response and keeps
+// its own copy only for verdicts it fails closed on locally without reaching the API. A bump
+// here reaches stdio users immediately; the local copy needs a republish.
 export const VERDICT_CONTRACT_VERSION = '1.1.0';
