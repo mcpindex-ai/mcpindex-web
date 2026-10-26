@@ -50,7 +50,7 @@ export async function GET(
   const screened = slug ? await getScreenedVerdict(slug) : null;
   const body = screened
     ? {
-        subject: { server_id, tool_name: null },
+        subject: { server_id, slug, tool_name: null },
         status: screened.status,
         directive: screened.directive.decision,
         granularity: screened.granularity ?? null,
@@ -64,7 +64,7 @@ export async function GET(
         verdict_contract_version: VERDICT_CONTRACT_VERSION,
       }
     : {
-        subject: { server_id, tool_name: null },
+        subject: { server_id, slug, tool_name: null },
         status: 'ERROR',
         directive: 'UNVERIFIED',
         granularity: null,

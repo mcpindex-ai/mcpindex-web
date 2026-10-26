@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { LOGIN_STATE_COOKIE, completeLogin, loginEnabled, stateMatchesCookie } from '@/lib/loginOAuth';
+import { clearLoginStateCookie, completeLogin, loginCookieName, loginEnabled, stateMatchesCookie } from '@/lib/loginOAuth';
 import { loginStore } from '@/lib/loginStore';
 import { WEB_LOGIN_MESSAGE_TYPE, siteOrigin } from '@/lib/webLoginContract';
 
@@ -15,6 +15,14 @@ export const dynamic = 'force-dynamic';
 //          never stored server-side.
 // Inert unless MCPINDEX_LOGIN_ENABLED=1.
 export async function GET(req: NextRequest) {
+  const res = await handle(req);
+  // The state is one-time either way; drop its binding cookie on every answer.
+  const clear = clearLoginStateCookie((new URL(req.url).searchParams.get('state') ?? '').toLowerCase());
+  if (clear) res.headers.append('set-cookie', clear);
+  return res;
+}
+
+async function handle(req: NextRequest): Promise<Response> {
   if (!loginEnabled()) {
     return Response.json({ error: 'not_found' }, { status: 404 });
   }
@@ -28,8 +36,9 @@ export async function GET(req: NextRequest) {
   }
 
   // Checked BEFORE completeLogin so a state this browser did not start is never consumed or
-  // exchanged. See LOGIN_STATE_COOKIE.
-  if (!stateMatchesCookie(state, req.cookies.get(LOGIN_STATE_COOKIE)?.value)) {
+  // exchanged. See loginCookieName.
+  const cookieName = loginCookieName(state);
+  if (!cookieName || !stateMatchesCookie(state, req.cookies.get(cookieName)?.value)) {
     return page('Login failed', 'This login was started in a different browser or has expired. Start the login again from the same browser.', 400);
   }
 

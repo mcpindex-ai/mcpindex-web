@@ -112,3 +112,18 @@ test('resolveVerdictSlugIn: a registry name shared by two listings binds to noth
   assert.equal(resolveVerdictSlugIn('io-github-b-y', servers), 'io-github-b-y');
   assert.equal(resolveVerdictSlugIn('nothing-like-it', servers), null);
 });
+
+// The redirect heuristics (drop -mcp, unique prefix) are fine for a 308 a human watches land,
+// and not for a verdict returned under the caller's id: they mapped removed servers and bare
+// prefixes onto other servers' screens.
+test('resolveVerdictSlugIn: heuristic renames and gone slugs never bind', async () => {
+  const { resolveVerdictSlugIn, resolveVerdictSlug } = await import('../../lib/verdicts');
+  const row = (slug: string) => ({ slug, name: slug, baseSlug: slug }) as never;
+  const servers = [row('acme-status'), row('widget')];
+  assert.equal(resolveVerdictSlugIn('acme', servers), null, 'unique prefix');
+  assert.equal(resolveVerdictSlugIn('widget-mcp', servers), null, 'drop -mcp');
+  const removals = (await import('../../data/server-removals.json')).default as { gone: Record<string, unknown> };
+  const gone = Object.keys(removals.gone);
+  assert.ok(gone.length > 0);
+  for (const g of gone.slice(0, 50)) assert.equal(await resolveVerdictSlug(g), null, g);
+});

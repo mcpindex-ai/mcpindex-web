@@ -63,7 +63,9 @@ export async function GET(
   const v = slug ? await getScreenedVerdict(slug) : null;
   // tool_verified:false is stated on BOTH branches - the caveat is a property of how this
   // endpoint resolves tools, not of whether a verdict happened to exist.
-  const subject = { server_id, tool_name, tool_verified: false };
+  // `slug` is the listing the id resolved to (null when none), so a caller can see when a
+  // registry name or moved slug was mapped rather than matched.
+  const subject = { server_id, slug, tool_name, tool_verified: false };
   const body = v
     ? {
         subject,
