@@ -141,6 +141,22 @@ test('search limit is an integer 1-50 (same bounds as the hosted endpoint)', asy
   }
 });
 
+test('get_install_command accepts zed', async () => {
+  const stub = await startStub();
+  const s = startServer(stub.base);
+  try {
+    const list = await s.list();
+    const tool = list.result.tools.find((t) => t.name === 'get_install_command');
+    assert.ok(tool.inputSchema.properties.client.enum.includes('zed'));
+    const r = await s.call('get_install_command', { server_slug: 'x', client: 'zed' });
+    // Past schema validation: it fetched and got the stub's 404.
+    assert.equal(textOf(r), 'Error calling get_install_command: mcpindex API 404');
+  } finally {
+    await s.stop();
+    stub.close();
+  }
+});
+
 // --- formatter parity --------------------------------------------------
 
 const LIVENESS = {

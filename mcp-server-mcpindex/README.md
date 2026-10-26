@@ -89,10 +89,32 @@ Add to `.cursor/mcp.json`:
 
 ## Use it from Cline
 
-Add to your Cline settings:
+Add to `cline_mcp_settings.json`:
 
-```bash
-npx -y mcp-server-mcpindex@latest
+```json
+{
+  "mcpServers": {
+    "mcpindex": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-mcpindex@latest"]
+    }
+  }
+}
+```
+
+## Use it from Zed
+
+Zed reads MCP servers from `context_servers`, not `mcpServers`. Add to `~/.config/zed/settings.json`:
+
+```json
+{
+  "context_servers": {
+    "mcpindex": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-mcpindex@latest"]
+    }
+  }
+}
 ```
 
 ## Tools exposed

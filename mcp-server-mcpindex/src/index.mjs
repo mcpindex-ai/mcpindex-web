@@ -83,11 +83,10 @@ const TOOLS = [
         },
         client: {
           type: 'string',
-          // Only clients the API actually generates a config for. 'zed' was advertised
-          // but never produced (buildInstalls has no zed branch), so a zed request silently
-          // fell back to another client's config; dropped until a real zed generator exists.
-          // formatInstall also labels any fallback honestly as defense-in-depth.
-          enum: ['claude-desktop', 'claude-code', 'cursor', 'gemini-cli', 'cline'],
+          // Only clients the API generates a config for (mcpindex-web lib/installs.ts).
+          // 'zed' is back now that buildInstalls emits a context_servers block for it.
+          // formatInstall labels any fallback honestly as defense-in-depth.
+          enum: ['claude-desktop', 'claude-code', 'cursor', 'gemini-cli', 'cline', 'zed'],
           description: 'Target client.',
         },
       },

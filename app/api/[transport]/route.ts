@@ -162,11 +162,42 @@ function formatInstall(server: any, client: string): string {
   return [
     `${server.title} (${server.name}) - ${shownClient}`,
     '',
-    target.json ? '```json\n' + target.json + '\n```' : '```bash\n' + target.command + '\n```',
+    installBlock(target),
     target.notes ? '\n' + target.notes : '',
     fallbackNote,
     `\n${server.url ?? `https://mcpindex.ai/server/${server.slug}`}`,
   ].join('\n');
+}
+
+// A remote target's `command` is a URL to paste into a client's config, not a shell
+// command, so it is not fenced as bash. Same as the stdio package.
+function installBlock(target: any): string {
+  if (target.json) return '```json\n' + target.json + '\n```';
+  if (target.client === 'remote') {
+    return 'Remote endpoint URL (add it to your client as a remote MCP server):\n```\n' + target.command + '\n```';
+  }
+  return '```bash\n' + target.command + '\n```';
+}
+
+// The install column used to print installs[0].label, the first client's label, whatever
+// the server ships. List the distinct install methods instead. Same as the stdio package.
+function installMethods(installs: any[] | undefined): string {
+  const kinds: string[] = [];
+  for (const t of installs ?? []) {
+    const body = `${t.json ?? ''} ${t.command ?? ''}`;
+    const kind =
+      t.client === 'remote'
+        ? 'remote'
+        : /\buvx\b/.test(body)
+          ? 'pypi'
+          : /\bdocker\b/.test(body)
+            ? 'docker'
+            : /\bnpx\b/.test(body)
+              ? 'npm'
+              : null;
+    if (kind && !kinds.includes(kind)) kinds.push(kind);
+  }
+  return kinds.length ? kinds.join('+') : 'manual';
 }
 
 function formatCompare(rows: any[]): string {
@@ -175,7 +206,7 @@ function formatCompare(rows: any[]): string {
     String(r.name ?? ''),
     String(r.category ?? ''),
     String(r.qualityScore ?? ''),
-    String(r.installs?.[0]?.label ?? 'manual'),
+    installMethods(r.installs),
     String(r.envVars?.length ?? 0),
   ]);
   const widths = header.map((h, i) => Math.max(h.length, ...data.map((row) => row[i].length)));
@@ -183,11 +214,10 @@ function formatCompare(rows: any[]): string {
   return [fmt(header), fmt(widths.map((w) => '-'.repeat(w))), ...data.map(fmt)].join('\n');
 }
 
-// Only clients that lib/installs.ts actually generates a config for. 'zed' was
-// advertised here but never produced (buildInstalls has no zed branch), so a
-// zed request silently fell back to another client's config; dropped until a real
-// zed generator exists. formatInstall also labels any fallback honestly as defense.
-const CLIENTS = ['claude-desktop', 'claude-code', 'cursor', 'gemini-cli', 'cline'] as const;
+// Only clients that lib/installs.ts actually generates a config for. 'zed' is back now
+// that buildInstalls emits a context_servers block for it. formatInstall also labels any
+// fallback honestly as defense. Keep in step with the stdio package's enum.
+const CLIENTS = ['claude-desktop', 'claude-code', 'cursor', 'gemini-cli', 'cline', 'zed'] as const;
 
 const handler = createMcpHandler(
   (server) => {

@@ -14,6 +14,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - **`search_mcp_servers` `limit` is an integer 1-50**, matching the hosted endpoint. 0, negative and fractional values were accepted and silently clamped.
 - **Search and recommend print the same caveats as the hosted endpoint**: the source-repository-not-accessible line on flagged rows, and the provenance line (`Basis:` plus the anchor block when the API sends one, for recommend).
 - **`compare_servers` install column lists install methods** (`npm+docker`, `remote`, ...) instead of the first client's label, and a remote-only server's URL is no longer fenced as a bash command.
+- **`get_install_command` accepts `client: "zed"` again**, which the README always listed. The API now generates a Zed config (`context_servers`, the key Zed reads) for npm-published servers; other servers fall back with the existing honest label.
+- **README Cline section is the `cline_mcp_settings.json` JSON block** instead of a bare shell line, and a Zed section is added.
 
 ## [0.4.0] - 2026-08-17
 

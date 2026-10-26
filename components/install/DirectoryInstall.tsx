@@ -71,7 +71,7 @@ export function DirectoryInstall({
           label={client.kind === 'config' ? `Add to ${client.path}` : undefined}
           notes={
             client.kind === 'config'
-              ? 'Merge into the mcpServers block, then restart the client.'
+              ? `Merge into the ${client.configKey ?? 'mcpServers'} block, then restart the client.`
               : 'Paste and run, then restart the client.'
           }
           trackSource={`install-page-directory-${client.id}`}

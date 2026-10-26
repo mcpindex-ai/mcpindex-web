@@ -107,10 +107,44 @@ export function buildInstalls(s: IndexedServer): InstallTarget[] {
         2,
       ),
     });
+    // Cline reads the same mcpServers block as Claude Desktop from cline_mcp_settings.json.
+    // This used to be a bare `npx` shell line under a label naming a JSON settings file.
     out.push({
       client: 'cline',
       label: 'Cline (cline_mcp_settings.json)',
-      command: `npx -y -- ${shellArg(s.npmPackage)}`,
+      json: JSON.stringify(
+        {
+          mcpServers: {
+            [shortName(s)]: {
+              command: 'npx',
+              args: ['-y', '--', s.npmPackage],
+              ...(env ? { env } : {}),
+            },
+          },
+        },
+        null,
+        2,
+      ),
+    });
+    // Zed reads MCP servers from `context_servers` in its settings.json, not `mcpServers`
+    // (https://zed.dev/docs/ai/mcp). Same command/args/env entry shape.
+    out.push({
+      client: 'zed',
+      label: 'Zed (~/.config/zed/settings.json)',
+      json: JSON.stringify(
+        {
+          context_servers: {
+            [shortName(s)]: {
+              command: 'npx',
+              args: ['-y', '--', s.npmPackage],
+              ...(env ? { env } : {}),
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      notes: 'Merge into the context_servers block of your Zed settings.',
     });
     const name = shortName(s);
     out.push({
