@@ -263,3 +263,11 @@ test('preflight: the in-path gate republishes the caveat, not just the docked nu
     assert.ok(rec.sourceLiveness.evidence.vantages >= 2);
   }
 });
+
+test('unknown /api/v1 path: JSON 404, not the HTML site page', async () => {
+  const { GET: rest } = await import('../../app/api/v1/[...rest]/route');
+  const r = await callRoute(rest, '/api/v1/nope');
+  assert.equal(r.status, 404);
+  assert.match(r.headers.get('content-type') ?? '', /application\/json/);
+  assert.equal((r.json() as { error: string }).error, 'not_found');
+});
