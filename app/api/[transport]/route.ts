@@ -14,7 +14,7 @@ import { provenanceLine } from '@/lib/provenance';
 import { z } from 'zod';
 
 // In-process /api/v1 dispatch (no self-fetch); see lib/v1Dispatch.ts.
-import { callV1, withTimeout } from '@/lib/v1Dispatch';
+import { callV1, safeSeg, withTimeout } from '@/lib/v1Dispatch';
 import { inspectMcpBody } from '@/lib/mcpBodyGuard';
 import { armMcpWatchdog, contentLengthOf } from '@/lib/mcpWatchdog';
 
@@ -39,21 +39,11 @@ const tmeta = (name: string) => {
 
 const api = (path: string): Promise<any> => callV1<any>(path);
 
-// Defense-in-depth: the base host is fixed, but keep path-segment inputs from
-// walking the /api/v1 path (reject traversal / control chars). Block-list, not
-// allow-list, so we never reject a legitimate slug/tool name.
-function safeSeg(v: string, label: string): string {
-  if (!v || v === '.' || v.includes('/') || v.includes('\\') || v.includes('..') || /[\u0000-\u001f]/.test(v)) {
-    throw new Error(`invalid ${label}`);
-  }
-  return v;
-}
-
 const text = (t: string) => ({ content: [{ type: 'text' as const, text: t }] });
 // Messages we throw DELIBERATELY, and which are safe to hand an unauthenticated caller:
 //   `mcpindex API <status>`  - lib/v1Dispatch on a non-2xx (status only; it is explicitly
 //                              written not to leak the upstream body)
-//   `invalid <label>`        - safeSeg above, fixed labels
+//   `invalid <label>`        - safeSeg (lib/v1Dispatch), fixed labels
 // Anything else reaching this function is unexpected - a formatter TypeError such as
 // "Cannot read properties of undefined (reading 'recommendations')" describes our internal
 // shape to anyone who can POST. /api/mcp is unauthenticated, so that is a free structure
@@ -445,7 +435,7 @@ async function wrongTransport(ctx: unknown): Promise<Response | null> {
   const { transport } = await (ctx as { params: Promise<{ transport: string }> }).params;
   if (transport === CANONICAL_TRANSPORT) return null;
   // Echo the segment back so the operator can see what they asked for, but don't
-  // reflect unbounded caller-controlled input: same posture as safeSeg() above.
+  // reflect unbounded caller-controlled input: same posture as safeSeg().
   const echoed = transport.replace(/[^\w.-]/g, '').slice(0, 32) || 'unknown';
   return Response.json(
     {

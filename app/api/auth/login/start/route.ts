@@ -27,6 +27,15 @@ export async function GET(req: NextRequest) {
   if (!loginEnabled()) {
     return Response.json({ error: 'not_found' }, { status: 404 });
   }
+  // Login CSRF: a third-party page can navigate a victim's browser here, and a provider that
+  // was authorized before redirects back without a prompt, so the callback would mint a key and
+  // rotate the victim's existing one. Legitimate starts come from the CLI opening the browser
+  // (Sec-Fetch-Site: none) or the /claim wizard popup (same-origin). Absent header (curl, old
+  // browsers) is allowed: an attacker cannot strip it from a modern victim browser.
+  const site = req.headers.get('sec-fetch-site');
+  if (site === 'cross-site' || site === 'same-site') {
+    return Response.json({ error: 'cross_site_start' }, { status: 403 });
+  }
   // Rate-limit BEFORE the state-store write: bounds pre-auth cost/abuse on the shared Upstash.
   const limit = await checkLoginLimit(clientIp(req), new Date());
   if (!limit.ok) {

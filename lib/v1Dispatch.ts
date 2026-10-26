@@ -107,3 +107,28 @@ export function withTimeout<T>(p: Promise<T>, ms: number, label?: string): Promi
     // clearTimeout on settle so a fast success does not keep the event loop alive for `ms`.
   ]).finally(() => clearTimeout(timer));
 }
+
+// Defense-in-depth for the /api/mcp tools: the base host is fixed, but keep path-segment inputs
+// from walking the /api/v1 path (reject traversal / control chars). Block-list, not allow-list,
+// so we never reject a legitimate slug/tool name.
+function unsafeSeg(v: string): boolean {
+  return !v || v === '.' || v.includes('/') || v.includes('\\') || v.includes('..') || /[\u0000-\u001f]/.test(v);
+}
+
+// Checks every decoded form too: v1Dispatch decodes the segment and the trust routes decode it
+// again, so `%2e%2e` or `%252e%252e` would otherwise arrive downstream as `..`.
+export function safeSeg(v: string, label: string): string {
+  let cur = v;
+  for (let i = 0; i < 3; i++) {
+    if (unsafeSeg(cur)) throw new Error(`invalid ${label}`);
+    let next: string;
+    try {
+      next = decodeURIComponent(cur);
+    } catch {
+      throw new Error(`invalid ${label}`);
+    }
+    if (next === cur) return v;
+    cur = next;
+  }
+  throw new Error(`invalid ${label}`);
+}

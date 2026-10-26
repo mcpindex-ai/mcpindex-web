@@ -142,7 +142,8 @@ export async function POST(
   ctx: { params: Promise<{ action: string }> },
 ): Promise<Response> {
   const { action } = await ctx.params;
-  const plan = ACTIONS[action];
+  // hasOwn: `constructor`/`toString` would otherwise resolve to Object.prototype members and 500.
+  const plan = Object.hasOwn(ACTIONS, action) ? ACTIONS[action] : undefined;
   // Unknown action -> 404 closed-vocab (do this before touching the body).
   if (!plan) return reply({ error: 'unknown action' }, 404);
 

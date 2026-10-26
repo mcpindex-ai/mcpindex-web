@@ -145,6 +145,25 @@ test('login/start: flag off → 404', async () => {
   const r = await callRoute(loginStart, '/api/auth/login/start');
   assert.equal(r.status, 404);
 });
+test('login/start: a cross-site navigation is refused before any state is written', async () => {
+  process.env.MCPINDEX_LOGIN_ENABLED = '1';
+  for (const site of ['cross-site', 'same-site']) {
+    const r = await callRoute(loginStart, '/api/auth/login/start', {
+      query: { mode: 'web' }, headers: { 'sec-fetch-site': site },
+    });
+    assert.equal(r.status, 403, site);
+    assert.equal(obj(r).error, 'cross_site_start');
+  }
+});
+test('login/start: CLI (none) and wizard (same-origin) starts get past the CSRF check', async () => {
+  process.env.MCPINDEX_LOGIN_ENABLED = '1';
+  for (const site of ['none', 'same-origin']) {
+    const r = await callRoute(loginStart, '/api/auth/login/start', {
+      query: { cli_callback: 'http://evil.invalid/' }, headers: { 'sec-fetch-site': site },
+    });
+    assert.notEqual(r.status, 403, site);
+  }
+});
 test('login/callback: flag off → 404', async () => {
   const r = await callRoute(loginCallback, '/api/auth/login/callback', { query: { code: 'x', state: FIX.STATE64_OK } });
   assert.equal(r.status, 404);
