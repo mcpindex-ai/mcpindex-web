@@ -595,7 +595,7 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
             `<!-- Markdown (GitHub-style; extension-less, keys off Content-Type) -->`,
             `[![mcpindex](https://mcpindex.ai/api/v1/badge/<slug>)](https://mcpindex.ai/server/<slug>)`,
           ]}
-          notes="The badge reads the same verdict the site pages and the trust API use, so the three never disagree. States are screened / flagged / review / re-check due, and a fail-closed gray not screened for an unknown slug - never green, never a fake pass, never a broken image."
+          notes="The badge reads the same verdict the site pages and the trust API use, so the three never disagree. States read drift-monitored / flagged / review / re-check due, and a fail-closed gray not screened for an unknown slug - never green, never a fake pass, never a broken image."
         />
       </Section>
 
@@ -716,15 +716,12 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
       "name": "io.github.foo/pdf-mcp",            // canonical registry name
       "title": "PDF Tools MCP Server",            // display name
       "description": "Generate PDF from HTML…",   // one-line description from the registry
-      "category": "docs",                         // inferred category (28 total)
+      "category": "docs",                         // inferred category (count: /api/registry-count)
       "qualityScore": 95,                         // 0-100, see /methodology
       "reasoning": "Matches \\"pdf\\" in docs-category server.",  // why it ranked
       "installs": {
-        "npm": "@foo/pdf-mcp",                    // present if registry has an npm package
-        "pypi": null,
-        "docker": null,
-        "remote": null                            // present if registry has a remote URL
-      },
+        "npm": "@foo/pdf-mcp"                     // keys present only when the registry has one:
+      },                                          // npm, pypi, docker, remote
       "url": "https://mcpindex.ai/server/io-github-foo-pdf-mcp"
     },
     /* … 2 more ranked picks … */
@@ -881,7 +878,7 @@ session = wrap(session, pin=PreflightPin(), server_id="your-server")`}</code>
           Footnote on &ldquo;ranked picks&rdquo;: the registry returns servers in
           publication order; PulseMCP and Smithery offer hand-curated featured
           collections but no programmatic per-task ranking. mcpindex.ai computes a
-          composite score (search match × MCP Quality Score) per request - see{' '}
+          relevance-led score (keyword match first, MCP Quality Score as a tiebreak) per request - see{' '}
           <Ext href="/methodology">/methodology</Ext> for the algorithm.
         </p>
       </Section>
