@@ -22,7 +22,7 @@
 //   no network / no Redis.
 
 import 'server-only';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { issueApiKey } from './issueKey';
 import { flag, logFlagStates } from './flags';
 
@@ -97,6 +97,25 @@ export type IssueFn = (
 
 function sha256hex(s: string): string {
   return createHash('sha256').update(s, 'utf8').digest('hex');
+}
+
+/**
+ * Browser binding for the one-time state. login/start sets it on the browser that began the
+ * login; the callback refuses a state that browser did not start. Without it, a callback URL
+ * carrying an attacker's own code and state could be opened by a victim, who would be shown
+ * the attacker's key and told to paste it into the /claim wizard. `__Host-` pins it to this
+ * host over https with Path=/.
+ */
+export const LOGIN_STATE_COOKIE = '__Host-mcpindex_login';
+
+export function loginStateCookie(state: string): string {
+  return `${LOGIN_STATE_COOKIE}=${state}; Path=/; Max-Age=${STATE_TTL_SEC}; HttpOnly; Secure; SameSite=Lax`;
+}
+
+/** Constant-time: does the cookie the browser sent name this state? */
+export function stateMatchesCookie(state: string, cookie: string | undefined): boolean {
+  if (!cookie || cookie.length !== state.length) return false;
+  return timingSafeEqual(Buffer.from(cookie), Buffer.from(state));
 }
 
 function genState(): string {

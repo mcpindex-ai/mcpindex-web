@@ -9,6 +9,7 @@ import { __setLoginTransportForTest, __setLoginIssueForTest, startLogin } from '
 import { loginStore, __setLoginStoreRedisForTest } from '../../lib/loginStore';
 import { GET as oauthCallback } from '../../app/api/v1/drift/oauth/callback/route';
 import { GET as loginCallback } from '../../app/api/auth/login/callback/route';
+import { GET as loginStartRoute } from '../../app/api/auth/login/start/route';
 
 let restore: () => void;
 beforeEach(() => { restore = snapshotEnv(); });
@@ -60,13 +61,22 @@ test('login/callback: full start→callback flow mints a key → 200 HTML succes
   __setLoginTransportForTest({ async exchangeCode() { return 'gho_token'; }, async fetchUserId() { return 'gh-subject-123'; } });
   __setLoginIssueForTest(async () => 'mcpk_testkey123');
 
-  // Real start leg: stores the one-time state in the (mocked) store.
-  const started = await startLogin('http://127.0.0.1:8976/callback', loginStore()!);
-  assert.ok('url' in started, 'startLogin should succeed: ' + JSON.stringify(started));
-  const state = new URL(started.url).searchParams.get('state')!;
+  // Real start ROUTE: stores the one-time state and binds it to this browser with a cookie.
+  const s = await callRoute(loginStartRoute, '/api/auth/login/start', {
+    query: { cli_callback: 'http://127.0.0.1:8976/callback' }, headers: { 'sec-fetch-site': 'none' },
+  });
+  assert.equal(s.status, 302);
+  const state = new URL(s.headers.get('location')!).searchParams.get('state')!;
   assert.ok(state);
+  const setCookie = s.headers.get('set-cookie') ?? '';
+  assert.match(setCookie, new RegExp(`^__Host-mcpindex_login=${state};`));
+  assert.match(setCookie, /HttpOnly/);
+  assert.match(setCookie, /Secure/);
+  assert.match(setCookie, /SameSite=Lax/);
 
-  const r = await callRoute(loginCallback, '/api/auth/login/callback', { query: { code: 'abc', state } });
+  const r = await callRoute(loginCallback, '/api/auth/login/callback', {
+    query: { code: 'abc', state }, headers: { cookie: `__Host-mcpindex_login=${state}` },
+  });
   assert.equal(r.status, 200);
   assert.match(r.headers.get('content-type') ?? '', /text\/html/);
   // security headers on the key-bearing page
@@ -83,7 +93,41 @@ test('login/callback: exchange failure → non-200 HTML (fail-closed, no key min
   __setLoginTransportForTest({ async exchangeCode() { return null; }, async fetchUserId() { return null; } });
   const started = await startLogin('http://127.0.0.1:8976/callback', loginStore()!);
   const state = 'url' in started ? new URL(started.url).searchParams.get('state')! : FIX.STATE64_OK;
-  const r = await callRoute(loginCallback, '/api/auth/login/callback', { query: { code: 'abc', state } });
+  const r = await callRoute(loginCallback, '/api/auth/login/callback', {
+    query: { code: 'abc', state }, headers: { cookie: `__Host-mcpindex_login=${state}` },
+  });
   assert.notEqual(r.status, 200);
   assert.match(r.headers.get('content-type') ?? '', /text\/html/);
+  assert.match(r.text, /exchange_failed/);
+});
+
+// A callback URL carrying someone else's code + state, opened in a browser that did not start
+// that login, must not mint, display or consume anything.
+test('login/callback: a state this browser did not start is refused before the exchange', async () => {
+  process.env.MCPINDEX_LOGIN_ENABLED = '1';
+  process.env.MCPINDEX_LOGIN_PEPPER = 'test-pepper';
+  process.env.MCPINDEX_LOGIN_CLIENT_ID = 'test-client';
+  process.env.MCPINDEX_LOGIN_REDIRECT_URI = 'http://127.0.0.1:8976/oauth';
+  __setLoginStoreRedisForTest(mockRedis());
+  let exchanged = 0;
+  let issued = 0;
+  __setLoginTransportForTest({ async exchangeCode() { exchanged++; return 'gho_token'; }, async fetchUserId() { return 'gh-subject-123'; } });
+  __setLoginIssueForTest(async () => { issued++; return 'mcpk_attackerkey'; });
+  const started = await startLogin('http://127.0.0.1:8976/callback', loginStore()!);
+  assert.ok('url' in started);
+  const state = new URL(started.url).searchParams.get('state')!;
+  for (const cookie of [undefined, '__Host-mcpindex_login=' + 'f'.repeat(64), '__Host-mcpindex_login=short']) {
+    const r = await callRoute(loginCallback, '/api/auth/login/callback', {
+      query: { code: 'abc', state }, headers: cookie ? { cookie } : {},
+    });
+    assert.equal(r.status, 400);
+    assert.doesNotMatch(r.text, /mcpk_/);
+  }
+  assert.equal(exchanged, 0);
+  assert.equal(issued, 0);
+  // The real browser can still finish: the refused attempts did not consume the state.
+  const ok = await callRoute(loginCallback, '/api/auth/login/callback', {
+    query: { code: 'abc', state }, headers: { cookie: `__Host-mcpindex_login=${state}` },
+  });
+  assert.equal(ok.status, 200);
 });

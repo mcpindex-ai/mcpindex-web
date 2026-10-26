@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { loginEnabled, normalizeProvider, startLogin, startLoginWeb } from '@/lib/loginOAuth';
+import { loginEnabled, loginStateCookie, normalizeProvider, startLogin, startLoginWeb } from '@/lib/loginOAuth';
 import { loginStore } from '@/lib/loginStore';
 import { checkLoginLimit } from '@/lib/ratelimit';
 
@@ -56,5 +56,6 @@ export async function GET(req: NextRequest) {
   if ('error' in r) {
     return Response.json({ error: r.error }, { status: r.error === 'bad_callback' ? 400 : 503 });
   }
-  return new Response(null, { status: 302, headers: { location: r.url } });
+  const state = new URL(r.url).searchParams.get('state') ?? '';
+  return new Response(null, { status: 302, headers: { location: r.url, 'set-cookie': loginStateCookie(state) } });
 }
