@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server';
+import { claimableOrigin } from '@/lib/claimableRemote';
 import { loadServers } from '@/lib/registry';
 
 // Claimable-server finder for the owner-claim wizard's search picker.
@@ -24,7 +25,7 @@ async function claimableIndex(): Promise<ClaimableEntry[]> {
   // /claim states that only registry-listed servers are claimable, and the ownership proof
   // is defined against a registry entry. Latent today (all admitted rows lack a remote).
   _index = servers
-    .filter((s) => typeof s.remoteUrl === 'string' && s.remoteUrl.length > 0)
+    .filter((s) => typeof s.remoteUrl === 'string' && claimableOrigin(s.remoteUrl) !== '')
     .map((s) => ({
       name: s.name,
       slug: s.slug,

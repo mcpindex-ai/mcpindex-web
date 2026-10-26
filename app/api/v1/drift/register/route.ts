@@ -40,6 +40,9 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'invalid_json' }, { status: 400 });
   }
 
+  if (!body || typeof body !== 'object') {
+    return Response.json({ error: 'invalid_json' }, { status: 400 });
+  }
   const installId = typeof body.install_id === 'string' ? body.install_id.toLowerCase() : '';
   if (!INSTALL_ID.test(installId)) {
     return Response.json({ error: 'invalid_install_id' }, { status: 400 });

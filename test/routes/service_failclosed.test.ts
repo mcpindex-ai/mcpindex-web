@@ -188,3 +188,10 @@ test('waitlist: text/plain, no content-type and a null JSON body are a 400, neve
     assert.equal(r.status, 400, `${ct} ${raw}`);
   }
 });
+
+test('drift/register: a null body is a 400, never a 500', async () => {
+  process.env.DRIFT_IDENTITY = '1';
+  const r = await callRoute(driftRegister, '/api/v1/drift/register', { method: 'POST', raw: 'null', headers: { 'content-type': 'application/json' } });
+  assert.equal(r.status, 400);
+  assert.equal(obj(r).error, 'invalid_json');
+});

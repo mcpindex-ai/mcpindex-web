@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Mark } from './Mark';
+import { claimableOrigin } from '@/lib/claimableRemote';
 import { WEB_LOGIN_MESSAGE_TYPE } from '@/lib/webLoginContract';
 
 // ---------------------------------------------------------------- shared styles
@@ -65,13 +66,6 @@ type ProxyResult = { ok: boolean; status: number; data: Record<string, unknown> 
 // know their exact `io.github.you/...` id or figure out where to serve the challenge.
 type ServerHit = { serverId: string; slug: string; title: string; remoteUrl: string; remoteOrigin: string };
 
-function originOf(url: string): string {
-  try {
-    return new URL(url).origin;
-  } catch {
-    return '';
-  }
-}
 
 // Map a registry result to a ServerHit. Handles both shapes: the claimable finder returns a flat
 // `remote`; the /api/v1/search deep-link returns `installs.remote`. `name` is the registry id.
@@ -83,7 +77,7 @@ function toServerHit(r: Record<string, unknown>): ServerHit | null {
     typeof r.remote === 'string' ? r.remote : typeof installs.remote === 'string' ? installs.remote : '';
   const slug = typeof r.slug === 'string' ? r.slug : '';
   const title = typeof r.title === 'string' && r.title ? r.title : serverId;
-  return { serverId, slug, title, remoteUrl, remoteOrigin: originOf(remoteUrl) };
+  return { serverId, slug, title, remoteUrl, remoteOrigin: claimableOrigin(remoteUrl) };
 }
 
 // Map the proxy's HTTP status to the exact per-step guidance the task calls for. The
