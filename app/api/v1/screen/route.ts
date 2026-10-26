@@ -25,8 +25,12 @@ export async function POST(req: NextRequest) {
   } catch {
     return Response.json({ error: 'invalid_json' }, { status: 400 });
   }
+  // `null`, `42` and `[]` all parse; reading a field off them 500'd.
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return Response.json({ error: 'invalid_json' }, { status: 400 });
+  }
 
-  const description = (body.description ?? '').trim();
+  const description = typeof body.description === 'string' ? body.description.trim() : '';
   if (!description) {
     return Response.json({ error: 'missing_description' }, { status: 400 });
   }

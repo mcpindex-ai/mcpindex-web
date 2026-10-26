@@ -17,6 +17,7 @@ import { GET as ledger } from '../../app/api/v1/ledger/route';
 import { GET as serverDrift } from '../../app/api/v1/server-drift/route';
 import { GET as loginStart } from '../../app/api/auth/login/start/route';
 import { GET as loginCallback } from '../../app/api/auth/login/callback/route';
+import { POST as driftAny } from '../../app/api/v1/drift/any/route';
 
 let restore: () => void;
 beforeEach(() => {
@@ -167,4 +168,23 @@ test('login/start: CLI (none) and wizard (same-origin) starts get past the CSRF 
 test('login/callback: flag off → 404', async () => {
   const r = await callRoute(loginCallback, '/api/auth/login/callback', { query: { code: 'x', state: FIX.STATE64_OK } });
   assert.equal(r.status, 404);
+});
+
+// JSON that parses to a non-object used to reach a field read and 500 with an empty body.
+test('screen, drift/any: null / number / array bodies are a 400, never a 500', async () => {
+  for (const raw of ['null', '42', '[]', '{"description":42}']) {
+    const r = await callRoute(screen, '/api/v1/screen', { method: 'POST', raw, headers: { 'content-type': 'application/json' } });
+    assert.equal(r.status, 400, `screen ${raw}`);
+  }
+  for (const raw of ['null', '42', '"x"']) {
+    const r = await callRoute(driftAny, '/api/v1/drift/any', { method: 'POST', raw, headers: { 'content-type': 'application/json' } });
+    assert.equal(r.status, 400, `drift/any ${raw}`);
+  }
+});
+test('waitlist: text/plain, no content-type and a null JSON body are a 400, never a 500', async () => {
+  for (const [raw, ct] of [['email=a@b.co', 'text/plain'], ['x', ''], ['null', 'application/json'], ['{"email":5}', 'application/json']]) {
+    const headers: Record<string, string> = ct ? { 'content-type': ct } : {};
+    const r = await callRoute(waitlist, '/api/waitlist', { method: 'POST', raw, headers });
+    assert.equal(r.status, 400, `${ct} ${raw}`);
+  }
 });
