@@ -11,7 +11,7 @@
 // UNVERIFIED as fail-CLOSED. Cache: 5 minutes.
 
 import type { NextRequest } from 'next/server';
-import { getScreenedVerdict } from '@/lib/verdicts';
+import { getScreenedVerdict, resolveVerdictSlug } from '@/lib/verdicts';
 import { ADVISORY_FLOOR } from '@/lib/honest-limits';
 import { VERDICT_CONTRACT_VERSION } from '@/lib/verdictContract';
 
@@ -59,7 +59,8 @@ export async function GET(
 
   // Preview-only records are NOT a screening result - same guard the server-level
   // route applies, hoisted so the two endpoints cannot disagree on one subject.
-  const v = await getScreenedVerdict(server_id);
+  const slug = await resolveVerdictSlug(server_id);
+  const v = slug ? await getScreenedVerdict(slug) : null;
   // tool_verified:false is stated on BOTH branches - the caveat is a property of how this
   // endpoint resolves tools, not of whether a verdict happened to exist.
   const subject = { server_id, tool_name, tool_verified: false };

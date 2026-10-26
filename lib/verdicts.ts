@@ -8,7 +8,8 @@
 import path from 'node:path';
 import { promises as fsp } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { loadServers, loadSnapshotMeta } from './registry';
+import { legacySlugRedirects, loadServers, loadSnapshotMeta } from './registry';
+import { resolveServerRedirect } from './serverRemovals';
 
 export type Decision = 'ALLOW' | 'DENY' | 'REVIEW';
 export type VerdictStatus = 'EVALUATED' | 'PARTIAL' | 'STALE' | 'ERROR';
@@ -661,6 +662,25 @@ export function selectVerdictForSubject(
  * legitimately need the unscreened record so they can route it to the honest
  * "not yet screened" presentation rather than a 404.
  */
+/**
+ * The slug a public trust/badge lookup should bind to, for an id an API caller supplied.
+ *
+ * Callers pass three kinds of id: the current slug, the registry name the docs and the
+ * contract call `server_id` (`io.github.owner/repo`), or a slug that has since moved. The
+ * HTML page already 308s a moved slug, so without this the badge on an old README link went
+ * gray and the trust API answered UNVERIFIED for a server the page shows as screened.
+ * A registry name shared by more than one listing resolves to nothing: guessing between
+ * them is a wrong-subject verdict. getVerdict itself stays exact-slug.
+ */
+export async function resolveVerdictSlug(id: string): Promise<string | null> {
+  const servers = await loadServers();
+  if (servers.some((s) => s.slug === id)) return id;
+  const named = servers.filter((s) => s.name === id);
+  if (named.length === 1) return named[0]!.slug;
+  if (named.length > 1) return null;
+  return resolveServerRedirect(id, new Set(servers.map((s) => s.slug)), legacySlugRedirects(servers));
+}
+
 export async function getScreenedVerdict(slug: string): Promise<Verdict | null> {
   const v = await getVerdict(slug);
   return v && !v.unscreened ? v : null;

@@ -9,7 +9,7 @@
 //   [![mcpindex](https://mcpindex.ai/api/v1/badge/<slug>)](https://mcpindex.ai/server/<slug>)
 
 import type { NextRequest } from 'next/server';
-import { getVerdict } from '@/lib/verdicts';
+import { getVerdict, resolveVerdictSlug } from '@/lib/verdicts';
 import { computeBadgeState, renderBadgeSvg } from '@/lib/badge';
 
 export const revalidate = 300;
@@ -31,7 +31,8 @@ function decodeSlug(raw: string | undefined): string | null {
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ slug: string }> }) {
   const { slug: raw } = await ctx.params;
   const slug = decodeSlug(raw);
-  const verdict = slug ? await getVerdict(slug) : null;
+  const bound = slug ? await resolveVerdictSlug(slug) : null;
+  const verdict = bound ? await getVerdict(bound) : null;
   const svg = renderBadgeSvg(computeBadgeState(verdict));
   return new Response(svg, {
     headers: {

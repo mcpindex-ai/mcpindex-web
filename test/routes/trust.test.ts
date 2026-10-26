@@ -84,3 +84,32 @@ test('trust/tool: missing server_id → 400', async () => {
   const r = await callRoute(trustTool, '/api/v1/trust/tool//read_file', { params: { server_id: '', tool_name: 'read_file' } });
   assert.equal(r.status, 400);
 });
+
+// The docs and the contract name the param `server_id` and show a registry name. Before
+// resolveVerdictSlug the registry-name form answered UNVERIFIED for a server whose slug form
+// was screened, on both trust routes and the badge.
+test('trust: the registry name binds to the same verdict as the slug', async () => {
+  const { loadServers } = await import('../../lib/registry');
+  const servers = await loadServers();
+  const slug = await screenedSlug();
+  const name = servers.find((s) => s.slug === slug)!.name;
+  assert.equal(servers.filter((s) => s.name === name).length, 1, 'fixture needs a unique registry name');
+  const bySlug = asObj(await callRoute(trustServer, `/api/v1/trust/server/${slug}`, { params: { server_id: slug } }));
+  const byName = asObj(await callRoute(trustServer, `/api/v1/trust/server/x`, { params: { server_id: name } }));
+  assert.notEqual(bySlug.directive, 'UNVERIFIED');
+  assert.equal(byName.directive, bySlug.directive);
+  assert.equal(byName.subject.server_id, name);
+  const tool = asObj(await callRoute(trustTool, `/api/v1/trust/tool/x/y`, { params: { server_id: name, tool_name: 'y' } }));
+  assert.equal(tool.directive, bySlug.directive);
+});
+
+test('trust: a registry name shared by two listings stays UNVERIFIED', async () => {
+  const { loadServers } = await import('../../lib/registry');
+  const servers = await loadServers();
+  const counts = new Map<string, number>();
+  for (const s of servers) counts.set(s.name, (counts.get(s.name) ?? 0) + 1);
+  const shared = [...counts].find(([, n]) => n > 1)?.[0];
+  if (!shared) return; // no collision in this snapshot
+  const r = asObj(await callRoute(trustServer, `/api/v1/trust/server/x`, { params: { server_id: shared } }));
+  assert.equal(r.directive, 'UNVERIFIED');
+});
