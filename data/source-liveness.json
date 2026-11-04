@@ -1,7 +1,7 @@
 {
  "gate": "state=unavailable AND corroborated=1 AND kind=repo",
- "generated_at": "2026-11-03T03:50:22Z",
- "server_count": 2210,
+ "generated_at": "2026-11-04T03:51:16Z",
+ "server_count": 2211,
  "servers": {
   "agency.lona/trading": {
    "confirmed_unavailable": "2026-07-23",
@@ -10698,6 +10698,20 @@
    "last_verified_accessible": "2026-09-06",
    "state": "unavailable",
    "url": "https://github.com/Hei33enberg/marocain-mcp-server"
+  },
+  "io.github.Hei33enberg/strajkpolski-mcp": {
+   "confirmed_unavailable": "2026-11-04",
+   "evidence": {
+    "http_status": 404,
+    "methods": [
+     "github-api-authenticated",
+     "github-web-unauthenticated"
+    ],
+    "vantages": 2
+   },
+   "last_verified_accessible": "2026-11-03",
+   "state": "unavailable",
+   "url": "https://github.com/Hei33enberg/Strajk-Polski-mcp"
   },
   "io.github.Hei33enberg/voice-truthgate-mcp": {
    "confirmed_unavailable": "2026-09-29",
@@ -30944,5 +30958,5 @@
    "url": "https://github.com/ErikThiart/simcloud"
   }
  },
- "url_count": 2014
+ "url_count": 2015
 }
