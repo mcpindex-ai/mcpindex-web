@@ -6,7 +6,7 @@
 [![servers indexed](https://mcpindex.ai/api/v1/badge/meta/servers?v=1)](https://mcpindex.ai/stats)
 [![screened](https://mcpindex.ai/api/v1/badge/meta/screened?v=1)](https://mcpindex.ai/stats)
 [![last commit](https://img.shields.io/github/last-commit/mcpindex-ai/mcp-server-mcpindex)](https://github.com/mcpindex-ai/mcp-server-mcpindex/commits/main)
-[![Smithery](https://smithery.ai/badge/gautamgb/mcpindex)](https://smithery.ai/servers/gautamgb/mcpindex)
+[![LightNow capabilities](https://lightnow.ai/badge/io.github.gautamgb/mcp-server-mcpindex)](https://lightnow.ai/servers/io.github.gautamgb/mcp-server-mcpindex)
 [![Glama](https://glama.ai/mcp/servers/mcpindex-ai/mcp-server-mcpindex/badges/score.svg)](https://glama.ai/mcp/servers/mcpindex-ai/mcp-server-mcpindex)
 
 > An MCP server for finding MCP servers, plus advisory trust verdicts agent frameworks can call before invoking a tool - from [mcpindex.ai](https://mcpindex.ai).
